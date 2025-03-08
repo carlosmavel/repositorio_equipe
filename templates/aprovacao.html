@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Aprovação{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3>Aprovação de Artigos</h3>
+                    {% if pendentes is iterable and pendentes %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Autor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for artigo in pendentes %}
+                                    <tr>
+                                        <td>{{ artigo.titulo }}</td>
+                                        <td>{{ artigo.autor }}</td>
+                                        <td>
+                                            {% if not artigo.bloqueado_por or artigo.bloqueado_por == session.username %}
+                                                <form method="POST" style="display: inline;">
+                                                    <input type="hidden" name="artigo_id" value="{{ artigo.id }}">
+                                                    <button type="submit" name="acao" value="aprovar" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check-circle" title="Aprovar"></i>
+                                                    </button>
+                                                    <button type="submit" name="acao" value="rejeitar" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-x-circle" title="Rejeitar"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="bi bi-person-lock" title="Sendo editado por {{ artigo.bloqueado_por }}"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted">Nenhum artigo pendente de aprovação no momento.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

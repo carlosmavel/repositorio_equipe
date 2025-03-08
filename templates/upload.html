@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload de Arquivo</title>
+</head>
+<body>
+    <h1>Repositório - Upload</h1>
+    {% if role in ['colaborador', 'editor', 'admin'] %}
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="file"><br>
+            <input type="submit" value="Enviar">
+        </form>
+    {% else %}
+        <p>Você só pode visualizar arquivos.</p>
+    {% endif %}
+    <a href="{{ url_for('logout') }}">Sair</a>
+</body>
+</html>

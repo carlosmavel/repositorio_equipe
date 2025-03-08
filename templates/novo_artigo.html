@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Novo Artigo{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3>Novo Artigo</h3>
+                    <form method="POST" enctype="multipart/form-data" id="newArticleForm">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-fonts" title="Título"></i></label>
+                            <input type="text" name="titulo" class="form-control" placeholder="Digite o título" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-text-paragraph" title="Texto"></i></label>
+                            <textarea name="texto" class="form-control" rows="5" placeholder="Digite o texto" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-paperclip" title="Anexar Arquivos"></i></label>
+                            <input type="file" id="files" name="files" class="form-control" multiple onchange="handleFiles(this.files)">
+                            <div id="attachment-list" class="mt-2"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-send" title="Enviar"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+    <script>
+        let selectedFiles = [];
+
+        function handleFiles(files) {
+            const attachmentList = document.getElementById('attachment-list');
+            for (let file of files) {
+                if (!selectedFiles.some(f => f.name === file.name)) {
+                    selectedFiles.push(file);
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'd-flex align-items-center mb-1';
+                    fileDiv.innerHTML = `
+                        <i class="bi bi-file-earmark me-2"></i>
+                        <span>${file.name}</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile('${file.name}', this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `;
+                    attachmentList.appendChild(fileDiv);
+                }
+            }
+            updateFormFiles();
+        }
+
+        function removeFile(fileName, button) {
+            selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+            button.parentElement.remove();
+            updateFormFiles();
+        }
+
+        function updateFormFiles() {
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            document.getElementById('files').files = dataTransfer.files;
+        }
+    </script>
+{% endblock %}

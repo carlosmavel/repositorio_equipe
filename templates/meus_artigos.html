@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Meus Artigos{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3>Meus Artigos</h3>
+                    {% if artigos %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for artigo in artigos %}
+                                    <tr>
+                                        <td>{{ artigo.titulo }}</td>
+                                        <td>
+                                            {% if artigo.bloqueado_por and artigo.bloqueado_motivo == "analisando" %}
+                                                <i class="bi bi-lock-fill text-warning" title="Sendo analisado por {{ artigo.bloqueado_por }}"></i>
+                                            {% elif artigo.status == "pendente" %}
+                                                <i class="bi bi-hourglass-split text-warning" title="Pendente de Aprovação"></i>
+                                            {% elif artigo.status == "aprovado" %}
+                                                <i class="bi bi-check-circle text-success" title="Aprovado"></i>
+                                            {% elif artigo.status == "em_edicao" %}
+                                                <i class="bi bi-pencil-square text-primary" title="Em Edição"></i>
+                                            {% elif artigo.status == "rejeitado" %}
+                                                <i class="bi bi-x-circle text-danger" title="Rejeitado"></i>
+                                            {% elif artigo.status == "rascunho" %}
+                                                <i class="bi bi-file-earmark-text text-secondary" title="Rascunho"></i>
+                                            {% elif artigo.status == "arquivado" %}
+                                                <i class="bi bi-archive text-muted" title="Arquivado"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if not artigo.bloqueado_por or artigo.bloqueado_por == session.username %}
+                                                <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil-square" title="Editar"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted"><i class="bi bi-lock-fill" title="Bloqueado para edição"></i></span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted">Você ainda não criou nenhum artigo.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
