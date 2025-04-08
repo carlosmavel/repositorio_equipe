@@ -130,4 +130,17 @@
             console.log("Arquivos carregados:", selectedFiles.map(f => f.name)); // Depuração
         });
     </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector("form");
+            form.addEventListener("submit", function() {
+                // Mostrar o modal de loading
+                const loadingModal = new bootstrap.Modal(document.getElementById("loadingModal"), {
+                    backdrop: "static",
+                    keyboard: false
+                });
+                loadingModal.show();
+            });
+        });
+    </script>
 {% endblock %}

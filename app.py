@@ -1,7 +1,9 @@
 from flask import Flask, request, render_template, redirect, url_for, session, send_from_directory, flash
 import os
 import json
+import time
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta_aleatoria"  # Troque por algo mais seguro
@@ -83,11 +85,6 @@ def novo_artigo():
             files = request.files.getlist("files")  # Receber múltiplos arquivos
             filenames = []
             
-            # Depuração: Verificar se arquivos foram recebidos
-            if files:
-                flash(f"Recebidos {len(files)} arquivos: {[file.filename for file in files if file.filename]}", "info")
-            
-            # Processar arquivos, se houver
             if files and files[0].filename:  # Verificar se algum arquivo foi enviado
                 for file in files:
                     if file and file.filename:
@@ -96,10 +93,10 @@ def novo_artigo():
                         try:
                             file.save(file_path)
                             if os.path.exists(file_path):
-                                flash(f"Arquivo {filename} salvo com sucesso em {file_path}.", "success")
                                 filenames.append(filename)
-                            else:
-                                flash(f"Arquivo {filename} foi salvo, mas não encontrado após gravação.", "danger")
+                            # Remover a mensagem de erro
+                            # else:
+                            #     flash(f"Arquivo {filename} foi salvo, mas não encontrado após gravação.", "danger")
                         except Exception as e:
                             flash(f"Falha ao salvar o arquivo {filename}: {str(e)}", "danger")
                 if not filenames:
@@ -115,10 +112,15 @@ def novo_artigo():
                 "status": "pendente",
                 "autor": session["username"],
                 "bloqueado_por": None,
-                "bloqueado_motivo": None
+                "bloqueado_motivo": None,
+                "created_at": datetime.now()  # Adiciona a data/hora de criação
             }
             artigos.append(artigo)
-            flash("Artigo enviado para aprovação!", "success")
+            flash("Artigo criado com sucesso!", "success")
+            
+            # Atraso pra simular processamento (já adicionado antes)
+            time.sleep(2)
+            
             return redirect(url_for("meus_artigos"))
     
     return render_template("novo_artigo.html", artigos=artigos)
@@ -129,16 +131,22 @@ def meus_artigos():
         return redirect(url_for("login"))
     
     meus_artigos = [artigo for artigo in artigos if artigo["autor"] == session["username"]]
-    return render_template("meus_artigos.html", artigos=meus_artigos)
+    return render_template("meus_artigos.html", artigos=meus_artigos, now=datetime.now())
 
 @app.route("/artigo/<int:artigo_id>", methods=["GET", "POST"])
 def artigo(artigo_id):
     if "username" not in session:
         return redirect(url_for("login"))
     
-    artigo = next((a for a in artigos if a["id"] == artigo_id and a["autor"] == session["username"]), None)
+    # Buscar o artigo pelo ID
+    artigo = next((a for a in artigos if a["id"] == artigo_id), None)
     if not artigo:
-        flash("Artigo não encontrado ou você não tem permissão!", "danger")
+        flash("Artigo não encontrado!", "danger")
+        return redirect(url_for("meus_artigos"))
+    
+    # Verificar permissões: admin pode acessar qualquer artigo, outros só os próprios
+    if session["role"] != "admin" and artigo["autor"] != session["username"]:
+        flash("Você não tem permissão para acessar este artigo!", "danger")
         return redirect(url_for("meus_artigos"))
     
     # Verificar lock
@@ -160,7 +168,6 @@ def artigo(artigo_id):
         files = request.files.getlist("files")
         novos_arquivos = artigo["arquivos"].copy() if artigo["arquivos"] else []
         if files and files[0].filename:  # Verificar se algum arquivo foi enviado
-            flash(f"Recebidos {len(files)} arquivos: {[file.filename for file in files if file.filename]}", "info")
             for file in files:
                 if file and file.filename:
                     filename = file.filename
@@ -168,33 +175,36 @@ def artigo(artigo_id):
                     try:
                         file.save(file_path)
                         if os.path.exists(file_path):
-                            flash(f"Arquivo {filename} salvo com sucesso em {file_path}.", "success")
                             novos_arquivos.append(filename)
-                        else:
-                            flash(f"Arquivo {filename} foi salvo, mas não encontrado após gravação.", "danger")
+                        # Remover a mensagem de erro
+                        # else:
+                        #     flash(f"Arquivo {filename} foi salvo, mas não encontrado após gravação.", "danger")
                     except Exception as e:
                         flash(f"Falha ao salvar o arquivo {filename}: {str(e)}", "danger")
-        
+
         # Remover anexos, se solicitado
         if "remover_anexos" in request.form:
             arquivos_remover = request.form["remover_anexos"].split(",") if request.form["remover_anexos"] else []
-            flash(f"Arquivos a remover: {arquivos_remover}", "info")  # Depuração
             for filename in arquivos_remover:
                 if filename in novos_arquivos:
                     novos_arquivos.remove(filename)
                     try:
                         os.remove(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                        flash(f"Arquivo {filename} removido do sistema de arquivos.", "success")
                     except Exception as e:
                         flash(f"Falha ao remover o arquivo {filename}: {str(e)}", "danger")
-        
+
         artigo["arquivos"] = novos_arquivos
         artigo["status"] = "pendente"  # Volta pra pendente após edição
         artigo["bloqueado_por"] = None
         artigo["bloqueado_motivo"] = None
-        flash("Artigo atualizado e enviado para aprovação!", "success")
+        flash("Artigo atualizado com sucesso!", "success")  # Mensagem simplificada
+
+        # Adicionar atraso de 2 segundos pra simular processamento
+        time.sleep(1)
+
         return redirect(url_for("meus_artigos"))
     
+    # Renderizar o template para GET ou quando POST não é executado
     return render_template("artigo.html", artigo=artigo, artigos=artigos)
 
 @app.route("/perfil", methods=["GET", "POST"])
@@ -266,7 +276,7 @@ def aprovacao():
 def pesquisar():
     if "username" not in session:
         return redirect(url_for("login"))
-    return render_template("pesquisar.html", artigos=artigos)
+    return render_template("pesquisar.html", artigos=artigos, now=datetime.now())
 
 @app.route("/profile_pics/<filename>")
 def profile_pics(filename):
