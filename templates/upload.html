@@ -1,18 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload de Arquivo</title>
-</head>
-<body>
-    <h1>Repositório - Upload</h1>
-    {% if role in ['colaborador', 'editor', 'admin'] %}
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="file"><br>
-            <input type="submit" value="Enviar">
-        </form>
-    {% else %}
-        <p>Você só pode visualizar arquivos.</p>
-    {% endif %}
-    <a href="{{ url_for('logout') }}">Sair</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Upload de Arquivo{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3>Upload de Arquivo</h3>
+          {% if session.role in ['colaborador', 'editor', 'admin'] %}
+            <form method="POST" enctype="multipart/form-data">
+              <div class="mb-3">
+                <input type="file" name="file" class="form-control" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+          {% else %}
+            <p class="text-muted">Você não possui permissão para enviar arquivos.</p>
+          {% endif %}
+          <a href="{{ url_for('logout') }}" class="btn btn-link mt-3">Sair</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

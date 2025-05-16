@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Aprovar: {{ artigo.titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-10 mx-auto">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h3>{{ artigo.titulo }}</h3>
+        <p class="text-muted">
+          Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
+          Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+        </p>
+        <hr>
+        <div>
+          {{ artigo.texto.replace('\n','<br>')|safe }}
+        </div>
+
+        {% if arquivos %}
+          <hr>
+          <h5>Anexos</h5>
+          <ul>
+            {% for fname in arquivos %}
+              <li>
+                <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank">
+                  <i class="bi bi-file-earmark"></i> {{ fname }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">Sem anexos.</p>
+        {% endif %}
+
+        <hr>
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Comentário (opcional):</label>
+            <textarea name="comentario" class="form-control" rows="4"
+                      placeholder="Insira aqui uma descrição, solicitação de ajuste ou motivo de rejeição">{{ artigo.review_comment or '' }}</textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button name="acao" value="aprovar" class="btn btn-success">
+              <i class="bi bi-check-circle"></i> Aprovar
+            </button>
+            <button name="acao" value="ajustar" class="btn btn-warning">
+              <i class="bi bi-pencil-square"></i> Solicitar Ajustes
+            </button>
+            <button name="acao" value="rejeitar" class="btn btn-danger">
+              <i class="bi bi-x-circle"></i> Rejeitar
+            </button>
+            <a href="{{ url_for('aprovacao') }}" class="btn btn-secondary ms-auto">
+              Voltar
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

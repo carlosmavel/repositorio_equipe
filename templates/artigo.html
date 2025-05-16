@@ -1,146 +1,73 @@
 {% extends "base.html" %}
+
 {% block title %}{{ artigo.titulo }}{% endblock %}
+
 {% block content %}
-    <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h3>{{ artigo.titulo }}</h3>
-                    <p>{{ artigo.texto }}</p>
-                    {% if artigo.arquivos %}
-                        <div id="existing-attachments">
-                            {% for arquivo in artigo.arquivos %}
-                                <div class="d-flex align-items-center mb-1" data-filename="{{ arquivo }}">
-                                    <i class="bi bi-file-earmark me-2"></i>
-                                    <a href="/uploads/{{ arquivo }}" target="_blank">{{ arquivo }}</a>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    <p class="text-muted">Autor: {{ artigo.autor }}</p>
-                    <p class="text-muted">Status: 
-                        {% if artigo.status == "pendente" %}
-                            Pendente de Aprovação
-                        {% elif artigo.status == "aprovado" %}
-                            Aprovado
-                        {% elif artigo.status == "em_edicao" %}
-                            Em Edição
-                        {% elif artigo.status == "rejeitado" %}
-                            Rejeitado
-                        {% elif artigo.status == "rascunho" %}
-                            Rascunho
-                        {% elif artigo.status == "arquivado" %}
-                            Arquivado
-                        {% endif %}
-                    </p>
-                    {% if session.role in ['colaborador', 'editor', 'admin'] and artigo.status in ['pendente', 'em_edicao', 'rejeitado'] %}
-                        <form method="POST" enctype="multipart/form-data" id="editForm">
-                            <div class="mb-3">
-                                <label class="form-label"><i class="bi bi-fonts" title="Título"></i></label>
-                                <input type="text" name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label"><i class="bi bi-text-paragraph" title="Texto"></i></label>
-                                <textarea name="texto" class="form-control" rows="5" required>{{ artigo.texto }}</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label"><i class="bi bi-paperclip" title="Anexar Arquivos"></i></label>
-                                <input type="file" id="files" name="files" class="form-control" multiple onchange="handleFiles(this.files)">
-                                <div id="attachment-list" class="mt-2">
-                                    {% for arquivo in artigo.arquivos %}
-                                        <div class="d-flex align-items-center mb-1" data-filename="{{ arquivo }}">
-                                            <i class="bi bi-file-earmark me-2"></i>
-                                            <span>{{ arquivo }}</span>
-                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile('{{ arquivo }}', this)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                                <input type="hidden" name="remover_anexos" id="remover_anexos" value="">
-                            </div>
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-pencil-square" title="Salvar Edição"></i></button>
-                        </form>
-                    {% endif %}
-                </div>
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3>{{ artigo.titulo }}</h3>
+          <p class="text-muted">
+            Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
+            Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+          </p>
+          <hr>
+          <div>
+            {{ artigo.texto.replace('\n','<br>')|safe }}
+          </div>
+
+          {% if arquivos %}
+            <hr>
+            <h5>Anexos</h5>
+            <ul>
+              {% for arquivo in arquivos %}
+                <li>
+                  <a href="{{ url_for('uploaded_file', filename=arquivo) }}" target="_blank">
+                    <i class="bi bi-file-earmark"></i> {{ arquivo }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted">Sem anexos.</p>
+          {% endif %}
+
+          <p class="text-muted mt-3"><strong>Status:</strong> {{ artigo.status|capitalize }}</p>
+
+          {% if artigo.review_comment %}
+            <hr>
+            <h5>Comentário do Revisor</h5>
+            <div class="card border-info mb-3">
+              <div class="card-body">
+                {{ artigo.review_comment.replace('\n','<br>')|safe }}
+              </div>
             </div>
+          {% endif %}
+
+          {% if session.role in ['colaborador','editor','admin'] and artigo.status in ['pendente','em_ajuste','rejeitado'] %}
+            <hr>
+            <h5>Editar Artigo</h5>
+            <form method="POST" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label class="form-label"><i class="bi bi-fonts" title="Título"></i></label>
+                <input type="text" name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label"><i class="bi bi-text-paragraph" title="Texto"></i></label>
+                <textarea name="texto" class="form-control" rows="5" required>{{ artigo.texto }}</textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label"><i class="bi bi-paperclip" title="Anexar Arquivos"></i></label>
+                <input type="file" name="files" class="form-control" multiple>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-pencil-square"></i> Salvar
+              </button>
+            </form>
+          {% endif %}
         </div>
+      </div>
     </div>
-{% endblock %}
-{% block extra_js %}
-    <script>
-        let selectedFiles = [];
-        let removedFiles = [];
-
-        function handleFiles(files) {
-            const attachmentList = document.getElementById('attachment-list');
-            for (let file of files) {
-                if (!selectedFiles.some(f => f.name === file.name)) {
-                    selectedFiles.push(file);
-                    const fileDiv = document.createElement('div');
-                    fileDiv.className = 'd-flex align-items-center mb-1';
-                    fileDiv.setAttribute('data-filename', file.name);
-                    fileDiv.innerHTML = `
-                        <i class="bi bi-file-earmark me-2"></i>
-                        <span>${file.name}</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile('${file.name}', this)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    `;
-                    attachmentList.appendChild(fileDiv);
-                }
-            }
-            updateFormFiles();
-        }
-
-        function removeFile(fileName, button) {
-            // Remover da lista de arquivos selecionados (novos arquivos)
-            selectedFiles = selectedFiles.filter(f => f.name !== fileName);
-            
-            // Adicionar à lista de arquivos a remover (existentes)
-            if (!removedFiles.includes(fileName)) {
-                removedFiles.push(fileName);
-                const removerAnexos = document.getElementById('remover_anexos');
-                removerAnexos.value = removedFiles.join(',');
-                console.log("Arquivos a remover:", removerAnexos.value); // Depuração
-            }
-
-            // Remover o elemento da interface
-            button.parentElement.remove();
-            updateFormFiles();
-        }
-
-        function updateFormFiles() {
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            document.getElementById('files').files = dataTransfer.files;
-        }
-
-        // Carregar arquivos existentes na edição, sem duplicação
-        document.addEventListener('DOMContentLoaded', function() {
-            const existingAttachments = document.querySelectorAll('#attachment-list [data-filename]');
-            const existingFilenames = Array.from(existingAttachments).map(item => item.getAttribute('data-filename'));
-            existingFilenames.forEach(filename => {
-                if (!selectedFiles.some(f => f.name === filename)) {
-                    const dummyFile = new File([''], filename, { type: 'application/octet-stream' });
-                    selectedFiles.push(dummyFile);
-                }
-            });
-            updateFormFiles();
-            console.log("Arquivos carregados:", selectedFiles.map(f => f.name)); // Depuração
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector("form");
-            form.addEventListener("submit", function() {
-                // Mostrar o modal de loading
-                const loadingModal = new bootstrap.Modal(document.getElementById("loadingModal"), {
-                    backdrop: "static",
-                    keyboard: false
-                });
-                loadingModal.show();
-            });
-        });
-    </script>
+  </div>
 {% endblock %}
