@@ -8,10 +8,10 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h3>Fila de Aprovação</h3>
-
-          {% if pendentes %}
+          
+          {% if lista_pendentes %}
             <div class="list-group">
-              {% for artigo in pendentes %}
+              {% for artigo in lista_pendentes %}
                 <a href="{{ url_for('aprovacao_detail', artigo_id=artigo.id) }}"
                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
                   <div class="ms-2 me-auto">

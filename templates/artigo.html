@@ -20,17 +20,45 @@
           {% if arquivos %}
             <hr>
             <h5>Anexos</h5>
-            <ul>
-              {% for arquivo in arquivos %}
-                <li>
-                  <a href="{{ url_for('uploaded_file', filename=arquivo) }}" target="_blank">
-                    <i class="bi bi-file-earmark"></i> {{ arquivo }}
+            <div class="row g-3">
+              {% for fname in arquivos %}
+                {% set ext = fname.split('.')[-1].lower() %}
+                <div class="col-4 col-md-3">
+                  <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank" class="text-decoration-none">
+                    <div class="card h-100">
+                      {% if ext in ['jpg','jpeg','png','gif'] %}
+                        <img src="{{ url_for('uploaded_file', filename=fname) }}"
+                             class="card-img-top"
+                             style="height:100px; object-fit:cover;"
+                             alt="{{ fname }}">
+                      {% elif ext == 'pdf' %}
+                        <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}"
+                             class="card-img-top p-3"
+                             style="height:100px; object-fit:contain;"
+                             alt="PDF">
+                      {% elif ext in ['xls','xlsx'] %}
+                        <img src="{{ url_for('static', filename='icons/excel-icon.png') }}"
+                             class="card-img-top p-3"
+                             style="height:100px; object-fit:contain;"
+                             alt="Excel">
+                      {% else %}
+                        <img src="{{ url_for('static', filename='icons/file-icon.png') }}"
+                             class="card-img-top p-3"
+                             style="height:100px; object-fit:contain;"
+                             alt="Arquivo">
+                      {% endif %}
+                      <div class="card-body p-2">
+                        <p class="card-text text-truncate" title="{{ fname }}" style="font-size:0.85em;">
+                          {{ fname }}
+                        </p>
+                      </div>
+                    </div>
                   </a>
-                </li>
+                </div>
               {% endfor %}
-            </ul>
+            </div>
           {% else %}
-            <p class="text-muted">Sem anexos.</p>
+            <p class="text-muted mt-3">Sem anexos.</p>
           {% endif %}
 
           <p class="text-muted mt-3"><strong>Status:</strong> {{ artigo.status|capitalize }}</p>
@@ -38,7 +66,7 @@
           {% if artigo.review_comment %}
             <hr>
             <h5>Comentário do Revisor</h5>
-            <div class="card border-info mb-3">
+            <div class="card border-secondery mb-3">
               <div class="card-body">
                 {{ artigo.review_comment.replace('\n','<br>')|safe }}
               </div>
@@ -50,16 +78,22 @@
             <h5>Editar Artigo</h5>
             <form method="POST" enctype="multipart/form-data">
               <div class="mb-3">
-                <label class="form-label"><i class="bi bi-fonts" title="Título"></i></label>
-                <input type="text" name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
+                <label for="titulo-edit" class="form-label">
+                  <i class="bi bi-fonts" title="Título"></i> Título
+                </label>
+                <input type="text" id="titulo-edit" name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
               </div>
               <div class="mb-3">
-                <label class="form-label"><i class="bi bi-text-paragraph" title="Texto"></i></label>
-                <textarea name="texto" class="form-control" rows="5" required>{{ artigo.texto }}</textarea>
+                <label for="texto-edit" class="form-label">
+                  <i class="bi bi-text-paragraph" title="Texto"></i> Texto
+                </label>
+                <textarea id="texto-edit" name="texto" class="form-control" rows="5" required>{{ artigo.texto }}</textarea>
               </div>
               <div class="mb-3">
-                <label class="form-label"><i class="bi bi-paperclip" title="Anexar Arquivos"></i></label>
-                <input type="file" name="files" class="form-control" multiple>
+                <label for="files-edit" class="form-label">
+                  <i class="bi bi-paperclip" title="Anexar Arquivos"></i> Anexos
+                </label>
+                <input type="file" id="files-edit" name="files" class="form-control" multiple>
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="bi bi-pencil-square"></i> Salvar

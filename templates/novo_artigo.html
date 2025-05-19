@@ -8,72 +8,109 @@
                     <h3>Novo Artigo</h3>
                     <form method="POST" enctype="multipart/form-data" id="newArticleForm">
                         <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-fonts" title="Título"></i></label>
-                            <input type="text" name="titulo" class="form-control" placeholder="Digite o título" required>
+                            <label for="titulo" class="form-label">
+                              <i class="bi bi-fonts" title="Título"></i> Título
+                            </label>
+                            <input type="text" id="titulo" name="titulo" class="form-control" placeholder="Digite o título" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-text-paragraph" title="Texto"></i></label>
-                            <textarea name="texto" class="form-control" rows="5" placeholder="Digite o texto" required></textarea>
+                            <label for="texto" class="form-label">
+                              <i class="bi bi-text-paragraph" title="Texto"></i> Texto
+                            </label>
+                            <textarea id="texto" name="texto" class="form-control" rows="5" placeholder="Digite o texto" required></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-paperclip" title="Anexar Arquivos"></i></label>
+                            <label for="files" class="form-label">
+                              <i class="bi bi-paperclip" title="Anexar Arquivos"></i> Anexos
+                            </label>
                             <input type="file" id="files" name="files" class="form-control" multiple onchange="handleFiles(this.files)">
-                            <div id="attachment-list" class="mt-2"></div>
+                            <div id="attachment-list" class="mt-3 d-flex flex-wrap gap-3"></div>
                         </div>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-send" title="Enviar"></i></button>
+                        <button type="submit" class="btn btn-primary">
+                          <i class="bi bi-send"></i> Enviar
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 {% endblock %}
+
 {% block extra_js %}
-    <script>
-        let selectedFiles = [];
+<script>
+  // arquivos selecionados + seus objectURLs (para revogar depois)
+  let selectedFiles = [];
+  let fileURLs = {};
 
-        function handleFiles(files) {
-            const attachmentList = document.getElementById('attachment-list');
-            for (let file of files) {
-                if (!selectedFiles.some(f => f.name === file.name)) {
-                    selectedFiles.push(file);
-                    const fileDiv = document.createElement('div');
-                    fileDiv.className = 'd-flex align-items-center mb-1';
-                    fileDiv.innerHTML = `
-                        <i class="bi bi-file-earmark me-2"></i>
-                        <span>${file.name}</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile('${file.name}', this)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    `;
-                    attachmentList.appendChild(fileDiv);
-                }
-            }
-            updateFormFiles();
+  function handleFiles(files) {
+    const attachmentList = document.getElementById('attachment-list');
+    for (let file of files) {
+      if (!selectedFiles.some(f => f.name === file.name)) {
+        selectedFiles.push(file);
+
+        // Cria URL temporário para preview de imagens
+        const ext = file.name.split('.').pop().toLowerCase();
+        let previewSrc;
+        if (['jpg','jpeg','png','gif'].includes(ext)) {
+          previewSrc = URL.createObjectURL(file);
+          fileURLs[file.name] = previewSrc;
+        } else if (ext === 'pdf') {
+          previewSrc = '/static/icons/pdf-icon.png';
+        } else if (['xls','xlsx'].includes(ext)) {
+          previewSrc = '/static/icons/excel-icon.png';
+        } else {
+          previewSrc = '/static/icons/file-icon.png';
         }
 
-        function removeFile(fileName, button) {
-            selectedFiles = selectedFiles.filter(f => f.name !== fileName);
-            button.parentElement.remove();
-            updateFormFiles();
-        }
+        // Monta o card de preview
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.width = '100px';
+        card.innerHTML = `
+          <img src="${previewSrc}" class="card-img-top" style="height:80px; object-fit:cover;" alt="${file.name}">
+          <div class="card-body p-1">
+            <p class="card-text text-truncate" title="${file.name}" style="font-size:0.8em;">${file.name}</p>
+            <button type="button" class="btn btn-sm btn-outline-danger w-100" 
+                    onclick="removeFile('${file.name}', this)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        `;
+        attachmentList.appendChild(card);
+      }
+    }
+    updateFormFiles();
+  }
 
-        function updateFormFiles() {
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            document.getElementById('files').files = dataTransfer.files;
-        }
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector("form");
-            form.addEventListener("submit", function() {
-                // Mostrar o modal de loading
-                const loadingModal = new bootstrap.Modal(document.getElementById("loadingModal"), {
-                    backdrop: "static",
-                    keyboard: false
-                });
-                loadingModal.show();
-            });
-        });
-    </script>
+  function removeFile(fileName, button) {
+    // Remove do array
+    selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+    // Revoga URL se for imagem
+    if (fileURLs[fileName]) {
+      URL.revokeObjectURL(fileURLs[fileName]);
+      delete fileURLs[fileName];
+    }
+    // Remove o card da interface
+    button.closest('.card').remove();
+    updateFormFiles();
+  }
+
+  function updateFormFiles() {
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('files').files = dataTransfer.files;
+  }
+
+  // Exibe modal de loading ao enviar
+  document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("newArticleForm");
+    form.addEventListener("submit", function() {
+      const loadingModal = new bootstrap.Modal(document.getElementById("loadingModal"), {
+        backdrop: "static",
+        keyboard: false
+      });
+      loadingModal.show();
+    });
+  });
+</script>
 {% endblock %}

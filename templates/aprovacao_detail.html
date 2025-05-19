@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block title %}Aprovar: {{ artigo.titulo }}{% endblock %}
 
 {% block content %}
@@ -19,35 +20,77 @@
         {% if arquivos %}
           <hr>
           <h5>Anexos</h5>
-          <ul>
+          <div class="row g-3">
             {% for fname in arquivos %}
-              <li>
-                <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank">
-                  <i class="bi bi-file-earmark"></i> {{ fname }}
+              {% set ext = fname.split('.')[-1].lower() %}
+              <div class="col-4 col-md-3">
+                <a href="{{ url_for('uploaded_file', filename=fname) }}"
+                   target="_blank"
+                   class="text-decoration-none">
+                  <div class="card h-100">
+                    {% if ext in ['jpg','jpeg','png','gif'] %}
+                      <img src="{{ url_for('uploaded_file', filename=fname) }}"
+                           class="card-img-top"
+                           style="height:100px; object-fit:cover;"
+                           alt="{{ fname }}">
+                    {% elif ext == 'pdf' %}
+                      <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}"
+                           class="card-img-top p-3"
+                           style="height:100px; object-fit:contain;"
+                           alt="PDF">
+                    {% elif ext in ['xls','xlsx'] %}
+                      <img src="{{ url_for('static', filename='icons/excel-icon.png') }}"
+                           class="card-img-top p-3"
+                           style="height:100px; object-fit:contain;"
+                           alt="Excel">
+                    {% else %}
+                      <img src="{{ url_for('static', filename='icons/file-icon.png') }}"
+                           class="card-img-top p-3"
+                           style="height:100px; object-fit:contain;"
+                           alt="Arquivo">
+                    {% endif %}
+                    <div class="card-body p-2">
+                      <p class="card-text text-truncate" title="{{ fname }}" style="font-size:0.85em;">
+                        {{ fname }}
+                      </p>
+                    </div>
+                  </div>
                 </a>
-              </li>
+              </div>
             {% endfor %}
-          </ul>
+          </div>
         {% else %}
-          <p class="text-muted">Sem anexos.</p>
+          <p class="text-muted mt-3">Sem anexos.</p>
         {% endif %}
 
         <hr>
-        <form method="POST">
+        <form method="POST" id="reviewForm" novalidate>
           <div class="mb-3">
-            <label class="form-label">Comentário (opcional):</label>
-            <textarea name="comentario" class="form-control" rows="4"
-                      placeholder="Insira aqui uma descrição, solicitação de ajuste ou motivo de rejeição">{{ artigo.review_comment or '' }}</textarea>
+            <label for="comentario" class="form-label">
+              Comentário <span class="text-danger">*</span>
+            </label>
+            <textarea
+              id="comentario"
+              name="comentario"
+              class="form-control"
+              rows="4"
+              required
+              aria-required="true"
+              placeholder="Descreva o motivo da aprovação, ajustes ou rejeição…"
+            >{{ artigo.review_comment or '' }}</textarea>
+            <div class="invalid-feedback">
+              O comentário é obrigatório para prosseguir.
+            </div>
           </div>
 
           <div class="d-flex gap-2">
-            <button name="acao" value="aprovar" class="btn btn-success">
+            <button type="submit" name="acao" value="aprovar" class="btn btn-success">
               <i class="bi bi-check-circle"></i> Aprovar
             </button>
-            <button name="acao" value="ajustar" class="btn btn-warning">
+            <button type="submit" name="acao" value="ajustar" class="btn btn-warning">
               <i class="bi bi-pencil-square"></i> Solicitar Ajustes
             </button>
-            <button name="acao" value="rejeitar" class="btn btn-danger">
+            <button type="submit" name="acao" value="rejeitar" class="btn btn-danger">
               <i class="bi bi-x-circle"></i> Rejeitar
             </button>
             <a href="{{ url_for('aprovacao') }}" class="btn btn-secondary ms-auto">
@@ -55,9 +98,25 @@
             </a>
           </div>
         </form>
-
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Validação de formulário do Bootstrap 5
+  (() => {
+    'use strict';
+    const form = document.getElementById('reviewForm');
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  })();
+</script>
 {% endblock %}

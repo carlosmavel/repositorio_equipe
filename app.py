@@ -65,8 +65,9 @@ def inject_notificacoes():
 @app.route('/')
 def index():
     if 'username' in session:
-        return redirect(url_for('meus_artigos'))
+        return redirect(url_for('pesquisar'))
     return redirect(url_for('login'))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -76,13 +77,22 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session['username'] = user.username
-            session['role'] = user.role
-            session['foto'] = user.foto
+            session['role']     = user.role
+            session['foto']     = user.foto
             session['nome_completo'] = user.nome_completo
-            return redirect(url_for('meus_artigos'))
+            return redirect(url_for('pesquisar'))
         flash('Usuário ou senha inválidos!', 'danger')
         return redirect(url_for('login'))
-    return render_template('login.html')
+
+    # GET: preparar o JSON de usuários para o preview das fotos
+    users = User.query.all()
+    users_json = json.dumps({
+        u.username: {'foto': u.foto}
+        for u in users
+    })
+
+    return render_template('login.html', users_json=users_json)
+
 
 @app.route('/novo-artigo', methods=['GET', 'POST'])
 def novo_artigo():
@@ -149,15 +159,24 @@ def meus_artigos():
 
 @app.route('/artigo/<int:artigo_id>', methods=['GET', 'POST'])
 def artigo(artigo_id):
+    # só usuários logados podem ver a página
     if 'username' not in session:
         return redirect(url_for('login'))
+
+    # busca o artigo (ou 404)
     art = Article.query.get_or_404(artigo_id)
-    if session['role'] != 'admin' and art.author.username != session['username']:
-        flash('Você não tem permissão para editar esse artigo.', 'danger')
-        return redirect(url_for('meus_artigos'))
+
     if request.method == 'POST':
+        # somente o autor ou o admin podem salvar mudanças
+        if session['role'] != 'admin' and art.author.username != session['username']:
+            flash('Você não tem permissão para editar esse artigo.', 'danger')
+            return redirect(url_for('meus_artigos'))
+
+        # atualiza título e texto
         art.titulo = request.form['titulo']
         art.texto = request.form['texto']
+
+        # processa anexos novos
         files = request.files.getlist('files')
         existing = json.loads(art.arquivos) if art.arquivos else []
         for f in files:
@@ -166,21 +185,26 @@ def artigo(artigo_id):
                 f.save(path)
                 existing.append(f.filename)
         art.arquivos = json.dumps(existing) if existing else None
+
+        # volta status para pendente e salva
         art.status = 'pendente'
         db.session.commit()
         flash('Artigo atualizado!', 'success')
         return redirect(url_for('meus_artigos'))
+
+    # GET: apenas renderiza, sem checar permissão de edição
     arquivos = json.loads(art.arquivos) if art.arquivos else []
     return render_template('artigo.html', artigo=art, arquivos=arquivos)
 
-@app.route('/aprovacao')
+
+@app.route('/aprovacao', methods=['GET'])
 def aprovacao():
     # Verifica se está logado e se é editor ou admin
     if 'username' not in session or session['role'] not in ['editor', 'admin']:
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
-    # Busca todos os artigos pendentes, ordenados do mais antigo para o mais novo
+    # Busca todos os artigos pendentes, do mais antigo para o mais novo
     pendentes = (
         Article.query
                .filter_by(status='pendente')
@@ -188,15 +212,16 @@ def aprovacao():
                .all()
     )
 
-    # Converte cada created_at (UTC) para o horário de São Paulo
+    # Converte cada created_at (UTC) para horário de São Paulo
     for art in pendentes:
         dt = art.created_at
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         art.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
 
-    # Renderiza o template enviando a lista de pendentes
-    return render_template('aprovacao.html', pendentes=pendentes)
+    # Renderiza o template, passando apenas a lista 'pendentes'
+    return render_template('aprovacao.html', lista_pendentes=pendentes)
+
 
 # ---------------------------------------------------------------------
 # Rota de Detalhe de Aprovação
