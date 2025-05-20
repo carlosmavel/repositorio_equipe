@@ -62,63 +62,61 @@
 
                 <!-- sino de notificações -->
                 <ul class="navbar-nav align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link position-relative" href="#" id="navbarNotifications" role="button"
-                            data-bs-toggle="dropdown">
-                            <i class="bi bi-bell-fill fs-5"></i>
-                            {% if notificacoes > 0 %}
-                            <span class="position-absolute badge bg-danger rounded-circle text-white" style="
-                                        top: 0;
-                                        right: 0;
-                                        /* move 25% para a direita e 25% para cima */
-                                        transform: translate(-5%, 40%) !important;
-                                        font-size: 0.7rem;
-                                        line-height: 1;
-                                        padding: 0.25em 0.5em;
-                                        ">
-                                {{ notificacoes }}
-                            </span>
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="#" id="navbarNotifications" role="button"
+                    data-bs-toggle="dropdown">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    {% if notificacoes > 0 %}
+                    <span id="notificationBadge"
+                            class="position-absolute badge bg-danger rounded-circle text-white"
+                            style="top: 0; right: 0; transform: translate(-5%, 40%) !important;
+                                font-size: 0.7rem; line-height: 1; padding: 0.25em 0.5em;">
+                        {{ notificacoes }}
+                    </span>
+                    {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarNotifications">
+                    {% if notificacoes_list %}
+                        {% for art in notificacoes_list %}
+                        <li>
+                        <a href="{% if session.role in ['editor','admin'] %}{{ url_for('aprovacao_detail', artigo_id=art.id) }}{% else %}{{ url_for('artigo', artigo_id=art.id) }}{% endif %}"
+                           class="dropdown-item notification-link fw-bold"
+                           data-id="{{ art.id }}"
+                        >
+                            {% if session.role in ['editor','admin'] %}
+                            Artigo pendente: {{ art.titulo }}
+                            {% else %}
+                            Novo publicado: {{ art.titulo }}
                             {% endif %}
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarNotifications">
-                            {% if notificacoes_list %}
-                            {% for art in notificacoes_list %}
-                            <li>
-                                <a class="dropdown-item"
-                                    href="{% if session.role in ['editor','admin'] %}{{ url_for('aprovacao') }}{% else %}{{ url_for('meus_artigos') }}{% endif %}">
-                                    {% if session.role in ['editor','admin'] %}
-                                    Artigo pendente: {{ art.titulo }}
-                                    {% else %}
-                                    Novo publicado: {{ art.titulo }}
-                                    {% endif %}
-                                </a>
-                            </li>
-                            {% endfor %}
-                            {% else %}
-                            <li><a class="dropdown-item text-muted" href="#">Nenhuma notificação</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li><a class="dropdown-item text-muted" href="#">Nenhuma notificação</a></li>
+                    {% endif %}
+                    </ul>
+                </li>
 
-                    <!-- perfil / foto e nome -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarUser"
-                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {% if session.foto %}
-                            <img src="{{ url_for('profile_pics', filename=session.foto) }}"
-                                alt="Foto de {{ session.nome_completo }}" class="rounded-circle me-2"
-                                style="width: 30px; height: 30px;">
-                            {% else %}
-                            <i class="bi bi-person-circle fs-4 me-2" aria-label="Usuário"></i>
-                            {% endif %}
-                            <span>{{ session.nome_completo }}</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUser">
-                            <li><a class="dropdown-item" href="{{ url_for('perfil') }}">Perfil</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sair</a></li>
-                        </ul>
-                    </li>
+                <!-- perfil / foto e nome -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarUser"
+                    role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if session.foto %}
+                    <img src="{{ url_for('profile_pics', filename=session.foto) }}"
+                        alt="Foto de {{ session.nome_completo }}"
+                        class="rounded-circle me-2" style="width: 30px; height: 30px;">
+                    {% else %}
+                    <i class="bi bi-person-circle fs-4 me-2" aria-label="Usuário"></i>
+                    {% endif %}
+                    <span>{{ session.nome_completo }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUser">
+                    <li><a class="dropdown-item" href="{{ url_for('perfil') }}">Perfil</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sair</a></li>
+                    </ul>
+                </li>
                 </ul>
+
             </div>
         </div>
     </nav>

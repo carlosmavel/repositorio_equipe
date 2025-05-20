@@ -24,7 +24,9 @@
               {% for fname in arquivos %}
                 {% set ext = fname.split('.')[-1].lower() %}
                 <div class="col-4 col-md-3">
-                  <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank" class="text-decoration-none">
+                  <a href="{{ url_for('uploaded_file', filename=fname) }}"
+                     target="_blank"
+                     class="text-decoration-none">
                     <div class="card h-100">
                       {% if ext in ['jpg','jpeg','png','gif'] %}
                         <img src="{{ url_for('uploaded_file', filename=fname) }}"
@@ -48,7 +50,9 @@
                              alt="Arquivo">
                       {% endif %}
                       <div class="card-body p-2">
-                        <p class="card-text text-truncate" title="{{ fname }}" style="font-size:0.85em;">
+                        <p class="card-text text-truncate"
+                           title="{{ fname }}"
+                           style="font-size:0.85em;">
                           {{ fname }}
                         </p>
                       </div>
@@ -61,19 +65,22 @@
             <p class="text-muted mt-3">Sem anexos.</p>
           {% endif %}
 
-          <p class="text-muted mt-3"><strong>Status:</strong> {{ artigo.status|capitalize }}</p>
+          <p class="text-muted mt-3">
+            <strong>Status:</strong> {{ artigo.status|capitalize }}
+          </p>
 
           {% if artigo.review_comment %}
             <hr>
             <h5>Comentário do Revisor</h5>
-            <div class="card border-secondery mb-3">
+            <div class="card border-secondary mb-3">
               <div class="card-body">
                 {{ artigo.review_comment.replace('\n','<br>')|safe }}
               </div>
             </div>
           {% endif %}
 
-          {% if session.role in ['colaborador','editor','admin'] and artigo.status in ['pendente','em_ajuste','rejeitado'] %}
+          {% if session.role in ['colaborador','editor','admin']
+                and artigo.status in ['pendente','em_ajuste','rejeitado'] %}
             <hr>
             <h5>Editar Artigo</h5>
             <form method="POST" enctype="multipart/form-data">
@@ -81,25 +88,39 @@
                 <label for="titulo-edit" class="form-label">
                   <i class="bi bi-fonts" title="Título"></i> Título
                 </label>
-                <input type="text" id="titulo-edit" name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
+                <input type="text"
+                       id="titulo-edit"
+                       name="titulo"
+                       class="form-control"
+                       value="{{ artigo.titulo }}"
+                       required>
               </div>
               <div class="mb-3">
                 <label for="texto-edit" class="form-label">
                   <i class="bi bi-text-paragraph" title="Texto"></i> Texto
                 </label>
-                <textarea id="texto-edit" name="texto" class="form-control" rows="5" required>{{ artigo.texto }}</textarea>
+                <textarea id="texto-edit"
+                          name="texto"
+                          class="form-control"
+                          rows="5"
+                          required>{{ artigo.texto }}</textarea>
               </div>
               <div class="mb-3">
                 <label for="files-edit" class="form-label">
                   <i class="bi bi-paperclip" title="Anexar Arquivos"></i> Anexos
                 </label>
-                <input type="file" id="files-edit" name="files" class="form-control" multiple>
+                <input type="file"
+                       id="files-edit"
+                       name="files"
+                       class="form-control"
+                       multiple>
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="bi bi-pencil-square"></i> Salvar
               </button>
             </form>
           {% endif %}
+
         </div>
       </div>
     </div>
