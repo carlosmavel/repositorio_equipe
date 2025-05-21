@@ -1,38 +1,37 @@
-{# templates/meus_artigos.html #}
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Meus Artigos{% endblock %}
 
 {% block content %}
 <div class="row">
-  <div class="col-md-8 mx-auto">
+  <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
       <div class="card-body">
         <h3>Meus Artigos</h3>
+
         {% if artigos %}
           <div class="list-group">
             {% for artigo in artigos %}
-            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
-               class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
-              <div class="ms-2 me-auto">
-                <div class="fw-bold">{{ artigo.titulo }}</div>
-                <small class="text-muted">
-                  {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
-                </small>
-              </div>
-              {% if artigo.status == 'pendente' %}
-                <span class="badge bg-secondary">Pendente</span>
-              {% elif artigo.status == 'aprovado' %}
-                <span class="badge bg-success">Aprovado</span>
-              {% elif artigo.status == 'in_review' %}
-                <span class="badge bg-warning text-dark">Em revisão</span>
-              {% elif artigo.status == 'rejeitado' %}
-                <span class="badge bg-danger">Rejeitado</span>
-              {% endif %}
-            </a>
+              {% set st = artigo.status %}
+              <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
+                 class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+                
+                <div>
+                  <div class="fw-bold">{{ artigo.titulo }}</div>
+                  <small class="text-muted">{{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}</small>
+                </div>
+
+                {# Badge usando propriedades do enum #}
+                <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">
+                  {{ st.label }}
+                </span>
+              </a>
             {% endfor %}
           </div>
         {% else %}
-          <p class="text-muted mt-3">Você ainda não publicou artigos.</p>
+          <p class="text-muted mt-3">Você ainda não tem artigos.</p>
         {% endif %}
+
       </div>
     </div>
   </div>

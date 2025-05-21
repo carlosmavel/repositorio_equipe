@@ -3,59 +3,47 @@
 {% block title %}Pesquisar{% endblock %}
 
 {% block content %}
-  <div class="row">
-    <div class="col-md-10 mx-auto">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h3>Pesquisar Artigos</h3>
-          <!-- Formulário de busca -->
-          <form method="GET" action="{{ url_for('pesquisar') }}" class="mb-4">
-            <div class="input-group">
-              <input 
-                type="text" 
-                name="q" 
-                class="form-control" 
-                placeholder="Digite o título ou texto para buscar..." 
-                value="{{ q }}">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search"></i> Buscar
-              </button>
-            </div>
-          </form>
-
-          {% if artigos %}
-            <div class="list-group">
-              {% for artigo in artigos %}
-                <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
-                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
-                  <div class="ms-2 me-auto">
-                    <div class="fw-bold">
-                      {{ artigo.titulo }}
-                      {% if (now - artigo.local_created).total_seconds() < 86400 %}
-                        <span class="badge bg-success ms-2">Novo</span>
-                      {% endif %}
-                    </div>
-                    <small class="text-muted">
-                      {{ artigo.author.nome_completo or artigo.author.username }}
-                      &middot; {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
-                    </small>
-                  </div>
-                  <span class="badge
-                        {% if artigo.status == 'aprovado' %}bg-success
-                        {% elif artigo.status == 'pendente' %}bg-warning text-dark
-                        {% else %}bg-danger{% endif %}
-                        rounded-pill">
-                    {{ artigo.status|capitalize }}
-                  </span>
-                </a>
-              {% endfor %}
-            </div>
-          {% else %}
-            <p class="text-muted mt-3">Nenhum artigo encontrado.</p>
-          {% endif %}
-
-        </div>
+<div class="row">
+  <div class="col-md-10 mx-auto">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form method="get" action="{{ url_for('pesquisar') }}" class="d-flex">
+          <input
+            name="q"
+            value="{{ q }}"
+            class="form-control me-2"
+            placeholder="Buscar por título ou texto…"
+          >
+          <button class="btn btn-outline-primary">Pesquisar</button>
+        </form>
       </div>
     </div>
+
+    {% if artigos %}
+      <div class="list-group">
+        {% for artigo in artigos %}
+          <a
+            href="{{ url_for('artigo', artigo_id=artigo.id) }}"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-start"
+          >
+            <div>
+              <div class="fw-bold">{{ artigo.titulo }}</div>
+              <small class="text-muted">
+                {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
+              </small>
+            </div>
+
+            {# badge usando enum ArticleStatus diretamente #}
+            {% set st = artigo.status %}
+            <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">
+              {{ st.label }}
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted mt-3">Nenhum artigo encontrado.</p>
+    {% endif %}
   </div>
+</div>
 {% endblock %}

@@ -15,17 +15,16 @@
                 <a href="{{ url_for('aprovacao_detail', artigo_id=artigo.id) }}"
                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
                   <div class="ms-2 me-auto">
-                    <div class="fw-bold">
-                      {{ artigo.titulo }}
-                    </div>
+                    <div class="fw-bold">{{ artigo.titulo }}</div>
                     <small class="text-muted">
                       {{ artigo.author.nome_completo or artigo.author.username }}
                       &middot; {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
                     </small>
-
                   </div>
-                  <span class="badge bg-warning text-dark rounded-pill">
-                    Pendente
+                  {# Badge pendente via enum #}
+                  {% set st = ArticleStatus.PENDENTE %}
+                  <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">
+                    {{ st.label }}
                   </span>
                 </a>
               {% endfor %}

@@ -3,6 +3,8 @@
 from sqlalchemy.sql import func
 from database import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Enum as SQLAEnum
+from enums import ArticleStatus
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -47,7 +49,7 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(200), nullable=False)
     texto = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='pendente')
+    status = db.Column(SQLAEnum(ArticleStatus, name='article_status', native_enum=True),default=ArticleStatus.PENDENTE,nullable=False)
 
     # Timestamps
     created_at = db.Column(

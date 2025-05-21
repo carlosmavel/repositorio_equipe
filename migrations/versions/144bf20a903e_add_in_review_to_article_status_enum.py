@@ -17,7 +17,23 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("ALTER TYPE article_status ADD VALUE 'in_review';")
+    # 1) cria o ENUM se ainda não existir
+    op.execute("""
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'article_status') THEN
+        CREATE TYPE article_status AS ENUM (
+          'pendente',
+          'aprovado',
+          'rejeitado',
+          'em_ajuste'
+        );
+      END IF;
+    END$$;
+    """)
+    # 2) agora adiciona o novo valor
+    op.execute("ALTER TYPE article_status ADD VALUE IF NOT EXISTS 'in_review';")
+
 
 
 def downgrade():

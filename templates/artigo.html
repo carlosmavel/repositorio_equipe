@@ -8,37 +8,57 @@
       <div class="card-body">
         <h3>{{ artigo.titulo }}</h3>
         <p class="text-muted">
-          Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
-          Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+         <strong>Autor: </strong> {{ artigo.author.nome_completo or artigo.author.username }} <strong>|</strong>
+         <strong>Criado em: </strong> {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
         </p>
         <hr>
-        <div>{{ artigo.texto.replace('\n','<br>')|safe }}</div>
 
+        <div>{{ artigo.texto.replace('\n','<br>')|safe }}</div>
+        <hr>
+
+        {# Anexos #}
         {% if arquivos %}
-        <hr><h5>Anexos</h5>
+        <h5>Anexos</h5>
         <div class="row g-3">
           {% for fname in arquivos %}
             {% set ext = fname.split('.')[-1].lower() %}
-            <div class="col-4 col-md-3">
+            <div class="col-4 col-md-3 text-truncate" style="max-width:120px;">
               <a href="{{ url_for('uploaded_file', filename=fname) }}"
-                 class="text-decoration-none" target="_blank">
+                 class="text-decoration-none" target="_blank" title="{{ fname }}">
                 <div class="card h-100">
-                  {# mesmas condições de ícones e preview do aprovacao_detail #}
+                  {% if ext in ['jpg','jpeg','png','gif'] %}
+                    <img src="{{ url_for('uploaded_file', filename=fname) }}"
+                         class="card-img-top" alt="{{ fname }}">
+                  {% else %}
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                      <i class="bi bi-file-earmark-text display-4"></i>
+                    </div>
+                  {% endif %}
+                  <div class="card-footer text-center small text-truncate">
+                    {{ fname }}
+                  </div>
                 </div>
               </a>
             </div>
           {% endfor %}
         </div>
+        <hr>
         {% else %}
           <p class="text-muted mt-3">Sem anexos.</p>
+          <hr>
         {% endif %}
 
-        {# Badge de status #}
-        <p class="text-muted mt-3"><strong>Status:</strong> {{ artigo.status|replace('_',' ')|capitalize }}</p>
+        {# Badge de Status usando Enum ArticleStatus #}
+        {% set st = artigo.status %}
+        <p class="mt-3">
+          <strong>Status:</strong>
+          <span class="badge bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
+        </p>
+        <hr>
 
-        {# Histórico de solicitações #}
+        {# Histórico de Revisões #}
         {% if artigo.revision_requests %}
-        <hr><h5>Solicitações de Revisão</h5>
+        <h5>Solicitações de Revisão</h5>
         <ul class="list-unstyled">
           {% for rr in artigo.revision_requests %}
           <li>
@@ -48,14 +68,17 @@
           </li>
           {% endfor %}
         </ul>
+        <hr>
         {% endif %}
 
         <div class="mt-4">
-          {% if session.username and (artigo.author.username == session.username or session.role in ['editor','admin']) %}
+          {# Fluxo de Botões conforme status #}
+          {% if session.username and artigo.author.username == session.username and artigo.status in [ArticleStatus.RASCUNHO, ArticleStatus.PENDENTE, ArticleStatus.EM_REVISAO, ArticleStatus.EM_AJUSTE, ArticleStatus.REJEITADO] %}
             <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-primary">Editar</a>
           {% endif %}
-          {% if session.username and artigo.status != 'in_review' %}
-            <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning">Solicitar revisão</a>
+
+          {% if session.username and artigo.status == ArticleStatus.APROVADO %}
+            <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">Solicitar revisão</a>
           {% endif %}
         </div>
 
