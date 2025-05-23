@@ -8,8 +8,8 @@
       <div class="card-body">
         <h3>{{ artigo.titulo }}</h3>
         <p class="text-muted">
-         <strong>Autor: </strong> {{ artigo.author.nome_completo or artigo.author.username }} <strong>|</strong>
-         <strong>Criado em: </strong> {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+          <strong>Autor: </strong> {{ artigo.author.nome_completo or artigo.author.username }} <strong>|</strong>
+          <strong>Criado em: </strong> {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
         </p>
         <hr>
 
@@ -21,31 +21,30 @@
         <h5>Anexos</h5>
         <div class="row g-3">
           {% for fname in arquivos %}
-            {% set ext = fname.split('.')[-1].lower() %}
-            <div class="col-4 col-md-3 text-truncate" style="max-width:120px;">
-              <a href="{{ url_for('uploaded_file', filename=fname) }}"
-                 class="text-decoration-none" target="_blank" title="{{ fname }}">
-                <div class="card h-100">
-                  {% if ext in ['jpg','jpeg','png','gif'] %}
-                    <img src="{{ url_for('uploaded_file', filename=fname) }}"
-                         class="card-img-top" alt="{{ fname }}">
-                  {% else %}
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                      <i class="bi bi-file-earmark-text display-4"></i>
-                    </div>
-                  {% endif %}
-                  <div class="card-footer text-center small text-truncate">
-                    {{ fname }}
-                  </div>
+          {% set ext = fname.split('.')[-1].lower() %}
+          <div class="col-4 col-md-3 text-truncate" style="max-width:120px;">
+            <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none" target="_blank"
+              title="{{ fname }}">
+              <div class="card h-100">
+                {% if ext in ['jpg','jpeg','png','gif'] %}
+                <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top" alt="{{ fname }}">
+                {% else %}
+                <div class="card-body d-flex align-items-center justify-content-center">
+                  <i class="bi bi-file-earmark-text display-4"></i>
                 </div>
-              </a>
-            </div>
+                {% endif %}
+                <div class="card-footer text-center small text-truncate">
+                  {{ fname }}
+                </div>
+              </div>
+            </a>
+          </div>
           {% endfor %}
         </div>
         <hr>
         {% else %}
-          <p class="text-muted mt-3">Sem anexos.</p>
-          <hr>
+        <p class="text-muted mt-3">Sem anexos.</p>
+        <hr>
         {% endif %}
 
         {# Badge de Status usando Enum ArticleStatus #}
@@ -54,31 +53,64 @@
           <strong>Status:</strong>
           <span class="badge bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
         </p>
+        
+        {# 1. Histórico de comentários de aprovação/ajuste #}
+        {% if artigo.comments %}
         <hr>
-
-        {# Histórico de Revisões #}
-        {% if artigo.revision_requests %}
-        <h5>Solicitações de Revisão</h5>
-        <ul class="list-unstyled">
-          {% for rr in artigo.revision_requests %}
-          <li>
-            <strong>{{ rr.user.username }}</strong>
-            ({{ rr.created_at.strftime('%d/%m/%Y %H:%M') }}):
-            {{ rr.comentario }}
-          </li>
+        <h5 class="mt-4">Histórico de Ajustes</h5>
+        <ul class="list-group mb-3">
+          {% for c in artigo.comments|sort(attribute='created_at') %}
+            {% set parts = c.autor.nome_completo.split() %}
+            <li class="list-group-item">
+              <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
+              <small class="text-muted">
+                {{ c.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+              </small><br>
+              {{ c.texto }}
+            </li>
           {% endfor %}
         </ul>
-        <hr>
+        {% endif %}
+
+        {# 2. Histórico de solicitações de revisão — somente mostra texto salvo #}
+        {% if artigo.revision_requests %}
+          <hr>
+          <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
+          <ul class="list-group mb-3">
+            {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
+              {% set p = rr.user.nome_completo.split() %}
+              <li class="list-group-item">
+                <strong>{{ p[0] }} {{ p[-1] }}</strong>
+                <small class="text-muted">
+                  {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo'))
+                    .strftime('%d/%m %H:%M') }}
+                </small><br>
+                {{ rr.comentario }}
+              </li>
+            {% endfor %}
+          </ul>
         {% endif %}
 
         <div class="mt-4">
           {# Fluxo de Botões conforme status #}
-          {% if session.username and artigo.author.username == session.username and artigo.status in [ArticleStatus.RASCUNHO, ArticleStatus.PENDENTE, ArticleStatus.EM_REVISAO, ArticleStatus.EM_AJUSTE, ArticleStatus.REJEITADO] %}
-            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-primary">Editar</a>
+          {% if session.username
+                and artigo.author.username == session.username
+                and artigo.status in [
+                    ArticleStatus.RASCUNHO,
+                    ArticleStatus.EM_REVISAO,
+                    ArticleStatus.EM_AJUSTE,
+                    ArticleStatus.REJEITADO  ] %}
+            <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}"
+              class="btn btn-primary">
+              Editar
+            </a>
           {% endif %}
-
-          {% if session.username and artigo.status == ArticleStatus.APROVADO %}
-            <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">Solicitar revisão</a>
+          {# Só exibe em artigos aprovados e se o usuário estiver logado #}
+          {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
+            <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}"
+              class="btn btn-warning text-dark">
+              Solicitar revisão
+            </a>
           {% endif %}
         </div>
 

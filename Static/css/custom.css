@@ -1,0 +1,72 @@
+/* 1. Lista de Aprovação — estilo “card” + hover suave */
+.aprovacao-list .list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: none;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.aprovacao-list .list-group-item:hover {
+  background-color: rgba(0,0,0,0.03);
+  transform: translateY(-2px);
+}
+
+/* 2. Abas mais definidas, porém clean */
+/* ——————————————————————————————————————————————————————
+   Abas com fundo claro e borda suave
+   —————————————————————————————————————————————————————— */
+.nav-tabs {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-bottom: none;
+  border-radius: .25rem .25rem 0 0;
+  margin-bottom: 0;
+}
+.nav-tabs .nav-item {
+  margin-bottom: -1px;
+}
+.nav-tabs .nav-link {
+  border: 1px solid transparent;
+  border-bottom: none;
+  background-color: transparent;
+  color: #495057;
+  transition: background-color .2s, color .2s;
+  margin-right: .25rem;
+  border-radius: .25rem .25rem 0 0;
+}
+.nav-tabs .nav-link:hover {
+  background-color: rgba(13,110,253,0.1);
+  color: #0d6efd;
+}
+.nav-tabs .nav-link.active {
+  background-color: #fff;
+  border-color: #dee2e6;
+  border-bottom-color: #fff;
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* ——————————————————————————————————————————————————————
+   Lista estilo “Meus Artigos” + hover suave
+   —————————————————————————————————————————————————————— */
+.aprovacao-list .list-group-item {
+  transition: background-color .2s;
+}
+.aprovacao-list .list-group-item:hover {
+  background-color: rgba(0,0,0,0.03);
+}
+
+.aprovacao-list .list-group-item {
+  border: 1px solid #dee2e6;    /* mesma cor que o Bootstrap usa */
+  border-radius: 0.25rem;       /* cantos arredondados */
+  margin-bottom: 0.75rem;       /* espaçamento entre os itens */
+  transition: background-color .2s, transform .2s;
+}
+.aprovacao-list .list-group-item:last-child {
+  margin-bottom: 0;             /* remove margem do último */
+}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body_attrs %}
-  data-users='{{ users_json|safe }}'
+  data-users='{{ users_json|tojson }}'
 {% endblock %}
 
 {% block title %}Login{% endblock %}
@@ -9,6 +9,17 @@
 {% block content %}
   <div class="row justify-content-center">
     <div class="col-md-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
       <div class="card shadow-sm">
         <div class="card-body text-center">
           <h3 class="mb-4">Login</h3>
@@ -18,7 +29,7 @@
             <i class="bi bi-person-circle" style="font-size: 60px;"></i>
           </div>
 
-          <form method="POST">
+          <form method="POST" novalidate>
             <div class="mb-3">
               <label class="form-label"><i class="bi bi-person-fill"></i></label>
               <input
@@ -27,6 +38,7 @@
                 id="username"
                 class="form-control"
                 placeholder="Digite seu usuário"
+                autocomplete="username"
                 required
               >
             </div>
@@ -37,6 +49,7 @@
                 name="password"
                 class="form-control"
                 placeholder="Digite sua senha"
+                autocomplete="current-password"
                 required
               >
             </div>
@@ -52,28 +65,54 @@
 {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // parse do JSON que passamos no login route
-    const users = JSON.parse('{{ users_json|safe }}');
-    const input = document.getElementById("username");
-    const photoDiv = document.getElementById("user-photo");
+    const users      = JSON.parse(document.body.dataset.users);
+    const input      = document.getElementById("username");
+    const photo      = document.getElementById("user-photo");
+    const loginForm  = document.querySelector("form");
+    let   lastRender = "";
 
-    function updatePhoto() {
-      const u = input.value.trim();
-      if (users[u] && users[u].foto) {
-        photoDiv.innerHTML = `
-          <img src="/profile_pics/${users[u].foto}"
+    /* ------------------------------------------------------------------
+       1) Se existir username salvo do login anterior, preenche o campo   */
+    const stored = localStorage.getItem("lastUsername");
+    if (stored && !input.value) {
+      input.value = stored;
+    }
+
+    /* ------------------------------------------------------------------
+       2) Renderiza o avatar                                              */
+    function render(username) {
+      if (users[username] && users[username].foto) {
+        photo.innerHTML = `
+          <img src="/profile_pics/${users[username].foto}"
                class="rounded-circle"
                style="width:60px; height:60px;"
-               alt="${u}">
+               alt="${username}">
         `;
       } else {
-        photoDiv.innerHTML = `<i class="bi bi-person-circle" style="font-size:60px;"></i>`;
+        photo.innerHTML = `<i class="bi bi-person-circle" style="font-size:60px;"></i>`;
       }
     }
 
-    // dispara logo ao carregar e também em cada digitação
-    updatePhoto();
-    input.addEventListener("input", updatePhoto);
+    function update() {
+      const u = input.value.trim();
+      if (u !== lastRender) {
+        lastRender = u;
+        render(u);
+      }
+    }
+
+    /* chama logo, cobre digitação e mudança via tab/enter                */
+    update();
+    input.addEventListener("input",  update);
+    input.addEventListener("change", update);
+
+    /* ------------------------------------------------------------------
+       3) Guarda o usuário no localStorage para a próxima visita          */
+    if (loginForm) {
+      loginForm.addEventListener("submit", () => {
+        localStorage.setItem("lastUsername", input.value.trim());
+      });
+    }
   });
 </script>
 {% endblock %}

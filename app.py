@@ -9,11 +9,12 @@ from flask import (
     session, send_from_directory, flash
 )
 from flask_migrate import Migrate
-from sqlalchemy import or_
+from werkzeug.security import check_password_hash         # ← 1) IMPORTADO
+from sqlalchemy import or_, func
 
 from database import db
 from enums import ArticleStatus
-from models import User, Article, RevisionRequest, Notification
+from models import User, Article, RevisionRequest, Notification, Comment
 
 # -------------------------------------------------------------------------
 # Configuração da Aplicação
@@ -49,6 +50,7 @@ def inject_notificacoes():
             notifs = (Notification.query
                       .filter_by(user_id=user.id, lido=False)
                       .order_by(Notification.created_at.desc())
+                      .limit(10)
                       .all())
             return {
                 'notificacoes': len(notifs),
@@ -58,8 +60,18 @@ def inject_notificacoes():
 
 @app.context_processor
 def inject_enums():
-    # expõe ArticleStatus no Jinja
     return dict(ArticleStatus=ArticleStatus)
+
+@app.context_processor
+def inject_current_user():
+    if 'username' in session:
+        return {'current_user': User.query.filter_by(username=session['username']).first()}
+    return {'current_user': None}
+
+@app.context_processor
+def inject_zoneinfo():
+    # torna ZoneInfo disponível em {{ }}
+    return dict(ZoneInfo=ZoneInfo)
 
 # -------------------------------------------------------------------------
 # Rotas
@@ -70,24 +82,32 @@ def index():
         return redirect(url_for('pesquisar'))
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user and user.check_password(request.form['password']):
-            session.update({
-                'username': user.username,
-                'role': user.role,
-                'foto': user.foto,
-                'nome_completo': user.nome_completo
-            })
-            return redirect(url_for('pesquisar'))
-        flash('Usuário ou senha inválidos!', 'danger')
-        return redirect(url_for('login'))
+    # para o JS de pré-visualização de fotos
+    users_json = {
+        u.username: {"foto": u.foto or ""} for u in User.query.all()
+    }
 
-    users = User.query.all()
-    users_json = json.dumps({u.username: {'foto': u.foto} for u in users})
-    return render_template('login.html', users_json=users_json)
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            # -------- credenciais corretas ----------
+            session["user_id"] = user.id
+            session["username"] = user.username          # ← 2) salvo username
+            session["role"] = user.role                  # ← 3) salvo role
+            return redirect(url_for("pesquisar"))
+
+        # -------- credenciais inválidas -------------
+        flash("Usuário ou senha inválidos!", "danger")
+        return render_template("login.html", users_json=users_json)
+
+    # GET → exibe formulário limpo
+    return render_template("login.html", users_json=users_json)
 
 @app.route('/novo-artigo', methods=['GET', 'POST'])
 def novo_artigo():
@@ -182,90 +202,199 @@ def artigo(artigo_id):
     artigo = Article.query.get_or_404(artigo_id)
 
     if request.method == 'POST':
-        # só autor ou admin
-        if session['role']!='admin' and artigo.author.username!=session['username']:
-            flash('Você não tem permissão.', 'danger')
-            return redirect(url_for('meus_artigos'))
+        # 1) campos básicos
         artigo.titulo = request.form['titulo']
         artigo.texto  = request.form['texto']
-        # anexos
-        files = request.files.getlist('files')
+        artigo.status = ArticleStatus.PENDENTE
+        artigo.updated_at = datetime.now(timezone.utc)
+
+        # 2) arquivos existentes
         existing = json.loads(artigo.arquivos or '[]')
+
+        # 2.1) exclusões marcadas
+        deletados = request.form.getlist('delete_files')
+        if deletados:
+            for fname in deletados:
+                if fname in existing:
+                    existing.remove(fname)
+                    # remove do disco
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                    except FileNotFoundError:
+                        pass
+
+        # 2.2) novos uploads
+        files = request.files.getlist('files')
         for f in files:
-            if f.filename:
+            if f and f.filename:
                 dest = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
                 f.save(dest)
                 existing.append(f.filename)
-        artigo.arquivos   = json.dumps(existing) if existing else None
-        artigo.status     = ArticleStatus.PENDENTE
-        artigo.updated_at = datetime.now(timezone.utc)
+
+        artigo.arquivos = json.dumps(existing) if existing else None
+
         db.session.commit()
-        flash('Artigo atualizado!', 'success')
+        flash('Artigo enviado para revisão!', 'success')
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
     return render_template('artigo.html', artigo=artigo, arquivos=arquivos)
 
-@app.route('/aprovacao')
+@app.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"])
+def editar_artigo(artigo_id):
+    if "username" not in session:
+        return redirect(url_for("login"))
+
+    artigo = Article.query.get_or_404(artigo_id)
+
+    # somente autor ou admin
+    if session.get("role") != "admin" and artigo.author.username != session["username"]:
+        flash("Você não tem permissão para editar este artigo.", "danger")
+        return redirect(url_for("artigo", artigo_id=artigo_id))
+
+    if request.method == "POST":
+        acao = request.form.get("acao", "salvar")   # salvar | enviar
+
+        # campos básicos
+        artigo.titulo = request.form["titulo"]
+        artigo.texto  = request.form["texto"]
+        artigo.updated_at = datetime.now(timezone.utc)
+
+        # anexos ─ exclusões + novos
+        existing = json.loads(artigo.arquivos or "[]")
+
+        # exclusões
+        for fname in request.form.getlist("delete_files"):
+            if fname in existing:
+                existing.remove(fname)
+                try:
+                    os.remove(os.path.join(app.config["UPLOAD_FOLDER"], fname))
+                except FileNotFoundError:
+                    pass
+
+        # novos uploads
+        for f in request.files.getlist("files"):
+            if f and f.filename:
+                dest = os.path.join(app.config["UPLOAD_FOLDER"], f.filename)
+                f.save(dest)
+                existing.append(f.filename)
+
+        artigo.arquivos = json.dumps(existing) if existing else None
+
+        # se usuário clicou “Enviar para revisão”
+        if acao == "enviar":
+            artigo.status = ArticleStatus.PENDENTE
+            # 🔔 notifica editores / admins
+            editors = User.query.filter(User.role.in_(["editor", "admin"])).all()
+            for dest in editors:
+                n = Notification(
+                    user_id = dest.id,
+                    message = f"Novo artigo pendente para revisão: “{artigo.titulo}”",
+                    url     = url_for('aprovacao_detail', artigo_id=artigo.id)
+                )
+                db.session.add(n)
+            flash("Artigo enviado para revisão!", "success")
+        else:
+            flash("Artigo salvo!", "success")
+
+        db.session.commit()
+        return redirect(url_for("artigo", artigo_id=artigo.id))
+
+    # GET
+    arquivos = json.loads(artigo.arquivos or "[]")
+    return render_template("editar_artigo.html", artigo=artigo, arquivos=arquivos)
+
+@app.route("/aprovacao")
 def aprovacao():
-    if 'username' not in session or session['role'] not in ['editor','admin']:
-        flash('Permissão negada.', 'danger')
-        return redirect(url_for('login'))
+    if "username" not in session or session["role"] not in ["editor", "admin"]:
+        flash("Permissão negada.", "danger")
+        return redirect(url_for("login"))
+
     pendentes = (Article.query
                  .filter_by(status=ArticleStatus.PENDENTE)
                  .order_by(Article.created_at.asc())
                  .all())
-    for art in pendentes:
-        dt = art.created_at or datetime.now(timezone.utc)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        art.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
-    return render_template('aprovacao.html', lista_pendentes=pendentes)
 
-@app.route('/aprovacao/<int:artigo_id>', methods=['GET','POST'])
+    # id do editor/admin logado
+    uid = session["user_id"]
+    revisados = (
+        Article.query
+        .join(Comment, Comment.artigo_id == Article.id)
+        .filter(Comment.user_id == uid)
+        .filter(Article.status != ArticleStatus.PENDENTE)
+        .group_by(Article.id)                                 # ← agrupa por artigo
+        .order_by(func.max(Comment.created_at).desc())        # ← último comentário
+        .all()
+    )
+
+    for lista in (pendentes, revisados):
+        for art in lista:
+            dt = art.updated_at or art.created_at
+            art.local_dt = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+
+    return render_template(
+        "aprovacao.html",
+        pendentes=pendentes,
+        revisados=revisados
+    )
+
+@app.route('/aprovacao/<int:artigo_id>', methods=['GET', 'POST'])
 def aprovacao_detail(artigo_id):
-    if 'username' not in session or session['role'] not in ['editor','admin']:
+    if 'username' not in session or session['role'] not in ['editor', 'admin']:
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
+
     artigo = Article.query.get_or_404(artigo_id)
 
-    if request.method=='POST':
-        comentario = request.form.get('comentario','').strip()
-        artigo.review_comment = comentario
+    if request.method == 'POST':
+        acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
+        comentario = request.form.get('comentario', '').strip()
 
-        acao = request.form['acao']
-        if acao=='aprovar':
+        # 1) Atualiza o status -------------------------------------------------
+        if acao == 'aprovar':
             artigo.status = ArticleStatus.APROVADO
             msg = f"Artigo '{artigo.titulo}' aprovado!"
-        elif acao=='ajustar':
+        elif acao == 'ajustar':
             artigo.status = ArticleStatus.EM_REVISAO
             msg = f"Artigo '{artigo.titulo}' marcado como Em Revisão."
-        elif acao=='rejeitar':
+        elif acao == 'rejeitar':
             artigo.status = ArticleStatus.REJEITADO
             msg = f"Artigo '{artigo.titulo}' rejeitado!"
         else:
             flash('Ação desconhecida.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
+        # 2) Registra comentário (mesmo que vazio, para histórico) ------------
+        user = User.query.filter_by(username=session['username']).first()
+        novo_comment = Comment(
+            artigo_id = artigo.id,
+            user_id   = user.id,
+            texto     = comentario or f"(Mudança de status para {acao})"
+        )
+        db.session.add(novo_comment)
+
         db.session.commit()
 
-        # notifica autor
+        # 3) Notifica o autor --------------------------------------------------
         notif = Notification(
-            user_id=artigo.user_id,
-            message=f"Seu artigo “{artigo.titulo}” foi {artigo.status.value.replace('_',' ')}",
-            url=url_for('artigo', artigo_id=artigo.id)
+            user_id = artigo.user_id,
+            message = f"Seu artigo “{artigo.titulo}” foi {artigo.status.value.replace('_', ' ')}",
+            url     = url_for('artigo', artigo_id=artigo.id)
         )
         db.session.add(notif)
         db.session.commit()
 
-        flash(msg, 'success')
-        return redirect(url_for('aprovacao'))
+        #flash(msg, 'success')
+        if artigo.status != ArticleStatus.PENDENTE:
+            #--flash("Este artigo já foi finalizado.", "info")
+            return redirect(url_for("aprovacao"))
 
+    # GET ----------------------------------------------------------------------
     arquivos = json.loads(artigo.arquivos or '[]')
     return render_template(
         'aprovacao_detail.html',
-        artigo=artigo,
-        arquivos=arquivos
+        artigo   = artigo,
+        arquivos = arquivos
     )
 
 @app.route('/solicitar_revisao/<int:artigo_id>', methods=['GET','POST'])

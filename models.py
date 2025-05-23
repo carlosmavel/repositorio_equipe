@@ -49,7 +49,7 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(200), nullable=False)
     texto = db.Column(db.Text, nullable=False)
-    status = db.Column(SQLAEnum(ArticleStatus, name='article_status', native_enum=True),default=ArticleStatus.PENDENTE,nullable=False)
+    status = db.Column(SQLAEnum(ArticleStatus,values_callable=lambda x: [e.value for e in x],name="article_status",native_enum=False),nullable=False,server_default="rascunho")
 
     # Timestamps
     created_at = db.Column(
@@ -92,6 +92,17 @@ class RevisionRequest(db.Model):
 
     def __repr__(self):
         return f"<RevisionRequest artigo={self.artigo_id} user={self.user_id}>"
+    
+class Comment(db.Model):
+    __tablename__ = "comment"
+    id          = db.Column(db.Integer, primary_key=True)
+    artigo_id   = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
+    user_id     = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    texto       = db.Column(db.Text,    nullable=False)
+    created_at  = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+
+    autor  = db.relationship("User", backref="comments")
+    artigo = db.relationship("Article", backref="comments")  
 
 class Notification(db.Model):
     __tablename__ = 'notification'
