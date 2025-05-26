@@ -15,6 +15,7 @@ from sqlalchemy import or_, func
 from database import db
 from enums import ArticleStatus
 from models import User, Article, RevisionRequest, Notification, Comment
+from utils import sanitize_html
 
 # -------------------------------------------------------------------------
 # Configuração da Aplicação
@@ -119,31 +120,31 @@ def novo_artigo():
         from models import User, Article, Notification
 
         # 1) Coleta dados do formulário
-        titulo = request.form['titulo']
-        texto  = request.form['texto']
-        files  = request.files.getlist('files')
+        titulo      = request.form['titulo'].strip()
+        texto_raw   = request.form['texto']
+        texto_limpo = sanitize_html(texto_raw)   # ← sanitização aqui
+        files       = request.files.getlist('files')
 
         # 1.1) Descobre se é rascunho ou envio para revisão
-        acao = request.form.get('acao', 'enviar')  # 'rascunho' ou 'enviar'
-        if acao == 'rascunho':
-            status = ArticleStatus.RASCUNHO
-        else:
-            status = ArticleStatus.PENDENTE
+        acao   = request.form.get('acao', 'enviar')  # 'rascunho' ou 'enviar'
+        status = (ArticleStatus.RASCUNHO
+                  if acao == 'rascunho'
+                  else ArticleStatus.PENDENTE)
 
         # 2) Salva arquivos e monta lista de nomes
         filenames = []
         for f in files:
             if f and f.filename:
-                path = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
-                f.save(path)
+                dest = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
+                f.save(dest)
                 filenames.append(f.filename)
 
-        # 3) Cria o artigo no banco com o status apropriado
+        # 3) Cria o artigo no banco com texto sanitizado
         user = User.query.filter_by(username=session['username']).first()
         artigo = Article(
             titulo     = titulo,
-            texto      = texto,
-            status     = status,  # agora é Enum, não string
+            texto      = texto_limpo,
+            status     = status,
             user_id    = user.id,
             arquivos   = json.dumps(filenames) if filenames else None,
             created_at = datetime.now(timezone.utc),
@@ -154,7 +155,9 @@ def novo_artigo():
 
         # 4) Se não for rascunho, notifica editores/admins
         if status is ArticleStatus.PENDENTE:
-            destinatarios = User.query.filter(User.role.in_(['editor', 'admin'])).all()
+            destinatarios = User.query.filter(
+                User.role.in_(['editor', 'admin'])
+            ).all()
             for dest in destinatarios:
                 notif = Notification(
                     user_id = dest.id,
@@ -172,7 +175,7 @@ def novo_artigo():
         time.sleep(1)
         return redirect(url_for('meus_artigos'))
 
-    # GET
+    # GET → exibe formulário
     return render_template('novo_artigo.html')
 
 @app.route('/meus-artigos')
@@ -340,23 +343,23 @@ def aprovacao():
 
 @app.route('/aprovacao/<int:artigo_id>', methods=['GET', 'POST'])
 def aprovacao_detail(artigo_id):
-    if 'username' not in session or session['role'] not in ['editor', 'admin']:
+    if 'username' not in session or session['role'] not in ['editor','admin']:
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
     artigo = Article.query.get_or_404(artigo_id)
 
-    if request.method == 'POST':
+    if request.method=='POST':
         acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
-        comentario = request.form.get('comentario', '').strip()
+        comentario = request.form.get('comentario','').strip()
 
         # 1) Atualiza o status -------------------------------------------------
         if acao == 'aprovar':
             artigo.status = ArticleStatus.APROVADO
             msg = f"Artigo '{artigo.titulo}' aprovado!"
         elif acao == 'ajustar':
-            artigo.status = ArticleStatus.EM_REVISAO
-            msg = f"Artigo '{artigo.titulo}' marcado como Em Revisão."
+            artigo.status = ArticleStatus.EM_AJUSTE
+            msg = f"Artigo '{artigo.titulo}' marcado como Em Ajuste."
         elif acao == 'rejeitar':
             artigo.status = ArticleStatus.REJEITADO
             msg = f"Artigo '{artigo.titulo}' rejeitado!"
@@ -364,7 +367,7 @@ def aprovacao_detail(artigo_id):
             flash('Ação desconhecida.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
-        # 2) Registra comentário (mesmo que vazio, para histórico) ------------
+        # 2) Registra comentário de ajuste/aprovação/rejeição ------------------
         user = User.query.filter_by(username=session['username']).first()
         novo_comment = Comment(
             artigo_id = artigo.id,
@@ -372,24 +375,22 @@ def aprovacao_detail(artigo_id):
             texto     = comentario or f"(Mudança de status para {acao})"
         )
         db.session.add(novo_comment)
-
         db.session.commit()
 
-        # 3) Notifica o autor --------------------------------------------------
+        # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
             user_id = artigo.user_id,
-            message = f"Seu artigo “{artigo.titulo}” foi {artigo.status.value.replace('_', ' ')}",
+            message = f"Seu artigo “{artigo.titulo}” foi {artigo.status.value.replace('_',' ')}",
             url     = url_for('artigo', artigo_id=artigo.id)
         )
         db.session.add(notif)
         db.session.commit()
 
-        #flash(msg, 'success')
-        if artigo.status != ArticleStatus.PENDENTE:
-            #--flash("Este artigo já foi finalizado.", "info")
-            return redirect(url_for("aprovacao"))
+        # 4) Mensagem para o editor e redirecionamento ------------------------
+        flash(msg, 'success')
+        return redirect(url_for('aprovacao'))
 
-    # GET ----------------------------------------------------------------------
+    # GET → renderiza detalhes e histórico
     arquivos = json.loads(artigo.arquivos or '[]')
     return render_template(
         'aprovacao_detail.html',

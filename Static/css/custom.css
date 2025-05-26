@@ -70,3 +70,28 @@
 .aprovacao-list .list-group-item:last-child {
   margin-bottom: 0;             /* remove margem do último */
 }
+
+/* miniaturas padronizadas em novo_artigo */
+.novo-artigo-preview .card {
+  max-width: 120px;
+}
+.novo-artigo-preview .card-img-top {
+  object-fit: cover;
+  width: 100%;
+  height: 100px;
+}
+.novo-artigo-preview .card-footer {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* dá espaço extra abaixo do conteúdo principal */
+body > .container {
+  padding-bottom: 2rem;
+}
+
+/* ou, se quiser empurrar só o card do artigo */
+.card.shadow-sm {
+  margin-bottom: 2rem;
+}

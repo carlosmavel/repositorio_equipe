@@ -13,10 +13,8 @@
           Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
         </p>
         <hr>
-        <div>
-          {{ artigo.texto.replace('\n','<br>')|safe }}
-        </div>
-
+        {# escapa tudo que não for texto e só depois converte quebras em <br> #}
+        <div>{{ artigo.texto.replace('\n','<br>')|safe }}</div>
         {% if arquivos %}
         <hr>
         <h5>Anexos</h5>

@@ -2,9 +2,9 @@
 from enum import Enum
 
 class ArticleStatus(Enum):
-    RASCUNHO   = ('rascunho',    'Rascunho',   'secondary', 'white')
+    RASCUNHO   = ('rascunho',    'Rascunho',   'primary', 'white')
     PENDENTE   = ('pendente',    'Pendente',   'warning',   'dark')
-    EM_REVISAO = ('em_revisao',   'Em Revisão', 'info',      'dark')
+    EM_REVISAO = ('em_revisao',   'Em Revisão', 'primary',  'white')
     EM_AJUSTE  = ('em_ajuste',   'Em Ajuste',  'primary',   'white')
     APROVADO   = ('aprovado',    'Aprovado',   'success',   'white')
     REJEITADO  = ('rejeitado',   'Rejeitado',  'danger',    'white')
