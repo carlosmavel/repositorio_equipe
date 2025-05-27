@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -14,8 +15,10 @@ from sqlalchemy import or_, func
 
 from database import db
 from enums import ArticleStatus
-from models import User, Article, RevisionRequest, Notification, Comment
-from utils import sanitize_html
+from models import User, Article, RevisionRequest, Notification, Comment, Attachment
+from utils import sanitize_html, extract_text
+from mimetypes import guess_type
+from werkzeug.utils import secure_filename
 
 # -------------------------------------------------------------------------
 # Configuração da Aplicação
@@ -117,12 +120,17 @@ def novo_artigo():
 
     # Só colaboradores, editores e admins podem criar
     if request.method == 'POST' and session['role'] in ['colaborador', 'editor', 'admin']:
-        from models import User, Article, Notification
+        import os, uuid, json, time
+        from datetime import datetime, timezone
+        from werkzeug.utils import secure_filename
+        from mimetypes import guess_type
+        from utils import sanitize_html, extract_text
+        from models import User, Article, Attachment, Notification
 
         # 1) Coleta dados do formulário
         titulo      = request.form['titulo'].strip()
         texto_raw   = request.form['texto']
-        texto_limpo = sanitize_html(texto_raw)   # ← sanitização aqui
+        texto_limpo = sanitize_html(texto_raw)
         files       = request.files.getlist('files')
 
         # 1.1) Descobre se é rascunho ou envio para revisão
@@ -131,33 +139,52 @@ def novo_artigo():
                   if acao == 'rascunho'
                   else ArticleStatus.PENDENTE)
 
-        # 2) Salva arquivos e monta lista de nomes
-        filenames = []
-        for f in files:
-            if f and f.filename:
-                dest = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
-                f.save(dest)
-                filenames.append(f.filename)
-
-        # 3) Cria o artigo no banco com texto sanitizado
+        # 2) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
         user = User.query.filter_by(username=session['username']).first()
         artigo = Article(
             titulo     = titulo,
             texto      = texto_limpo,
             status     = status,
             user_id    = user.id,
-            arquivos   = json.dumps(filenames) if filenames else None,
+            arquivos   = None,
             created_at = datetime.now(timezone.utc),
             updated_at = datetime.now(timezone.utc)
         )
         db.session.add(artigo)
+        db.session.flush()
+
+        # 3) Salva arquivos com nome único, extrai texto e cria Attachments
+        filenames = []
+        for f in files:
+            if f and f.filename:
+                original   = secure_filename(f.filename)
+                unique_name = f"{uuid.uuid4().hex}_{original}"
+                dest       = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+                f.save(dest)
+                filenames.append(unique_name)
+
+                # extrai texto e descobre MIME
+                texto_extraido = extract_text(dest)
+                mime_type, _   = guess_type(dest)
+
+                # cria o registro de attachment
+                attachment = Attachment(
+                    article   = artigo,
+                    filename  = unique_name,
+                    mime_type = mime_type or 'application/octet-stream',
+                    content   = texto_extraido
+                )
+                db.session.add(attachment)
+
+        # 4) Atualiza o campo JSON de nomes no artigo
+        artigo.arquivos = json.dumps(filenames) if filenames else None
+
+        # 5) Persiste tudo num único commit
         db.session.commit()
 
-        # 4) Se não for rascunho, notifica editores/admins
+        # 6) Notifica editores/admins, se necessário
         if status is ArticleStatus.PENDENTE:
-            destinatarios = User.query.filter(
-                User.role.in_(['editor', 'admin'])
-            ).all()
+            destinatarios = User.query.filter(User.role.in_(['editor', 'admin'])).all()
             for dest in destinatarios:
                 notif = Notification(
                     user_id = dest.id,
@@ -167,6 +194,7 @@ def novo_artigo():
                 db.session.add(notif)
             db.session.commit()
 
+        # 7) Feedback para o usuário
         flash(
             'Rascunho salvo!' if status is ArticleStatus.RASCUNHO
             else 'Artigo criado e enviado para revisão!',
@@ -281,6 +309,24 @@ def editar_artigo(artigo_id):
                 dest = os.path.join(app.config["UPLOAD_FOLDER"], f.filename)
                 f.save(dest)
                 existing.append(f.filename)
+
+                # === Aqui mesmo, dentro do loop, extraímos e criamos o Attachment ===
+                from mimetypes import guess_type
+                from utils import extract_text
+                from models import Attachment
+
+                # 1) extrai texto
+                texto_extraido = extract_text(dest)
+                # 2) descobre o MIME
+                mime_type, _ = guess_type(dest)
+                # 3) adiciona o attachment ao session
+                attachment = Attachment(
+                    article=artigo,
+                    filename=f.filename,
+                    mime_type=mime_type or "application/octet-stream",
+                    content=texto_extraido
+                )
+                db.session.add(attachment)
 
         artigo.arquivos = json.dumps(existing) if existing else None
 
@@ -440,20 +486,41 @@ def solicitar_revisao(artigo_id):
 def pesquisar():
     if 'username' not in session:
         return redirect(url_for('login'))
+
     q = request.args.get('q','').strip()
     query = Article.query.filter_by(status=ArticleStatus.APROVADO)
+
     if q:
-        like = f"%{q}%"
-        query = query.filter(or_(
-            Article.titulo.ilike(like),
-            Article.texto.ilike(like)
-        ))
+        like   = f"%{q}%"
+        ts_q   = func.plainto_tsquery('portuguese', q)
+
+        # subquery: todos os artigos cujos anexos batem no tsquery
+        sub = (
+            db.session.query(Attachment.article_id)
+            .filter(
+                func.to_tsvector('portuguese', Attachment.content)
+                .op('@@')(ts_q)
+            )
+            .subquery()
+        )
+
+        query = query.filter(
+            or_(
+                Article.titulo.ilike(like),
+                Article.texto.ilike(like),
+                Article.id.in_(sub)
+            )
+        )
+
     artigos = query.order_by(Article.created_at.desc()).all()
+
+    # formata datas para o fuso local
     for art in artigos:
         dt = art.created_at or datetime.now(timezone.utc)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         art.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+
     return render_template(
         'pesquisar.html',
         artigos=artigos,

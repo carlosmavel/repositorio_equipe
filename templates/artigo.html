@@ -1,16 +1,20 @@
+{# templates/artigo.html #}
 {% extends 'base.html' %}
 {% block title %}{{ artigo.titulo }}{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col-md-8 mx-auto">
     <div class="card shadow-sm">
       <div class="card-body">
-        {# Cabeçalho com título e status no canto superior direito #}
+
+        {# Cabeçalho com título e status #}
         <div class="d-flex justify-content-between align-items-start">
           <div>
             <h3>{{ artigo.titulo }}</h3>
             <p class="text-muted mb-0">
-              <strong>Autor:</strong> {{ artigo.author.nome_completo or artigo.author.username }}
+              <strong>Autor:</strong>
+              {{ artigo.author.nome_completo or artigo.author.username }}
               <strong class="ms-2">Criado em:</strong>
               {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
             </p>
@@ -23,89 +27,143 @@
         <hr>
 
         {# Conteúdo do artigo #}
-        {# escapa tudo que não for texto e só depois converte quebras em <br> #}
-        <div>{{ artigo.texto.replace('\n','<br>')|safe }}</div>
+        <div>
+          {{ artigo.texto.replace('\n', '<br>')|safe }}
+        </div>
         <hr>
-        {# Anexos #}
-        {% if arquivos %}
-        <h5>Anexos</h5>
-        <div class="row g-3">
-          {% for fname in arquivos %}
-          {% set ext = fname.split('.')[-1].lower() %}
-          <div class="col-4 col-md-3 text-truncate" style="max-width:120px;">
-            <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none" target="_blank"
-              title="{{ fname }}">
-              <div class="card h-100">
-                {% if ext in ['jpg','jpeg','png','gif'] %}
-                <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top"
-                  style="width:100%; height:120px; object-fit:cover;" alt="{{ fname }}">
-                {% else %}
-                <div class="card-body d-flex align-items-center justify-content-center" style="height:120px;">
-                  <i class="bi bi-file-earmark-text display-4"></i>
-                </div>
+
+        {# Anexos com aviso para PDFs não pesquisáveis #}
+        {% if artigo.attachments %}
+          <h5 class="d-flex align-items-center">
+            Anexos
+            <i class="bi bi-info-circle ms-1 text-secondary"
+               data-bs-toggle="tooltip"
+               data-bs-placement="top"
+               title="PDFs escaneados (sem texto incorporado) não podem ser pesquisados">
+            </i>
+          </h5>
+          <div class="row g-3">
+            {% for att in artigo.attachments %}
+              {% set fname = att.filename %}
+              {% set ext = fname.split('.')[-1].lower() %}
+              <div class="col-4 col-md-3 text-truncate position-relative" style="max-width:120px;">
+                <a href="{{ url_for('uploaded_file', filename=fname) }}"
+                   class="text-decoration-none"
+                   target="_blank"
+                   title="{{ fname }}">
+                  <div class="card h-100">
+                    {% if ext in ['jpg','jpeg','png','gif'] %}
+                      <img src="{{ url_for('uploaded_file', filename=fname) }}"
+                           class="card-img-top"
+                           style="width:100%; height:120px; object-fit:cover;"
+                           alt="{{ fname }}">
+                    {% else %}
+                      <div class="card-body d-flex align-items-center justify-content-center"
+                           style="height:120px;">
+                        <i class="bi bi-file-earmark-text display-4"></i>
+                      </div>
+                    {% endif %}
+                  </div>
+                </a>
+
+                {# ícone de alerta para PDF sem conteúdo #}
+                {% if ext == 'pdf' and not att.content %}
+                  <i class="bi bi-exclamation-circle-fill text-warning"
+                     style="position:absolute; top:80%; right:45%;"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="top"
+                     title="Este PDF não contém texto pesquisável.">
+                  </i>
                 {% endif %}
-                <div class="card-footer text-center small text-truncate" title="{{ fname }}">
+
+                <div class="card-footer text-center small text-truncate py-1"
+                     title="{{ fname }}">
                   {{ fname }}
                 </div>
               </div>
-            </a>
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
         {% else %}
-        <p class="text-muted mt-3">Sem anexos.</p>
+          <p class="text-muted mt-3">Sem anexos.</p>
         {% endif %}
-        
+        <hr>
+
         {# Histórico de Ajustes #}
         {% if artigo.comments %}
-        <hr>
-        <h5 class="mt-4">Histórico de Ajustes</h5>
-        <ul class="list-group mb-3">
-          {% for c in artigo.comments|sort(attribute='created_at') %}
-          {% set parts = c.autor.nome_completo.split() %}
-          <li class="list-group-item">
-            <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
-            <small class="text-muted">
-              {{ c.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
-            </small><br>
-            {{ c.texto }}
-          </li>
-          {% endfor %}
-        </ul>
+          <h5 class="mt-4">Histórico de Ajustes</h5>
+          <ul class="list-group mb-3">
+            {% for c in artigo.comments|sort(attribute='created_at') %}
+              {% set parts = c.autor.nome_completo.split() %}
+              <li class="list-group-item">
+                <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
+                <small class="text-muted">
+                  {{ c.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+                </small><br>
+                {{ c.texto }}
+              </li>
+            {% endfor %}
+          </ul>
         {% endif %}
 
         {# Histórico de Solicitações de Revisão #}
         {% if artigo.revision_requests %}
-        <hr>
-        <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
-        <ul class="list-group mb-3">
-          {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
-          {% set p = rr.user.nome_completo.split() %}
-          <li class="list-group-item">
-            <strong>{{ p[0] }} {{ p[-1] }}</strong>
-            <small class="text-muted">
-              {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
-            </small><br>
-            {{ rr.comentario }}
-          </li>
-          {% endfor %}
-        </ul>
+          <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
+          <ul class="list-group mb-3">
+            {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
+              {% set p = rr.user.nome_completo.split() %}
+              <li class="list-group-item">
+                <strong>{{ p[0] }} {{ p[-1] }}</strong>
+                <small class="text-muted">
+                  {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+                </small><br>
+                {{ rr.comentario }}
+              </li>
+            {% endfor %}
+          </ul>
         {% endif %}
+        <hr>
 
         {# Botões de ação #}
         <div class="mt-4">
-          {% if session.username and artigo.author.username == session.username and artigo.status in
-          [ArticleStatus.RASCUNHO, ArticleStatus.EM_REVISAO, ArticleStatus.EM_AJUSTE, ArticleStatus.REJEITADO] %}
-          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-primary">Editar</a>
+          {% if session.username
+                and artigo.author.username == session.username
+                and artigo.status in [
+                  ArticleStatus.RASCUNHO,
+                  ArticleStatus.EM_REVISAO,
+                  ArticleStatus.EM_AJUSTE,
+                  ArticleStatus.REJEITADO
+                ] %}
+            <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}"
+               class="btn btn-primary">
+              Editar
+            </a>
           {% endif %}
+
           {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
-          <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">Solicitar
-            revisão</a>
+            <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}"
+               class="btn btn-warning text-dark">
+              Solicitar Revisão
+            </a>
           {% endif %}
         </div>
 
-      </div>
-    </div>
-  </div>
-</div>
+      </div> {# .card-body #}
+    </div>   {# .card #}
+  </div>     {# .col #}
+</div>       {# .row #}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // A URL desta página de artigo específica
+    const currentPageUrl = "{{ url_for('artigo', artigo_id=artigo.id) }}";
+
+    // Verifica se a função global que criamos no main.js existe e a chama
+    if (typeof window.markNotificationAsReadMatchingUrl === 'function') {
+        window.markNotificationAsReadMatchingUrl(currentPageUrl);
+    } else {
+        console.warn('Função markNotificationAsReadMatchingUrl não encontrada em main.js.');
+    }
+});
+</script>
 {% endblock %}

@@ -1,9 +1,8 @@
-# models.py
-
 from sqlalchemy.sql import func
 from database import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Enum as SQLAEnum
+from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from enums import ArticleStatus
 
 class User(db.Model):
@@ -49,7 +48,16 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(200), nullable=False)
     texto = db.Column(db.Text, nullable=False)
-    status = db.Column(SQLAEnum(ArticleStatus,values_callable=lambda x: [e.value for e in x],name="article_status",native_enum=False),nullable=False,server_default="rascunho")
+    status = db.Column(
+        SQLAEnum(
+            ArticleStatus,
+            values_callable=lambda x: [e.value for e in x],
+            name="article_status",
+            native_enum=False
+        ),
+        nullable=False,
+        server_default="rascunho"
+    )
 
     # Timestamps
     created_at = db.Column(
@@ -71,6 +79,14 @@ class Article(db.Model):
     author = db.relationship('User', back_populates='articles')
     revision_requests = db.relationship(
         'RevisionRequest',
+        back_populates='article',
+        lazy=True,
+        cascade='all, delete-orphan'
+    )
+
+    # Novo relacionamento para attachments
+    attachments = db.relationship(
+        'Attachment',
         back_populates='article',
         lazy=True,
         cascade='all, delete-orphan'
@@ -99,10 +115,22 @@ class Comment(db.Model):
     artigo_id   = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
     user_id     = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     texto       = db.Column(db.Text,    nullable=False)
-    created_at  = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+    created_at  = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     autor  = db.relationship("User", backref="comments")
     artigo = db.relationship("Article", backref="comments")  
+
+class Attachment(db.Model):
+    __tablename__ = 'attachment'
+    id = Column(db.Integer, primary_key=True)
+    article_id = Column(db.Integer, ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
+    filename = Column(Text, nullable=False)
+    mime_type = Column(Text, nullable=False)
+    content = Column(Text, nullable=True)  # texto extraído
+    created_at = Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # relacionamento de volta para o artigo
+    article = relationship('Article', back_populates='attachments')
 
 class Notification(db.Model):
     __tablename__ = 'notification'
@@ -110,10 +138,9 @@ class Notification(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message    = db.Column(db.String(255), nullable=False)
     url        = db.Column(db.String(255), nullable=False)
-    lido       = db.Column(db.Boolean, nullable=False, default=False)  # <–– nova coluna
+    lido       = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    # Relacionamento com usuário
     user = db.relationship('User', back_populates='notifications')
     
     def __repr__(self):

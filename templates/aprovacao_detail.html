@@ -81,15 +81,15 @@
           </div>
         </form>
         {% else %}
-          {% if artigo.comments %}
-            {# Pega o último comentário, por data de criação #}
-            {% set last = artigo.comments|sort(attribute='created_at')|last %}
-            <p class="text-muted">
-              Artigo já revisado por: <strong>{{ last.autor.nome_completo }}</strong>
-            </p>
-          {% else %}
-            <p class="text-muted">Artigo já finalizado.</p>
-          {% endif %}
+        {% if artigo.comments %}
+        {# Pega o último comentário, por data de criação #}
+        {% set last = artigo.comments|sort(attribute='created_at')|last %}
+        <p class="text-muted">
+          Artigo já revisado por: <strong>{{ last.autor.nome_completo }}</strong>
+        </p>
+        {% else %}
+        <p class="text-muted">Artigo já finalizado.</p>
+        {% endif %}
         {% endif %}
       </div>
     </div>
@@ -111,5 +111,16 @@
       form.classList.add('was-validated');
     }, false);
   })();
+
+  // Nosso novo script para marcar a notificação como lida
+  document.addEventListener('DOMContentLoaded', function () {
+    const currentPageUrl = "{{ url_for('aprovacao_detail', artigo_id=artigo.id) }}";
+
+    if (typeof window.markNotificationAsReadMatchingUrl === 'function') {
+      window.markNotificationAsReadMatchingUrl(currentPageUrl);
+    } else {
+      console.warn('Função markNotificationAsReadMatchingUrl não encontrada em main.js.');
+    }
+  });
 </script>
 {% endblock %}
