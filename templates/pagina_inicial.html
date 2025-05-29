@@ -1,0 +1,75 @@
+{% extends "base.html" %} {# Já vai herdar a navbar e a sidebar global #}
+
+{% block title %}Início - Orquetask{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-5"> {# Usa container-fluid para ocupar o espaço do main-page-content #}
+    {# Saudação #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Bem-vindo(a) de volta, {{ current_user.nome_completo or current_user.username }}!</h1>
+        {# Aqui poderiam entrar botões de ação globais ou um seletor de período para o dashboard #}
+    </div>
+
+    {# Atalhos Rápidos - Exemplo com cards #}
+    <h5 class="mb-3">Acesso Rápido</h5>
+    <div class="row">
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <a href="{{ url_for('novo_artigo') }}" class="text-decoration-none stretched-link">
+                        <i class="bi bi-file-earmark-plus-fill display-4 text-primary mb-2"></i>
+                        <h6 class="card-title">Novo Artigo</h6>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <a href="#" class="text-decoration-none stretched-link"> {# Placeholder para Nova OS #}
+                        <i class="bi bi-card-checklist display-4 text-success mb-2"></i>
+                        <h6 class="card-title">Abrir Nova OS</h6>
+                    </a>
+                    <small class="text-muted">(Em breve)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <a href="{{ url_for('pesquisar') }}" class="text-decoration-none stretched-link">
+                        <i class="bi bi-search display-4 text-info mb-2"></i>
+                        <h6 class="card-title">Pesquisar Artigos</h6>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% if session.role in ['editor', 'admin'] %}
+        <div class="col-md-4 col-lg-3 mb-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <a href="{{ url_for('aprovacao') }}" class="text-decoration-none stretched-link">
+                        <i class="bi bi-check2-square display-4 text-warning mb-2"></i>
+                        <h6 class="card-title">Aprovações de Artigos</h6>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Espaço para futuras seções: "Minhas Pendências", "Comunicados Recentes", etc. #}
+    <hr class="my-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Minhas Pendências (Exemplo)</h4>
+            <p class="text-muted">Em breve: Suas OS atribuídas e artigos para revisão aparecerão aqui.</p>
+        </div>
+        <div class="col-md-6">
+            <h4>Comunicados Recentes (Exemplo)</h4>
+            <p class="text-muted">Em breve: As últimas novidades da empresa e do seu setor.</p>
+        </div>
+    </div>
+
+</div>
+{% endblock content %}

@@ -1,36 +1,408 @@
 {% extends "base.html" %}
 
-{% block title %}Perfil{% endblock %}
+{% block title %}Meu Perfil{% endblock %}
 
 {% block extra_css %}
-  <style>
-    .foto-perfil { cursor: pointer; }
-    #fotoInput { display: none; }
-  </style>
+<style>
+  .foto-perfil-container {
+    position: relative;
+    display: inline-block;
+    /* Para o ícone de edição ficar bem posicionado */
+  }
+
+  .foto-perfil-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #eee;
+  }
+
+  .foto-perfil-icon {
+    font-size: 120px;
+    cursor: pointer;
+    color: #6c757d;
+  }
+
+  .edit-icon-overlay {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    pointer-events: none;
+    /* Para o clique passar para a imagem/ícone por baixo */
+  }
+
+  #fotoInput {
+    display: none;
+  }
+
+  .profile-section {
+    margin-bottom: 2rem;
+  }
+
+  .profile-details dt {
+    font-weight: 600;
+  }
+
+  .profile-details dd {
+    margin-left: 0;
+    margin-bottom: 0.5rem;
+  }
+
+/* Novo wrapper para input de senha e ícone */
+.input-wrapper {
+  position: relative;
+}
+
+/* Estilo e posicionamento do ícone de mostrar/ocultar senha */
+.password-toggle-icon {
+  position: absolute;
+  top: 50%; /* Alinha verticalmente ao centro do input-wrapper */
+  right: 12px; /* Distância da borda direita */
+  transform: translateY(-50%); /* Ajuste fino para centralizar verticalmente */
+  cursor: pointer;
+  color: #6c757d; /* Cor do ícone (cinza Bootstrap) */
+  z-index: 100; /* Para garantir que fique acima do input, se necessário */
+}
+
+/* Adiciona padding à direita no input de senha para não sobrepor o ícone */
+.input-wrapper .form-control[type="password"],
+.input-wrapper .form-control[type="text"] { /* Aplica também quando a senha é mostrada */
+  padding-right: 2.5rem; /* Ajuste conforme o tamanho do seu ícone */
+}
+
+/* Desabilita o ícone nativo de mostrar senha dos navegadores (Webkit e outros) */
+input::-ms-reveal,
+input::-ms-clear {
+display: none; /* Para navegadores Internet Explorer e Edge (legado) */
+}
+
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+visibility: hidden;
+display: none !important;
+pointer-events: none;
+opacity: 0 !important;
+}
+
+/* Para navegadores Chromium/Blink (Chrome, Edge, etc.) - Mais específico para o ícone de reveal de senha */
+input::-webkit-input-reveal-button {
+display: none !important;
+-webkit-appearance: none;
+position: absolute;
+top: 0;
+right: 0;
+opacity: 0;
+pointer-events: none;
+height: 100%;
+width: 30px; /* Ajuste a largura conforme necessário */
+}
+
+</style>
 {% endblock %}
 
 {% block content %}
-  <div class="row">
-    <div class="col-md-6 mx-auto">
-      <div class="card shadow-sm">
-        <div class="card-body text-center">
-          <h3>Perfil</h3>
-          <form method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-              {% if user.foto %}
-                <img src="{{ url_for('profile_pics', filename=user.foto) }}" alt="Foto de Perfil" class="rounded-circle foto-perfil mb-3" style="width: 100px; height: 100px;" onclick="document.getElementById('fotoInput').click();">
-              {% else %}
-                <i class="bi bi-person-circle foto-perfil mb-3" style="font-size: 100px;" onclick="document.getElementById('fotoInput').click();"></i>
-              {% endif %}
-              <input type="file" name="foto" id="fotoInput" accept="image/*" onchange="this.form.submit();">
+<div class="row justify-content-center">
+  <div class="col-md-10 col-lg-7">
+    <h3 class="mb-6 text-left">Meu Perfil</h3>
+
+    {# Seção da Foto - mantém auto-submit por enquanto #}
+    <div class="card shadow-sm profile-section">
+      <div class="card-body text-center">
+        <h5 class="card-title mb-3">Foto de Perfil</h5>
+        <form method="POST" enctype="multipart/form-data" id="formFoto">
+          <div class="mb-2 foto-perfil-container" onclick="document.getElementById('fotoInput').click();">
+            {% if current_user.foto %}
+            <img src="{{ url_for('profile_pics', filename=current_user.foto) }}" alt="Foto de Perfil"
+              class="foto-perfil-img">
+            {% else %}
+            <i class="bi bi-person-circle foto-perfil-icon"></i>
+            {% endif %}
+            <span class="edit-icon-overlay"><i class="bi bi-pencil-fill"></i></span>
+          </div>
+          <input type="file" name="foto" id="fotoInput" accept="image/*"
+            onchange="document.getElementById('formFoto').submit();">
+          <p class="form-text">Clique na imagem para alterar sua foto.</p>
+        </form>
+      </div>
+    </div>
+
+    {# Formulário para Dados Editáveis pelo Usuário #}
+    <div class="card shadow-sm profile-section">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Informações Pessoais</h5>
+        <form method="POST"> {# Este POST será para os campos abaixo #}
+          <div class="mb-3">
+            <label for="nome_completo" class="form-label">Nome Completo</label>
+            <input type="text" class="form-control" id="nome_completo" name="nome_completo"
+              value="{{ current_user.nome_completo or '' }}">
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="telefone_contato" class="form-label">Telefone de Contato</label>
+              <input type="text" class="form-control" id="telefone_contato" name="telefone_contato"
+                value="{{ current_user.telefone_contato or '' }}">
             </div>
+            <div class="col-md-6 mb-3">
+              <label for="ramal" class="form-label">Ramal</label>
+              <input type="text" class="form-control" id="ramal" name="ramal" value="{{ current_user.ramal or '' }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="data_nascimento" class="form-label">Data de Nascimento</label>
+            <input type="date" class="form-control" id="data_nascimento" name="data_nascimento"
+              value="{{ current_user.data_nascimento.strftime('%Y-%m-%d') if current_user.data_nascimento else '' }}">
+          </div>
+          <button type="submit" name="action" value="update_info" class="btn btn-primary">Salvar Informações</button>
+        </form>
+      </div>
+    </div>
+
+    {# NOVA SEÇÃO: Alterar Senha com Collapse #}
+    <div class="card shadow-sm profile-section">
+      <div class="card-body">
+        <h5 class="card-title mb-0">
+          <a class="text-reset text-decoration-none d-flex justify-content-between align-items-center" data-bs-toggle="collapse"
+            href="#collapsePassword" role="button" aria-expanded="{{ 'true' if open_password_collapse else 'false' }}"
+            aria-controls="collapsePassword">
+            Alterar Senha
+            <i class="bi bi-chevron-down small"></i>
+          </a>
+        </h5>
+        <div class="collapse mt-3 {{ 'show' if open_password_collapse else '' }}" id="collapsePassword">
+          <form method="POST"> {# Este POST será para alterar a senha #}
+            <input type="hidden" name="action" value="change_password">
+            {# EXIBIÇÃO DA MENSAGEM DE ERRO DA SENHA ATUAL #}
+            {% if password_error %}
+            <div class="alert alert-danger p-2 small mb-2">{{ password_error }}</div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="senha_atual" class="form-label">Senha Atual</label>
+              <div class="input-wrapper"> {# NOVO WRAPPER PARA POSICIONAMENTO #}
+                <input type="password" class="form-control" id="senha_atual" name="senha_atual" required>
+                <span class="password-toggle-icon" id="toggleSenhaAtual"> {# SPAN EM VEZ DE BUTTON #}
+                    <i class="bi bi-eye-slash-fill"></i>
+                </span>
+              </div>
+            </div>
+            {# ... resto do formulário de senha com os "olhinhos" ... #}
+            <div class="mb-3">
+              <label for="nova_senha" class="form-label">Nova Senha</label>
+              <div class="input-wrapper">
+                <input type="password" class="form-control" id="nova_senha" name="nova_senha" required>
+                <span class="password-toggle-icon" id="toggleNovaSenha">
+                    <i class="bi bi-eye-slash-fill"></i>
+                </span>
+              </div>
+              <ul id="passwordRequirements" class="list-unstyled mt-2 small text-muted">
+                <li id="req-length"><i class="bi bi-x-circle me-1"></i> Pelo menos 8 caracteres</li>
+                <li id="req-uppercase"><i class="bi bi-x-circle me-1"></i> Pelo menos uma letra maiúscula (A-Z)</li>
+                <li id="req-lowercase"><i class="bi bi-x-circle me-1"></i> Pelo menos uma letra minúscula (a-z)</li>
+                <li id="req-number"><i class="bi bi-x-circle me-1"></i> Pelo menos um número (0-9)</li>
+                <li id="req-special"><i class="bi bi-x-circle me-1"></i> Pelo menos um caractere especial (ex: !@#$%)
+                </li>
+              </ul>
+            </div>
+            <div class="mb-3">
+              <label for="confirmar_nova_senha" class="form-label">Confirmar Nova Senha</label>
+              <div class="input-wrapper">
+                <input type="password" class="form-control" id="confirmar_nova_senha" name="confirmar_nova_senha" required>
+                <span class="password-toggle-icon" id="toggleConfirmarNovaSenha">
+                    <i class="bi bi-eye-slash-fill"></i>
+                </span>
+              </div>
+              <ul id="confirmPasswordRequirements" class="list-unstyled mt-2 small text-muted">
+                <li id="req-match"><i class="bi bi-x-circle me-1"></i> Senhas devem coincidir</li>
+              </ul>
+            </div>
+            <button type="submit" class="btn btn-primary">Confirmar Alteração de Senha</button>
           </form>
-          <h5>{{ user.nome_completo }}</h5>
-          <p class="text-muted">{{ user.cargo }} - {{ user.setor }}</p>
-          <p class="text-muted">Usuário: {{ user.username }}</p>
-          <p class="text-muted">Nível: {{ user.role }}</p>
         </div>
       </div>
     </div>
+
+    {# Seção para Dados Não Editáveis (Apenas Visualização) #}
+    <div class="card shadow-sm profile-section">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Minhas Informações Funcionais</h5>
+        <dl class="row profile-details">
+          <dt class="col-sm-4">Usuário (login):</dt>
+          <dd class="col-sm-8">{{ current_user.username }}</dd>
+
+          <dt class="col-sm-4">E-mail:</dt>
+          <dd class="col-sm-8">{{ current_user.email or 'Não informado' }}</dd>
+
+          <dt class="col-sm-4">Matrícula:</dt>
+          <dd class="col-sm-8">{{ current_user.matricula or 'N/A' }}</dd>
+
+          <dt class="col-sm-4">CPF:</dt>
+          <dd class="col-sm-8">{{ current_user.cpf or 'N/A' }}</dd>
+
+          <dt class="col-sm-4">RG:</dt>
+          <dd class="col-sm-8">{{ current_user.rg or 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Data de Admissão:</dt>
+          <dd class="col-sm-8">{{ current_user.data_admissao.strftime('%d/%m/%Y') if current_user.data_admissao else
+            'N/A' }}</dd>
+
+          <dt class="col-sm-4">Estabelecimento:</dt>
+          <dd class="col-sm-8">{{ current_user.estabelecimento.nome if current_user.estabelecimento else 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Código do Centro de Custo:</dt>
+          <dd class="col-sm-8">{{ current_user.centro_custo.codigo if current_user.centro_custo else 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Centro de Custo:</dt>
+          <dd class="col-sm-8">{{ current_user.centro_custo.nome if current_user.centro_custo else 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Setor:</dt>
+          <dd class="col-sm-8">{{ current_user.setor.nome if current_user.setor else 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Cargo:</dt>
+          <dd class="col-sm-8">{{ current_user.cargo.nome if current_user.cargo else 'N/A' }}</dd>
+
+          <dt class="col-sm-4">Tipo de Usuário:</dt>
+          <dd class="col-sm-8">{{ current_user.role }}</dd>
+
+          <dt class="col-sm-4">Status:</dt>
+          <dd class="col-sm-8"><span class="badge bg-{{ 'success' if current_user.ativo else 'danger' }}">{{ 'Ativo' if
+              current_user.ativo else 'Inativo' }}</span></dd>
+        </dl>
+      </div>
+    </div>
+
   </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const novaSenhaInput = document.getElementById('nova_senha');
+    const confirmarNovaSenhaInput = document.getElementById('confirmar_nova_senha');
+    const changePasswordForm = document.querySelector('#collapsePassword form');
+
+    const requirements = {
+        length: document.getElementById('req-length'),
+        uppercase: document.getElementById('req-uppercase'),
+        lowercase: document.getElementById('req-lowercase'),
+        number: document.getElementById('req-number'),
+        special: document.getElementById('req-special'),
+        match: document.getElementById('req-match')
+    };
+
+    function updateRequirement(element, met) {
+        if (!element) return;
+        const icon = element.querySelector('i');
+        element.classList.remove('text-muted', 'text-success', 'text-danger');
+        icon.classList.remove('bi-x-circle', 'bi-check-circle-fill', 'bi-dash-circle');
+        if (met) {
+            element.classList.add('text-success');
+            icon.classList.add('bi-check-circle-fill');
+        } else {
+            if (element.id === 'req-match' && confirmarNovaSenhaInput && confirmarNovaSenhaInput.value.length > 0) {
+                element.classList.add('text-danger');
+            } else {
+                element.classList.add('text-muted');
+            }
+            icon.classList.add('bi-x-circle');
+        }
+    }
+
+    function validatePasswordStrength() {
+        if (!novaSenhaInput) return;
+        const value = novaSenhaInput.value;
+        updateRequirement(requirements.length, value.length >= 8);
+        updateRequirement(requirements.uppercase, /[A-Z]/.test(value));
+        updateRequirement(requirements.lowercase, /[a-z]/.test(value));
+        updateRequirement(requirements.number, /[0-9]/.test(value));
+        updateRequirement(requirements.special, /[!@#$%^&*(),.?":{}|<>]/.test(value));
+    }
+
+    function validatePasswordMatch() {
+        if (!novaSenhaInput || !confirmarNovaSenhaInput || !requirements.match) return;
+        const novaSenhaVal = novaSenhaInput.value;
+        const confirmarSenhaVal = confirmarNovaSenhaInput.value;
+        if (confirmarSenhaVal.length > 0 || novaSenhaVal.length > 0) {
+            updateRequirement(requirements.match, novaSenhaVal === confirmarSenhaVal && novaSenhaVal.length > 0);
+        } else {
+            const icon = requirements.match.querySelector('i');
+            requirements.match.classList.remove('text-success', 'text-danger');
+            requirements.match.classList.add('text-muted');
+            icon.classList.remove('bi-check-circle-fill');
+            icon.classList.add('bi-x-circle');
+        }
+    }
+
+    // --- LÓGICA DO OLHINHO ---
+    function setupPasswordToggle(inputId, buttonId) { // buttonId agora é o ID do <span> do ícone
+        const passwordInput = document.getElementById(inputId);
+        const toggleIconSpan = document.getElementById(buttonId); // É um span agora
+
+        if (passwordInput && toggleIconSpan) {
+            toggleIconSpan.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                const icon = this.querySelector('i'); // 'this' é o span clicado
+                icon.classList.toggle('bi-eye-slash-fill');
+                icon.classList.toggle('bi-eye-fill');
+            });
+        }
+    }
+
+    // Configura os "olhinhos" assim que a página carrega
+    setupPasswordToggle('senha_atual', 'toggleSenhaAtual');
+    setupPasswordToggle('nova_senha', 'toggleNovaSenha');
+    setupPasswordToggle('confirmar_nova_senha', 'toggleConfirmarNovaSenha');
+    // --- FIM DO OLHINHO ---
+
+    if (novaSenhaInput) {
+        novaSenhaInput.addEventListener('input', function () {
+            validatePasswordStrength();
+            validatePasswordMatch();
+        });
+        // Chamadas iniciais para o caso de repopulação de formulário (pouco provável para senha, mas não custa)
+        validatePasswordStrength();
+        validatePasswordMatch();
+    }
+
+    if (confirmarNovaSenhaInput) {
+        confirmarNovaSenhaInput.addEventListener('input', validatePasswordMatch);
+        validatePasswordMatch(); // Chamada inicial
+    }
+
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', function (event) {
+            validatePasswordStrength();
+            validatePasswordMatch();
+            let formIsValid = true;
+            const senhaAtualInput = document.getElementById('senha_atual');
+
+            if (novaSenhaInput && novaSenhaInput.value.trim()) {
+                if (requirements.length && !requirements.length.classList.contains('text-success')) formIsValid = false;
+                if (requirements.uppercase && !requirements.uppercase.classList.contains('text-success')) formIsValid = false;
+                if (requirements.lowercase && !requirements.lowercase.classList.contains('text-success')) formIsValid = false;
+                if (requirements.number && !requirements.number.classList.contains('text-success')) formIsValid = false;
+                if (requirements.special && !requirements.special.classList.contains('text-success')) formIsValid = false;
+                if (requirements.match && !requirements.match.classList.contains('text-success')) formIsValid = false;
+            } else if (novaSenhaInput && !novaSenhaInput.value.trim() && confirmarNovaSenhaInput && confirmarNovaSenhaInput.value.trim()) {
+                 if (requirements.match && !requirements.match.classList.contains('text-success')) formIsValid = false;
+            }
+            // A validação de 'required' dos inputs é feita pelo navegador.
+            // Se os campos nova_senha ou confirmar_nova_senha estiverem vazios, o HTML required os bloqueará.
+            // Nosso 'formIsValid' aqui foca nos critérios de QUALIDADE da senha e no MATCH.
+
+            if (!formIsValid) {
+                event.preventDefault();
+                alert('Por favor, verifique os requisitos da nova senha e se a confirmação coincide antes de prosseguir.');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

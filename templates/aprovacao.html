@@ -2,46 +2,51 @@
 {% block title %}Fila de Aprovação{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h3 class="mb-3">Aprovação de Artigos</h3>
+<div class="row justify-content-center"> {# Usar justify-content-center na row é uma boa alternativa ao mx-auto na col #}
+  <div class="col-md-10 mt-4"> {# A coluna agora só define a largura. mt-4 para a margem superior #}
+    
+    {# Conteúdo que estava dentro do .container agora está direto no .col-md-10 #}
+    <h3 class="mb-3">Aprovação de Artigos</h3>
 
-  <ul class="nav nav-tabs" id="tabAprov" role="tablist">
-    <li class="nav-item">
-      <button class="nav-link active" id="pend-tab"
-              data-bs-toggle="tab" data-bs-target="#pendentes"
-              type="button" role="tab">
-        Pendentes ({{ pendentes|length }})
-      </button>
-    </li>
-    <li class="nav-item">
-      <button class="nav-link" id="rev-tab"
-              data-bs-toggle="tab" data-bs-target="#revisados"
-              type="button" role="tab">
-        Revisados ({{ revisados|length }})
-      </button>
-    </li>
-  </ul>
+    <ul class="nav nav-tabs" id="tabAprov" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="pend-tab" data-bs-toggle="tab" data-bs-target="#pendentes" type="button" role="tab">
+                Pendentes ({{ pendentes|length }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="rev-tab" data-bs-toggle="tab" data-bs-target="#revisados" type="button" role="tab">
+                Revisados ({{ revisados|length }})
+            </button>
+        </li>
+    </ul>
 
-  <div class="tab-content border border-top-0 p-3">
-    <!-- Pendentes -->
-    <div class="tab-pane fade show active" id="pendentes" role="tabpanel">
-      {% if pendentes %}
-        {% set items = pendentes %}
-        {% include 'partials/lista_aprovacao.html' %}
-      {% else %}
-        <p class="text-muted">Nenhum artigo pendente.</p>
-      {% endif %}
+    {# Para o conteúdo das abas ter um fundo e padding, podemos adicionar um card ou um div estilizado #}
+    <div class="card shadow-sm"> 
+        <div class="card-body p-0"> {# p-0 no card-body se o tab-content já tiver padding #}
+            <div class="tab-content" id="tabAprovContent"> {# Removidas classes de borda e padding daqui para o card cuidar #}
+                <div class="tab-pane fade show active p-3" id="pendentes" role="tabpanel" aria-labelledby="pend-tab"> {# Adicionado p-3 aqui #}
+                    {% if pendentes %}
+                        {% set items = pendentes %}
+                        {% include 'partials/lista_aprovacao.html' %}
+                    {% else %}
+                        <p class="text-muted m-0">Nenhum artigo pendente.</p> {# m-0 para remover margem se o p-3 já deu espaço #}
+                    {% endif %}
+                </div>
+
+                <div class="tab-pane fade p-3" id="revisados" role="tabpanel" aria-labelledby="rev-tab"> {# Adicionado p-3 aqui #}
+                    {% if revisados %}
+                        {% set items = revisados %}
+                        {% include 'partials/lista_aprovacao.html' %}
+                    {% else %}
+                        <p class="text-muted m-0">Nenhum artigo revisado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
+    {# Fim do conteúdo que estava no .container #}
 
-    <!-- Revisados -->
-    <div class="tab-pane fade" id="revisados" role="tabpanel">
-      {% if revisados %}
-        {% set items = revisados %}
-        {% include 'partials/lista_aprovacao.html' %}
-      {% else %}
-        <p class="text-muted">Nenhum artigo revisado.</p>
-      {% endif %}
-    </div>
-  </div>
-</div>
+  </div> {# Fim do col-md-10 #}
+</div> {# Fim do row #}
 {% endblock %}
