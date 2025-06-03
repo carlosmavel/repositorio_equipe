@@ -99,7 +99,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
     * `PyPDF2` (Extração de texto de arquivos `.pdf`)
 
 ## 4. Estrutura de Diretórios Principal
-```
+```text
 ORQUETASK_PROJECT_ROOT/
 │
 ├── app.py                     # Aplicação Flask principal
