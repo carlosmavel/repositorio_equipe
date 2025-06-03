@@ -1,0 +1,214 @@
+{% extends "base.html" %} {# Ou o seu admin_base.html se ele ainda existir e for diferente #}
+
+{% block title %}Admin - Gerenciar Estabelecimentos{% endblock %}
+
+{% block content %} 
+<div class="container-fluid px-5 mt-3"> {# container-fluid para ocupar a largura do main-page-content #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-2 border-bottom">
+        <h1 class="h2">Gerenciar Estabelecimentos</h1>
+    </div>
+
+    {# Formulário para Adicionar ou Editar Estabelecimento #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                {% if est_editar %}
+                    <i class="bi bi-pencil-square me-2"></i>Editar Estabelecimento: <strong>{{ est_editar.nome_fantasia }}</strong>
+                {% else %}
+                    <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Estabelecimento
+                {% endif %}
+            </h5>
+
+            <form method="POST" action="{{ url_for('admin_estabelecimentos') }}" novalidate>
+                {% if est_editar %}
+                    <input type="hidden" name="id_para_atualizar" value="{{ est_editar.id }}">
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label for="codigo" class="form-label">Código <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="codigo" name="codigo" 
+                               value="{{ request.form.get('codigo', est_editar.codigo if est_editar else '') }}" 
+                               required maxlength="50" placeholder="Ex: BH01">
+                    </div>
+                    <div class="col-md-5 mb-2">
+                        <label for="nome_fantasia" class="form-label">Nome Fantasia <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia"
+                               value="{{ request.form.get('nome_fantasia', est_editar.nome_fantasia if est_editar else '') }}" 
+                               required maxlength="200" placeholder="Nome popular">
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="cnpj" class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj"
+                               value="{{ request.form.get('cnpj', est_editar.cnpj if est_editar else '') }}" 
+                               maxlength="18" placeholder="XX.XXX.XXX/XXXX-XX">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-2">
+                        <label for="razao_social" class="form-label">Razão Social</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social"
+                               value="{{ request.form.get('razao_social', est_editar.razao_social if est_editar else '') }}" 
+                               maxlength="255">
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="tipo_estabelecimento" class="form-label">Tipo</label>
+                        <input type="text" class="form-control" id="tipo_estabelecimento" name="tipo_estabelecimento"
+                               value="{{ request.form.get('tipo_estabelecimento', est_editar.tipo_estabelecimento if est_editar else '') }}" 
+                               maxlength="50" placeholder="Matriz, Filial, Loja...">
+                    </div>
+                </div>
+
+                {# Endereço - pode ser um sub-bloco ou accordion no futuro se ficar muito grande #}
+                <h6 class="mt-3">Endereço</h6>
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label for="cep" class="form-label">CEP</label>
+                        <input type="text" class="form-control" id="cep" name="cep" value="{{ request.form.get('cep', est_editar.cep if est_editar else '') }}" maxlength="9">
+                    </div>
+                    <div class="col-md-7 mb-2">
+                        <label for="logradouro" class="form-label">Logradouro</label>
+                        <input type="text" class="form-control" id="logradouro" name="logradouro" value="{{ request.form.get('logradouro', est_editar.logradouro if est_editar else '') }}" maxlength="255">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label for="numero" class="form-label">Número</label>
+                        <input type="text" class="form-control" id="numero" name="numero" value="{{ request.form.get('numero', est_editar.numero if est_editar else '') }}" maxlength="20">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label for="complemento" class="form-label">Complemento</label>
+                        <input type="text" class="form-control" id="complemento" name="complemento" value="{{ request.form.get('complemento', est_editar.complemento if est_editar else '') }}" maxlength="100">
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="bairro" class="form-label">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" name="bairro" value="{{ request.form.get('bairro', est_editar.bairro if est_editar else '') }}" maxlength="100">
+                    </div>
+                     <div class="col-md-3 mb-2">
+                        <label for="cidade" class="form-label">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" name="cidade" value="{{ request.form.get('cidade', est_editar.cidade if est_editar else '') }}" maxlength="100">
+                    </div>
+                    <div class="col-md-1 mb-2">
+                        <label for="estado" class="form-label">UF</label>
+                        <input type="text" class="form-control" id="estado" name="estado" value="{{ request.form.get('estado', est_editar.estado if est_editar else '') }}" maxlength="2">
+                    </div>
+                </div>
+
+                <h6 class="mt-3">Contato</h6>
+                 <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label for="telefone_principal" class="form-label">Telefone Principal</label>
+                        <input type="text" class="form-control" id="telefone_principal" name="telefone_principal" value="{{ request.form.get('telefone_principal', est_editar.telefone_principal if est_editar else '') }}" maxlength="20">
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="email_contato" class="form-label">E-mail de Contato</label>
+                        <input type="email" class="form-control" id="email_contato" name="email_contato" value="{{ request.form.get('email_contato', est_editar.email_contato if est_editar else '') }}" maxlength="120">
+                    </div>
+                     <div class="col-md-4 mb-2">
+                        <label for="data_abertura" class="form-label">Data de Abertura</label>
+                        <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ request.form.get('data_abertura', est_editar.data_abertura.strftime('%Y-%m-%d') if est_editar and est_editar.data_abertura else '') }}">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label for="observacoes" class="form-label">Observações</label>
+                    <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ request.form.get('observacoes', est_editar.observacoes if est_editar else '') }}</textarea>
+                </div>
+
+                <div class="col-md-12 mb-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check"
+                               {% if est_editar %}{% if est_editar.ativo %}checked{% endif %}{% else %}checked{% endif %}>
+                        <label class="form-check-label" for="ativo_check">
+                            Ativo
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-flex pt-2 border-top">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> 
+                        {% if est_editar %}
+                            Salvar Alterações
+                        {% else %}
+                            Adicionar Estabelecimento
+                        {% endif %}
+                    </button>
+                    {% if est_editar %}
+                        <a href="{{ url_for('admin_estabelecimentos') }}" class="btn btn-outline-secondary ms-2">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar Edição
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Lista de Estabelecimentos Existentes #}
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Estabelecimentos Cadastrados ({{ estabelecimentos|length }})</h5>
+        </div>
+        <div class="card-body">
+            {% if estabelecimentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome Fantasia</th>
+                                <th>CNPJ</th>
+                                <th>Cidade/UF</th>
+                                <th>Status</th>
+                                <th style="width: 200px;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for est in estabelecimentos %}
+                            <tr class="{{ 'table-light text-muted' if not est.ativo else '' }}">
+                                <td>{{ est.codigo }}</td>
+                                <td>{{ est.nome_fantasia }}</td>
+                                <td>{{ est.cnpj or '--' }}</td>
+                                <td>{{ est.cidade or 'N/A' }}/{{ est.estado or 'N/A' }}</td>
+                                <td>
+                                    {% if est.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('admin_estabelecimentos', edit_id=est.id) }}" 
+                                       class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+                                    
+                                    {% set confirm_message_text = 'DESATIVAR' if est.ativo else 'ATIVAR' %}
+                                    {# Usamos tojson para escapar corretamente o nome para dentro de uma string JavaScript #}
+                                    {% set estabelecimento_nome_js = est.nome_fantasia | tojson %} 
+                                    <form action="{{ url_for('admin_toggle_ativo_estabelecimento', id=est.id) }}" method="POST" 
+                                        class="d-inline"
+                                        onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o estabelecimento ' + {{ estabelecimento_nome_js }} + '?');">
+                                        {% if est.ativo %}
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
+                                                <i class="bi bi-archive-fill"></i> Desativar
+                                            </button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
+                                                <i class="bi bi-archive-restore-fill"></i> Ativar
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Nenhum estabelecimento cadastrado ainda. Adicione um acima!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

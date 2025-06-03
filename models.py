@@ -11,25 +11,58 @@ from enums import ArticleStatus # Seu enum de ArticleStatus
 
 class Estabelecimento(db.Model):
     __tablename__ = 'estabelecimento'
+    
     id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.String(50), unique=True, nullable=False)
-    nome = db.Column(db.String(200), nullable=False)
-    # Adicione aqui outros campos relevantes para Estabelecimento (ex: endereco, cidade, etc.)
-    # created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
-    # updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    codigo = db.Column(db.String(50), unique=True, nullable=False) # Código interno ou identificador
+    nome_fantasia = db.Column(db.String(200), nullable=False)     # Nome popular do estabelecimento
+    
+    # --- Novos Campos de Detalhes e Endereço ---
+    razao_social = db.Column(db.String(255), nullable=True)     # Nome legal/oficial
+    cnpj = db.Column(db.String(18), unique=True, nullable=True) # Formato XX.XXX.XXX/XXXX-XX
+    inscricao_estadual = db.Column(db.String(20), nullable=True)
+    inscricao_municipal = db.Column(db.String(20), nullable=True)
+    
+    tipo_estabelecimento = db.Column(db.String(50), nullable=True) # Ex: "Matriz", "Filial", "Depósito", "Loja"
+    
+    # Endereço
+    cep = db.Column(db.String(9), nullable=True)                 # Formato XXXXX-XXX
+    logradouro = db.Column(db.String(255), nullable=True)        # Rua, Avenida, Praça, etc.
+    numero = db.Column(db.String(20), nullable=True)
+    complemento = db.Column(db.String(100), nullable=True)       # Sala, Bloco, Apto
+    bairro = db.Column(db.String(100), nullable=True)
+    cidade = db.Column(db.String(100), nullable=True)
+    estado = db.Column(db.String(2), nullable=True)              # Sigla UF, ex: SP, MG
+    pais = db.Column(db.String(50), nullable=True, default='Brasil') # Se aplicável
 
-    # Relacionamentos: Um Estabelecimento pode ter vários Centros de Custo e vários Usuários
+    # Contato
+    telefone_principal = db.Column(db.String(20), nullable=True)
+    telefone_secundario = db.Column(db.String(20), nullable=True)
+    email_contato = db.Column(db.String(120), nullable=True)     # Email geral do estabelecimento
+
+    # Outras Informações
+    data_abertura = db.Column(db.Date, nullable=True)            # Data de fundação/início
+    observacoes = db.Column(db.Text, nullable=True)              # Campo para notas diversas
+
+    # Status Ativo/Inativo (como discutimos)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    
+    # Timestamps (opcional, mas útil)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # --- Relacionamentos (como já tínhamos) ---
     centros_custo = db.relationship('CentroDeCusto', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
     usuarios = db.relationship('User', back_populates='estabelecimento', lazy='dynamic')
 
     def __repr__(self):
-        return f"<Estabelecimento {self.codigo} - {self.nome}>"
+        return f"<Estabelecimento {self.codigo} - {self.nome_fantasia}>"
 
 class CentroDeCusto(db.Model):
     __tablename__ = 'centro_custo'
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), unique=True, nullable=False)
     nome = db.Column(db.String(200), nullable=False)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
     
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='centros_custo')
@@ -45,7 +78,8 @@ class Setor(db.Model):
     __tablename__ = 'setor'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), unique=True, nullable=False)
-    descricao = db.Column(db.Text, nullable=True) 
+    descricao = db.Column(db.Text, nullable=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
     
     centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=True) # Setor PODE pertencer a um CC
     centro_custo = db.relationship('CentroDeCusto', back_populates='setores')
@@ -62,6 +96,7 @@ class Cargo(db.Model):
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
     nivel_hierarquico = db.Column(db.Integer, nullable=True) # Para lógica de hierarquia (ex: 1=Alto, 10=Baixo)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     # Relacionamentos: Um Cargo pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='cargo', lazy='dynamic')

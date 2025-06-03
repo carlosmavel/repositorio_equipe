@@ -27,19 +27,43 @@ from models import ( # Importando os modelos necessários
     Estabelecimento # <<< NOSSO NOVO MODELO PARA A ROTA DE ADMIN
 )
 from utils import sanitize_html, extract_text
-# from mimetypes import guess_type # Se for usar, descomente
+from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
 # -------------------------------------------------------------------------
 # Configuração da Aplicação (Seu código existente)
 # -------------------------------------------------------------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'chave_de_desenvolvimento_muito_segura_trocar_em_prod') # Adicionei um lembrete
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URI',
-    'postgresql://appuser:AppUser2025%21@localhost:5432/repositorio_equipe_db'
-)
+# SECRET_KEY - Agora obrigatória via variável de ambiente
+SECRET_KEY_FROM_ENV = os.environ.get('SECRET_KEY')
+if not SECRET_KEY_FROM_ENV or SECRET_KEY_FROM_ENV == 'chave_de_desenvolvimento_muito_segura_trocar_em_prod':
+    # Você pode ser ainda mais estrito e só checar "if not SECRET_KEY_FROM_ENV:"
+    # se quiser que QUALQUER valor no fallback do código seja um erro.
+    raise ValueError("ERRO CRÍTICO: SECRET_KEY não está definida corretamente no ambiente ou está usando o valor padrão inseguro!")
+app.secret_key = SECRET_KEY_FROM_ENV
+print(f"INFO: SECRET_KEY carregada do ambiente: {app.secret_key[:5]}...{app.secret_key[-5:]}")
+
+# DATABASE_URI - Agora obrigatória via variável de ambiente
+DATABASE_URI_FROM_ENV = os.environ.get('DATABASE_URI')
+if not DATABASE_URI_FROM_ENV:
+    # Se você quer que o fallback NUNCA seja usado e sempre exija a variável de ambiente:
+    raise ValueError("ERRO CRÍTICO: DATABASE_URI não está definida nas variáveis de ambiente!")
+# Se você ainda quisesse manter o fallback como uma opção, mas ser avisado (como no passo 1):
+# elif DATABASE_URI_FROM_ENV == 'postgresql://appuser:AppUser2025%21@localhost:5432/repositorio_equipe_db':
+# print("AVISO: DATABASE_URI está usando o valor padrão do código. Considere definir no ambiente.")
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI_FROM_ENV
+
+# Para não expor a senha no print, vamos mostrar uma versão modificada
+uri_parts_test = app.config['SQLALCHEMY_DATABASE_URI'].split('@')
+if len(uri_parts_test) == 2:
+    creds_part_test = uri_parts_test[0].split(':')
+    user_part_test = creds_part_test[0].split('//')[-1]
+    printed_uri_test = f"postgresql://{user_part_test}:[SENHA_OCULTA]@{uri_parts_test[1]}"
+    print(f"INFO: DATABASE_URI carregada do ambiente: {printed_uri_test}")
+else:
+    print(f"INFO: DATABASE_URI carregada do ambiente: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -114,29 +138,119 @@ def admin_dashboard():
 @app.route('/admin/estabelecimentos', methods=['GET', 'POST'])
 @admin_required
 def admin_estabelecimentos():
-    # Lógica do CRUD de estabelecimentos virá aqui depois.
-    # Por enquanto, para testar o layout e os links:
+    """
+    Rota para listar, criar e editar estabelecimentos.
+    GET: Exibe a lista de estabelecimentos e um formulário.
+         Se 'edit_id' estiver nos args da URL, preenche o formulário para edição.
+    POST: Processa a criação ou atualização de um estabelecimento.
+    """
+    estabelecimento_para_editar = None
+    # Se for um GET e houver 'edit_id', carrega o estabelecimento para edição
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            estabelecimento_para_editar = Estabelecimento.query.get_or_404(edit_id)
+
     if request.method == 'POST':
-        # Exemplo de como seria para adicionar/editar (vamos detalhar depois)
-        codigo = request.form.get('codigo')
-        nome = request.form.get('nome')
         id_para_atualizar = request.form.get('id_para_atualizar')
-        if not codigo or not nome:
-            flash('Código e Nome são obrigatórios.', 'danger')
+        codigo = request.form.get('codigo', '').strip().upper()
+        nome_fantasia = request.form.get('nome_fantasia', '').strip()
+        ativo = request.form.get('ativo_check') == 'on' # Para o checkbox
+
+        # Adicione aqui a captura dos outros campos de Estabelecimento do request.form
+        razao_social = request.form.get('razao_social', '').strip()
+        cnpj = request.form.get('cnpj', '').strip()
+        # ... e assim por diante para todos os campos que você adicionou ao formulário ...
+
+        if not codigo or not nome_fantasia:
+            flash('Código e Nome Fantasia do estabelecimento são obrigatórios.', 'danger')
         else:
-            # Lógica de salvar/atualizar...
-            flash(f'Estabelecimento {nome} processado (implementar save!).', 'success')
-        return redirect(url_for('admin_estabelecimentos'))
-    
-    estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome).all()
-    est_editar_id = request.args.get('edit_id', type=int)
-    est_editar = None
-    if est_editar_id:
-        est_editar = Estabelecimento.query.get(est_editar_id)
-        
+            # Verifica unicidade do código do estabelecimento
+            query_codigo_existente = Estabelecimento.query.filter_by(codigo=codigo)
+            if id_para_atualizar:
+                query_codigo_existente = query_codigo_existente.filter(Estabelecimento.id != int(id_para_atualizar))
+            codigo_ja_existe = query_codigo_existente.first()
+
+            # Verifica unicidade do CNPJ (se preenchido)
+            cnpj_ja_existe = None
+            if cnpj:
+                query_cnpj_existente = Estabelecimento.query.filter_by(cnpj=cnpj)
+                if id_para_atualizar:
+                    query_cnpj_existente = query_cnpj_existente.filter(Estabelecimento.id != int(id_para_atualizar))
+                cnpj_ja_existe = query_cnpj_existente.first()
+
+            if codigo_ja_existe:
+                flash(f'O código de estabelecimento "{codigo}" já está em uso.', 'danger')
+            elif cnpj_ja_existe:
+                flash(f'O CNPJ "{cnpj}" já está em uso por outro estabelecimento.', 'danger')
+            else:
+                if id_para_atualizar: # Atualizar
+                    est = Estabelecimento.query.get_or_404(id_para_atualizar)
+                    est.codigo = codigo
+                    est.nome_fantasia = nome_fantasia
+                    est.razao_social = razao_social
+                    est.cnpj = cnpj if cnpj else None # Salva None se vazio
+                    # ... atribuir os outros campos ...
+                    est.ativo = ativo
+                    action_msg = 'atualizado'
+                else: # Criar novo
+                    est = Estabelecimento(
+                        codigo=codigo, 
+                        nome_fantasia=nome_fantasia,
+                        razao_social=razao_social,
+                        cnpj=cnpj if cnpj else None,
+                        # ... outros campos ...
+                        ativo=ativo
+                    )
+                    db.session.add(est)
+                    action_msg = 'criado'
+
+                try:
+                    db.session.commit()
+                    flash(f'Estabelecimento {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_estabelecimentos'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar estabelecimento: {str(e)}', 'danger')
+                    app.logger.error(f"Erro DB Estabelecimento: {e}")
+
+        # Se houve erro no POST e não redirecionou, preenche para re-exibir o form
+        if id_para_atualizar :
+             estabelecimento_para_editar = Estabelecimento.query.get(id_para_atualizar) # Mantém o modo edição
+        else: # Se era uma tentativa de criação que falhou, recria um objeto temporário com os dados do form
+              # para repopular, ou confia no request.form no template.
+              # Por simplicidade, o template usará request.form para repopular em caso de erro na criação.
+              pass
+
+
+    # Para requisições GET ou se um POST falhou e precisa re-renderizar
+    todos_estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
     return render_template('admin/estabelecimentos.html', 
-                           estabelecimentos=estabelecimentos, 
-                           est_editar=est_editar)
+                           estabelecimentos=todos_estabelecimentos,
+                           est_editar=estabelecimento_para_editar)
+
+@app.route('/admin/estabelecimentos/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_estabelecimento(id):
+    """
+    Alterna o status 'ativo' (True/False) de um estabelecimento.
+    """
+    est = Estabelecimento.query.get_or_404(id)
+
+    # Lógica de verificação de dependências antes de INATIVAR
+    if est.ativo and (est.centros_custo.count() > 0 or est.usuarios.count() > 0):
+        flash(f'Atenção: "{est.nome_fantasia}" possui Centros de Custo ou Usuários associados. Inativá-lo pode ter implicações.', 'warning')
+
+    est.ativo = not est.ativo # Inverte o status atual
+    try:
+        db.session.commit()
+        status_texto = "ativado" if est.ativo else "desativado"
+        flash(f'Estabelecimento "{est.nome_fantasia}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do estabelecimento: {str(e)}', 'danger')
+        app.logger.error(f"Erro ao alterar status do est. {est.id}: {e}")
+    return redirect(url_for('admin_estabelecimentos'))
 
 # -------------------------------------------------------------------------
 # ROTAS PRINCIPAIS
@@ -229,13 +343,7 @@ def novo_artigo():
 
     # Só colaboradores, editores e admins podem criar
     if request.method == 'POST' and session['role'] in ['colaborador', 'editor', 'admin']:
-        import os, uuid, json, time
-        from datetime import datetime, timezone
-        from werkzeug.utils import secure_filename
-        from mimetypes import guess_type
-        from utils import sanitize_html, extract_text
-        from models import User, Article, Attachment, Notification
-
+      
         # 1) Coleta dados do formulário
         titulo      = request.form['titulo'].strip()
         texto_raw   = request.form['texto']
@@ -407,6 +515,11 @@ def editar_artigo(artigo_id):
         for fname in request.form.getlist("delete_files"):
             if fname in existing:
                 existing.remove(fname)
+
+                # Encontrar e deletar o Attachment correspondente no banco
+                attachment_to_delete = Attachment.query.filter_by(article_id=artigo.id, filename=fname).first()
+                if attachment_to_delete:
+                    db.session.delete(attachment_to_delete)  # Deleta o objeto Attachment da sessão
                 try:
                     os.remove(os.path.join(app.config["UPLOAD_FOLDER"], fname))
                 except FileNotFoundError:
@@ -418,11 +531,6 @@ def editar_artigo(artigo_id):
                 dest = os.path.join(app.config["UPLOAD_FOLDER"], f.filename)
                 f.save(dest)
                 existing.append(f.filename)
-
-                # === Aqui mesmo, dentro do loop, extraímos e criamos o Attachment ===
-                from mimetypes import guess_type
-                from utils import extract_text
-                from models import Attachment
 
                 # 1) extrai texto
                 texto_extraido = extract_text(dest)
