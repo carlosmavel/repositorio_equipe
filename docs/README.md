@@ -62,7 +62,7 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
     ```
 
 4.  **Configure o Banco de Dados PostgreSQL e Variáveis de Ambiente:**
-    * Siga as instruções detalhadas no nosso **[Guia de Instalação e Configuração](docs/GUIA_DE_INSTALACAO.md)** para criar o banco de dados, o usuário do banco com as permissões corretas, e para configurar as variáveis de ambiente essenciais (`FLASK_APP`, `FLASK_DEBUG`, `SECRET_KEY`, `DATABASE_URI`).
+    * Siga as instruções detalhadas no nosso **[Guia de Instalação e Configuração](/GUIA_DE_INSTALACAO.md)** para criar o banco de dados, o usuário do banco com as permissões corretas, e para configurar as variáveis de ambiente essenciais (`FLASK_APP`, `FLASK_DEBUG`, `SECRET_KEY`, `DATABASE_URI`).
 
 5.  **Aplique as migrações do banco de dados:**
     ```bash
@@ -81,8 +81,8 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
     Acesse em seu navegador: `http://127.0.0.1:5000`
 
 Para instruções de instalação e configuração **completas e detalhadas**, por favor, consulte nosso:
-* **[Guia de Instalação Completo](docs/GUIA_DE_INSTALACAO.md)**
-* **[Documentação Geral do Sistema](docs/DOCUMENTACAO_DO_SISTEMA.md)**
+* **[Guia de Instalação Completo](/GUIA_DE_INSTALACAO.md)**
+* **[Documentação Geral do Sistema](/DOCUMENTACAO_DO_SISTEMA.md)**
 
 ## Estrutura do Projeto (Simplificada)
 
