@@ -71,7 +71,7 @@ migrate = Migrate(app, db)
 
 # Pastas de upload (Seu código existente)
 UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads') # Melhor usar app.root_path para caminhos
-PROFILE_PICS_FOLDER = os.path.join(app.root_path, 'Static', 'profile_pics')
+PROFILE_PICS_FOLDER = os.path.join(app.root_path, 'static', 'profile_pics')
 for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
     os.makedirs(folder, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
