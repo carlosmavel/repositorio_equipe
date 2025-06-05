@@ -528,9 +528,11 @@ def editar_artigo(artigo_id):
         # novos uploads
         for f in request.files.getlist("files"):
             if f and f.filename:
-                dest = os.path.join(app.config["UPLOAD_FOLDER"], f.filename)
+                original = secure_filename(f.filename)
+                unique_name = f"{uuid.uuid4().hex}_{original}"
+                dest = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
                 f.save(dest)
-                existing.append(f.filename)
+                existing.append(unique_name)
 
                 # 1) extrai texto
                 texto_extraido = extract_text(dest)
@@ -539,7 +541,7 @@ def editar_artigo(artigo_id):
                 # 3) adiciona o attachment ao session
                 attachment = Attachment(
                     article=artigo,
-                    filename=f.filename,
+                    filename=unique_name,
                     mime_type=mime_type or "application/octet-stream",
                     content=texto_extraido
                 )
