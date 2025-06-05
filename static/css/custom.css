@@ -104,3 +104,10 @@ body > .container {
 .login-logo {
   max-width: 120px;
 }
+
+/* Formulários mais compactos */
+.compact-form .form-control-sm {
+  padding-top: .25rem;
+  padding-bottom: .25rem;
+  font-size: .875rem;
+}
