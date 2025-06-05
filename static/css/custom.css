@@ -99,3 +99,8 @@ body > .container {
 .tooltip .tooltip-inner {
   text-align: center;
 }
+
+/* Logo da página de login */
+.login-logo {
+  max-width: 120px;
+}
