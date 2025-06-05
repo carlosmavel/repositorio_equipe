@@ -374,7 +374,10 @@ def novo_artigo():
         filenames = []
         for f in files:
             if f and f.filename:
-                original   = secure_filename(f.filename)
+                original = secure_filename(f.filename)
+                if len(original) > 40:
+                    name, ext = os.path.splitext(original)
+                    original = name[:40 - len(ext)] + ext
                 unique_name = f"{uuid.uuid4().hex}_{original}"
                 dest       = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
                 f.save(dest)
@@ -475,9 +478,13 @@ def artigo(artigo_id):
         files = request.files.getlist('files')
         for f in files:
             if f and f.filename:
-                dest = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
+                original = secure_filename(f.filename)
+                if len(original) > 40:
+                    name, ext = os.path.splitext(original)
+                    original = name[:40 - len(ext)] + ext
+                dest = os.path.join(app.config['UPLOAD_FOLDER'], original)
                 f.save(dest)
-                existing.append(f.filename)
+                existing.append(original)
 
         artigo.arquivos = json.dumps(existing) if existing else None
 
@@ -529,6 +536,9 @@ def editar_artigo(artigo_id):
         for f in request.files.getlist("files"):
             if f and f.filename:
                 original = secure_filename(f.filename)
+                if len(original) > 40:
+                    name, ext = os.path.splitext(original)
+                    original = name[:40 - len(ext)] + ext
                 unique_name = f"{uuid.uuid4().hex}_{original}"
                 dest = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
                 f.save(dest)
