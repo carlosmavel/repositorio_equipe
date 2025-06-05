@@ -206,7 +206,7 @@ Lembre-se que o `seed_users.py` deve estar atualizado para incluir o campo `emai
 ## 12. Rodar a Aplicação Flask
 Finalmente! Para rodar o servidor de desenvolvimento do Flask:
 ```bash
-python flask run
+flask run (ou `python -m flask run`)
 ```
 O terminal deverá exibir mensagens indicando que o servidor está rodando, geralmente em `http://127.0.0.1:5000/`.
 
