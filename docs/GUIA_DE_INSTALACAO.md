@@ -196,6 +196,8 @@ flask db upgrade
 ```
 Este comando executará todos os scripts de migração na pasta migrations/versions/ e criará todas as tabelas e estruturas necessárias no seu banco de dados repositorio_equipe_db (ou o nome que você configurou na sua DATABASE_URI).
 
+> **Observação:** se você adicionar uma nova coluna marcada como `nullable=True` em modelos existentes (como o `User`), remova previamente os registros ou deixe o campo temporariamente como `nullable=False` para rodar o `flask db upgrade`. Após a migração, altere o campo no banco para aceitar valores nulos, se desejar.
+
 ## 11. (Opcional, mas Recomendado) Popular Dados Iniciais
 Se você possui um script para criar usuários de exemplo ou outros dados iniciais (como o `seed_users.py` que ajustamos):
 ```bash
