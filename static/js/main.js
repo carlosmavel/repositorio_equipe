@@ -127,4 +127,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
   // --- FIM DA NOVA FUNÇÃO GLOBAL ---
+
+  // Torna linhas de tabela com a classe .clickable-row navegáveis
+  document.querySelectorAll('.clickable-row').forEach((row) => {
+    row.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'A' && !e.target.closest('a') &&
+          e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+        const href = row.dataset.href;
+        if (href) {
+          window.location.href = href;
+        }
+      }
+    });
+  });
 });

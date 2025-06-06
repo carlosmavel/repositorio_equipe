@@ -91,6 +91,14 @@ body > .container {
   padding-bottom: 2rem;
 }
 
+/* Linha clicável em tabelas */
+.clickable-row {
+  cursor: pointer;
+}
+.clickable-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
 /* ou, se quiser empurrar só o card do artigo */
 .card.shadow-sm {
   margin-bottom: 2rem;
