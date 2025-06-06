@@ -305,6 +305,96 @@ def admin_toggle_ativo_estabelecimento(id):
         app.logger.error(f"Erro ao alterar status do est. {est.id}: {e}")
     return redirect(url_for('admin_estabelecimentos'))
 
+@app.route('/admin/usuarios', methods=['GET', 'POST'])
+@admin_required
+def admin_usuarios():
+    """Lista, cria e edita usuários."""
+    usuario_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            usuario_para_editar = User.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        role = request.form.get('role', 'colaborador').strip() or 'colaborador'
+        ativo = request.form.get('ativo_check') == 'on'
+        password = request.form.get('password')
+
+        if not username or not email:
+            flash('Usuário e Email são obrigatórios.', 'danger')
+        else:
+            query_username = User.query.filter_by(username=username)
+            query_email = User.query.filter_by(email=email)
+            if id_para_atualizar:
+                query_username = query_username.filter(User.id != int(id_para_atualizar))
+                query_email = query_email.filter(User.id != int(id_para_atualizar))
+
+            if query_username.first():
+                flash(f'O nome de usuário "{username}" já está em uso.', 'danger')
+            elif query_email.first():
+                flash(f'O email "{email}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    usr = User.query.get_or_404(id_para_atualizar)
+                    usr.username = username
+                    usr.email = email
+                    usr.role = role
+                    usr.ativo = ativo
+                    if password:
+                        usr.set_password(password)
+                    action_msg = 'atualizado'
+                else:
+                    if not password:
+                        flash('Senha é obrigatória para novo usuário.', 'danger')
+                        usuario_para_editar = None
+                    else:
+                        usr = User(
+                            username=username,
+                            email=email,
+                            role=role,
+                            ativo=ativo
+                        )
+                        usr.set_password(password)
+                        db.session.add(usr)
+                        action_msg = 'criado'
+
+                try:
+                    db.session.commit()
+                    flash(f'Usuário {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_usuarios'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar usuário: {str(e)}', 'danger')
+                    app.logger.error(f"Erro DB User: {e}")
+
+        if id_para_atualizar:
+            usuario_para_editar = User.query.get(id_para_atualizar)
+
+    usuarios = User.query.order_by(User.username).all()
+    return render_template('admin/usuarios.html', usuarios=usuarios, user_editar=usuario_para_editar)
+
+@app.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_usuario(id):
+    """Ativa ou inativa um usuário."""
+    usr = User.query.get_or_404(id)
+    if usr.id == session.get('user_id'):
+        flash('Você não pode alterar seu próprio status.', 'danger')
+        return redirect(url_for('admin_usuarios'))
+    usr.ativo = not usr.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if usr.ativo else 'desativado'
+        flash(f'Usuário "{usr.username}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do usuário: {str(e)}', 'danger')
+        app.logger.error(f"Erro status user {usr.id}: {e}")
+    return redirect(url_for('admin_usuarios'))
+
 # -------------------------------------------------------------------------
 # ROTAS PRINCIPAIS
 # -------------------------------------------------------------------------
