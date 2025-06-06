@@ -124,6 +124,18 @@
                                maxlength="50" placeholder="Matriz, Filial, Loja...">
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-6 mb-1">
+                        <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                        <input type="text" class="form-control form-control-sm" id="inscricao_estadual" name="inscricao_estadual"
+                               value="{{ request.form.get('inscricao_estadual', '') }}" maxlength="20">
+                    </div>
+                    <div class="col-md-6 mb-1">
+                        <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                        <input type="text" class="form-control form-control-sm" id="inscricao_municipal" name="inscricao_municipal"
+                               value="{{ request.form.get('inscricao_municipal', '') }}" maxlength="20">
+                    </div>
+                </div>
 
                 {# Endereço - pode ser um sub-bloco ou accordion no futuro se ficar muito grande #}
                 <h6 class="mt-3">Endereço</h6>
@@ -158,19 +170,27 @@
                         <label for="estado" class="form-label">UF</label>
                         <input type="text" class="form-control form-control-sm" id="estado" name="estado" value="{{ request.form.get('estado', '') }}" maxlength="2">
                     </div>
+                    <div class="col-md-2 mb-1">
+                        <label for="pais" class="form-label">País</label>
+                        <input type="text" class="form-control form-control-sm" id="pais" name="pais" value="{{ request.form.get('pais', '') }}" maxlength="50">
+                    </div>
                 </div>
 
                 <h6 class="mt-3">Contato</h6>
                  <div class="row">
-                    <div class="col-md-4 mb-1">
+                    <div class="col-md-3 mb-1">
                         <label for="telefone_principal" class="form-label">Telefone Principal</label>
                         <input type="text" class="form-control form-control-sm" id="telefone_principal" name="telefone_principal" value="{{ request.form.get('telefone_principal', '') }}" maxlength="20">
                     </div>
-                    <div class="col-md-4 mb-1">
+                    <div class="col-md-3 mb-1">
+                        <label for="telefone_secundario" class="form-label">Telefone Secundário</label>
+                        <input type="text" class="form-control form-control-sm" id="telefone_secundario" name="telefone_secundario" value="{{ request.form.get('telefone_secundario', '') }}" maxlength="20">
+                    </div>
+                    <div class="col-md-3 mb-1">
                         <label for="email_contato" class="form-label">E-mail de Contato</label>
                         <input type="email" class="form-control form-control-sm" id="email_contato" name="email_contato" value="{{ request.form.get('email_contato', '') }}" maxlength="120">
                     </div>
-                     <div class="col-md-4 mb-1">
+                     <div class="col-md-3 mb-1">
                         <label for="data_abertura" class="form-label">Data de Abertura</label>
                         <input type="date" class="form-control form-control-sm" id="data_abertura" name="data_abertura" value="{{ request.form.get('data_abertura', '') }}">
                     </div>
@@ -246,6 +266,18 @@
                                    value="{{ request.form.get('tipo_estabelecimento', est_editar.tipo_estabelecimento or '') }}" maxlength="50" placeholder="Matriz, Filial, Loja...">
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-1">
+                            <label for="edit_inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_inscricao_estadual" name="inscricao_estadual"
+                                   value="{{ request.form.get('inscricao_estadual', est_editar.inscricao_estadual or '') }}" maxlength="20">
+                        </div>
+                        <div class="col-md-6 mb-1">
+                            <label for="edit_inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_inscricao_municipal" name="inscricao_municipal"
+                                   value="{{ request.form.get('inscricao_municipal', est_editar.inscricao_municipal or '') }}" maxlength="20">
+                        </div>
+                    </div>
 
                     <h6 class="mt-3">Endereço</h6>
                     <div class="row">
@@ -275,23 +307,31 @@
                             <label for="edit_cidade" class="form-label">Cidade</label>
                             <input type="text" class="form-control form-control-sm" id="edit_cidade" name="cidade" value="{{ request.form.get('cidade', est_editar.cidade or '') }}" maxlength="100">
                         </div>
-                        <div class="col-md-1 mb-1">
+                        <div class="col-md-2 mb-1">
                             <label for="edit_estado" class="form-label">UF</label>
                             <input type="text" class="form-control form-control-sm" id="edit_estado" name="estado" value="{{ request.form.get('estado', est_editar.estado or '') }}" maxlength="2">
+                        </div>
+                        <div class="col-md-2 mb-1">
+                            <label for="edit_pais" class="form-label">País</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_pais" name="pais" value="{{ request.form.get('pais', est_editar.pais or '') }}" maxlength="50">
                         </div>
                     </div>
 
                     <h6 class="mt-3">Contato</h6>
                     <div class="row">
-                        <div class="col-md-4 mb-1">
+                        <div class="col-md-3 mb-1">
                             <label for="edit_telefone_principal" class="form-label">Telefone Principal</label>
                             <input type="text" class="form-control form-control-sm" id="edit_telefone_principal" name="telefone_principal" value="{{ request.form.get('telefone_principal', est_editar.telefone_principal or '') }}" maxlength="20">
                         </div>
-                        <div class="col-md-4 mb-1">
+                        <div class="col-md-3 mb-1">
+                            <label for="edit_telefone_secundario" class="form-label">Telefone Secundário</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_telefone_secundario" name="telefone_secundario" value="{{ request.form.get('telefone_secundario', est_editar.telefone_secundario or '') }}" maxlength="20">
+                        </div>
+                        <div class="col-md-3 mb-1">
                             <label for="edit_email_contato" class="form-label">E-mail de Contato</label>
                             <input type="email" class="form-control form-control-sm" id="edit_email_contato" name="email_contato" value="{{ request.form.get('email_contato', est_editar.email_contato or '') }}" maxlength="120">
                         </div>
-                        <div class="col-md-4 mb-1">
+                        <div class="col-md-3 mb-1">
                             <label for="edit_data_abertura" class="form-label">Data de Abertura</label>
                             <input type="date" class="form-control form-control-sm" id="edit_data_abertura" name="data_abertura" value="{{ request.form.get('data_abertura', est_editar.data_abertura.strftime('%Y-%m-%d') if est_editar.data_abertura else '') }}">
                         </div>

@@ -157,10 +157,33 @@ def admin_estabelecimentos():
         nome_fantasia = request.form.get('nome_fantasia', '').strip()
         ativo = request.form.get('ativo_check') == 'on' # Para o checkbox
 
-        # Adicione aqui a captura dos outros campos de Estabelecimento do request.form
+        # Captura dos demais campos do formulário de Estabelecimento
         razao_social = request.form.get('razao_social', '').strip()
         cnpj = request.form.get('cnpj', '').strip()
-        # ... e assim por diante para todos os campos que você adicionou ao formulário ...
+        inscricao_estadual = request.form.get('inscricao_estadual', '').strip()
+        inscricao_municipal = request.form.get('inscricao_municipal', '').strip()
+        tipo_estabelecimento = request.form.get('tipo_estabelecimento', '').strip()
+        cep = request.form.get('cep', '').strip()
+        logradouro = request.form.get('logradouro', '').strip()
+        numero = request.form.get('numero', '').strip()
+        complemento = request.form.get('complemento', '').strip()
+        bairro = request.form.get('bairro', '').strip()
+        cidade = request.form.get('cidade', '').strip()
+        estado = request.form.get('estado', '').strip()
+        pais = request.form.get('pais', '').strip()
+        telefone_principal = request.form.get('telefone_principal', '').strip()
+        telefone_secundario = request.form.get('telefone_secundario', '').strip()
+        email_contato = request.form.get('email_contato', '').strip()
+        data_abertura_str = request.form.get('data_abertura', '').strip()
+        observacoes = request.form.get('observacoes', '').strip()
+
+        # Converte data de abertura para objeto date, se fornecida
+        data_abertura = None
+        if data_abertura_str:
+            try:
+                data_abertura = datetime.strptime(data_abertura_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Data de abertura inválida.', 'danger')
 
         if not codigo or not nome_fantasia:
             flash('Código e Nome Fantasia do estabelecimento são obrigatórios.', 'danger')
@@ -189,17 +212,47 @@ def admin_estabelecimentos():
                     est.codigo = codigo
                     est.nome_fantasia = nome_fantasia
                     est.razao_social = razao_social
-                    est.cnpj = cnpj if cnpj else None # Salva None se vazio
-                    # ... atribuir os outros campos ...
+                    est.cnpj = cnpj if cnpj else None  # Salva None se vazio
+                    est.inscricao_estadual = inscricao_estadual
+                    est.inscricao_municipal = inscricao_municipal
+                    est.tipo_estabelecimento = tipo_estabelecimento
+                    est.cep = cep
+                    est.logradouro = logradouro
+                    est.numero = numero
+                    est.complemento = complemento
+                    est.bairro = bairro
+                    est.cidade = cidade
+                    est.estado = estado
+                    est.pais = pais or None
+                    est.telefone_principal = telefone_principal
+                    est.telefone_secundario = telefone_secundario
+                    est.email_contato = email_contato
+                    est.data_abertura = data_abertura
+                    est.observacoes = observacoes
                     est.ativo = ativo
                     action_msg = 'atualizado'
                 else: # Criar novo
                     est = Estabelecimento(
-                        codigo=codigo, 
+                        codigo=codigo,
                         nome_fantasia=nome_fantasia,
                         razao_social=razao_social,
                         cnpj=cnpj if cnpj else None,
-                        # ... outros campos ...
+                        inscricao_estadual=inscricao_estadual,
+                        inscricao_municipal=inscricao_municipal,
+                        tipo_estabelecimento=tipo_estabelecimento,
+                        cep=cep,
+                        logradouro=logradouro,
+                        numero=numero,
+                        complemento=complemento,
+                        bairro=bairro,
+                        cidade=cidade,
+                        estado=estado,
+                        pais=pais or None,
+                        telefone_principal=telefone_principal,
+                        telefone_secundario=telefone_secundario,
+                        email_contato=email_contato,
+                        data_abertura=data_abertura,
+                        observacoes=observacoes,
                         ativo=ativo
                     )
                     db.session.add(est)
