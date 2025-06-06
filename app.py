@@ -22,6 +22,7 @@ from functools import wraps # Essencial para decoradores, você já tinha
 
 from database import db
 from enums import ArticleStatus
+
 from models import (
     User,
     Article,
@@ -483,7 +484,6 @@ def admin_toggle_ativo_setor(id):
         app.logger.error(f"Erro ao alterar status do setor {setor.id}: {e}")
     return redirect(url_for('admin_setores'))
 
-
 @app.route('/admin/cargos', methods=['GET', 'POST'])
 @admin_required
 def admin_cargos():
@@ -565,6 +565,7 @@ def admin_toggle_ativo_cargo(id):
         flash(f'Erro ao alterar status do cargo: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do cargo {cargo.id}: {e}")
     return redirect(url_for('admin_cargos'))
+
 
 # -------------------------------------------------------------------------
 # ROTAS PRINCIPAIS
