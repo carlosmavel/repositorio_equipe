@@ -40,6 +40,9 @@ from utils import (
     extract_text,
     DEFAULT_NEW_USER_PASSWORD,
     generate_random_password,
+    generate_token,
+    confirm_token,
+    send_email,
 )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -90,6 +93,26 @@ for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
     os.makedirs(folder, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROFILE_PICS_FOLDER'] = PROFILE_PICS_FOLDER
+
+def password_meets_requirements(password: str) -> bool:
+    return (
+        len(password) >= 8
+        and re.search(r"[A-Z]", password)
+        and re.search(r"[a-z]", password)
+        and re.search(r"[0-9]", password)
+        and re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
+    )
+
+def send_password_email(user: User, action: str) -> None:
+    token = generate_token(user.id, action)
+    if action == 'reset':
+        url = url_for('reset_password_token', token=token, _external=True)
+        action_text = 'redefinir'
+    else:
+        url = url_for('set_password_token', token=token, _external=True)
+        action_text = 'criar'
+    html = render_template('email/password_email.html', user=user, url=url, action=action_text)
+    send_email(user.email, 'Definição de Senha', html)
 
 # -------------------------------------------------------------------------
 # DECORADORES
@@ -426,6 +449,8 @@ def admin_usuarios():
 
                 try:
                     db.session.commit()
+                    if not id_para_atualizar:
+                        send_password_email(usr, 'create')
                     flash(f'Usuário {action_msg} com sucesso!', 'success')
                     return redirect(url_for('admin_usuarios'))
                 except Exception as e:
@@ -787,6 +812,65 @@ def login():
     
     # Para requisições GET (primeiro acesso à página de login)
     return render_template("login.html", users_json=users_data_for_preview)
+
+
+@app.route('/esqueci-senha', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        if email:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                send_password_email(user, 'reset')
+        flash('Se o e-mail estiver cadastrado, você receberá instruções para redefinir a senha.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html')
+
+
+@app.route('/reset-senha/<token>', methods=['GET', 'POST'])
+def reset_password_token(token):
+    data = confirm_token(token)
+    if not data or data.get('action') != 'reset':
+        flash('Link inválido ou expirado.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(data.get('user_id'))
+    if not user:
+        flash('Usuário inválido.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        nova = request.form.get('nova_senha')
+        confirmar = request.form.get('confirmar_nova_senha')
+        if not nova or nova != confirmar or not password_meets_requirements(nova):
+            flash('Verifique a nova senha e confirme corretamente.', 'danger')
+        else:
+            user.set_password(nova)
+            db.session.commit()
+            flash('Senha redefinida com sucesso. Faça login.', 'success')
+            return redirect(url_for('login'))
+    return render_template('password_update.html', title='Redefinir Senha')
+
+
+@app.route('/criar-senha/<token>', methods=['GET', 'POST'])
+def set_password_token(token):
+    data = confirm_token(token)
+    if not data or data.get('action') != 'create':
+        flash('Link inválido ou expirado.', 'danger')
+        return redirect(url_for('login'))
+    user = User.query.get(data.get('user_id'))
+    if not user:
+        flash('Usuário inválido.', 'danger')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        nova = request.form.get('nova_senha')
+        confirmar = request.form.get('confirmar_nova_senha')
+        if not nova or nova != confirmar or not password_meets_requirements(nova):
+            flash('Verifique a nova senha e confirme corretamente.', 'danger')
+        else:
+            user.set_password(nova)
+            db.session.commit()
+            flash('Senha definida com sucesso. Você já pode fazer login.', 'success')
+            return redirect(url_for('login'))
+    return render_template('password_update.html', title='Criar Senha')
 
 @app.route('/inicio')
 def pagina_inicial():
