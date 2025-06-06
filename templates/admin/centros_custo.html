@@ -55,8 +55,11 @@
                                                     <a href="{{ url_for('admin_centros_custo', edit_id=cc.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                                         <i class="bi bi-pencil-fill"></i>
                                                     </a>
-                                                    {% set confirm_text = 'DESATIVAR' if cc.ativo else 'ATIVAR' %}
-                                                    <form action="{{ url_for('admin_toggle_ativo_centro_custo', id=cc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_text }} o centro de custo ' + {{ cc.nome | tojson }} + '?');">
+
+                                                    {% set confirm_message_text = 'DESATIVAR' if cc.ativo else 'ATIVAR' %}
+                                                    {% set centro_nome_js = cc.nome | tojson %}
+                                                    <form action="{{ url_for('admin_toggle_ativo_centro_custo', id=cc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o centro de custo ' + {{ centro_nome_js }} + '?');">
+
                                                         {% if cc.ativo %}
                                                             <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
                                                                 <i class="bi bi-archive-fill"></i> Desativar
@@ -74,7 +77,7 @@
                                     </table>
                                 </div>
                             {% else %}
-                                <p class="text-muted">Nenhum Centro de Custo cadastrado ainda. Adicione um acima!</p>
+                                <p class="text-muted">Nenhum centro de custo cadastrado ainda. Adicione um acima!</p>
                             {% endif %}
                         </div>
                     </div>
@@ -122,12 +125,14 @@
         </div>
     </div>
 
-    {% if cc_editar %}
-<div class="modal fade" id="modalEditarCC" tabindex="-1" aria-labelledby="modalEditarCCLabel" aria-hidden="true">
+
+
+{% if cc_editar %}
+<div class="modal fade" id="modalEditarCentroCusto" tabindex="-1" aria-labelledby="modalEditarCentroCustoLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalEditarCCLabel">Editar Centro de Custo</h5>
+                <h5 class="modal-title" id="modalEditarCentroCustoLabel">Editar Centro de Custo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
@@ -140,12 +145,14 @@
                     <div class="mb-1">
                         <label for="edit_nome" class="form-label">Nome <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', cc_editar.nome) }}" required maxlength="200">
+
                     </div>
                     <div class="mb-1">
                         <label for="edit_estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
                         <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
+                            <option value="">Selecione</option>
                             {% for est in estabelecimentos %}
-                                <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id', cc_editar.estabelecimento_id|string) == est.id|string) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
+                            <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == str(est.id)) or (not request.form.get('estabelecimento_id') and cc_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -176,7 +183,7 @@
 {% if cc_editar %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var modal = new bootstrap.Modal(document.getElementById('modalEditarCC'));
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarCentroCusto'));
     modal.show();
 });
 </script>

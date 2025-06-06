@@ -22,7 +22,7 @@ from functools import wraps # Essencial para decoradores, você já tinha
 
 from database import db
 from enums import ArticleStatus
-from models import ( # Importando os modelos necessários
+from models import (  # Importando os modelos necessários
     User, Article, RevisionRequest, Notification, Comment, Attachment,
     Estabelecimento, CentroDeCusto, Setor
 )
