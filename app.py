@@ -24,7 +24,7 @@ from database import db
 from enums import ArticleStatus
 from models import ( # Importando os modelos necessários
     User, Article, RevisionRequest, Notification, Comment, Attachment,
-    Estabelecimento # <<< NOSSO NOVO MODELO PARA A ROTA DE ADMIN
+    Estabelecimento, CentroDeCusto, Setor
 )
 from utils import sanitize_html, extract_text
 from mimetypes import guess_type # Se for usar, descomente
@@ -304,6 +304,88 @@ def admin_toggle_ativo_estabelecimento(id):
         flash(f'Erro ao alterar status do estabelecimento: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do est. {est.id}: {e}")
     return redirect(url_for('admin_estabelecimentos'))
+
+@app.route('/admin/setores', methods=['GET', 'POST'])
+@admin_required
+def admin_setores():
+    """CRUD de Setores."""
+    setor_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            setor_para_editar = Setor.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        centro_custo_id = request.form.get('centro_custo_id') or None
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome do setor é obrigatório.', 'danger')
+        else:
+            query_nome_existente = Setor.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome_existente = query_nome_existente.filter(Setor.id != int(id_para_atualizar))
+            nome_ja_existe = query_nome_existente.first()
+            if nome_ja_existe:
+                flash(f'O nome de setor "{nome}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    setor = Setor.query.get_or_404(id_para_atualizar)
+                    setor.nome = nome
+                    setor.descricao = descricao
+                    setor.centro_custo_id = int(centro_custo_id) if centro_custo_id else None
+                    setor.ativo = ativo
+                    action_msg = 'atualizado'
+                else:
+                    setor = Setor(
+                        nome=nome,
+                        descricao=descricao,
+                        centro_custo_id=int(centro_custo_id) if centro_custo_id else None,
+                        ativo=ativo
+                    )
+                    db.session.add(setor)
+                    action_msg = 'criado'
+                try:
+                    db.session.commit()
+                    flash(f'Setor {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_setores'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar setor: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            setor_para_editar = Setor.query.get(id_para_atualizar)
+
+    todos_setores = Setor.query.order_by(Setor.nome).all()
+    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    return render_template('admin/setores.html',
+                           setores=todos_setores,
+                           centros_custo=centros_custo,
+                           setor_editar=setor_para_editar)
+
+@app.route('/admin/setores/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_setor(id):
+    """Alterna o status ativo de um setor."""
+    setor = Setor.query.get_or_404(id)
+    if setor.ativo and setor.usuarios.count() > 0:
+        flash(
+            f'Atenção: "{setor.nome}" possui usuários associados. Inativá-lo pode ter implicações.',
+            'warning'
+        )
+    setor.ativo = not setor.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if setor.ativo else 'desativado'
+        flash(f'Setor "{setor.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do setor: {str(e)}', 'danger')
+        app.logger.error(f"Erro ao alterar status do setor {setor.id}: {e}")
+    return redirect(url_for('admin_setores'))
 
 # -------------------------------------------------------------------------
 # ROTAS PRINCIPAIS
