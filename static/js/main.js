@@ -140,4 +140,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+
+  document.querySelectorAll('.copy-link-icon').forEach((icon) => {
+    icon.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = icon.dataset.url;
+      if (url && navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+      }
+    });
+  });
 });
