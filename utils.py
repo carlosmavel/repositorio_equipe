@@ -115,3 +115,13 @@ def extract_text(path: str) -> str:
 
     # outros formatos não suportados
     return ''
+
+import secrets
+import string
+
+DEFAULT_NEW_USER_PASSWORD = 'Mudanca123!'
+
+def generate_random_password(length=12):
+    """Gera uma senha aleatória com letras, números e caracteres especiais."""
+    alphabet = string.ascii_letters + string.digits + '!@#$%^&*()-_'
+    return ''.join(secrets.choice(alphabet) for _ in range(length))

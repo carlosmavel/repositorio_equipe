@@ -6,6 +6,7 @@ os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import User
+from utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
 def client():
@@ -28,7 +29,6 @@ def test_create_user(client):
     response = client.post('/admin/usuarios', data={
         'username': 'newuser',
         'email': 'new@example.com',
-        'password': 'Senha123!',
         'role': 'colaborador',
         'ativo_check': 'on'
     }, follow_redirects=True)
@@ -37,7 +37,7 @@ def test_create_user(client):
         user = User.query.filter_by(username='newuser').first()
         assert user is not None
         assert user.email == 'new@example.com'
-        assert user.check_password('Senha123!')
+        assert user.check_password(DEFAULT_NEW_USER_PASSWORD)
         assert user.ativo is True
 
 

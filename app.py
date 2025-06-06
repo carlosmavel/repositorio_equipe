@@ -35,7 +35,12 @@ from models import (
     Setor,
     Cargo,
 )
-from utils import sanitize_html, extract_text
+from utils import (
+    sanitize_html,
+    extract_text,
+    DEFAULT_NEW_USER_PASSWORD,
+    generate_random_password,
+)
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -332,6 +337,33 @@ def admin_usuarios():
         ativo = request.form.get('ativo_check') == 'on'
         password = request.form.get('password')
 
+        nome_completo = request.form.get('nome_completo', '').strip()
+        matricula = request.form.get('matricula', '').strip()
+        cpf = request.form.get('cpf', '').strip()
+        rg = request.form.get('rg', '').strip()
+        ramal = request.form.get('ramal', '').strip()
+        telefone_contato = request.form.get('telefone_contato', '').strip()
+        data_nascimento_str = request.form.get('data_nascimento', '').strip()
+        data_admissao_str = request.form.get('data_admissao', '').strip()
+        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
+        centro_custo_id = request.form.get('centro_custo_id', type=int)
+        setor_id = request.form.get('setor_id', type=int)
+        cargo_id = request.form.get('cargo_id', type=int)
+
+        data_nascimento = None
+        if data_nascimento_str:
+            try:
+                data_nascimento = datetime.strptime(data_nascimento_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Data de nascimento inválida.', 'danger')
+
+        data_admissao = None
+        if data_admissao_str:
+            try:
+                data_admissao = datetime.strptime(data_admissao_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Data de admissão inválida.', 'danger')
+
         if not username or not email:
             flash('Usuário e Email são obrigatórios.', 'danger')
         else:
@@ -352,23 +384,45 @@ def admin_usuarios():
                     usr.email = email
                     usr.role = role
                     usr.ativo = ativo
+                    usr.nome_completo = nome_completo or None
+                    usr.matricula = matricula or None
+                    usr.cpf = cpf or None
+                    usr.rg = rg or None
+                    usr.ramal = ramal or None
+                    usr.telefone_contato = telefone_contato or None
+                    usr.data_nascimento = data_nascimento
+                    usr.data_admissao = data_admissao
+                    usr.estabelecimento_id = estabelecimento_id
+                    usr.centro_custo_id = centro_custo_id
+                    usr.setor_id = setor_id
+                    usr.cargo_id = cargo_id
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
                 else:
                     if not password:
-                        flash('Senha é obrigatória para novo usuário.', 'danger')
-                        usuario_para_editar = None
-                    else:
-                        usr = User(
-                            username=username,
-                            email=email,
-                            role=role,
-                            ativo=ativo
-                        )
-                        usr.set_password(password)
-                        db.session.add(usr)
-                        action_msg = 'criado'
+                        password = DEFAULT_NEW_USER_PASSWORD
+                    usr = User(
+                        username=username,
+                        email=email,
+                        role=role,
+                        ativo=ativo,
+                        nome_completo=nome_completo or None,
+                        matricula=matricula or None,
+                        cpf=cpf or None,
+                        rg=rg or None,
+                        ramal=ramal or None,
+                        telefone_contato=telefone_contato or None,
+                        data_nascimento=data_nascimento,
+                        data_admissao=data_admissao,
+                        estabelecimento_id=estabelecimento_id,
+                        centro_custo_id=centro_custo_id,
+                        setor_id=setor_id,
+                        cargo_id=cargo_id,
+                    )
+                    usr.set_password(password)
+                    db.session.add(usr)
+                    action_msg = 'criado'
 
                 try:
                     db.session.commit()
@@ -383,7 +437,19 @@ def admin_usuarios():
             usuario_para_editar = User.query.get(id_para_atualizar)
 
     usuarios = User.query.order_by(User.username).all()
-    return render_template('admin/usuarios.html', usuarios=usuarios, user_editar=usuario_para_editar)
+    estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
+    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    setores = Setor.query.order_by(Setor.nome).all()
+    cargos = Cargo.query.order_by(Cargo.nome).all()
+    return render_template(
+        'admin/usuarios.html',
+        usuarios=usuarios,
+        user_editar=usuario_para_editar,
+        estabelecimentos=estabelecimentos,
+        centros_custo=centros_custo,
+        setores=setores,
+        cargos=cargos,
+    )
 
 @app.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
 @admin_required
