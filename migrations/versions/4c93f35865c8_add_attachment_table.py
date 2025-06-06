@@ -45,20 +45,28 @@ def upgrade():
                existing_nullable=False,
                existing_server_default=sa.text("'rascunho'::article_status")
         )
+    
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = {col['name'] for col in inspector.get_columns('user')}
 
     with op.batch_alter_table('user', schema=None) as batch_op:
-        batch_op.alter_column('nome_completo',
-               existing_type=sa.VARCHAR(length=120),
-               type_=sa.String(length=255),
-               existing_nullable=True
+        batch_op.alter_column(
+            'nome_completo',
+            existing_type=sa.VARCHAR(length=120),
+            type_=sa.String(length=255),
+            existing_nullable=True,
         )
-        batch_op.alter_column('foto',
-               existing_type=sa.VARCHAR(length=200),
-               type_=sa.String(length=255),
-               existing_nullable=True
+        batch_op.alter_column(
+            'foto',
+            existing_type=sa.VARCHAR(length=200),
+            type_=sa.String(length=255),
+            existing_nullable=True,
         )
-        batch_op.drop_column('cargo')
-        batch_op.drop_column('setor')
+        if 'cargo' in columns:
+            batch_op.drop_column('cargo')
+        if 'setor' in columns:
+            batch_op.drop_column('setor')
 
 
 def downgrade():
