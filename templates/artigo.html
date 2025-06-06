@@ -6,7 +6,7 @@
 <div class="row">
   <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
-      <div class="card-body">
+      <div class="card-body position-relative">
 
         {# Cabeçalho com título e status #}
         <div class="d-flex justify-content-between align-items-start">
@@ -131,12 +131,19 @@
           </a>
           {% endif %}
 
-          {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
-          <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">
-            Solicitar Revisão
-          </a>
-          {% endif %}
-        </div>
+        {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
+        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">
+          Solicitar Revisão
+        </a>
+        {% endif %}
+        {% if artigo.status == ArticleStatus.APROVADO %}
+        <i
+          class="bi bi-copy text-secondary copy-link-icon"
+          data-url="{{ url_for('artigo', artigo_id=artigo.id, _external=True) }}"
+          style="position:absolute; bottom:10px; right:10px; cursor:pointer; font-size:1.3rem;"
+        ></i>
+        {% endif %}
+      </div>
 
       </div> {# .card-body #}
     </div> {# .card #}
