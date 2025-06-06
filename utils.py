@@ -125,3 +125,37 @@ def generate_random_password(length=12):
     """Gera uma senha aleatória com letras, números e caracteres especiais."""
     alphabet = string.ascii_letters + string.digits + '!@#$%^&*()-_'
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
+
+def generate_token(user_id: int, action: str, expires_sec: int = 3600) -> str:
+    """Gera um token seguro para ações como reset ou criação de senha."""
+    serializer = URLSafeTimedSerializer(current_app.secret_key)
+    return serializer.dumps({'user_id': user_id, 'action': action})
+
+def confirm_token(token: str, expiration: int = 3600):
+    """Valida e decodifica o token, retornando o payload ou None."""
+    serializer = URLSafeTimedSerializer(current_app.secret_key)
+    try:
+        return serializer.loads(token, max_age=expiration)
+    except Exception:
+        return None
+
+def send_email(to_email: str, subject: str, html_content: str) -> None:
+    """Envia um e-mail utilizando o serviço SendGrid se configurado."""
+    api_key = os.environ.get('SENDGRID_API_KEY')
+    from_email = os.environ.get('EMAIL_FROM', 'no-reply@example.com')
+    if not api_key:
+        print('SendGrid API key não configurada.')
+        return
+    try:
+        sg = SendGridAPIClient(api_key)
+        message = Mail(from_email=from_email, to_emails=to_email,
+                        subject=subject, html_content=html_content)
+        sg.send(message)
+    except Exception as e:
+        print(f'Erro ao enviar e-mail: {e}')
