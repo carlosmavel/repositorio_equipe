@@ -41,7 +41,7 @@
                                         </thead>
                                         <tbody>
                                             {% for est in estabelecimentos %}
-                                            <tr class="{{ 'table-light text-muted' if not est.ativo else '' }}">
+                                            <tr class="{{ 'table-light text-muted' if not est.ativo else '' }} clickable-row" data-href="{{ url_for('admin_estabelecimentos', edit_id=est.id) }}">
                                                 <td>{{ est.codigo }}</td>
                                                 <td>{{ est.nome_fantasia }}</td>
                                                 <td>{{ est.cnpj or '--' }}</td>
