@@ -305,6 +305,94 @@ def admin_toggle_ativo_estabelecimento(id):
         app.logger.error(f"Erro ao alterar status do est. {est.id}: {e}")
     return redirect(url_for('admin_estabelecimentos'))
 
+@app.route('/admin/centros_custo', methods=['GET', 'POST'])
+@admin_required
+def admin_centros_custo():
+    """CRUD para Centros de Custo."""
+    centro_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            centro_para_editar = CentroDeCusto.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        codigo = request.form.get('codigo', '').strip().upper()
+        nome = request.form.get('nome', '').strip()
+        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not codigo or not nome or not estabelecimento_id:
+            flash('Código, Nome e Estabelecimento são obrigatórios.', 'danger')
+        else:
+            query_codigo_existente = CentroDeCusto.query.filter_by(codigo=codigo)
+            if id_para_atualizar:
+                query_codigo_existente = query_codigo_existente.filter(CentroDeCusto.id != int(id_para_atualizar))
+            codigo_ja_existe = query_codigo_existente.first()
+
+            if codigo_ja_existe:
+                flash(f'O código de centro de custo "{codigo}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    cc = CentroDeCusto.query.get_or_404(id_para_atualizar)
+                    cc.codigo = codigo
+                    cc.nome = nome
+                    cc.estabelecimento_id = estabelecimento_id
+                    cc.ativo = ativo
+                    action_msg = 'atualizado'
+                else:
+                    cc = CentroDeCusto(
+                        codigo=codigo,
+                        nome=nome,
+                        estabelecimento_id=estabelecimento_id,
+                        ativo=ativo
+                    )
+                    db.session.add(cc)
+                    action_msg = 'criado'
+
+                try:
+                    db.session.commit()
+                    flash(f'Centro de Custo {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_centros_custo'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar centro de custo: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            centro_para_editar = CentroDeCusto.query.get(id_para_atualizar)
+
+    todos_centros = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    todos_estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
+    return render_template(
+        'admin/centros_custo.html',
+        centros=todos_centros,
+        estabelecimentos=todos_estabelecimentos,
+        cc_editar=centro_para_editar
+    )
+
+
+@app.route('/admin/centros_custo/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_centro_custo(id):
+    """Ativa ou inativa um Centro de Custo."""
+    cc = CentroDeCusto.query.get_or_404(id)
+
+    if cc.ativo and (cc.setores.count() > 0 or cc.usuarios.count() > 0):
+        flash(
+            f'Atenção: "{cc.nome}" possui Setores ou Usuários associados. Inativá-lo pode ter implicações.',
+            'warning'
+        )
+
+    cc.ativo = not cc.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if cc.ativo else 'desativado'
+        flash(f'Centro de Custo "{cc.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do centro de custo: {str(e)}', 'danger')
+    return redirect(url_for('admin_centros_custo'))
+
 @app.route('/admin/setores', methods=['GET', 'POST'])
 @admin_required
 def admin_setores():
