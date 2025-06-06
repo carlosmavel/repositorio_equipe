@@ -22,9 +22,17 @@ from functools import wraps # Essencial para decoradores, você já tinha
 
 from database import db
 from enums import ArticleStatus
-from models import ( # Importando os modelos necessários
-    User, Article, RevisionRequest, Notification, Comment, Attachment,
-    Estabelecimento # <<< NOSSO NOVO MODELO PARA A ROTA DE ADMIN
+from models import (
+    User,
+    Article,
+    RevisionRequest,
+    Notification,
+    Comment,
+    Attachment,
+    Estabelecimento,
+    CentroDeCusto,
+    Setor,
+    Cargo,
 )
 from utils import sanitize_html, extract_text
 from mimetypes import guess_type # Se for usar, descomente
@@ -304,6 +312,259 @@ def admin_toggle_ativo_estabelecimento(id):
         flash(f'Erro ao alterar status do estabelecimento: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do est. {est.id}: {e}")
     return redirect(url_for('admin_estabelecimentos'))
+
+@app.route('/admin/centros_custo', methods=['GET', 'POST'])
+@admin_required
+def admin_centros_custo():
+    """CRUD para Centros de Custo."""
+    centro_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            centro_para_editar = CentroDeCusto.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        codigo = request.form.get('codigo', '').strip().upper()
+        nome = request.form.get('nome', '').strip()
+        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not codigo or not nome or not estabelecimento_id:
+            flash('Código, Nome e Estabelecimento são obrigatórios.', 'danger')
+        else:
+            query_codigo_existente = CentroDeCusto.query.filter_by(codigo=codigo)
+            if id_para_atualizar:
+                query_codigo_existente = query_codigo_existente.filter(CentroDeCusto.id != int(id_para_atualizar))
+            codigo_ja_existe = query_codigo_existente.first()
+
+            if codigo_ja_existe:
+                flash(f'O código de centro de custo "{codigo}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    cc = CentroDeCusto.query.get_or_404(id_para_atualizar)
+                    cc.codigo = codigo
+                    cc.nome = nome
+                    cc.estabelecimento_id = estabelecimento_id
+                    cc.ativo = ativo
+                    action_msg = 'atualizado'
+                else:
+                    cc = CentroDeCusto(
+                        codigo=codigo,
+                        nome=nome,
+                        estabelecimento_id=estabelecimento_id,
+                        ativo=ativo
+                    )
+                    db.session.add(cc)
+                    action_msg = 'criado'
+
+                try:
+                    db.session.commit()
+                    flash(f'Centro de Custo {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_centros_custo'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar centro de custo: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            centro_para_editar = CentroDeCusto.query.get(id_para_atualizar)
+
+    todos_centros = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    todos_estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
+    return render_template(
+        'admin/centros_custo.html',
+        centros=todos_centros,
+        estabelecimentos=todos_estabelecimentos,
+        cc_editar=centro_para_editar
+    )
+
+
+@app.route('/admin/centros_custo/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_centro_custo(id):
+    """Ativa ou inativa um Centro de Custo."""
+    cc = CentroDeCusto.query.get_or_404(id)
+
+    if cc.ativo and (cc.setores.count() > 0 or cc.usuarios.count() > 0):
+        flash(
+            f'Atenção: "{cc.nome}" possui Setores ou Usuários associados. Inativá-lo pode ter implicações.',
+            'warning'
+        )
+
+    cc.ativo = not cc.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if cc.ativo else 'desativado'
+        flash(f'Centro de Custo "{cc.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do centro de custo: {str(e)}', 'danger')
+    return redirect(url_for('admin_centros_custo'))
+
+@app.route('/admin/setores', methods=['GET', 'POST'])
+@admin_required
+def admin_setores():
+    """CRUD de Setores."""
+    setor_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            setor_para_editar = Setor.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        centro_custo_id = request.form.get('centro_custo_id') or None
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome do setor é obrigatório.', 'danger')
+        else:
+            query_nome_existente = Setor.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome_existente = query_nome_existente.filter(Setor.id != int(id_para_atualizar))
+            nome_ja_existe = query_nome_existente.first()
+            if nome_ja_existe:
+                flash(f'O nome de setor "{nome}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    setor = Setor.query.get_or_404(id_para_atualizar)
+                    setor.nome = nome
+                    setor.descricao = descricao
+                    setor.centro_custo_id = int(centro_custo_id) if centro_custo_id else None
+                    setor.ativo = ativo
+                    action_msg = 'atualizado'
+                else:
+                    setor = Setor(
+                        nome=nome,
+                        descricao=descricao,
+                        centro_custo_id=int(centro_custo_id) if centro_custo_id else None,
+                        ativo=ativo
+                    )
+                    db.session.add(setor)
+                    action_msg = 'criado'
+                try:
+                    db.session.commit()
+                    flash(f'Setor {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_setores'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar setor: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            setor_para_editar = Setor.query.get(id_para_atualizar)
+
+    todos_setores = Setor.query.order_by(Setor.nome).all()
+    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    return render_template('admin/setores.html',
+                           setores=todos_setores,
+                           centros_custo=centros_custo,
+                           setor_editar=setor_para_editar)
+
+@app.route('/admin/setores/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_setor(id):
+    """Alterna o status ativo de um setor."""
+    setor = Setor.query.get_or_404(id)
+    if setor.ativo and setor.usuarios.count() > 0:
+        flash(
+            f'Atenção: "{setor.nome}" possui usuários associados. Inativá-lo pode ter implicações.',
+            'warning'
+        )
+    setor.ativo = not setor.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if setor.ativo else 'desativado'
+        flash(f'Setor "{setor.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do setor: {str(e)}', 'danger')
+        app.logger.error(f"Erro ao alterar status do setor {setor.id}: {e}")
+    return redirect(url_for('admin_setores'))
+
+
+@app.route('/admin/cargos', methods=['GET', 'POST'])
+@admin_required
+def admin_cargos():
+    """CRUD de Cargos."""
+    cargo_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            cargo_para_editar = Cargo.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        nivel_hierarquico = request.form.get('nivel_hierarquico', type=int)
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome do cargo é obrigatório.', 'danger')
+        else:
+            query_nome = Cargo.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome = query_nome.filter(Cargo.id != int(id_para_atualizar))
+            nome_ja_existe = query_nome.first()
+
+            if nome_ja_existe:
+                flash(f'O nome de cargo "{nome}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    cargo = Cargo.query.get_or_404(id_para_atualizar)
+                    cargo.nome = nome
+                    cargo.descricao = descricao
+                    cargo.nivel_hierarquico = nivel_hierarquico
+                    cargo.ativo = ativo
+                    action_msg = 'atualizado'
+                else:
+                    cargo = Cargo(
+                        nome=nome,
+                        descricao=descricao,
+                        nivel_hierarquico=nivel_hierarquico,
+                        ativo=ativo,
+                    )
+                    db.session.add(cargo)
+                    action_msg = 'criado'
+                try:
+                    db.session.commit()
+                    flash(f'Cargo {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_cargos'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar cargo: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            cargo_para_editar = Cargo.query.get(id_para_atualizar)
+
+    todos_cargos = Cargo.query.order_by(Cargo.nivel_hierarquico, Cargo.nome).all()
+    return render_template('admin/cargos.html', cargos=todos_cargos, cargo_editar=cargo_para_editar)
+
+
+@app.route('/admin/cargos/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_cargo(id):
+    """Ativa ou inativa um Cargo."""
+    cargo = Cargo.query.get_or_404(id)
+
+    if cargo.ativo and cargo.usuarios.count() > 0:
+        flash(
+            f'Atenção: "{cargo.nome}" possui Usuários associados. Inativá-lo pode ter implicações.',
+            'warning',
+        )
+
+    cargo.ativo = not cargo.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativado' if cargo.ativo else 'desativado'
+        flash(f'Cargo "{cargo.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status do cargo: {str(e)}', 'danger')
+        app.logger.error(f"Erro ao alterar status do cargo {cargo.id}: {e}")
+    return redirect(url_for('admin_cargos'))
 
 # -------------------------------------------------------------------------
 # ROTAS PRINCIPAIS
