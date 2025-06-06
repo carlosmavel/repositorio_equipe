@@ -152,7 +152,7 @@
                         <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
                             <option value="">Selecione</option>
                             {% for est in estabelecimentos %}
-                            <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == str(est.id)) or (not request.form.get('estabelecimento_id') and cc_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
+                            <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id) or (not request.form.get('estabelecimento_id') and cc_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
                             {% endfor %}
                         </select>
                     </div>
