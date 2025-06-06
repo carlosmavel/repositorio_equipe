@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Gerenciar Usuários{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+        <h1 class="h2">Gerenciar Usuários</h1>
+    </div>
+
+    <ul class="nav nav-tabs" id="tabUser" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button>
+        </li>
+    </ul>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="tab-content" id="tabUserContent">
+                <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Usuários Cadastrados ({{ usuarios|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if usuarios %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Usuário</th>
+                                                <th>Email</th>
+                                                <th>Perfil</th>
+                                                <th>Status</th>
+                                                <th style="width: 200px;" class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for u in usuarios %}
+                                            <tr class="{{ 'table-light text-muted' if not u.ativo else '' }} clickable-row" data-href="{{ url_for('admin_usuarios', edit_id=u.id) }}">
+                                                <td>{{ u.username }}</td>
+                                                <td>{{ u.email }}</td>
+                                                <td>{{ u.role }}</td>
+                                                <td>
+                                                    {% if u.ativo %}
+                                                        <span class="badge bg-success">Ativo</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inativo</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end">
+                                                    <a href="{{ url_for('admin_usuarios', edit_id=u.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </a>
+                                                    {% set confirm_message_text = 'DESATIVAR' if u.ativo else 'ATIVAR' %}
+                                                    {% set usuario_nome_js = u.username | tojson %}
+                                                    <form action="{{ url_for('admin_toggle_ativo_usuario', id=u.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o usuário ' + {{ usuario_nome_js }} + '?');">
+                                                        {% if u.ativo %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
+                                                                <i class="bi bi-archive-fill"></i> Desativar
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
+                                                                <i class="bi bi-archive-restore-fill"></i> Ativar
+                                                            </button>
+                                                        {% endif %}
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Nenhum usuário cadastrado ainda. Adicione um acima!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
+                    <h5 class="mb-3">
+                        <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Usuário
+                    </h5>
+
+                    <form method="POST" action="{{ url_for('admin_usuarios') }}" novalidate class="compact-form">
+                        <div class="row">
+                            <div class="col-md-4 mb-1">
+                                <label for="username" class="form-label">Usuário <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="username" name="username" value="{{ request.form.get('username', '') }}" required maxlength="80">
+                            </div>
+                            <div class="col-md-4 mb-1">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control form-control-sm" id="email" name="email" value="{{ request.form.get('email', '') }}" required maxlength="120">
+                            </div>
+                            <div class="col-md-4 mb-1">
+                                <label for="role" class="form-label">Perfil</label>
+                                <input type="text" class="form-control form-control-sm" id="role" name="role" value="{{ request.form.get('role', 'colaborador') }}" maxlength="50">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-1">
+                                <label for="password" class="form-label">Senha <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control form-control-sm" id="password" name="password" required>
+                            </div>
+                            <div class="col-md-6 mb-1">
+                                <div class="form-check form-switch mt-4 pt-1">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check" checked>
+                                    <label class="form-check-label" for="ativo_check">Ativo</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Adicionar Usuário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% if user_editar %}
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="modalEditarUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarUsuarioLabel">Editar Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin_usuarios') }}" novalidate class="compact-form">
+                    <input type="hidden" name="id_para_atualizar" value="{{ user_editar.id }}">
+                    <div class="row">
+                        <div class="col-md-4 mb-1">
+                            <label for="edit_username" class="form-label">Usuário <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="edit_username" name="username" value="{{ request.form.get('username', user_editar.username) }}" required maxlength="80">
+                        </div>
+                        <div class="col-md-4 mb-1">
+                            <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email) }}" required maxlength="120">
+                        </div>
+                        <div class="col-md-4 mb-1">
+                            <label for="edit_role" class="form-label">Perfil</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_role" name="role" value="{{ request.form.get('role', user_editar.role) }}" maxlength="50">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-1">
+                            <label for="edit_password" class="form-label">Nova Senha</label>
+                            <input type="password" class="form-control form-control-sm" id="edit_password" name="password">
+                        </div>
+                        <div class="col-md-6 mb-1">
+                            <div class="form-check form-switch mt-4 pt-1">
+                                <input class="form-check-input" type="checkbox" role="switch" id="edit_ativo_check" name="ativo_check" {% if user_editar.ativo %}checked{% endif %}>
+                                <label class="form-check-label" for="edit_ativo_check">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex pt-2 border-top">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if user_editar %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+    modal.show();
+});
+</script>
+{% endif %}
+{% endblock %}
