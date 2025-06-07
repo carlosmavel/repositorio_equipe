@@ -449,14 +449,18 @@ def admin_usuarios():
 
                 try:
                     db.session.commit()
-                    if not id_para_atualizar:
-                        send_password_email(usr, 'create')
-                    flash(f'Usuário {action_msg} com sucesso!', 'success')
-                    return redirect(url_for('admin_usuarios'))
                 except Exception as e:
                     db.session.rollback()
                     flash(f'Erro ao salvar usuário: {str(e)}', 'danger')
                     app.logger.error(f"Erro DB User: {e}")
+                else:
+                    if not id_para_atualizar:
+                        try:
+                            send_password_email(usr, 'create')
+                        except Exception as e:
+                            app.logger.error(f"Erro ao enviar e-mail de cadastro: {e}")
+                    flash(f'Usuário {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_usuarios'))
 
         if id_para_atualizar:
             usuario_para_editar = User.query.get(id_para_atualizar)
