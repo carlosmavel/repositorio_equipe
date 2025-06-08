@@ -150,7 +150,7 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
     api_key = os.environ.get('SENDGRID_API_KEY')
     from_email = os.environ.get('EMAIL_FROM', 'no-reply@example.com')
     if not api_key:
-        print('SendGrid API key não configurada.')
+        current_app.logger.warning('SendGrid API key não configurada.')
         return
     try:
         sg = SendGridAPIClient(api_key)
@@ -158,4 +158,4 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
                         subject=subject, html_content=html_content)
         sg.send(message)
     except Exception as e:
-        print(f'Erro ao enviar e-mail: {e}')
+        current_app.logger.error(f'Erro ao enviar e-mail: {e}')
