@@ -137,6 +137,8 @@ pip install -r requirements.txt
 ## 9. Configurar Variáveis de Ambiente Essenciais (no Windows)
 Para que o Orquetask funcione corretamente e de forma segura, é crucial configurar algumas **variáveis de ambiente** no seu sistema Windows. Essas variáveis permitem que a aplicação acesse configurações importantes sem que elas precisem estar escritas diretamente no código.
 
+Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha os valores de `SENDGRID_API_KEY`, `EMAIL_FROM`, `SECRET_KEY` e `DATABASE_URI` com suas próprias configurações. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
+
 * **Por que usar Variáveis de Ambiente?**
     * **Segurança:** É a forma mais segura de gerenciar informações sensíveis como chaves secretas (`SECRET_KEY`) e credenciais de banco de dados (`DATABASE_URI`), mantendo-as fora do código-fonte que pode ser versionado no Git.
     * **Flexibilidade:** Permite que a mesma aplicação rode em diferentes ambientes (desenvolvimento local, servidor de teste, produção) com configurações diferentes, apenas ajustando as variáveis de ambiente de cada local.
