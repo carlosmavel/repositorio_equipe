@@ -236,3 +236,33 @@ Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá 
     * Garanta que a variável de ambiente `FLASK_APP` está definida como `app.py` (ou o nome do seu arquivo principal Flask) e que o terminal foi reiniciado após definir a variável permanentemente.
 
 ---
+
+## 14. Configurar Envio de E-mails com SendGrid (Opcional)
+
+Para que o Orquetask possa enviar notificações por e-mail é possível utilizar o
+serviço **SendGrid**. Os passos abaixo cobrem a configuração mínima para testes:
+
+1. **Crie e verifique um remetente (Single Sender):**
+   1. Acesse o painel do SendGrid e navegue em
+      "**Settings > Sender Authentication**".
+   2. Escolha **"Create a Single Sender"** e informe nome e endereço de e-mail
+      que deseja usar. Um e-mail de verificação será enviado para confirmar o
+      remetente.
+2. **Gere uma chave de API (API Key):**
+   1. No painel do SendGrid, vá em **"Settings > API Keys"**.
+   2. Clique em **"Create API Key"**, dê um nome para identificação e selecione
+      ao menos a permissão **"Mail Send"**.
+   3. Copie o valor da chave gerada – ela será utilizada na variável de ambiente
+      `SENDGRID_API_KEY`.
+3. **Defina as variáveis de ambiente:**
+   * `SENDGRID_API_KEY` – chave gerada no passo anterior.
+   * `EMAIL_FROM` – o endereço de e-mail verificado que será usado como
+     remetente.
+   * Você pode adicioná-las seguindo o mesmo procedimento descrito na etapa 9
+     deste guia para variáveis permanentes no Windows.
+4. **(Opcional)** Configure a autenticação de domínio no SendGrid para melhorar
+   a entrega dos e-mails. Para os primeiros testes, a autenticação de domínio
+   não é obrigatória.
+
+Com essas configurações, a função de envio de e-mails presente em `utils.py`
+conseguirá utilizar o serviço do SendGrid sempre que necessário.
