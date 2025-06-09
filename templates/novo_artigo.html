@@ -6,6 +6,11 @@
 {% endblock %}
 
 {% block content %}
+<div id="fileLoadingOverlay" class="file-loading-overlay">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Carregando...</span>
+  </div>
+</div>
 <div class="row">
   <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
@@ -72,9 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Preview de anexos
   const input = document.getElementById('files');
   const preview = document.getElementById('preview');
+  const overlay = document.getElementById('fileLoadingOverlay');
   const dt = new DataTransfer();
 
   input.addEventListener('change', () => {
+    overlay.style.display = 'flex';
     Array.from(input.files).forEach(file => {
       if (!Array.from(dt.files).some(
         f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
@@ -99,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
       preview.appendChild(col);
     });
+    overlay.style.display = 'none';
   });
 
   preview.addEventListener('click', e => {
