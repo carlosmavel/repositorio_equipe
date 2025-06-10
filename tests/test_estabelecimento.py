@@ -6,13 +6,16 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Estabelecimento
+from models import Estabelecimento, Instituicao
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
     with app.app_context():
         db.create_all()
+        inst = Instituicao(nome='Inst 1')
+        db.session.add(inst)
+        db.session.commit()
         with app.test_client() as client:
             yield client
         db.session.remove()
@@ -26,6 +29,8 @@ def login_admin(client):
 
 def test_create_estabelecimento_saves_address_and_phone(client):
     login_admin(client)
+    with app.app_context():
+        inst_id = Instituicao.query.first().id
     response = client.post('/admin/estabelecimentos', data={
         'codigo': 'TST1',
         'nome_fantasia': 'Teste',
@@ -47,7 +52,8 @@ def test_create_estabelecimento_saves_address_and_phone(client):
         'email_contato': 'contato@teste.com',
         'data_abertura': '2024-01-01',
         'observacoes': 'Obs',
-        'ativo_check': 'on'
+        'ativo_check': 'on',
+        'instituicao_id': inst_id
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():

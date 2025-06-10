@@ -47,3 +47,42 @@ def test_create_celula(client):
         assert cel.estabelecimento_id == est_id
         assert cel.centro_custo_id == cc_id
         assert cel.ativo is True
+
+
+def test_update_celula(client):
+    with app.app_context():
+        est_id = Estabelecimento.query.first().id
+        cc_id = CentroDeCusto.query.first().id
+        cel = Celula(nome='Orig', estabelecimento_id=est_id, centro_custo_id=cc_id)
+        db.session.add(cel)
+        db.session.commit()
+        cel_id = cel.id
+    login_admin(client)
+    response = client.post('/admin/celulas', data={
+        'id_para_atualizar': cel_id,
+        'nome': 'Atual',
+        'estabelecimento_id': est_id,
+        'centro_custo_id': cc_id,
+        'ativo_check': 'on'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        cel = Celula.query.get(cel_id)
+        assert cel.nome == 'Atual'
+        assert cel.ativo is True
+
+
+def test_toggle_celula_active(client):
+    with app.app_context():
+        est_id = Estabelecimento.query.first().id
+        cc_id = CentroDeCusto.query.first().id
+        cel = Celula(nome='Temp', estabelecimento_id=est_id, centro_custo_id=cc_id)
+        db.session.add(cel)
+        db.session.commit()
+        cel_id = cel.id
+    login_admin(client)
+    response = client.post(f'/admin/celulas/toggle_ativo/{cel_id}', follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        cel = Celula.query.get(cel_id)
+        assert cel.ativo is False
