@@ -149,15 +149,6 @@
                                 </select>
                             </div>
                             <div class="col-md-3 mb-1">
-                                <label for="centro_custo_id" class="form-label">Centro de Custo</label>
-                                <select class="form-select form-select-sm" id="centro_custo_id" name="centro_custo_id">
-                                    <option value="">Selecione</option>
-                                    {% for cc in centros_custo %}
-                                        <option value="{{ cc.id }}" {% if request.form.get('centro_custo_id') == cc.id|string %}selected{% endif %}>{{ cc.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-1">
                                 <label for="setor_id" class="form-label">Setor</label>
                                 <select class="form-select form-select-sm" id="setor_id" name="setor_id">
                                     <option value="">Selecione</option>
@@ -265,15 +256,6 @@
                                 <option value="">Selecione</option>
                                 {% for est in estabelecimentos %}
                                 <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_centro_custo_id" class="form-label">Centro de Custo</label>
-                            <select class="form-select form-select-sm" id="edit_centro_custo_id" name="centro_custo_id">
-                                <option value="">Selecione</option>
-                                {% for cc in centros_custo %}
-                                <option value="{{ cc.id }}" {% if (request.form.get('centro_custo_id') == cc.id|string) or (not request.form.get('centro_custo_id') and user_editar.centro_custo_id == cc.id) %}selected{% endif %}>{{ cc.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>

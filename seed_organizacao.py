@@ -1,5 +1,5 @@
 from database import db
-from models import Instituicao, Estabelecimento, CentroDeCusto, Setor, Celula
+from models import Instituicao, Estabelecimento, Setor, Celula
 from app import app
 
 
@@ -23,17 +23,9 @@ def run():
         else:
             print("Estabelecimento já existe.")
 
-        cc = CentroDeCusto.query.filter_by(codigo="CC01").first()
-        if not cc:
-            cc = CentroDeCusto(codigo="CC01", nome="Centro Exemplo", estabelecimento=est)
-            db.session.add(cc)
-            print("Centro de Custo criado.")
-        else:
-            print("Centro de Custo já existe.")
-
         setor = Setor.query.filter_by(nome="Setor Exemplo").first()
         if not setor:
-            setor = Setor(nome="Setor Exemplo", descricao="Setor para testes", estabelecimento=est, centro_custo=cc)
+            setor = Setor(nome="Setor Exemplo", descricao="Setor para testes", estabelecimento=est)
             db.session.add(setor)
             print("Setor criado.")
         else:
@@ -41,7 +33,7 @@ def run():
 
         celula = Celula.query.filter_by(nome="Célula Exemplo").first()
         if not celula:
-            celula = Celula(nome="Célula Exemplo", estabelecimento=est, centro_custo=cc, setor=setor)
+            celula = Celula(nome="Célula Exemplo", estabelecimento=est, setor=setor)
             db.session.add(celula)
             print("Célula criada.")
         else:

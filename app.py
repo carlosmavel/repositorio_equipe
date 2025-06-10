@@ -33,11 +33,9 @@ from models import (
     Instituicao,
     Celula,
     Estabelecimento,
-    CentroDeCusto,
     Setor,
     Cargo,
     Instituicao,
-    Celula,
 )
 from utils import (
     sanitize_html,
@@ -411,8 +409,8 @@ def admin_toggle_ativo_estabelecimento(id):
     est = Estabelecimento.query.get_or_404(id)
 
     # Lógica de verificação de dependências antes de INATIVAR
-    if est.ativo and (est.centros_custo.count() > 0 or est.usuarios.count() > 0):
-        flash(f'Atenção: "{est.nome_fantasia}" possui Centros de Custo ou Usuários associados. Inativá-lo pode ter implicações.', 'warning')
+    if est.ativo and est.usuarios.count() > 0:
+        flash(f'Atenção: "{est.nome_fantasia}" possui Usuários associados. Inativá-lo pode ter implicações.', 'warning')
 
     est.ativo = not est.ativo # Inverte o status atual
     try:
@@ -452,7 +450,6 @@ def admin_usuarios():
         data_nascimento_str = request.form.get('data_nascimento', '').strip()
         data_admissao_str = request.form.get('data_admissao', '').strip()
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        centro_custo_id = request.form.get('centro_custo_id', type=int)
         setor_id = request.form.get('setor_id', type=int)
         cargo_id = request.form.get('cargo_id', type=int)
 
@@ -499,7 +496,6 @@ def admin_usuarios():
                     usr.data_nascimento = data_nascimento
                     usr.data_admissao = data_admissao
                     usr.estabelecimento_id = estabelecimento_id
-                    usr.centro_custo_id = centro_custo_id
                     usr.setor_id = setor_id
                     usr.cargo_id = cargo_id
                     if password:
@@ -522,7 +518,6 @@ def admin_usuarios():
                         data_nascimento=data_nascimento,
                         data_admissao=data_admissao,
                         estabelecimento_id=estabelecimento_id,
-                        centro_custo_id=centro_custo_id,
                         setor_id=setor_id,
                         cargo_id=cargo_id,
                     )
@@ -550,7 +545,6 @@ def admin_usuarios():
 
     usuarios = User.query.order_by(User.username).all()
     estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
-    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
     setores = Setor.query.order_by(Setor.nome).all()
     cargos = Cargo.query.order_by(Cargo.nome).all()
     return render_template(
@@ -558,7 +552,6 @@ def admin_usuarios():
         usuarios=usuarios,
         user_editar=usuario_para_editar,
         estabelecimentos=estabelecimentos,
-        centros_custo=centros_custo,
         setores=setores,
         cargos=cargos,
     )
@@ -582,93 +575,6 @@ def admin_toggle_ativo_usuario(id):
         app.logger.error(f"Erro status user {usr.id}: {e}")
     return redirect(url_for('admin_usuarios'))
   
-@app.route('/admin/centros_custo', methods=['GET', 'POST'])
-@admin_required
-def admin_centros_custo():
-    """CRUD para Centros de Custo."""
-    centro_para_editar = None
-    if request.method == 'GET':
-        edit_id = request.args.get('edit_id', type=int)
-        if edit_id:
-            centro_para_editar = CentroDeCusto.query.get_or_404(edit_id)
-
-    if request.method == 'POST':
-        id_para_atualizar = request.form.get('id_para_atualizar')
-        codigo = request.form.get('codigo', '').strip().upper()
-        nome = request.form.get('nome', '').strip()
-        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        ativo = request.form.get('ativo_check') == 'on'
-
-        if not codigo or not nome or not estabelecimento_id:
-            flash('Código, Nome e Estabelecimento são obrigatórios.', 'danger')
-        else:
-            query_codigo_existente = CentroDeCusto.query.filter_by(codigo=codigo)
-            if id_para_atualizar:
-                query_codigo_existente = query_codigo_existente.filter(CentroDeCusto.id != int(id_para_atualizar))
-            codigo_ja_existe = query_codigo_existente.first()
-
-            if codigo_ja_existe:
-                flash(f'O código de centro de custo "{codigo}" já está em uso.', 'danger')
-            else:
-                if id_para_atualizar:
-                    cc = CentroDeCusto.query.get_or_404(id_para_atualizar)
-                    cc.codigo = codigo
-                    cc.nome = nome
-                    cc.estabelecimento_id = estabelecimento_id
-                    cc.ativo = ativo
-                    action_msg = 'atualizado'
-                else:
-                    cc = CentroDeCusto(
-                        codigo=codigo,
-                        nome=nome,
-                        estabelecimento_id=estabelecimento_id,
-                        ativo=ativo
-                    )
-                    db.session.add(cc)
-                    action_msg = 'criado'
-
-                try:
-                    db.session.commit()
-                    flash(f'Centro de Custo {action_msg} com sucesso!', 'success')
-                    return redirect(url_for('admin_centros_custo'))
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f'Erro ao salvar centro de custo: {str(e)}', 'danger')
-
-        if id_para_atualizar:
-            centro_para_editar = CentroDeCusto.query.get(id_para_atualizar)
-
-    todos_centros = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
-    todos_estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
-    return render_template(
-        'admin/centros_custo.html',
-        centros=todos_centros,
-        estabelecimentos=todos_estabelecimentos,
-        cc_editar=centro_para_editar
-    )
-
-
-@app.route('/admin/centros_custo/toggle_ativo/<int:id>', methods=['POST'])
-@admin_required
-def admin_toggle_ativo_centro_custo(id):
-    """Ativa ou inativa um Centro de Custo."""
-    cc = CentroDeCusto.query.get_or_404(id)
-
-    if cc.ativo and (cc.setores.count() > 0 or cc.usuarios.count() > 0):
-        flash(
-            f'Atenção: "{cc.nome}" possui Setores ou Usuários associados. Inativá-lo pode ter implicações.',
-            'warning'
-        )
-
-    cc.ativo = not cc.ativo
-    try:
-        db.session.commit()
-        status_texto = 'ativado' if cc.ativo else 'desativado'
-        flash(f'Centro de Custo "{cc.nome}" foi {status_texto} com sucesso!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao alterar status do centro de custo: {str(e)}', 'danger')
-    return redirect(url_for('admin_centros_custo'))
 
 @app.route('/admin/setores', methods=['GET', 'POST'])
 @admin_required
@@ -684,12 +590,11 @@ def admin_setores():
         id_para_atualizar = request.form.get('id_para_atualizar')
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        centro_custo_id = request.form.get('centro_custo_id') or None
-        estabelecimento_id = request.form.get('estabelecimento_id') or None
+        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
         ativo = request.form.get('ativo_check') == 'on'
 
-        if not nome:
-            flash('Nome do setor é obrigatório.', 'danger')
+        if not nome or not estabelecimento_id:
+            flash('Nome e Estabelecimento são obrigatórios.', 'danger')
         else:
             query_nome_existente = Setor.query.filter_by(nome=nome)
             if id_para_atualizar:
@@ -702,16 +607,14 @@ def admin_setores():
                     setor = Setor.query.get_or_404(id_para_atualizar)
                     setor.nome = nome
                     setor.descricao = descricao
-                    setor.centro_custo_id = int(centro_custo_id) if centro_custo_id else None
-                    setor.estabelecimento_id = int(estabelecimento_id) if estabelecimento_id else None
+                    setor.estabelecimento_id = estabelecimento_id
                     setor.ativo = ativo
                     action_msg = 'atualizado'
                 else:
                     setor = Setor(
                         nome=nome,
                         descricao=descricao,
-                        centro_custo_id=int(centro_custo_id) if centro_custo_id else None,
-                        estabelecimento_id=int(estabelecimento_id) if estabelecimento_id else None,
+                        estabelecimento_id=estabelecimento_id,
                         ativo=ativo
                     )
                     db.session.add(setor)
@@ -728,11 +631,9 @@ def admin_setores():
             setor_para_editar = Setor.query.get(id_para_atualizar)
 
     todos_setores = Setor.query.order_by(Setor.nome).all()
-    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
     estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
     return render_template('admin/setores.html',
                            setores=todos_setores,
-                           centros_custo=centros_custo,
                            estabelecimentos=estabelecimentos,
                            setor_editar=setor_para_editar)
 
@@ -771,12 +672,11 @@ def admin_celulas():
         id_para_atualizar = request.form.get('id_para_atualizar')
         nome = request.form.get('nome', '').strip()
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        centro_custo_id = request.form.get('centro_custo_id', type=int)
-        setor_id = request.form.get('setor_id') or None
+        setor_id = request.form.get('setor_id', type=int)
         ativo = request.form.get('ativo_check') == 'on'
 
-        if not nome or not estabelecimento_id or not centro_custo_id:
-            flash('Nome, Estabelecimento e Centro de Custo são obrigatórios.', 'danger')
+        if not nome or not estabelecimento_id or not setor_id:
+            flash('Nome, Estabelecimento e Setor são obrigatórios.', 'danger')
         else:
             query_nome = Celula.query.filter_by(nome=nome)
             if id_para_atualizar:
@@ -790,16 +690,14 @@ def admin_celulas():
                     cel = Celula.query.get_or_404(id_para_atualizar)
                     cel.nome = nome
                     cel.estabelecimento_id = estabelecimento_id
-                    cel.centro_custo_id = centro_custo_id
-                    cel.setor_id = int(setor_id) if setor_id else None
+                    cel.setor_id = setor_id
                     cel.ativo = ativo
                     action_msg = 'atualizada'
                 else:
                     cel = Celula(
                         nome=nome,
                         estabelecimento_id=estabelecimento_id,
-                        centro_custo_id=centro_custo_id,
-                        setor_id=int(setor_id) if setor_id else None,
+                        setor_id=setor_id,
                         ativo=ativo
                     )
                     db.session.add(cel)
@@ -818,13 +716,11 @@ def admin_celulas():
 
     celulas = Celula.query.order_by(Celula.nome).all()
     estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
-    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
     setores = Setor.query.order_by(Setor.nome).all()
     return render_template(
         'admin/celulas.html',
         celulas=celulas,
         estabelecimentos=estabelecimentos,
-        centros_custo=centros_custo,
         setores=setores,
         celula_editar=celula_para_editar
     )

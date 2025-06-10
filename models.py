@@ -27,7 +27,7 @@ class Estabelecimento(db.Model):
     __tablename__ = 'estabelecimento'
     
     id = db.Column(db.Integer, primary_key=True)
-    instituicao_id = db.Column(db.Integer, db.ForeignKey('instituicao.id'), nullable=True)
+    instituicao_id = db.Column(db.Integer, db.ForeignKey('instituicao.id'), nullable=False)
     instituicao = db.relationship('Instituicao', back_populates='estabelecimentos')
     codigo = db.Column(db.String(50), unique=True, nullable=False) # Código interno ou identificador
     nome_fantasia = db.Column(db.String(200), nullable=False)     # Nome popular do estabelecimento
@@ -67,7 +67,6 @@ class Estabelecimento(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # --- Relacionamentos (como já tínhamos) ---
-    centros_custo = db.relationship('CentroDeCusto', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
     setores = db.relationship('Setor', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
     celulas = db.relationship('Celula', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
     usuarios = db.relationship('User', back_populates='estabelecimento', lazy='dynamic')
@@ -75,23 +74,6 @@ class Estabelecimento(db.Model):
     def __repr__(self):
         return f"<Estabelecimento {self.codigo} - {self.nome_fantasia}>"
 
-class CentroDeCusto(db.Model):
-    __tablename__ = 'centro_custo'
-    id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.String(50), unique=True, nullable=False)
-    nome = db.Column(db.String(200), nullable=False)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
-    
-    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
-    estabelecimento = db.relationship('Estabelecimento', back_populates='centros_custo')
-
-    # Relacionamentos: Um CentroDeCusto pode ter vários Setores e vários Usuários
-    setores = db.relationship('Setor', back_populates='centro_custo', lazy='dynamic', cascade="all, delete-orphan")
-    celulas = db.relationship('Celula', back_populates='centro_custo', lazy='dynamic', cascade="all, delete-orphan")
-    usuarios = db.relationship('User', back_populates='centro_custo', lazy='dynamic')
-
-    def __repr__(self):
-        return f"<CentroDeCusto {self.codigo} - {self.nome}>"
 
 class Setor(db.Model):
     __tablename__ = 'setor'
@@ -100,9 +82,7 @@ class Setor(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
     
-    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=True) # Setor PODE pertencer a um CC
-    centro_custo = db.relationship('CentroDeCusto', back_populates='setores')
-    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='setores')
 
     # Relacionamentos: Um Setor pode ter vários Usuários
@@ -122,10 +102,8 @@ class Celula(db.Model):
 
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='celulas')
-    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=False)
     setor = db.relationship('Setor', back_populates='celulas')
-    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=False)
-    centro_custo = db.relationship('CentroDeCusto', back_populates='celulas')
 
     usuarios = db.relationship('User', back_populates='celula', lazy='dynamic')
 
@@ -169,13 +147,10 @@ class User(db.Model):
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     # Novas Chaves Estrangeiras e Relacionamentos (Fase 1)
-    # Um usuário pertence a um estabelecimento, um CC, um setor e tem um cargo.
+    # Um usuário pertence a um estabelecimento, um setor e tem um cargo.
     # Nullable=True para flexibilidade inicial ou para usuários que não se encaixam perfeitamente.
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
     estabelecimento = db.relationship('Estabelecimento', back_populates='usuarios')
-
-    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=True)
-    centro_custo = db.relationship('CentroDeCusto', back_populates='usuarios')
 
     setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
     setor = db.relationship('Setor', back_populates='usuarios')

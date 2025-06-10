@@ -255,11 +255,8 @@ width: 30px; /* Ajuste a largura conforme necessário */
           <dt class="col-sm-4">Estabelecimento:</dt>
           <dd class="col-sm-8">{{ current_user.estabelecimento.nome if current_user.estabelecimento else 'N/A' }}</dd>
 
-          <dt class="col-sm-4">Código do Centro de Custo:</dt>
-          <dd class="col-sm-8">{{ current_user.centro_custo.codigo if current_user.centro_custo else 'N/A' }}</dd>
-
-          <dt class="col-sm-4">Centro de Custo:</dt>
-          <dd class="col-sm-8">{{ current_user.centro_custo.nome if current_user.centro_custo else 'N/A' }}</dd>
+          <dt class="col-sm-4">Célula:</dt>
+          <dd class="col-sm-8">{{ current_user.celula.nome if current_user.celula else 'N/A' }}</dd>
 
           <dt class="col-sm-4">Setor:</dt>
           <dd class="col-sm-8">{{ current_user.setor.nome if current_user.setor else 'N/A' }}</dd>
