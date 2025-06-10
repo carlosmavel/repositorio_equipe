@@ -50,6 +50,25 @@ from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
 # -------------------------------------------------------------------------
+# Constantes de apoio
+# -------------------------------------------------------------------------
+# Mapeamento dos níveis hierárquicos de cargos. A chave numérica é armazenada no
+# banco de dados, enquanto o valor textual é apresentado nas interfaces.
+NIVEIS_HIERARQUICOS = [
+    (1, 'Diretor'),
+    (2, 'Gerente'),
+    (3, 'Coordenador'),
+    (4, 'Supervisor'),
+    (5, 'Líder'),
+    (6, 'Analista Sênior'),
+    (7, 'Analista Pleno'),
+    (8, 'Analista Júnior'),
+    (9, 'Assistente I'),
+    (10, 'Assistente II'),
+]
+NOME_NIVEL_CARGO = {valor: nome for valor, nome in NIVEIS_HIERARQUICOS}
+
+# -------------------------------------------------------------------------
 # Configuração da Aplicação (Seu código existente)
 # -------------------------------------------------------------------------
 app = Flask(__name__)
@@ -164,6 +183,11 @@ def inject_current_user():
 @app.context_processor
 def inject_zoneinfo():
     return dict(ZoneInfo=ZoneInfo)
+
+@app.context_processor
+def inject_niveis_cargo():
+    """Disponibiliza o mapeamento de níveis hierárquicos para todos os templates."""
+    return dict(NOME_NIVEL_CARGO=NOME_NIVEL_CARGO, NIVEIS_HIERARQUICOS=NIVEIS_HIERARQUICOS)
 
 # -------------------------------------------------------------------------
 # ROTAS DE ADMINISTRAÇÃO (NOVA SEÇÃO - ADICIONE AS ROTAS DO ADMIN AQUI)

@@ -33,6 +33,7 @@
                                             <tr>
                                                 <th>Código</th>
                                                 <th>Nome Fantasia</th>
+                                                <th>Instituição</th>
                                                 <th>CNPJ</th>
                                                 <th>Cidade/UF</th>
                                                 <th>Status</th>
@@ -44,6 +45,7 @@
                                             <tr class="{{ 'table-light text-muted' if not est.ativo else '' }} clickable-row" data-href="{{ url_for('admin_estabelecimentos', edit_id=est.id) }}">
                                                 <td>{{ est.codigo }}</td>
                                                 <td>{{ est.nome_fantasia }}</td>
+                                                <td>{{ est.instituicao.nome if est.instituicao else '--' }}</td>
                                                 <td>{{ est.cnpj or '--' }}</td>
                                                 <td>{{ est.cidade or 'N/A' }}/{{ est.estado or 'N/A' }}</td>
                                                 <td>

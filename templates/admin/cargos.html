@@ -41,7 +41,7 @@
                                             {% for cargo in cargos %}
                                             <tr class="{{ 'table-light text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
                                                 <td>{{ cargo.nome }}</td>
-                                                <td>{{ cargo.nivel_hierarquico if cargo.nivel_hierarquico is not none else '--' }}</td>
+                                                <td>{{ NOME_NIVEL_CARGO.get(cargo.nivel_hierarquico, '--') }}</td>
                                                 <td>
                                                     {% if cargo.ativo %}
                                                         <span class="badge bg-success">Ativo</span>
@@ -91,7 +91,12 @@
                             </div>
                             <div class="col-md-4 mb-1">
                                 <label for="nivel_hierarquico" class="form-label">Nível Hierárquico</label>
-                                <input type="number" class="form-control form-control-sm" id="nivel_hierarquico" name="nivel_hierarquico" value="{{ request.form.get('nivel_hierarquico', '') }}">
+                                <select class="form-select form-select-sm" id="nivel_hierarquico" name="nivel_hierarquico">
+                                    <option value="">Selecione</option>
+                                    {% for val, nome in NIVEIS_HIERARQUICOS %}
+                                        <option value="{{ val }}" {% if request.form.get('nivel_hierarquico') == val|string %}selected{% endif %}>{{ nome }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="mb-1">
@@ -137,7 +142,12 @@
                         </div>
                         <div class="col-md-4 mb-1">
                             <label for="edit_nivel_hierarquico" class="form-label">Nível Hierárquico</label>
-                            <input type="number" class="form-control form-control-sm" id="edit_nivel_hierarquico" name="nivel_hierarquico" value="{{ request.form.get('nivel_hierarquico', cargo_editar.nivel_hierarquico or '') }}">
+                            <select class="form-select form-select-sm" id="edit_nivel_hierarquico" name="nivel_hierarquico">
+                                <option value="">Selecione</option>
+                                {% for val, nome in NIVEIS_HIERARQUICOS %}
+                                    <option value="{{ val }}" {% if (request.form.get('nivel_hierarquico', cargo_editar.nivel_hierarquico|string) == val|string) %}selected{% endif %}>{{ nome }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
                     <div class="mb-1">
