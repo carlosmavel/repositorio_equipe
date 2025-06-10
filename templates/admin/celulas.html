@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Gerenciar Células{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+        <h1 class="h2">Gerenciar Células</h1>
+    </div>
+
+    <ul class="nav nav-tabs" id="tabCelula" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button>
+        </li>
+    </ul>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="tab-content" id="tabCelulaContent">
+                <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Células Cadastradas ({{ celulas|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if celulas %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Estabelecimento</th>
+                                                <th>Centro de Custo</th>
+                                                <th>Setor</th>
+                                                <th>Status</th>
+                                                <th style="width: 200px;" class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cel in celulas %}
+                                            <tr class="{{ 'table-light text-muted' if not cel.ativo else '' }} clickable-row" data-href="{{ url_for('admin_celulas', edit_id=cel.id) }}">
+                                                <td>{{ cel.nome }}</td>
+                                                <td>{{ cel.estabelecimento.nome_fantasia }}</td>
+                                                <td>{{ cel.centro_custo.nome }}</td>
+                                                <td>{{ cel.setor.nome if cel.setor else '--' }}</td>
+                                                <td>
+                                                    {% if cel.ativo %}
+                                                        <span class="badge bg-success">Ativo</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inativo</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end">
+                                                    <a href="{{ url_for('admin_celulas', edit_id=cel.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </a>
+                                                    {% set confirm_message_text = 'DESATIVAR' if cel.ativo else 'ATIVAR' %}
+                                                    <form action="{{ url_for('admin_toggle_ativo_celula', id=cel.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} a célula ' + {{ cel.nome | tojson }} + '?');">
+                                                        {% if cel.ativo %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
+                                                                <i class="bi bi-archive-fill"></i> Desativar
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
+                                                                <i class="bi bi-archive-restore-fill"></i> Ativar
+                                                            </button>
+                                                        {% endif %}
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Nenhuma célula cadastrada ainda. Adicione uma acima!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
+                    <h5 class="mb-3">
+                        <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Nova Célula
+                    </h5>
+
+                    <form method="POST" action="{{ url_for('admin_celulas') }}" novalidate class="compact-form">
+                        <div class="row">
+                            <div class="col-md-4 mb-1">
+                                <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" required maxlength="200">
+                            </div>
+                            <div class="col-md-4 mb-1">
+                                <label for="estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    {% for est in estabelecimentos %}
+                                        <option value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}selected{% endif %}>{{ est.nome_fantasia }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-1">
+                                <label for="centro_custo_id" class="form-label">Centro de Custo <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" id="centro_custo_id" name="centro_custo_id" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    {% for cc in centros_custo %}
+                                        <option value="{{ cc.id }}" {% if request.form.get('centro_custo_id') == cc.id|string %}selected{% endif %}>{{ cc.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-1">
+                                <label for="setor_id" class="form-label">Setor</label>
+                                <select class="form-select form-select-sm" id="setor_id" name="setor_id">
+                                    <option value="">-- Não associado --</option>
+                                    {% for st in setores %}
+                                        <option value="{{ st.id }}" {% if request.form.get('setor_id') == st.id|string %}selected{% endif %}>{{ st.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-1 align-self-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check" checked>
+                                    <label class="form-check-label" for="ativo_check">Ativo</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Adicionar Célula
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if celula_editar %}
+<div class="modal fade" id="modalEditarCelula" tabindex="-1" aria-labelledby="modalEditarCelulaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarCelulaLabel">Editar Célula</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin_celulas') }}" novalidate class="compact-form">
+                    <input type="hidden" name="id_para_atualizar" value="{{ celula_editar.id }}">
+                    <div class="mb-1">
+                        <label for="edit_nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', celula_editar.nome) }}" required maxlength="200">
+                    </div>
+                    <div class="mb-1">
+                        <label for="edit_estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
+                            {% for est in estabelecimentos %}
+                                <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and celula_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label for="edit_centro_custo_id" class="form-label">Centro de Custo <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="edit_centro_custo_id" name="centro_custo_id" required>
+                            {% for cc in centros_custo %}
+                                <option value="{{ cc.id }}" {% if (request.form.get('centro_custo_id') == cc.id|string) or (not request.form.get('centro_custo_id') and celula_editar.centro_custo_id == cc.id) %}selected{% endif %}>{{ cc.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label for="edit_setor_id" class="form-label">Setor</label>
+                        <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id">
+                            <option value="">-- Não associado --</option>
+                            {% for st in setores %}
+                                <option value="{{ st.id }}" {% if (request.form.get('setor_id', celula_editar.setor_id|string) == st.id|string) %}selected{% endif %}>{{ st.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-12 mb-1">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="edit_ativo_check" name="ativo_check" {% if celula_editar.ativo %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_ativo_check">Ativo</label>
+                        </div>
+                    </div>
+                    <div class="d-flex pt-2 border-top">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+{% if celula_editar %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarCelula'));
+    modal.show();
+});
+</script>
+{% endif %}
+{% endblock %}

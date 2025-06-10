@@ -15,6 +15,7 @@ class Instituicao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     estabelecimentos = db.relationship('Estabelecimento', back_populates='instituicao', lazy='dynamic')
 

@@ -30,6 +30,8 @@ from models import (
     Notification,
     Comment,
     Attachment,
+    Instituicao,
+    Celula,
     Estabelecimento,
     CentroDeCusto,
     Setor,
@@ -171,6 +173,80 @@ def inject_zoneinfo():
 @admin_required
 def admin_dashboard():
     return render_template('admin/dashboard.html')
+
+@app.route('/admin/instituicoes', methods=['GET', 'POST'])
+@admin_required
+def admin_instituicoes():
+    """CRUD para Instituições."""
+    instituicao_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            instituicao_para_editar = Instituicao.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome da instituição é obrigatório.', 'danger')
+        else:
+            query_nome_existente = Instituicao.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome_existente = query_nome_existente.filter(Instituicao.id != int(id_para_atualizar))
+            nome_ja_existe = query_nome_existente.first()
+
+            if nome_ja_existe:
+                flash(f'O nome "{nome}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    inst = Instituicao.query.get_or_404(id_para_atualizar)
+                    inst.nome = nome
+                    inst.descricao = descricao
+                    inst.ativo = ativo
+                    action_msg = 'atualizada'
+                else:
+                    inst = Instituicao(nome=nome, descricao=descricao, ativo=ativo)
+                    db.session.add(inst)
+                    action_msg = 'criada'
+
+                try:
+                    db.session.commit()
+                    flash(f'Instituição {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_instituicoes'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar instituição: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            instituicao_para_editar = Instituicao.query.get(id_para_atualizar)
+
+    instituicoes = Instituicao.query.order_by(Instituicao.nome).all()
+    return render_template('admin/instituicoes.html',
+                           instituicoes=instituicoes,
+                           inst_editar=instituicao_para_editar)
+
+@app.route('/admin/instituicoes/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_instituicao(id):
+    inst = Instituicao.query.get_or_404(id)
+    if inst.estabelecimentos.count() > 0 and inst.ativo:
+        flash(
+            f'Atenção: "{inst.nome}" possui Estabelecimentos associados. Inativá-la pode ter implicações.',
+            'warning'
+        )
+
+    inst.ativo = not inst.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativada' if inst.ativo else 'desativada'
+        flash(f'Instituição "{inst.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status da instituição: {str(e)}', 'danger')
+    return redirect(url_for('admin_instituicoes'))
 
 @app.route('/admin/estabelecimentos', methods=['GET', 'POST'])
 @admin_required
@@ -668,6 +744,99 @@ def admin_toggle_ativo_setor(id):
         flash(f'Erro ao alterar status do setor: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do setor {setor.id}: {e}")
     return redirect(url_for('admin_setores'))
+
+@app.route('/admin/celulas', methods=['GET', 'POST'])
+@admin_required
+def admin_celulas():
+    """CRUD de Células."""
+    celula_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            celula_para_editar = Celula.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        estabelecimento_id = request.form.get('estabelecimento_id', type=int)
+        centro_custo_id = request.form.get('centro_custo_id', type=int)
+        setor_id = request.form.get('setor_id') or None
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome or not estabelecimento_id or not centro_custo_id:
+            flash('Nome, Estabelecimento e Centro de Custo são obrigatórios.', 'danger')
+        else:
+            query_nome = Celula.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome = query_nome.filter(Celula.id != int(id_para_atualizar))
+            nome_ja_existe = query_nome.first()
+
+            if nome_ja_existe:
+                flash(f'O nome de célula "{nome}" já está em uso.', 'danger')
+            else:
+                if id_para_atualizar:
+                    cel = Celula.query.get_or_404(id_para_atualizar)
+                    cel.nome = nome
+                    cel.estabelecimento_id = estabelecimento_id
+                    cel.centro_custo_id = centro_custo_id
+                    cel.setor_id = int(setor_id) if setor_id else None
+                    cel.ativo = ativo
+                    action_msg = 'atualizada'
+                else:
+                    cel = Celula(
+                        nome=nome,
+                        estabelecimento_id=estabelecimento_id,
+                        centro_custo_id=centro_custo_id,
+                        setor_id=int(setor_id) if setor_id else None,
+                        ativo=ativo
+                    )
+                    db.session.add(cel)
+                    action_msg = 'criada'
+
+                try:
+                    db.session.commit()
+                    flash(f'Célula {action_msg} com sucesso!', 'success')
+                    return redirect(url_for('admin_celulas'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar célula: {str(e)}', 'danger')
+
+        if id_para_atualizar:
+            celula_para_editar = Celula.query.get(id_para_atualizar)
+
+    celulas = Celula.query.order_by(Celula.nome).all()
+    estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
+    centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    setores = Setor.query.order_by(Setor.nome).all()
+    return render_template(
+        'admin/celulas.html',
+        celulas=celulas,
+        estabelecimentos=estabelecimentos,
+        centros_custo=centros_custo,
+        setores=setores,
+        celula_editar=celula_para_editar
+    )
+
+@app.route('/admin/celulas/toggle_ativo/<int:id>', methods=['POST'])
+@admin_required
+def admin_toggle_ativo_celula(id):
+    cel = Celula.query.get_or_404(id)
+
+    if cel.ativo and cel.usuarios.count() > 0:
+        flash(
+            f'Atenção: "{cel.nome}" possui usuários associados. Inativá-la pode ter implicações.',
+            'warning'
+        )
+
+    cel.ativo = not cel.ativo
+    try:
+        db.session.commit()
+        status_texto = 'ativada' if cel.ativo else 'desativada'
+        flash(f'Célula "{cel.nome}" foi {status_texto} com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao alterar status da célula: {str(e)}', 'danger')
+    return redirect(url_for('admin_celulas'))
 
 @app.route('/admin/cargos', methods=['GET', 'POST'])
 @admin_required
