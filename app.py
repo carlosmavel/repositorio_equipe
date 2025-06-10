@@ -34,6 +34,8 @@ from models import (
     CentroDeCusto,
     Setor,
     Cargo,
+    Instituicao,
+    Celula,
 )
 from utils import (
     sanitize_html,
@@ -193,6 +195,7 @@ def admin_estabelecimentos():
         codigo = request.form.get('codigo', '').strip().upper()
         nome_fantasia = request.form.get('nome_fantasia', '').strip()
         ativo = request.form.get('ativo_check') == 'on' # Para o checkbox
+        instituicao_id = request.form.get('instituicao_id') or None
 
         # Captura dos demais campos do formulário de Estabelecimento
         razao_social = request.form.get('razao_social', '').strip()
@@ -248,6 +251,7 @@ def admin_estabelecimentos():
                     est = Estabelecimento.query.get_or_404(id_para_atualizar)
                     est.codigo = codigo
                     est.nome_fantasia = nome_fantasia
+                    est.instituicao_id = int(instituicao_id) if instituicao_id else None
                     est.razao_social = razao_social
                     est.cnpj = cnpj if cnpj else None  # Salva None se vazio
                     est.inscricao_estadual = inscricao_estadual
@@ -272,6 +276,7 @@ def admin_estabelecimentos():
                     est = Estabelecimento(
                         codigo=codigo,
                         nome_fantasia=nome_fantasia,
+                        instituicao_id=int(instituicao_id) if instituicao_id else None,
                         razao_social=razao_social,
                         cnpj=cnpj if cnpj else None,
                         inscricao_estadual=inscricao_estadual,
@@ -315,8 +320,10 @@ def admin_estabelecimentos():
 
     # Para requisições GET ou se um POST falhou e precisa re-renderizar
     todos_estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
-    return render_template('admin/estabelecimentos.html', 
+    instituicoes = Instituicao.query.order_by(Instituicao.nome).all()
+    return render_template('admin/estabelecimentos.html',
                            estabelecimentos=todos_estabelecimentos,
+                           instituicoes=instituicoes,
                            est_editar=estabelecimento_para_editar)
 
 @app.route('/admin/estabelecimentos/toggle_ativo/<int:id>', methods=['POST'])
@@ -602,6 +609,7 @@ def admin_setores():
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
         centro_custo_id = request.form.get('centro_custo_id') or None
+        estabelecimento_id = request.form.get('estabelecimento_id') or None
         ativo = request.form.get('ativo_check') == 'on'
 
         if not nome:
@@ -619,6 +627,7 @@ def admin_setores():
                     setor.nome = nome
                     setor.descricao = descricao
                     setor.centro_custo_id = int(centro_custo_id) if centro_custo_id else None
+                    setor.estabelecimento_id = int(estabelecimento_id) if estabelecimento_id else None
                     setor.ativo = ativo
                     action_msg = 'atualizado'
                 else:
@@ -626,6 +635,7 @@ def admin_setores():
                         nome=nome,
                         descricao=descricao,
                         centro_custo_id=int(centro_custo_id) if centro_custo_id else None,
+                        estabelecimento_id=int(estabelecimento_id) if estabelecimento_id else None,
                         ativo=ativo
                     )
                     db.session.add(setor)
@@ -643,9 +653,11 @@ def admin_setores():
 
     todos_setores = Setor.query.order_by(Setor.nome).all()
     centros_custo = CentroDeCusto.query.order_by(CentroDeCusto.nome).all()
+    estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
     return render_template('admin/setores.html',
                            setores=todos_setores,
                            centros_custo=centros_custo,
+                           estabelecimentos=estabelecimentos,
                            setor_editar=setor_para_editar)
 
 @app.route('/admin/setores/toggle_ativo/<int:id>', methods=['POST'])

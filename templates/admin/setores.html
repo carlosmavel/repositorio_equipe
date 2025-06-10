@@ -99,6 +99,17 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-1">
+                                <label for="estabelecimento_id" class="form-label">Estabelecimento</label>
+                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id">
+                                    <option value="">-- Não associado --</option>
+                                    {% for est in estabelecimentos %}
+                                        <option value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}selected{% endif %}>{{ est.nome_fantasia }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
                         <div class="mb-1">
                             <label for="descricao" class="form-label">Descrição</label>
                             <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="3">{{ request.form.get('descricao', '') }}</textarea>
@@ -141,6 +152,15 @@
                             <option value="">-- Não associado --</option>
                             {% for cc in centros_custo %}
                                 <option value="{{ cc.id }}" {% if (request.form.get('centro_custo_id', setor_editar.centro_custo_id|string) == cc.id|string) %}selected{% endif %}>{{ cc.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label for="edit_estabelecimento_id" class="form-label">Estabelecimento</label>
+                        <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id">
+                            <option value="">-- Não associado --</option>
+                            {% for est in estabelecimentos %}
+                                <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id', setor_editar.estabelecimento_id|string) == est.id|string) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
                             {% endfor %}
                         </select>
                     </div>
