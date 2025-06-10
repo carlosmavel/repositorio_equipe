@@ -32,6 +32,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Nome</th>
+                                                <th>Estabelecimento</th>
                                                 <th>Status</th>
                                                 <th style="width: 200px;" class="text-end">Ações</th>
                                             </tr>
@@ -40,6 +41,7 @@
                                             {% for setor in setores %}
                                             <tr class="{{ 'table-light text-muted' if not setor.ativo else '' }} clickable-row" data-href="{{ url_for('admin_setores', edit_id=setor.id) }}">
                                                 <td>{{ setor.nome }}</td>
+                                                <td>{{ setor.estabelecimento.nome_fantasia }}</td>
                                                 <td>
                                                     {% if setor.ativo %}
                                                         <span class="badge bg-success">Ativo</span>
