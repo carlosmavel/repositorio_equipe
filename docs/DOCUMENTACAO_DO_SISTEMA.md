@@ -8,7 +8,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
 * **Biblioteca de Artigos:** Servir como um repositório centralizado e confiável para toda a documentação técnica, manuais de procedimento, guias e artigos informativos, com um fluxo robusto de criação, revisão colaborativa e aprovação.
 * **Gestão de Ordens de Serviço (OS):** Implementar um sistema completo para o ciclo de vida das ordens de serviço, desde a abertura e categorização, passando pela atribuição e acompanhamento de status, até sua resolução e finalização. (Planejado para Fase 3)
 * **Kanban de OS:** Oferecer uma interface visual estilo Kanban para o gerenciamento ágil e intuitivo do fluxo de Ordens de Serviço. (Planejado para Fase 3)
-* **Administração Global:** Disponibilizar um painel de controle abrangente para administradores do sistema, permitindo o gerenciamento detalhado de usuários, suas permissões e papéis, bem como a configuração da estrutura organizacional base (estabelecimentos, centros de custo, setores, cargos).
+* **Administração Global:** Disponibilizar um painel de controle abrangente para administradores do sistema, permitindo o gerenciamento detalhado de usuários, suas permissões e papéis, bem como a configuração da estrutura organizacional base (estabelecimentos, setores, cargos).
 * **Página Inicial Personalizada:** Apresentar um dashboard individualizado para cada usuário após o login, com informações relevantes, atalhos para funcionalidades frequentemente utilizadas e um resumo de pendências.
 * **Perfil de Usuário Detalhado:** Permitir que os usuários visualizem seus dados cadastrais completos e editem informações pertinentes, incluindo foto de perfil e senha, com mecanismos de segurança e validação.
 * **Central de Comunicação (Futuro):** Estabelecer um canal oficial para a divulgação de comunicados da empresa, notícias de setores específicos e uma área de classificados internos para interação entre colaboradores. (Planejado para Fase 4)
@@ -54,7 +54,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
 * (Futuro - Fase 4) Exibição dos comunicados mais recentes da empresa.
 
 ### 2.4. Perfil do Usuário
-* Visualização de todos os dados cadastrais do usuário, incluindo nome, e-mail, matrícula, documentos (CPF, RG), informações de contato (ramal, telefone) e dados organizacionais (estabelecimento, centro de custo, setor, cargo).
+* Visualização de todos os dados cadastrais do usuário, incluindo nome, e-mail, matrícula, documentos (CPF, RG), informações de contato (ramal, telefone) e dados organizacionais (estabelecimento, setor, cargo, célula).
 * Permissão para o próprio usuário editar suas informações pessoais permitidas (foto, nome completo, telefone de contato, ramal, data de nascimento).
 * Funcionalidade de alteração de senha pelo próprio usuário, com validação de senha atual e requisitos de complexidade para a nova senha (feedback visual interativo).
 
