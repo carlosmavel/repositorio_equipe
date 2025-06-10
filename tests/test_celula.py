@@ -5,18 +5,21 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Estabelecimento, CentroDeCusto, Celula
+from models import Instituicao, Estabelecimento, Setor, Celula
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
     with app.app_context():
         db.create_all()
-        est = Estabelecimento(codigo='E1', nome_fantasia='Estab')
+        inst = Instituicao(nome='Inst')
+        db.session.add(inst)
+        db.session.flush()
+        est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
         db.session.add(est)
         db.session.flush()
-        cc = CentroDeCusto(codigo='CC1', nome='CC 1', estabelecimento_id=est.id)
-        db.session.add(cc)
+        setor = Setor(nome='Setor 1', estabelecimento_id=est.id)
+        db.session.add(setor)
         db.session.commit()
         with app.test_client() as client:
             yield client
@@ -33,11 +36,11 @@ def test_create_celula(client):
     login_admin(client)
     with app.app_context():
         est_id = Estabelecimento.query.first().id
-        cc_id = CentroDeCusto.query.first().id
+        setor_id = Setor.query.first().id
     response = client.post('/admin/celulas', data={
         'nome': 'Cel 1',
         'estabelecimento_id': est_id,
-        'centro_custo_id': cc_id,
+        'setor_id': setor_id,
         'ativo_check': 'on'
     }, follow_redirects=True)
     assert response.status_code == 200
@@ -45,15 +48,15 @@ def test_create_celula(client):
         cel = Celula.query.filter_by(nome='Cel 1').first()
         assert cel is not None
         assert cel.estabelecimento_id == est_id
-        assert cel.centro_custo_id == cc_id
+        assert cel.setor_id == setor_id
         assert cel.ativo is True
 
 
 def test_update_celula(client):
     with app.app_context():
         est_id = Estabelecimento.query.first().id
-        cc_id = CentroDeCusto.query.first().id
-        cel = Celula(nome='Orig', estabelecimento_id=est_id, centro_custo_id=cc_id)
+        setor_id = Setor.query.first().id
+        cel = Celula(nome='Orig', estabelecimento_id=est_id, setor_id=setor_id)
         db.session.add(cel)
         db.session.commit()
         cel_id = cel.id
@@ -62,7 +65,7 @@ def test_update_celula(client):
         'id_para_atualizar': cel_id,
         'nome': 'Atual',
         'estabelecimento_id': est_id,
-        'centro_custo_id': cc_id,
+        'setor_id': setor_id,
         'ativo_check': 'on'
     }, follow_redirects=True)
     assert response.status_code == 200
@@ -75,8 +78,8 @@ def test_update_celula(client):
 def test_toggle_celula_active(client):
     with app.app_context():
         est_id = Estabelecimento.query.first().id
-        cc_id = CentroDeCusto.query.first().id
-        cel = Celula(nome='Temp', estabelecimento_id=est_id, centro_custo_id=cc_id)
+        setor_id = Setor.query.first().id
+        cel = Celula(nome='Temp', estabelecimento_id=est_id, setor_id=setor_id)
         db.session.add(cel)
         db.session.commit()
         cel_id = cel.id

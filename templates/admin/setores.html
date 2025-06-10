@@ -32,7 +32,6 @@
                                         <thead>
                                             <tr>
                                                 <th>Nome</th>
-                                                <th>Centro de Custo</th>
                                                 <th>Status</th>
                                                 <th style="width: 200px;" class="text-end">Ações</th>
                                             </tr>
@@ -41,7 +40,6 @@
                                             {% for setor in setores %}
                                             <tr class="{{ 'table-light text-muted' if not setor.ativo else '' }} clickable-row" data-href="{{ url_for('admin_setores', edit_id=setor.id) }}">
                                                 <td>{{ setor.nome }}</td>
-                                                <td>{{ setor.centro_custo.nome if setor.centro_custo else '--' }}</td>
                                                 <td>
                                                     {% if setor.ativo %}
                                                         <span class="badge bg-success">Ativo</span>
@@ -89,20 +87,11 @@
                                 <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" required maxlength="200">
                             </div>
-                            <div class="col-md-6 mb-1">
-                                <label for="centro_custo_id" class="form-label">Centro de Custo</label>
-                                <select class="form-select form-select-sm" id="centro_custo_id" name="centro_custo_id">
-                                    <option value="">-- Não associado --</option>
-                                    {% for cc in centros_custo %}
-                                        <option value="{{ cc.id }}" {% if request.form.get('centro_custo_id') == cc.id|string %}selected{% endif %}>{{ cc.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-1">
                                 <label for="estabelecimento_id" class="form-label">Estabelecimento</label>
-                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id">
+                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id" required>
                                     <option value="">-- Não associado --</option>
                                     {% for est in estabelecimentos %}
                                         <option value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}selected{% endif %}>{{ est.nome_fantasia }}</option>
@@ -147,17 +136,8 @@
                         <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', setor_editar.nome) }}" required maxlength="200">
                     </div>
                     <div class="mb-1">
-                        <label for="edit_centro_custo_id" class="form-label">Centro de Custo</label>
-                        <select class="form-select form-select-sm" id="edit_centro_custo_id" name="centro_custo_id">
-                            <option value="">-- Não associado --</option>
-                            {% for cc in centros_custo %}
-                                <option value="{{ cc.id }}" {% if (request.form.get('centro_custo_id', setor_editar.centro_custo_id|string) == cc.id|string) %}selected{% endif %}>{{ cc.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-1">
                         <label for="edit_estabelecimento_id" class="form-label">Estabelecimento</label>
-                        <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id">
+                        <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
                             <option value="">-- Não associado --</option>
                             {% for est in estabelecimentos %}
                                 <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id', setor_editar.estabelecimento_id|string) == est.id|string) %}selected{% endif %}>{{ est.nome_fantasia }}</option>

@@ -33,7 +33,6 @@
                                             <tr>
                                                 <th>Nome</th>
                                                 <th>Estabelecimento</th>
-                                                <th>Centro de Custo</th>
                                                 <th>Setor</th>
                                                 <th>Status</th>
                                                 <th style="width: 200px;" class="text-end">Ações</th>
@@ -44,7 +43,6 @@
                                             <tr class="{{ 'table-light text-muted' if not cel.ativo else '' }} clickable-row" data-href="{{ url_for('admin_celulas', edit_id=cel.id) }}">
                                                 <td>{{ cel.nome }}</td>
                                                 <td>{{ cel.estabelecimento.nome_fantasia }}</td>
-                                                <td>{{ cel.centro_custo.nome }}</td>
                                                 <td>{{ cel.setor.nome if cel.setor else '--' }}</td>
                                                 <td>
                                                     {% if cel.ativo %}
@@ -101,21 +99,11 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-1">
-                                <label for="centro_custo_id" class="form-label">Centro de Custo <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" id="centro_custo_id" name="centro_custo_id" required>
-                                    <option value="" disabled selected>Selecione...</option>
-                                    {% for cc in centros_custo %}
-                                        <option value="{{ cc.id }}" {% if request.form.get('centro_custo_id') == cc.id|string %}selected{% endif %}>{{ cc.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-1">
-                                <label for="setor_id" class="form-label">Setor</label>
-                                <select class="form-select form-select-sm" id="setor_id" name="setor_id">
-                                    <option value="">-- Não associado --</option>
+                                <label for="setor_id" class="form-label">Setor <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" id="setor_id" name="setor_id" required>
                                     {% for st in setores %}
                                         <option value="{{ st.id }}" {% if request.form.get('setor_id') == st.id|string %}selected{% endif %}>{{ st.nome }}</option>
                                     {% endfor %}
@@ -163,17 +151,8 @@
                         </select>
                     </div>
                     <div class="mb-1">
-                        <label for="edit_centro_custo_id" class="form-label">Centro de Custo <span class="text-danger">*</span></label>
-                        <select class="form-select form-select-sm" id="edit_centro_custo_id" name="centro_custo_id" required>
-                            {% for cc in centros_custo %}
-                                <option value="{{ cc.id }}" {% if (request.form.get('centro_custo_id') == cc.id|string) or (not request.form.get('centro_custo_id') and celula_editar.centro_custo_id == cc.id) %}selected{% endif %}>{{ cc.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-1">
-                        <label for="edit_setor_id" class="form-label">Setor</label>
-                        <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id">
-                            <option value="">-- Não associado --</option>
+                        <label for="edit_setor_id" class="form-label">Setor <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id" required>
                             {% for st in setores %}
                                 <option value="{{ st.id }}" {% if (request.form.get('setor_id', celula_editar.setor_id|string) == st.id|string) %}selected{% endif %}>{{ st.nome }}</option>
                             {% endfor %}

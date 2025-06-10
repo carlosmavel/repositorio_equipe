@@ -13,7 +13,7 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
     * Busca Full-Text em conteúdo e anexos.
 * **Módulo de Administração Global:**
     * Gerenciamento de Usuários (com campos detalhados e status ativo/inativo).
-    * Gerenciamento de Estrutura Organizacional: CRUD de Estabelecimentos, Centros de Custo e Setores. (Cargos em desenvolvimento)
+    * Gerenciamento de Estrutura Organizacional: CRUD de Estabelecimentos, Setores e Células. (Cargos em desenvolvimento)
     * (Planejado) Gestão de Perfis de Acesso e Permissões (Funções).
 * **Página Inicial Personalizada:** Dashboard do usuário pós-login.
 * **Perfil de Usuário Detalhado:** Visualização e edição de dados, foto e senha.
