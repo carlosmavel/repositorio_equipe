@@ -1,7 +1,7 @@
 # seed_users.py
 from werkzeug.security import generate_password_hash
 from database import db
-from models import User # Seus modelos Estabelecimento, CentroDeCusto, etc., já estão em models.py
+from models import User
 from app import app      # importa o Flask já configurado
 # from datetime import date # Se você for adicionar datas como data_admissao
 
@@ -17,7 +17,6 @@ def run():
             cpf="000.000.000-00", # Exemplo, coloque dados fictícios
             # Novos campos organizacionais como None por enquanto
             estabelecimento_id=None,
-            centro_custo_id=None,
             setor_id=None,
             cargo_id=None,
             # Outros campos opcionais
@@ -33,7 +32,6 @@ def run():
             matricula="EDT001",
             cpf="111.111.111-11", # Exemplo
             estabelecimento_id=None,
-            centro_custo_id=None,
             setor_id=None,
             cargo_id=None,
         ),
@@ -46,7 +44,6 @@ def run():
             matricula="COL001",
             cpf="222.222.222-22", # Exemplo
             estabelecimento_id=None,
-            centro_custo_id=None,
             setor_id=None,
             cargo_id=None,
         )

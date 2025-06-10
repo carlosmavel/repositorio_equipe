@@ -34,13 +34,13 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
 * **Gerenciamento de Usuários:**
     * Criação, listagem, visualização detalhada e edição de contas de usuário.
     * Funcionalidade para ativar e desativar usuários.
-    * Atribuição de usuários a entidades organizacionais: Estabelecimento, Centro de Custo, Setor e Cargo.
+    * Atribuição de usuários a entidades organizacionais: Estabelecimento, Setor, Célula e Cargo.
     * (Futuro - Fase 2) Associação de Usuários a Perfis de Acesso.
     * (Futuro) Ferramenta para administradores resetarem senhas de usuários.
 * **Gerenciamento de Estrutura Organizacional (Fase 1):**
     * CRUD completo (Criar, Ler, Atualizar, Ativar/Desativar) para **Estabelecimentos**, incluindo campos detalhados como CNPJ, razão social, endereço completo, tipo de estabelecimento, etc.
-    * CRUD completo para **Centros de Custo**, com associação a um Estabelecimento e status ativo/inativo.
-    * CRUD completo para **Setores**, com associação opcional a um Centro de Custo e status ativo/inativo.
+    * CRUD completo para **Setores**, vinculados a um Estabelecimento e status ativo/inativo.
+    * CRUD completo para **Células**, vinculadas a um Setor e status ativo/inativo.
     * CRUD completo para **Cargos**, incluindo campo para nível hierárquico e status ativo/inativo.
 * **Gerenciamento de Perfis & Funções (Permissões - Planejado para Fase 2):**
     * Criação e gestão de Perfis de Acesso (ex: "Líder de Suporte", "Técnico de Campo Nível 1").
@@ -149,15 +149,15 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
 
 * **User:**
     * Campos: `id`, `username`, `email`, `password_hash`, `nome_completo`, `foto`, `role` (papel base), `matricula`, `cpf`, `rg`, `ramal`, `data_nascimento`, `data_admissao`, `telefone_contato`, `ativo` (status do usuário).
-    * Relacionamentos: `estabelecimento_id`, `centro_custo_id`, `setor_id`, `cargo_id`, (futuro) `perfil_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc.
+    * Relacionamentos: `estabelecimento_id`, `setor_id`, `celula_id`, `cargo_id`, (futuro) `perfil_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc.
 * **Estabelecimento:**
     * Campos: `id`, `codigo`, `nome_fantasia`, `razao_social`, `cnpj`, `inscricao_estadual`, `inscricao_municipal`, `tipo_estabelecimento`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `estado`, `telefone_principal`, `email_contato`, `data_abertura`, `observacoes`, `ativo`.
-* **CentroDeCusto:**
-    * Campos: `id`, `codigo`, `nome`, `ativo`.
-    * Relacionamentos: `estabelecimento_id` (pertence a um Estabelecimento).
 * **Setor:**
     * Campos: `id`, `nome`, `descricao`, `ativo`.
-    * Relacionamentos: `centro_custo_id` (opcional, pode pertencer a um Centro de Custo).
+    * Relacionamentos: `estabelecimento_id` (pertence a um Estabelecimento).
+* **Celula:**
+    * Campos: `id`, `nome`, `ativo`.
+    * Relacionamentos: `estabelecimento_id`, `setor_id`.
 * **Cargo:**
     * Campos: `id`, `nome`, `descricao`, `nivel_hierarquico`, `ativo`.
 * **Article:** (Existente)
@@ -188,9 +188,9 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
     * Página Inicial do Usuário (Dashboard básico).
     * Perfil do Usuário Detalhado (visualização, edição de dados, foto, alteração de senha com UX aprimorada).
     * Estrutura da Área de Administração (Dashboard Admin, início do CRUD de Estabelecimentos).
-    * Modelos Organizacionais Base (`Estabelecimento`, `CentroDeCusto`, `Setor`, `Cargo`) com status "ativo/inativo".
+    * Modelos Organizacionais Base (`Estabelecimento`, `Setor`, `Célula`, `Cargo`) com status "ativo/inativo".
 * **Fase 2 (Planejada - Próximos Passos):**
-    * Finalizar CRUDs da Área de Admin: Centros de Custo, Setores, Cargos.
+* Finalizar CRUDs da Área de Admin: Setores, Células e Cargos.
     * Gerenciamento Avançado de Usuários pelo Admin.
     * Implementação do Sistema de Perfis & Funções (Permissões granulares).
     * Aplicar o novo sistema de permissões em todas as rotas e funcionalidades.
