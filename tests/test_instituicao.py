@@ -36,3 +36,38 @@ def test_create_instituicao(client):
         assert inst is not None
         assert inst.descricao == 'Descricao'
         assert inst.ativo is True
+
+
+def test_update_instituicao(client):
+    with app.app_context():
+        inst = Instituicao(nome='Inst A', descricao='Old')
+        db.session.add(inst)
+        db.session.commit()
+        inst_id = inst.id
+    login_admin(client)
+    response = client.post('/admin/instituicoes', data={
+        'id_para_atualizar': inst_id,
+        'nome': 'Inst B',
+        'descricao': 'Nova',
+        'ativo_check': 'on'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        inst = Instituicao.query.get(inst_id)
+        assert inst.nome == 'Inst B'
+        assert inst.descricao == 'Nova'
+        assert inst.ativo is True
+
+
+def test_toggle_instituicao_active(client):
+    with app.app_context():
+        inst = Instituicao(nome='Ativa')
+        db.session.add(inst)
+        db.session.commit()
+        inst_id = inst.id
+    login_admin(client)
+    response = client.post(f'/admin/instituicoes/toggle_ativo/{inst_id}', follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        inst = Instituicao.query.get(inst_id)
+        assert inst.ativo is False
