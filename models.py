@@ -9,10 +9,25 @@ from enums import ArticleStatus # Seu enum de ArticleStatus
 
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
+class Instituicao(db.Model):
+    __tablename__ = 'instituicao'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), unique=True, nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+
+    estabelecimentos = db.relationship('Estabelecimento', back_populates='instituicao', lazy='dynamic')
+
+    def __repr__(self):
+        return f"<Instituicao {self.nome}>"
+
+
 class Estabelecimento(db.Model):
     __tablename__ = 'estabelecimento'
     
     id = db.Column(db.Integer, primary_key=True)
+    instituicao_id = db.Column(db.Integer, db.ForeignKey('instituicao.id'), nullable=True)
+    instituicao = db.relationship('Instituicao', back_populates='estabelecimentos')
     codigo = db.Column(db.String(50), unique=True, nullable=False) # Código interno ou identificador
     nome_fantasia = db.Column(db.String(200), nullable=False)     # Nome popular do estabelecimento
     
@@ -52,6 +67,8 @@ class Estabelecimento(db.Model):
 
     # --- Relacionamentos (como já tínhamos) ---
     centros_custo = db.relationship('CentroDeCusto', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
+    setores = db.relationship('Setor', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
+    celulas = db.relationship('Celula', back_populates='estabelecimento', lazy='dynamic', cascade="all, delete-orphan")
     usuarios = db.relationship('User', back_populates='estabelecimento', lazy='dynamic')
 
     def __repr__(self):
@@ -69,6 +86,7 @@ class CentroDeCusto(db.Model):
 
     # Relacionamentos: Um CentroDeCusto pode ter vários Setores e vários Usuários
     setores = db.relationship('Setor', back_populates='centro_custo', lazy='dynamic', cascade="all, delete-orphan")
+    celulas = db.relationship('Celula', back_populates='centro_custo', lazy='dynamic', cascade="all, delete-orphan")
     usuarios = db.relationship('User', back_populates='centro_custo', lazy='dynamic')
 
     def __repr__(self):
@@ -83,12 +101,35 @@ class Setor(db.Model):
     
     centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=True) # Setor PODE pertencer a um CC
     centro_custo = db.relationship('CentroDeCusto', back_populates='setores')
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
+    estabelecimento = db.relationship('Estabelecimento', back_populates='setores')
 
     # Relacionamentos: Um Setor pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='setor', lazy='dynamic')
+    celulas = db.relationship('Celula', back_populates='setor', lazy='dynamic', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Setor {self.nome}>"
+
+
+class Celula(db.Model):
+    __tablename__ = 'celula'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), unique=True, nullable=False)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
+    estabelecimento = db.relationship('Estabelecimento', back_populates='celulas')
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    setor = db.relationship('Setor', back_populates='celulas')
+    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centro_custo.id'), nullable=False)
+    centro_custo = db.relationship('CentroDeCusto', back_populates='celulas')
+
+    usuarios = db.relationship('User', back_populates='celula', lazy='dynamic')
+
+    def __repr__(self):
+        return f"<Celula {self.nome}>"
 
 class Cargo(db.Model):
     __tablename__ = 'cargo'
@@ -137,6 +178,9 @@ class User(db.Model):
 
     setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
     setor = db.relationship('Setor', back_populates='usuarios')
+
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    celula = db.relationship('Celula', back_populates='usuarios')
 
     cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=True)
     cargo = db.relationship('Cargo', back_populates='usuarios')
