@@ -72,9 +72,10 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
     ```
     > Se suas migrações incluírem novas colunas com `nullable=True` em tabelas já existentes (ex.: `User`), remova os registros atuais ou defina o campo como `nullable=False` temporariamente para que a migração execute sem erros. Depois do `flask db upgrade`, ajuste o campo para permitir nulos, se for o caso.
 
-6.  **(Opcional) Popule dados iniciais (usuários de exemplo):**
+6.  **(Opcional) Popule dados iniciais (usuários e organização de exemplo):**
     ```bash
     python seed_users.py
+    python seed_organizacao.py
     ```
 
 7.  **Rode a aplicação Flask:**
