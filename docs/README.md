@@ -100,6 +100,13 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 ├── admin/
 └── base.html
 
+## Integração Contínua
+
+O repositório conta com um workflow do **GitHub Actions** localizado em
+`.github/workflows/ci.yml`. Ele instala as dependências e executa os
+testes automatizados com `pytest` a cada `push` ou `pull request`,
+ajudando a prevenir regressões.
+
 ## Licença
 
 Este projeto está licenciado sob a Licença GNU GPLv3 - veja o arquivo [LICENSE](LICENSE) para detalhes.
