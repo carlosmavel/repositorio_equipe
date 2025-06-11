@@ -2,8 +2,9 @@
 {% block title %}Fila de Aprovação{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center"> {# Usar justify-content-center na row é uma boa alternativa ao mx-auto na col #}
-  <div class="col-md-10 mt-4"> {# A coluna agora só define a largura. mt-4 para a margem superior #}
+<div class="container-fluid px-5">
+  <div class="row justify-content-center"> {# Usar justify-content-center na row é uma boa alternativa ao mx-auto na col #}
+    <div class="col-md-10 mt-4"> {# A coluna agora só define a largura. mt-4 para a margem superior #}
     
     {# Conteúdo que estava dentro do .container agora está direto no .col-md-10 #}
     <h3 class="mb-3">Aprovação de Artigos</h3>
@@ -48,5 +49,6 @@
     {# Fim do conteúdo que estava no .container #}
 
   </div> {# Fim do col-md-10 #}
-</div> {# Fim do row #}
+  </div> {# Fim do row #}
+</div>
 {% endblock %}
