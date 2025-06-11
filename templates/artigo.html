@@ -3,8 +3,9 @@
 {% block title %}{{ artigo.titulo }}{% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col-md-10 mx-auto">
+<div class="container-fluid px-5">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
       <div class="card-body position-relative">
 
@@ -146,9 +147,10 @@
       </div>
 
       </div> {# .card-body #}
-    </div> {# .card #}
+  </div> {# .card #}
   </div> {# .col #}
 </div> {# .row #}
+</div>
 {% endblock %}
 {% block extra_js %}
 <script>
