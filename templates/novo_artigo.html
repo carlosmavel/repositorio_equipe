@@ -70,8 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Sincroniza conteúdo Quill no campo hidden antes de submeter
-  document.querySelector('form').addEventListener('submit', () => {
+  const form = document.querySelector('form');
+  form.addEventListener('submit', () => {
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
+    overlay.style.display = 'flex';
   });
 
   // Preview de anexos
@@ -109,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       overlay.style.display = 'none';
     });
-    overlay.style.display = 'none';
   });
 
   preview.addEventListener('click', e => {
