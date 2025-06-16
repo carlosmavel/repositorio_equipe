@@ -89,7 +89,7 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 * **[Documentação Geral do Sistema](./DOCUMENTACAO_DO_SISTEMA.md)**
 
 ## Estrutura do Projeto (Simplificada)
-
+```text
 /ORQUETASK_PROJECT_ROOT/
 ├── app.py
 ├── models.py
@@ -99,6 +99,7 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 └── templates/
 ├── admin/
 └── base.html
+```
 
 ## Integração Contínua
 
