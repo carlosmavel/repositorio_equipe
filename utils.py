@@ -159,3 +159,38 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
         sg.send(message)
     except Exception as e:
         current_app.logger.error(f'Erro ao enviar e-mail: {e}')
+
+
+def user_can_view_article(user, article):
+    """Verifica se o usuário tem permissão para visualizar o artigo."""
+    from models import Article  # import interno para evitar dependência circular
+    from enums import ArticleVisibility
+
+    if not isinstance(article, Article):
+        return False
+
+    if user.role in ("admin", "editor") or user.id == article.user_id:
+        return True
+
+    # Extras concedidos especificamente
+    if article.extra_users.filter_by(id=user.id).count():
+        return True
+    if user.celula_id and article.extra_celulas.filter_by(id=user.celula_id).count():
+        return True
+
+    vis = article.visibility
+
+    if vis is ArticleVisibility.INSTITUICAO:
+        if user.estabelecimento and article.instituicao_id == user.estabelecimento.instituicao_id:
+            return True
+    elif vis is ArticleVisibility.ESTABELECIMENTO:
+        if user.estabelecimento_id == article.estabelecimento_id:
+            return True
+    elif vis is ArticleVisibility.SETOR:
+        if user.setor_id == article.setor_id:
+            return True
+    elif vis is ArticleVisibility.CELULA:
+        if user.celula_id == article.vis_celula_id:
+            return True
+
+    return False
