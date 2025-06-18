@@ -1022,6 +1022,7 @@ def novo_artigo():
             texto      = texto_limpo,
             status     = status,
             user_id    = user.id,
+            celula_id  = user.celula_id or 1,
             arquivos   = None,
             created_at = datetime.now(timezone.utc),
             updated_at = datetime.now(timezone.utc)
