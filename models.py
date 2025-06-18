@@ -5,7 +5,20 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
 
 from database import db # Seu objeto db
-from enums import ArticleStatus # Seu enum de ArticleStatus
+from enums import ArticleStatus, ArticleVisibility
+
+# --- association tables for article visibility ---
+article_extra_celulas = db.Table(
+    'article_extra_celulas',
+    db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
+    db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True)
+)
+
+article_extra_users = db.Table(
+    'article_extra_users',
+    db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
 
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
@@ -193,19 +206,43 @@ class Article(db.Model):
         SQLAEnum(
             ArticleStatus,
             values_callable=lambda x: [e.value for e in x],
-            name="article_status", # Nome do tipo ENUM no banco, pode precisar ser 'article_status' se já existe
-            create_type=False # Se o tipo ENUM já foi criado por uma migration raw SQL
-        ), 
-        nullable=False, 
+            name="article_status",
+            create_type=False
+        ),
+        nullable=False,
         server_default=ArticleStatus.RASCUNHO.value
     )
+    visibility = db.Column(
+        SQLAEnum(
+            ArticleVisibility,
+            values_callable=lambda x: [e.value for e in x],
+            name="article_visibility",
+            create_type=False
+        ),
+        nullable=False,
+        server_default=ArticleVisibility.CELULA.value
+    )
+    instituicao_id = db.Column(db.Integer, db.ForeignKey('instituicao.id'), nullable=True)
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    vis_celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
     review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão do editor
     
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    author = db.relationship('User', back_populates='articles') # author é o User
+    author = db.relationship('User', back_populates='articles')
+
+    instituicao = db.relationship('Instituicao', foreign_keys=[instituicao_id])
+    estabelecimento = db.relationship('Estabelecimento', foreign_keys=[estabelecimento_id])
+    setor = db.relationship('Setor', foreign_keys=[setor_id])
+    vis_celula = db.relationship('Celula', foreign_keys=[vis_celula_id])
+    celula = db.relationship('Celula', foreign_keys=[celula_id])
+
+    extra_celulas = db.relationship('Celula', secondary=article_extra_celulas, lazy='dynamic')
+    extra_users = db.relationship('User', secondary=article_extra_users, lazy='dynamic')
     
     revision_requests = db.relationship('RevisionRequest', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
