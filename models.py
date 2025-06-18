@@ -226,7 +226,12 @@ class Article(db.Model):
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
     setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
     vis_celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
-    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
+    celula_id = db.Column(
+        db.Integer,
+        db.ForeignKey('celula.id'),
+        nullable=False,
+        server_default='1'
+    )
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)

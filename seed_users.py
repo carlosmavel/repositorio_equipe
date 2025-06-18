@@ -1,7 +1,7 @@
 # seed_users.py
 from werkzeug.security import generate_password_hash
 from database import db
-from models import User
+from models import User, Celula
 from app import app      # importa o Flask já configurado
 # from datetime import date # Se você for adicionar datas como data_admissao
 
@@ -49,15 +49,17 @@ def run():
         )
     ]
 
-    with app.app_context(): # Garante o contexto da aplicação Flask
+    with app.app_context():  # Garante o contexto da aplicação Flask
         print("Verificando e criando usuários de exemplo...")
+
+        celula = Celula.query.filter_by(nome="Célula Exemplo").first()
+
         for user_data in users_data:
             user = User.query.filter_by(username=user_data["username"]).first()
             if not user:
-                # Se quiser adicionar outros campos no User, adicione-os ao dict user_data
-                # Ex: user_data['ramal'] = "1234"
-                # user_data['data_admissao'] = date(2023, 5, 1)
-                
+                if celula:
+                    user_data["celula_id"] = celula.id
+
                 new_user = User(**user_data)
                 db.session.add(new_user)
                 print(f"Usuário {user_data['username']} criado.")
