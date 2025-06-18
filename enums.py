@@ -14,3 +14,10 @@ class ArticleStatus(Enum):
         self.label       = label
         self.color       = color
         self.text_color  = text_color
+
+
+class ArticleVisibility(Enum):
+    INSTITUICAO     = "instituicao"
+    ESTABELECIMENTO = "estabelecimento"
+    SETOR           = "setor"
+    CELULA          = "celula"
