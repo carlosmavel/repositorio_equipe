@@ -21,7 +21,7 @@ from sqlalchemy import or_, func
 from functools import wraps # Essencial para decoradores, você já tinha
 
 from database import db
-from enums import ArticleStatus
+from enums import ArticleStatus, ArticleVisibility
 
 from models import (
     User,
@@ -45,6 +45,7 @@ from utils import (
     generate_token,
     confirm_token,
     send_email,
+    user_can_view_article,
 )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -1020,14 +1021,36 @@ def novo_artigo():
                   if acao == 'rascunho'
                   else ArticleStatus.PENDENTE)
 
-        # 2) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
         user = User.query.filter_by(username=session['username']).first()
+
+        # 2) Define visibilidade e contextos
+        vis_str = (request.form.get('visibility') or 'celula').split(',')[0]
+        vis = ArticleVisibility.CELULA
+        if vis_str in ArticleVisibility._value2member_map_:
+            vis = ArticleVisibility(vis_str)
+
+        inst_id = est_id = setor_vis_id = vis_cel_id = None
+        if vis is ArticleVisibility.INSTITUICAO and user.estabelecimento:
+            inst_id = user.estabelecimento.instituicao_id
+        elif vis is ArticleVisibility.ESTABELECIMENTO:
+            est_id = user.estabelecimento_id
+        elif vis is ArticleVisibility.SETOR:
+            setor_vis_id = user.setor_id
+        elif vis is ArticleVisibility.CELULA:
+            vis_cel_id = user.celula_id
+
+        # 3) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
         artigo = Article(
             titulo     = titulo,
             texto      = texto_limpo,
             status     = status,
             user_id    = user.id,
             celula_id  = user.celula_id or 1,
+            visibility = vis,
+            instituicao_id = inst_id,
+            estabelecimento_id = est_id,
+            setor_id = setor_vis_id,
+            vis_celula_id = vis_cel_id,
             arquivos   = None,
             created_at = datetime.now(timezone.utc),
             updated_at = datetime.now(timezone.utc)
@@ -1116,6 +1139,10 @@ def artigo(artigo_id):
     if 'username' not in session:
         return redirect(url_for('login'))
     artigo = Article.query.get_or_404(artigo_id)
+    user = User.query.filter_by(username=session['username']).first()
+    if not user_can_view_article(user, artigo):
+        flash('Você não tem permissão para ver este artigo.', 'danger')
+        return redirect(url_for('pagina_inicial'))
 
     if request.method == 'POST':
         # 1) campos básicos
@@ -1407,6 +1434,10 @@ def pesquisar():
         )
 
     artigos = query.order_by(Article.created_at.desc()).all()
+
+    # Filtra conforme visibilidade
+    user = User.query.filter_by(username=session['username']).first()
+    artigos = [a for a in artigos if user_can_view_article(user, a)]
 
     # formata datas para o fuso local
     for art in artigos:
