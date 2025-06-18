@@ -476,6 +476,7 @@ def admin_usuarios():
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
         setor_id = request.form.get('setor_id', type=int)
         cargo_id = request.form.get('cargo_id', type=int)
+        celula_id = request.form.get('celula_id', type=int)
 
         data_nascimento = None
         if data_nascimento_str:
@@ -522,6 +523,7 @@ def admin_usuarios():
                     usr.estabelecimento_id = estabelecimento_id
                     usr.setor_id = setor_id
                     usr.cargo_id = cargo_id
+                    usr.celula_id = celula_id
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
@@ -544,6 +546,7 @@ def admin_usuarios():
                         estabelecimento_id=estabelecimento_id,
                         setor_id=setor_id,
                         cargo_id=cargo_id,
+                        celula_id=celula_id,
                     )
                     usr.set_password(password)
                     db.session.add(usr)
@@ -571,6 +574,7 @@ def admin_usuarios():
     estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
     setores = Setor.query.order_by(Setor.nome).all()
     cargos = Cargo.query.order_by(Cargo.nome).all()
+    celulas = Celula.query.order_by(Celula.nome).all()
     return render_template(
         'admin/usuarios.html',
         usuarios=usuarios,
@@ -578,6 +582,7 @@ def admin_usuarios():
         estabelecimentos=estabelecimentos,
         setores=setores,
         cargos=cargos,
+        celulas=celulas,
     )
 
 @app.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
