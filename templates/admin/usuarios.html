@@ -166,6 +166,15 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                            <div class="col-md-3 mb-1">
+                                <label for="celula_id" class="form-label">Célula</label>
+                                <select class="form-select form-select-sm" id="celula_id" name="celula_id">
+                                    <option value="">Selecione</option>
+                                    {% for cel in celulas %}
+                                        <option value="{{ cel.id }}" {% if request.form.get('celula_id') == cel.id|string %}selected{% endif %}>{{ cel.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-1">
@@ -274,6 +283,15 @@
                                 <option value="">Selecione</option>
                                 {% for cg in cargos %}
                                 <option value="{{ cg.id }}" {% if (request.form.get('cargo_id') == cg.id|string) or (not request.form.get('cargo_id') and user_editar.cargo_id == cg.id) %}selected{% endif %}>{{ cg.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-1">
+                            <label for="edit_celula_id" class="form-label">Célula</label>
+                            <select class="form-select form-select-sm" id="edit_celula_id" name="celula_id">
+                                <option value="">Selecione</option>
+                                {% for cel in celulas %}
+                                <option value="{{ cel.id }}" {% if (request.form.get('celula_id') == cel.id|string) or (not request.form.get('celula_id') and user_editar.celula_id == cel.id) %}selected{% endif %}>{{ cel.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
