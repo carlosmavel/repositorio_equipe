@@ -30,6 +30,18 @@
           </div>
 
           <div class="mb-3">
+            <label for="visibilitySelect" class="form-label">Visibilidade</label>
+            <select id="visibilitySelect" class="form-select" multiple size="4">
+              <option value="instituicao">Instituição</option>
+              <option value="estabelecimento">Estabelecimento</option>
+              <option value="setor">Setor</option>
+              <option value="celula">Célula</option>
+            </select>
+            <input type="hidden" name="visibility" id="visibilityInput">
+            <div id="visibilityDisplay" class="mt-2"></div>
+          </div>
+
+          <div class="mb-3">
             <label for="files" class="form-label">Anexos</label>
             <input class="form-control" type="file" id="files" name="files" multiple accept="image/*,.pdf,.doc,.docx">
           </div>
@@ -70,6 +82,18 @@ document.addEventListener('DOMContentLoaded', () => {
       ]
     }
   });
+
+  // Visibilidade multi-select → atualiza hidden e badges
+  const visSelect = document.getElementById('visibilitySelect');
+  const visInput = document.getElementById('visibilityInput');
+  const visDisplay = document.getElementById('visibilityDisplay');
+  function updateVisibility() {
+    const opts = Array.from(visSelect.selectedOptions);
+    visInput.value = opts.map(o => o.value).join(',');
+    visDisplay.innerHTML = opts.map(o => `<span class="badge bg-secondary me-1">${o.text}</span>`).join('');
+  }
+  visSelect.addEventListener('change', updateVisibility);
+  updateVisibility();
 
   // Sincroniza conteúdo Quill no campo hidden antes de submeter
   const form = document.querySelector('form');
