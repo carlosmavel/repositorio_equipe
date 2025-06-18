@@ -180,14 +180,17 @@ def user_can_view_article(user, article):
 
     vis = article.visibility
 
+    user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+    user_setor = user.setor or (user.celula.setor if user.celula else None)
+
     if vis is ArticleVisibility.INSTITUICAO:
-        if user.estabelecimento and article.instituicao_id == user.estabelecimento.instituicao_id:
+        if user_est and article.instituicao_id == user_est.instituicao_id:
             return True
     elif vis is ArticleVisibility.ESTABELECIMENTO:
-        if user.estabelecimento_id == article.estabelecimento_id:
+        if user_est and article.estabelecimento_id == user_est.id:
             return True
     elif vis is ArticleVisibility.SETOR:
-        if user.setor_id == article.setor_id:
+        if user_setor and article.setor_id == user_setor.id:
             return True
     elif vis is ArticleVisibility.CELULA:
         if user.celula_id == article.vis_celula_id:
