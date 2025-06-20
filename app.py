@@ -1445,6 +1445,10 @@ def pesquisar():
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         art.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+        dt2 = art.updated_at or dt
+        if dt2.tzinfo is None:
+            dt2 = dt2.replace(tzinfo=timezone.utc)
+        art.local_aprovado = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
 
     return render_template(
         'pesquisar.html',

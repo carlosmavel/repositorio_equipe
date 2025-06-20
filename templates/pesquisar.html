@@ -23,7 +23,8 @@
           <div>
             <div class="fw-bold">{{ artigo.titulo }}</div>
             <small class="text-muted">
-              {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
+              Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+              Aprovado em: {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }}
             </small>
           </div>
 
