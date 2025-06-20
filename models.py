@@ -142,6 +142,8 @@ class Estabelecimento(db.Model):
     usuarios = db.relationship('User', back_populates='estabelecimento', lazy='dynamic')
 
     def __repr__(self):
+    __table_args__ = {'extend_existing': True}
+    __table_args__ = {'extend_existing': True}
         return f"<Estabelecimento {self.codigo} - {self.nome_fantasia}>"
 
 
