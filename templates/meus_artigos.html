@@ -19,7 +19,10 @@
                 
                 <div>
                   <div class="fw-bold">{{ artigo.titulo }}</div>
-                  <small class="text-muted">{{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}</small>
+                  <small class="text-muted">
+                    {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+                    Visibilidade: {{ artigo.visibility.label }}
+                  </small>
                 </div>
 
                 {# Badge usando propriedades do enum #}

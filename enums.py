@@ -17,7 +17,15 @@ class ArticleStatus(Enum):
 
 
 class ArticleVisibility(Enum):
-    INSTITUICAO     = "instituicao"
-    ESTABELECIMENTO = "estabelecimento"
-    SETOR           = "setor"
-    CELULA          = "celula"
+    """Controla quem pode visualizar o artigo."""
+
+    def __new__(cls, value: str, label: str):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.label = label
+        return obj
+
+    INSTITUICAO     = ("instituicao",     "Instituição")
+    ESTABELECIMENTO = ("estabelecimento", "Estabelecimento")
+    SETOR           = ("setor",           "Setor")
+    CELULA          = ("celula",          "Célula")
