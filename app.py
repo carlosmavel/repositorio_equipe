@@ -475,9 +475,9 @@ def admin_usuarios():
         data_nascimento_str = request.form.get('data_nascimento', '').strip()
         data_admissao_str = request.form.get('data_admissao', '').strip()
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        setor_id = request.form.get('setor_id', type=int)
+        setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
         cargo_id = request.form.get('cargo_id', type=int)
-        celula_id = request.form.get('celula_id', type=int)
+        celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
 
         data_nascimento = None
         if data_nascimento_str:
@@ -493,8 +493,8 @@ def admin_usuarios():
             except ValueError:
                 flash('Data de admissão inválida.', 'danger')
 
-        if not username or not email:
-            flash('Usuário e Email são obrigatórios.', 'danger')
+        if not username or not email or not estabelecimento_id or not setor_ids or not celula_ids:
+            flash('Usuário, Email, Estabelecimento, Setor e Célula são obrigatórios.', 'danger')
         else:
             query_username = User.query.filter_by(username=username)
             query_email = User.query.filter_by(email=email)
@@ -522,9 +522,11 @@ def admin_usuarios():
                     usr.data_nascimento = data_nascimento
                     usr.data_admissao = data_admissao
                     usr.estabelecimento_id = estabelecimento_id
-                    usr.setor_id = setor_id
+                    usr.setor_id = setor_ids[0] if setor_ids else None
                     usr.cargo_id = cargo_id
-                    usr.celula_id = celula_id
+                    usr.celula_id = celula_ids[0] if celula_ids else None
+                    usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
+                    usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
@@ -545,11 +547,13 @@ def admin_usuarios():
                         data_nascimento=data_nascimento,
                         data_admissao=data_admissao,
                         estabelecimento_id=estabelecimento_id,
-                        setor_id=setor_id,
+                        setor_id=setor_ids[0] if setor_ids else None,
                         cargo_id=cargo_id,
-                        celula_id=celula_id,
+                        celula_id=celula_ids[0] if celula_ids else None,
                     )
                     usr.set_password(password)
+                    usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
+                    usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
                     db.session.add(usr)
                     action_msg = 'criado'
 
