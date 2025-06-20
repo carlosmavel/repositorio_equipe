@@ -1025,11 +1025,10 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         # Verifica as credenciais
-        if user and user.check_password(password): # Assume que o modelo User tem o método check_password
+        if user and user.check_password(password):  # Assume que o modelo User tem o método check_password
             # Credenciais corretas: estabelece a sessão
             session["user_id"] = user.id
             session["username"] = user.username
-            session["role"] = user.role
             session["permissoes"] = [p.codigo for p in user.get_permissoes()]
             
             # Redireciona para a página de destino após o login
@@ -1128,8 +1127,8 @@ def novo_artigo():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    # Só colaboradores, editores e admins podem criar
-    if request.method == 'POST' and session['role'] in ['colaborador', 'editor', 'admin']:
+    # Processa envio do formulário de criação de artigo
+    if request.method == 'POST':
       
         # 1) Coleta dados do formulário
         titulo      = request.form['titulo'].strip()
@@ -1398,22 +1397,31 @@ def editar_artigo(artigo_id):
 
 @app.route("/aprovacao")
 def aprovacao():
-    if "username" not in session or session["role"] not in ["editor", "admin"]:
+    if "user_id" not in session:
+        flash("Por favor, faça login para acessar esta página.", "warning")
+        return redirect(url_for("login"))
+
+    user = User.query.get(session["user_id"])
+    if not user or not (user.has_permissao("admin") or user.has_permissao("artigo_aprovar")):
         flash("Permissão negada.", "danger")
         return redirect(url_for("login"))
 
-    pendentes = (Article.query
-                 .filter_by(status=ArticleStatus.PENDENTE)
-                 .order_by(Article.created_at.asc())
-                 .all())
+    pendentes_query = Article.query.filter_by(status=ArticleStatus.PENDENTE)
+    if not user.has_permissao("admin") and not user.has_permissao("artigo_aprovar_todas"):
+        pendentes_query = pendentes_query.filter(Article.celula_id == user.celula_id)
+    pendentes = pendentes_query.order_by(Article.created_at.asc()).all()
 
-    # id do editor/admin logado
-    uid = session["user_id"]
-    revisados = (
+    uid = user.id
+    revisados_query = (
         Article.query
         .join(Comment, Comment.artigo_id == Article.id)
         .filter(Comment.user_id == uid)
         .filter(Article.status != ArticleStatus.PENDENTE)
+    )
+    if not user.has_permissao("admin") and not user.has_permissao("artigo_aprovar_todas"):
+        revisados_query = revisados_query.filter(Article.celula_id == user.celula_id)
+    revisados = (
+        revisados_query
         .group_by(Article.id)                                 # ← agrupa por artigo
         .order_by(func.max(Comment.created_at).desc())        # ← último comentário
         .all()
@@ -1432,11 +1440,21 @@ def aprovacao():
 
 @app.route('/aprovacao/<int:artigo_id>', methods=['GET', 'POST'])
 def aprovacao_detail(artigo_id):
-    if 'username' not in session or session['role'] not in ['editor','admin']:
+    if 'user_id' not in session:
+        flash('Por favor, faça login para acessar esta página.', 'warning')
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if not user or not (user.has_permissao('admin') or user.has_permissao('artigo_aprovar')):
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
     artigo = Article.query.get_or_404(artigo_id)
+    if (not user.has_permissao("admin") and
+            not user.has_permissao("artigo_aprovar_todas") and
+            artigo.celula_id != user.celula_id):
+        flash("Permissão negada.", "danger")
+        return redirect(url_for("aprovacao"))
 
     if request.method=='POST':
         acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
@@ -1457,7 +1475,6 @@ def aprovacao_detail(artigo_id):
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
         # 2) Registra comentário de ajuste/aprovação/rejeição ------------------
-        user = User.query.filter_by(username=session['username']).first()
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
