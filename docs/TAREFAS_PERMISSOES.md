@@ -33,10 +33,15 @@ partir das permissões cadastradas em `Funcao` e vinculadas aos `Cargos`.
 
 5. **Lista completa de funções**
    - Criar (ou atualizar) um script de seed que insira na tabela `funcao`
-     todas as funções disponíveis no sistema (por exemplo `artigo_criar`,
-     `artigo_aprovar`, etc.).
-   - Utilizar essa lista para preencher os checkboxes de cargos e dos
-     formulários de usuários.
+     todas as funções disponíveis no sistema. As principais permissões de
+     artigos são:
+       - `artigo_criar`
+       - `artigo_editar`
+       - `artigo_aprovar`
+       - `artigo_revisar`
+       - `artigo_assumir_revisao`
+  - Utilizar essa lista para preencher os checkboxes de cargos e dos
+    formulários de usuários.
 
 Com esses passos, todo o acesso passará a ser concedido
 exclusivamente pelas permissões configuradas nos cargos, sem depender

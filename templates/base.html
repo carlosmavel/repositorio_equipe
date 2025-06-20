@@ -199,7 +199,11 @@
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'meus_artigos' else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'novo_artigo' else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'pesquisar' else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
-                                {% if current_user and (current_user.has_permissao('editor') or current_user.has_permissao('admin')) %}
+                                {% if current_user and (
+                                    current_user.has_permissao('admin') or
+                                    current_user.has_permissao('artigo_aprovar') or
+                                    current_user.has_permissao('artigo_revisar')
+                                ) %}
                                     <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'aprovacao' else '' }}" href="{{ url_for('aprovacao') }}"><i class="bi bi-check2-square me-2"></i> Aprovação</a></li>
                                 {% endif %}
                             </ul>
