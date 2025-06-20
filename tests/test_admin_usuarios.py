@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import User, Instituicao, Estabelecimento, Setor, Celula
+from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo
 from utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
@@ -108,3 +108,31 @@ def test_create_user_with_celula(client):
         assert usr is not None
         assert usr.celula_id == cel_id
         assert usr.extra_celulas.filter_by(id=cel_id).count() == 1
+
+
+def test_user_defaults_from_cargo(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        cargo = Cargo(
+            nome='Gestor TI', ativo=True
+        )
+        cargo.default_setores.append(Setor.query.get(ids['setor']))
+        cargo.default_celulas.append(Celula.query.get(ids['cel']))
+        db.session.add(cargo)
+        db.session.commit()
+        cargo_id = cargo.id
+    response = client.post('/admin/usuarios', data={
+        'username': 'gestor',
+        'email': 'gestor@example.com',
+        'role': 'colaborador',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        usr = User.query.filter_by(username='gestor').first()
+        assert usr is not None
+        assert usr.cargo_id == cargo_id
+        assert usr.setor_id == ids['setor']
+        assert usr.celula_id == ids['cel']

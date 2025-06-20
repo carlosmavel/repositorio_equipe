@@ -33,6 +33,19 @@ user_extra_setores = db.Table(
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
+# Association tables for default hierarchy per cargo
+cargo_default_celulas = db.Table(
+    'cargo_default_celulas',
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+    db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
+)
+
+cargo_default_setores = db.Table(
+    'cargo_default_setores',
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+    db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
+)
+
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
 class Instituicao(db.Model):
@@ -146,6 +159,11 @@ class Cargo(db.Model):
 
     # Relacionamentos: Um Cargo pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='cargo', lazy='dynamic')
+    # Hierarquia padrão para usuários deste cargo
+    default_setores = db.relationship(
+        'Setor', secondary=cargo_default_setores, lazy='dynamic')
+    default_celulas = db.relationship(
+        'Celula', secondary=cargo_default_celulas, lazy='dynamic')
 
     def __repr__(self):
         return f"<Cargo {self.nome}>"

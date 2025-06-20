@@ -103,6 +103,39 @@
                             <label for="descricao" class="form-label">Descrição</label>
                             <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="3">{{ request.form.get('descricao', '') }}</textarea>
                         </div>
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Hierarquia Padrão</h6></div>
+                            <div class="card-body">
+                                {% for est in estabelecimentos %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="c_est{{ est.id }}" value="{{ est.id }}" disabled>
+                                        <label class="form-check-label fw-bold" for="c_est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                    </div>
+                                    {% set setores_est = est.setores.all() %}
+                                    {% if setores_est %}
+                                        <div class="ms-4">
+                                            {% for st in setores_est %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="c_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}checked{% endif %}>
+                                                    <label class="form-check-label" for="c_setor{{ st.id }}">{{ st.nome }}</label>
+                                                </div>
+                                                {% set celulas_set = st.celulas.all() %}
+                                                {% if celulas_set %}
+                                                    <div class="ms-4 mb-2">
+                                                        {% for cel in celulas_set %}
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="c_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}checked{% endif %}>
+                                                                <label class="form-check-label" for="c_celula{{ cel.id }}">{{ cel.nome }}</label>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
                         <div class="col-md-12 mb-1">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check" checked>
@@ -153,6 +186,39 @@
                     <div class="mb-1">
                         <label for="edit_descricao" class="form-label">Descrição</label>
                         <textarea class="form-control form-control-sm" id="edit_descricao" name="descricao" rows="3">{{ request.form.get('descricao', cargo_editar.descricao or '') }}</textarea>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Hierarquia Padrão</h6></div>
+                        <div class="card-body">
+                            {% for est in estabelecimentos %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="e_est{{ est.id }}" value="{{ est.id }}" disabled>
+                                    <label class="form-check-label fw-bold" for="e_est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                </div>
+                                {% set setores_est = est.setores.all() %}
+                                {% if setores_est %}
+                                    <div class="ms-4">
+                                        {% for st in setores_est %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="e_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in cargo_editar.default_setores.all())) %}checked{% endif %}>
+                                                <label class="form-check-label" for="e_setor{{ st.id }}">{{ st.nome }}</label>
+                                            </div>
+                                            {% set celulas_set = st.celulas.all() %}
+                                            {% if celulas_set %}
+                                                <div class="ms-4 mb-2">
+                                                    {% for cel in celulas_set %}
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="e_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in cargo_editar.default_celulas.all())) %}checked{% endif %}>
+                                                            <label class="form-check-label" for="e_celula{{ cel.id }}">{{ cel.nome }}</label>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
                     </div>
                     <div class="col-md-12 mb-1">
                         <div class="form-check form-switch">
