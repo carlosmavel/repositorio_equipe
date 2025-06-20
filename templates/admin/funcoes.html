@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Admin - Gerenciar Fun\u00e7\u00f5es{% endblock %}
+{% block title %}Admin - Gerenciar Funções{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-5 mt-3">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
-        <h1 class="h2">Gerenciar Fun\u00e7\u00f5es</h1>
+        <h1 class="h2">Gerenciar Funções</h1>
     </div>
 
     <ul class="nav nav-tabs" id="tabFunc" role="tablist">
@@ -23,7 +23,7 @@
                 <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Fun\u00e7\u00f5es Cadastradas ({{ funcoes|length }})</h5>
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Funções Cadastradas ({{ funcoes|length }})</h5>
                         </div>
                         <div class="card-body">
                             {% if funcoes %}
@@ -31,9 +31,9 @@
                                     <table class="table table-hover table-sm align-middle">
                                         <thead>
                                             <tr>
-                                                <th>C\u00f3digo</th>
+                                                <th>Código</th>
                                                 <th>Nome</th>
-                                                <th style="width: 200px;" class="text-end">A\u00e7\u00f5es</th>
+                                                <th style="width: 200px;" class="text-end">Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -45,7 +45,7 @@
                                                     <a href="{{ url_for('admin_funcoes', edit_id=f.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                                         <i class="bi bi-pencil-fill"></i>
                                                     </a>
-                                                    <form action="{{ url_for('admin_delete_funcao', id=f.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover a fun\u00e7\u00e3o ' + {{ f.nome | tojson }} + '?');">
+                                                    <form action="{{ url_for('admin_delete_funcao', id=f.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover a função ' + {{ f.nome | tojson }} + '?');">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover">
                                                             <i class="bi bi-trash-fill"></i>
                                                         </button>
@@ -57,7 +57,7 @@
                                     </table>
                                 </div>
                             {% else %}
-                                <p class="text-muted">Nenhuma fun\u00e7\u00e3o cadastrada ainda. Adicione uma acima!</p>
+                                <p class="text-muted">Nenhuma função cadastrada ainda. Adicione uma acima!</p>
                             {% endif %}
                         </div>
                     </div>
@@ -65,13 +65,13 @@
 
                 <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
                     <h5 class="mb-3">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Nova Fun\u00e7\u00e3o
+                        <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Nova Função
                     </h5>
 
                     <form method="POST" action="{{ url_for('admin_funcoes') }}" novalidate class="compact-form">
                         <div class="row">
                             <div class="col-md-4 mb-1">
-                                <label for="codigo" class="form-label">C\u00f3digo <span class="text-danger">*</span></label>
+                                <label for="codigo" class="form-label">Código <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="codigo" name="codigo" value="{{ request.form.get('codigo', '') }}" required maxlength="100">
                             </div>
                             <div class="col-md-8 mb-1">
@@ -81,7 +81,7 @@
                         </div>
                         <div class="d-flex pt-2 border-top">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Adicionar Fun\u00e7\u00e3o
+                                <i class="bi bi-check-lg me-1"></i> Adicionar Função
                             </button>
                         </div>
                     </form>
@@ -95,14 +95,14 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalEditarFuncaoLabel">Editar Fun\u00e7\u00e3o</h5>
+                    <h5 class="modal-title" id="modalEditarFuncaoLabel">Editar Função</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="{{ url_for('admin_funcoes') }}" novalidate class="compact-form">
                         <input type="hidden" name="id_para_atualizar" value="{{ funcao_editar.id }}">
                         <div class="mb-1">
-                            <label for="edit_codigo" class="form-label">C\u00f3digo <span class="text-danger">*</span></label>
+                            <label for="edit_codigo" class="form-label">Código <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="edit_codigo" name="codigo" value="{{ request.form.get('codigo', funcao_editar.codigo) }}" required maxlength="100">
                         </div>
                         <div class="mb-1">
@@ -111,7 +111,7 @@
                         </div>
                         <div class="d-flex pt-2 border-top">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Salvar Altera\u00e7\u00f5es
+                            <i class="bi bi-check-lg me-1"></i> Salvar Alterações
                             </button>
                             <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
