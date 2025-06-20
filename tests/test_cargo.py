@@ -5,14 +5,28 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Cargo
+from models import Cargo, Instituicao, Estabelecimento, Setor, Celula
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
     with app.app_context():
         db.create_all()
+        inst = Instituicao(nome='Inst')
+        db.session.add(inst)
+        db.session.flush()
+        est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
+        db.session.add(est)
+        db.session.flush()
+        setor = Setor(nome='Setor1', estabelecimento_id=est.id)
+        db.session.add(setor)
+        db.session.flush()
+        cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
+        db.session.add(cel)
+        db.session.commit()
+        base_ids = {'setor': setor.id, 'cel': cel.id}
         with app.test_client() as client:
+            client.base_ids = base_ids
             yield client
         db.session.remove()
         db.drop_all()
@@ -25,11 +39,14 @@ def login_admin(client):
 
 def test_create_cargo(client):
     login_admin(client)
+    ids = client.base_ids
     response = client.post('/admin/cargos', data={
         'nome': 'Analista',
         'descricao': 'Analisa as coisas',
         'nivel_hierarquico': '3',
-        'ativo_check': 'on'
+        'ativo_check': 'on',
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():
@@ -38,3 +55,5 @@ def test_create_cargo(client):
         assert cargo.descricao == 'Analisa as coisas'
         assert cargo.nivel_hierarquico == 3
         assert cargo.ativo is True
+        assert cargo.default_setores.filter_by(id=ids['setor']).count() == 1
+        assert cargo.default_celulas.filter_by(id=ids['cel']).count() == 1

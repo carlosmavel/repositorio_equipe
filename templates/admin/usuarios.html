@@ -147,6 +147,15 @@
                         <div class="card mb-3">
                             <div class="card-header"><h6 class="mb-0">Hierarquia</h6></div>
                             <div class="card-body">
+                                <div class="mb-2">
+                                    <label for="cargo_id" class="form-label">Cargo</label>
+                                    <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
+                                        <option value="">Selecione</option>
+                                        {% for cg in cargos %}
+                                            <option value="{{ cg.id }}" {% if request.form.get('cargo_id') == cg.id|string %}selected{% endif %}>{{ cg.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                                 {% for est in estabelecimentos %}
                                     <div class="form-check">
                                         <input class="form-check-input estab-checkbox" type="checkbox" id="est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}checked{% endif %}>
@@ -175,15 +184,6 @@
                                         </div>
                                     {% endif %}
                                 {% endfor %}
-                                <div class="mt-2">
-                                    <label for="cargo_id" class="form-label">Cargo</label>
-                                    <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
-                                        <option value="">Selecione</option>
-                                        {% for cg in cargos %}
-                                            <option value="{{ cg.id }}" {% if request.form.get('cargo_id') == cg.id|string %}selected{% endif %}>{{ cg.nome }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -285,6 +285,15 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Hierarquia</h6></div>
                         <div class="card-body">
+                            <div class="mb-2">
+                                <label for="edit_cargo_id" class="form-label">Cargo</label>
+                                <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
+                                    <option value="">Selecione</option>
+                                    {% for cg in cargos %}
+                                    <option value="{{ cg.id }}" {% if (request.form.get('cargo_id') == cg.id|string) or (not request.form.get('cargo_id') and user_editar.cargo_id == cg.id) %}selected{% endif %}>{{ cg.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             {% for est in estabelecimentos %}
                                 <div class="form-check">
                                     <input class="form-check-input estab-checkbox" type="checkbox" id="edit_est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}checked{% endif %}>
@@ -313,15 +322,6 @@
                                     </div>
                                 {% endif %}
                             {% endfor %}
-                            <div class="mt-2">
-                                <label for="edit_cargo_id" class="form-label">Cargo</label>
-                                <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
-                                    <option value="">Selecione</option>
-                                    {% for cg in cargos %}
-                                    <option value="{{ cg.id }}" {% if (request.form.get('cargo_id') == cg.id|string) or (not request.form.get('cargo_id') and user_editar.cargo_id == cg.id) %}selected{% endif %}>{{ cg.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
                         </div>
                     </div>
 
@@ -358,6 +358,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+window.cargoDefaults = {{ cargo_defaults|safe }};
+</script>
 {% if user_editar %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {

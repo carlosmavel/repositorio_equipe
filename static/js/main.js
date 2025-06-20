@@ -191,4 +191,24 @@ document.addEventListener("DOMContentLoaded", function () {
   updatePermList('edit_role', 'permResumoEdit');
   document.getElementById('role')?.addEventListener('input', () => updatePermList('role', 'permResumoNovo'));
   document.getElementById('edit_role')?.addEventListener('input', () => updatePermList('edit_role', 'permResumoEdit'));
+
+  const cargoDefaults = window.cargoDefaults || {};
+
+  function applyCargoDefaults(prefix, cargoId) {
+    const defs = cargoDefaults[cargoId];
+    if (!defs) return;
+    document.querySelectorAll(`input[id^='${prefix}setor']`).forEach((chk) => {
+      chk.checked = defs.setores.includes(parseInt(chk.value));
+    });
+    document.querySelectorAll(`input[id^='${prefix}celula']`).forEach((chk) => {
+      chk.checked = defs.celulas.includes(parseInt(chk.value));
+    });
+  }
+
+  document.getElementById('cargo_id')?.addEventListener('change', (e) => {
+    applyCargoDefaults('', e.target.value);
+  });
+  document.getElementById('edit_cargo_id')?.addEventListener('change', (e) => {
+    applyCargoDefaults('edit_', e.target.value);
+  });
 });

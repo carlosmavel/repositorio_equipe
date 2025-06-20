@@ -479,6 +479,20 @@ def admin_usuarios():
         cargo_id = request.form.get('cargo_id', type=int)
         celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
 
+        cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
+        if cargo_padrao:
+            if not setor_ids:
+                setor_ids = [s.id for s in cargo_padrao.default_setores]
+            if not celula_ids:
+                celula_ids = [c.id for c in cargo_padrao.default_celulas]
+            if not estabelecimento_id:
+                if setor_ids:
+                    setor_obj = Setor.query.get(setor_ids[0])
+                    estabelecimento_id = setor_obj.estabelecimento_id
+                elif celula_ids:
+                    cel_obj = Celula.query.get(celula_ids[0])
+                    estabelecimento_id = cel_obj.estabelecimento_id
+
         data_nascimento = None
         if data_nascimento_str:
             try:
@@ -580,6 +594,13 @@ def admin_usuarios():
     setores = Setor.query.order_by(Setor.nome).all()
     cargos = Cargo.query.order_by(Cargo.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
+    cargo_defaults = {
+        c.id: {
+            'setores': [s.id for s in c.default_setores],
+            'celulas': [ce.id for ce in c.default_celulas],
+        }
+        for c in cargos
+    }
     return render_template(
         'admin/usuarios.html',
         usuarios=usuarios,
@@ -588,6 +609,7 @@ def admin_usuarios():
         setores=setores,
         cargos=cargos,
         celulas=celulas,
+        cargo_defaults=json.dumps(cargo_defaults),
     )
 
 @app.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
@@ -796,6 +818,8 @@ def admin_cargos():
         descricao = request.form.get('descricao', '').strip()
         nivel_hierarquico = request.form.get('nivel_hierarquico', type=int)
         ativo = request.form.get('ativo_check') == 'on'
+        setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
+        celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
 
         if not nome:
             flash('Nome do cargo é obrigatório.', 'danger')
@@ -824,6 +848,8 @@ def admin_cargos():
                     )
                     db.session.add(cargo)
                     action_msg = 'criado'
+                cargo.default_setores = [Setor.query.get(sid) for sid in setor_ids]
+                cargo.default_celulas = [Celula.query.get(cid) for cid in celula_ids]
                 try:
                     db.session.commit()
                     flash(f'Cargo {action_msg} com sucesso!', 'success')
@@ -836,7 +862,17 @@ def admin_cargos():
             cargo_para_editar = Cargo.query.get(id_para_atualizar)
 
     todos_cargos = Cargo.query.order_by(Cargo.nivel_hierarquico, Cargo.nome).all()
-    return render_template('admin/cargos.html', cargos=todos_cargos, cargo_editar=cargo_para_editar)
+    estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
+    setores = Setor.query.order_by(Setor.nome).all()
+    celulas = Celula.query.order_by(Celula.nome).all()
+    return render_template(
+        'admin/cargos.html',
+        cargos=todos_cargos,
+        cargo_editar=cargo_para_editar,
+        estabelecimentos=estabelecimentos,
+        setores=setores,
+        celulas=celulas,
+    )
 
 
 @app.route('/admin/cargos/toggle_ativo/<int:id>', methods=['POST'])
