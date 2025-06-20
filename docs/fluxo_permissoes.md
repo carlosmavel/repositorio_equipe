@@ -29,3 +29,5 @@ cargo_editor.permissoes.extend([ler, criar, aprovar])
 db.session.add(cargo_editor)
 db.session.commit()
 ```
+
+Para uma visão passo a passo das alterações pendentes e ações necessárias para consolidar esse modelo de permissões, consulte o documento [TAREFAS_PERMISSOES.md](./TAREFAS_PERMISSOES.md).
