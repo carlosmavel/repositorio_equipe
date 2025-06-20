@@ -1,4 +1,7 @@
-from database import db
+try:
+    from .database import db  # pragma: no cover
+except ImportError:
+    from database import db
 from models import Instituicao, Estabelecimento, Setor, Celula
 from app import app
 

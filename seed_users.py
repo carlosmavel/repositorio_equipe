@@ -1,6 +1,9 @@
 # seed_users.py
 from werkzeug.security import generate_password_hash
-from database import db
+try:
+    from .database import db  # pragma: no cover
+except ImportError:
+    from database import db
 from models import User, Celula
 from app import app      # importa o Flask já configurado
 # from datetime import date # Se você for adicionar datas como data_admissao

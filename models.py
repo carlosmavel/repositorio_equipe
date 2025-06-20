@@ -4,7 +4,10 @@ from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey, Date, Boolean
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
 
-from database import db # Seu objeto db
+try:
+    from .database import db  # type: ignore  # pragma: no cover
+except ImportError:
+    from database import db  # type: ignore
 from enums import ArticleStatus, ArticleVisibility
 
 # --- association tables for article visibility ---
