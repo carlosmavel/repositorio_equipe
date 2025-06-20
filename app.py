@@ -24,7 +24,10 @@ try:
     from .database import db
 except ImportError:  # pragma: no cover - fallback for direct execution
     from database import db
-from enums import ArticleStatus, ArticleVisibility
+try:
+    from .enums import ArticleStatus, ArticleVisibility
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from enums import ArticleStatus, ArticleVisibility
 
 from models import (
     User,

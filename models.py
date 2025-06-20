@@ -8,7 +8,10 @@ try:
     from .database import db  # type: ignore  # pragma: no cover
 except ImportError:
     from database import db  # type: ignore
-from enums import ArticleStatus, ArticleVisibility
+try:
+    from .enums import ArticleStatus, ArticleVisibility
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from enums import ArticleStatus, ArticleVisibility
 
 # --- association tables for article visibility ---
 article_extra_celulas = db.Table(
