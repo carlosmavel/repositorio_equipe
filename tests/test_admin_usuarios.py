@@ -62,7 +62,6 @@ def test_create_user(client):
     response = client.post('/admin/usuarios', data={
         'username': 'newuser',
         'email': 'new@example.com',
-        'role': 'colaborador',
         'ativo_check': 'on',
         'estabelecimento_id': ids['est'],
         'setor_ids': [str(ids['setor'])],
@@ -114,7 +113,6 @@ def test_create_user_with_celula(client):
     response = client.post('/admin/usuarios', data={
         'username': 'celuser',
         'email': 'cel@example.com',
-        'role': 'colaborador',
         'ativo_check': 'on',
         'estabelecimento_id': est.id,
         'setor_ids': [str(setor.id)],
@@ -143,7 +141,6 @@ def test_user_defaults_from_cargo(client):
     response = client.post('/admin/usuarios', data={
         'username': 'gestor',
         'email': 'gestor@example.com',
-        'role': 'colaborador',
         'ativo_check': 'on',
         'cargo_id': cargo_id
     }, follow_redirects=True)
@@ -199,7 +196,6 @@ def test_create_user_with_custom_permissions(client):
     response = client.post('/admin/usuarios', data={
         'username': 'uperm',
         'email': 'uperm@example.com',
-        'role': 'colaborador',
         'ativo_check': 'on',
         'cargo_id': cargo_id,
         'estabelecimento_id': ids['est'],

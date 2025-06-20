@@ -463,7 +463,6 @@ def admin_usuarios():
         id_para_atualizar = request.form.get('id_para_atualizar')
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
-        role = request.form.get('role', 'colaborador').strip() or 'colaborador'
         ativo = request.form.get('ativo_check') == 'on'
         password = request.form.get('password')
 
@@ -527,7 +526,6 @@ def admin_usuarios():
                     usr = User.query.get_or_404(id_para_atualizar)
                     usr.username = username
                     usr.email = email
-                    usr.role = role
                     usr.ativo = ativo
                     usr.nome_completo = nome_completo or None
                     usr.matricula = matricula or None
@@ -556,7 +554,6 @@ def admin_usuarios():
                     usr = User(
                         username=username,
                         email=email,
-                        role=role,
                         ativo=ativo,
                         nome_completo=nome_completo or None,
                         matricula=matricula or None,

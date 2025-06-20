@@ -98,10 +98,6 @@
                                         <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
                                         <input type="email" class="form-control form-control-sm" id="email" name="email" value="{{ request.form.get('email', '') }}" required maxlength="120">
                                     </div>
-                                    <div class="col-md-4 mb-1">
-                                        <label for="role" class="form-label">Perfil</label>
-                                        <input type="text" class="form-control form-control-sm" id="role" name="role" value="{{ request.form.get('role', 'colaborador') }}" maxlength="50">
-                                    </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-1">
@@ -240,10 +236,6 @@
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email) }}" required maxlength="120">
-                                </div>
-                                <div class="col-md-4 mb-1">
-                                    <label for="edit_role" class="form-label">Perfil</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_role" name="role" value="{{ request.form.get('role', user_editar.role) }}" maxlength="50">
                                 </div>
                             </div>
                             <div class="row">
