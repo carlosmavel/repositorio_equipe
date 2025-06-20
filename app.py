@@ -20,7 +20,10 @@ from werkzeug.security import check_password_hash, generate_password_hash # gene
 from sqlalchemy import or_, func
 from functools import wraps # Essencial para decoradores, você já tinha
 
-from database import db
+try:
+    from .database import db
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from database import db
 from enums import ArticleStatus, ArticleVisibility
 
 from models import (
