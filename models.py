@@ -203,7 +203,6 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     nome_completo = db.Column(db.String(255), nullable=True)
     foto = db.Column(db.String(255), nullable=True)
-    role = db.Column(db.String(50), nullable=False, default='colaborador') # Campo role existente
 
     # Novos campos para cadastro completo
     matricula = db.Column(db.String(50), unique=True, nullable=True)

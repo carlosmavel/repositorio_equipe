@@ -11,7 +11,7 @@ def run():
             username="admin",
             email="admin@seudominio.com", # E-mail adicionado
             password_hash=generate_password_hash("Admin123!"),
-            role="admin",
+            funcoes=["admin"],
             nome_completo="Admin de Souza",
             matricula="ADM001",
             cpf="000.000.000-00", # Exemplo, coloque dados fictícios
@@ -27,7 +27,7 @@ def run():
             username="editor",
             email="editor@seudominio.com", # E-mail adicionado
             password_hash=generate_password_hash("Editor123!"),
-            role="editor",
+            funcoes=["editor"],
             nome_completo="Maria Oliveira",
             matricula="EDT001",
             cpf="111.111.111-11", # Exemplo
@@ -39,7 +39,7 @@ def run():
             username="colaborador",
             email="colaborador@seudominio.com", # E-mail adicionado
             password_hash=generate_password_hash("Colab123!"),
-            role="colaborador",
+            funcoes=["colaborador"],
             nome_completo="João Silva",
             matricula="COL001",
             cpf="222.222.222-22", # Exemplo
@@ -60,7 +60,12 @@ def run():
                 if celula:
                     user_data["celula_id"] = celula.id
 
+                perms = user_data.pop("funcoes", [])
                 new_user = User(**user_data)
+                for code in perms:
+                    func = Funcao.query.filter_by(codigo=code).first()
+                    if func:
+                        new_user.permissoes_personalizadas.append(func)
                 db.session.add(new_user)
                 print(f"Usuário {user_data['username']} criado.")
             else:

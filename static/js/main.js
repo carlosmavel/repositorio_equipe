@@ -164,33 +164,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  function updatePermList(roleInputId, listId) {
-    const input = document.getElementById(roleInputId);
-    const list = document.getElementById(listId);
-    if (!input || !list) return;
-    const role = (input.value || '').trim().toLowerCase();
-    let items = [];
-    if (role === 'admin') {
-      items = [
-        'Gerenciar usuários e cadastros base',
-        'Aprovar ou rejeitar artigos',
-        'Criar e editar seus próprios artigos'
-      ];
-    } else if (role === 'editor') {
-      items = [
-        'Revisar e aprovar artigos de outros usuários',
-        'Criar e editar seus próprios artigos'
-      ];
-    } else {
-      items = ['Criar e gerenciar seus próprios artigos'];
-    }
-    list.innerHTML = items.map((t) => `<li>${t}</li>`).join('');
-  }
-
-  updatePermList('role', 'permResumoNovo');
-  updatePermList('edit_role', 'permResumoEdit');
-  document.getElementById('role')?.addEventListener('input', () => updatePermList('role', 'permResumoNovo'));
-  document.getElementById('edit_role')?.addEventListener('input', () => updatePermList('edit_role', 'permResumoEdit'));
 
   const cargoDefaults = window.cargoDefaults || {};
 

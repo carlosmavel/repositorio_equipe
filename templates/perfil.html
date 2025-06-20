@@ -264,8 +264,6 @@ width: 30px; /* Ajuste a largura conforme necessário */
           <dt class="col-sm-4">Cargo:</dt>
           <dd class="col-sm-8">{{ current_user.cargo.nome if current_user.cargo else 'N/A' }}</dd>
 
-          <dt class="col-sm-4">Tipo de Usuário:</dt>
-          <dd class="col-sm-8">{{ current_user.role }}</dd>
 
           <dt class="col-sm-4">Status:</dt>
           <dd class="col-sm-8"><span class="badge bg-{{ 'success' if current_user.ativo else 'danger' }}">{{ 'Ativo' if
