@@ -20,6 +20,19 @@ article_extra_users = db.Table(
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
 )
 
+# Association tables for users responsible for multiple setores/células
+user_extra_celulas = db.Table(
+    'user_extra_celulas',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
+)
+
+user_extra_setores = db.Table(
+    'user_extra_setores',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
+)
+
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
 class Instituicao(db.Model):
@@ -162,17 +175,23 @@ class User(db.Model):
     # Novas Chaves Estrangeiras e Relacionamentos (Fase 1)
     # Um usuário pertence a um estabelecimento, um setor e tem um cargo.
     # Nullable=True para flexibilidade inicial ou para usuários que não se encaixam perfeitamente.
-    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='usuarios')
 
-    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=False)
     setor = db.relationship('Setor', back_populates='usuarios')
 
-    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
     celula = db.relationship('Celula', back_populates='usuarios')
 
     cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=True)
     cargo = db.relationship('Cargo', back_populates='usuarios')
+
+    # Relações de múltiplas células e setores
+    extra_celulas = db.relationship(
+        'Celula', secondary=user_extra_celulas, lazy='dynamic')
+    extra_setores = db.relationship(
+        'Setor', secondary=user_extra_setores, lazy='dynamic')
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')

@@ -140,20 +140,18 @@
                         </div>
                         <div class="row">
                             <div class="col-md-3 mb-1">
-                                <label for="estabelecimento_id" class="form-label">Estabelecimento</label>
-                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id">
-                                    <option value="">Selecione</option>
+                                <label for="estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id" required>
                                     {% for est in estabelecimentos %}
                                         <option value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}selected{% endif %}>{{ est.nome_fantasia }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-3 mb-1">
-                                <label for="setor_id" class="form-label">Setor</label>
-                                <select class="form-select form-select-sm" id="setor_id" name="setor_id">
-                                    <option value="">Selecione</option>
+                                <label for="setor_ids" class="form-label">Setor <span class="text-danger">*</span></label>
+                                <select multiple class="form-select form-select-sm" id="setor_ids" name="setor_ids" required>
                                     {% for st in setores %}
-                                        <option value="{{ st.id }}" {% if request.form.get('setor_id') == st.id|string %}selected{% endif %}>{{ st.nome }}</option>
+                                        <option value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}selected{% endif %}>{{ st.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -167,11 +165,10 @@
                                 </select>
                             </div>
                             <div class="col-md-3 mb-1">
-                                <label for="celula_id" class="form-label">Célula</label>
-                                <select class="form-select form-select-sm" id="celula_id" name="celula_id">
-                                    <option value="">Selecione</option>
+                                <label for="celula_ids" class="form-label">Célula <span class="text-danger">*</span></label>
+                                <select multiple class="form-select form-select-sm" id="celula_ids" name="celula_ids" required>
                                     {% for cel in celulas %}
-                                        <option value="{{ cel.id }}" {% if request.form.get('celula_id') == cel.id|string %}selected{% endif %}>{{ cel.nome }}</option>
+                                        <option value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}selected{% endif %}>{{ cel.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -260,20 +257,18 @@
                     </div>
                     <div class="row">
                         <div class="col-md-3 mb-1">
-                            <label for="edit_estabelecimento_id" class="form-label">Estabelecimento</label>
-                            <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id">
-                                <option value="">Selecione</option>
+                            <label for="edit_estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
                                 {% for est in estabelecimentos %}
                                 <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3 mb-1">
-                            <label for="edit_setor_id" class="form-label">Setor</label>
-                            <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id">
-                                <option value="">Selecione</option>
+                            <label for="edit_setor_ids" class="form-label">Setor <span class="text-danger">*</span></label>
+                            <select multiple class="form-select form-select-sm" id="edit_setor_ids" name="setor_ids" required>
                                 {% for st in setores %}
-                                <option value="{{ st.id }}" {% if (request.form.get('setor_id') == st.id|string) or (not request.form.get('setor_id') and user_editar.setor_id == st.id) %}selected{% endif %}>{{ st.nome }}</option>
+                                <option value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in user_editar.extra_setores.all() or st.id == user_editar.setor_id)) %}selected{% endif %}>{{ st.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -287,11 +282,10 @@
                             </select>
                         </div>
                         <div class="col-md-3 mb-1">
-                            <label for="edit_celula_id" class="form-label">Célula</label>
-                            <select class="form-select form-select-sm" id="edit_celula_id" name="celula_id">
-                                <option value="">Selecione</option>
+                            <label for="edit_celula_ids" class="form-label">Célula <span class="text-danger">*</span></label>
+                            <select multiple class="form-select form-select-sm" id="edit_celula_ids" name="celula_ids" required>
                                 {% for cel in celulas %}
-                                <option value="{{ cel.id }}" {% if (request.form.get('celula_id') == cel.id|string) or (not request.form.get('celula_id') and user_editar.celula_id == cel.id) %}selected{% endif %}>{{ cel.nome }}</option>
+                                <option value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in user_editar.extra_celulas.all() or cel.id == user_editar.celula_id)) %}selected{% endif %}>{{ cel.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>

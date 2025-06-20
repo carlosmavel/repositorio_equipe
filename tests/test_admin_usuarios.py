@@ -13,7 +13,21 @@ def client():
     app.config['TESTING'] = True
     with app.app_context():
         db.create_all()
+        inst = Instituicao(nome='Inst')
+        db.session.add(inst)
+        db.session.flush()
+        est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
+        db.session.add(est)
+        db.session.flush()
+        setor = Setor(nome='Setor1', estabelecimento_id=est.id)
+        db.session.add(setor)
+        db.session.flush()
+        cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
+        db.session.add(cel)
+        db.session.commit()
+        base_ids = {'est': est.id, 'setor': setor.id, 'cel': cel.id}
         with app.test_client() as client:
+            client.base_ids = base_ids
             yield client
         db.session.remove()
         db.drop_all()
@@ -26,11 +40,15 @@ def login_admin(client):
 
 def test_create_user(client):
     login_admin(client)
+    ids = client.base_ids
     response = client.post('/admin/usuarios', data={
         'username': 'newuser',
         'email': 'new@example.com',
         'role': 'colaborador',
-        'ativo_check': 'on'
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():
@@ -39,12 +57,24 @@ def test_create_user(client):
         assert user.email == 'new@example.com'
         assert user.check_password(DEFAULT_NEW_USER_PASSWORD)
         assert user.ativo is True
+        assert user.celula_id == ids['cel']
+        assert user.setor_id == ids['setor']
+        assert user.extra_celulas.filter_by(id=ids['cel']).count() == 1
 
 
 def test_toggle_user_active(client):
+    ids = client.base_ids
     with app.app_context():
-        u = User(username='temp', email='temp@test.com')
+        u = User(
+            username='temp',
+            email='temp@test.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel']
+        )
         u.set_password('Pass123!')
+        u.extra_setores.append(Setor.query.get(ids['setor']))
+        u.extra_celulas.append(Celula.query.get(ids['cel']))
         db.session.add(u)
         db.session.commit()
         uid = u.id
@@ -58,29 +88,23 @@ def test_toggle_user_active(client):
 
 def test_create_user_with_celula(client):
     login_admin(client)
+    ids = client.base_ids
     with app.app_context():
-        inst = Instituicao(nome='Inst')
-        db.session.add(inst)
-        db.session.flush()
-        est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
-        db.session.add(est)
-        db.session.flush()
-        setor = Setor(nome='Setor1', estabelecimento_id=est.id)
-        db.session.add(setor)
-        db.session.flush()
-        cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
-        db.session.add(cel)
-        db.session.commit()
-        cel_id = cel.id
+        est = Estabelecimento.query.get(ids['est'])
+        setor = Setor.query.get(ids['setor'])
+        cel_id = ids['cel']
     response = client.post('/admin/usuarios', data={
         'username': 'celuser',
         'email': 'cel@example.com',
         'role': 'colaborador',
         'ativo_check': 'on',
-        'celula_id': cel_id
+        'estabelecimento_id': est.id,
+        'setor_ids': [str(setor.id)],
+        'celula_ids': [str(cel_id)]
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():
         usr = User.query.filter_by(username='celuser').first()
         assert usr is not None
         assert usr.celula_id == cel_id
+        assert usr.extra_celulas.filter_by(id=cel_id).count() == 1
