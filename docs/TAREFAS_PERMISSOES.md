@@ -1,26 +1,43 @@
 # Tarefas para Unificar Permissões
 
-Esta lista resume as etapas necessárias para remover a lógica antiga baseada em `role` e consolidar o controle de acesso através de `Funcoes` vinculadas aos `Cargos`.
+Este checklist organiza as ações necessárias para abandonar a antiga
+lógica de **exibição por função** e centralizar o controle de acesso a
+partir das permissões cadastradas em `Funcao` e vinculadas aos `Cargos`.
 
-1. **Remover dependências de `role`**
-   - Eliminar variáveis de sessão `role` e trechos de código que condicionam a exibição de páginas ou links com base nesse campo.
-   - Ajustar o modelo `User` removendo a coluna `role` (migration `remove_role_column`).
+1. **Limpar referências ao modelo antigo**
+   - Remover variáveis de sessão ou condicionais nos templates que usem
+     `role` ou qualquer outra flag antiga de função.
+   - Confirmar que o modelo `User` não possui mais a coluna `role`
+     (ver migration `remove_role_column`).
 
-2. **Gerar migração de limpeza**
-   - Criar uma nova migration que exclua do banco quaisquer tabelas ou colunas remanescentes relacionadas ao controle antigo de funções.
-   - Executar `flask db upgrade` para aplicar as mudanças.
+2. **Migration de exclusão das tabelas legadas**
+   - Criar uma migration (ex.: `f5c6d7e8a9b0_drop_legacy_role_tables`) que
+     elimine tabelas ou colunas do esquema anterior, como `legacy_role` e
+     `legacy_role_permissions`.
+   - Executar `flask db upgrade` após gerar a migration para aplicar a
+     limpeza no banco.
 
-3. **Permissões via `Funcao`**
-   - Manter todas as permissões cadastradas na tabela `funcao`.
-   - Incluir checkboxes para cada função nos formulários de criação/edição de `Cargo`.
-   - Herdar essas permissões para os usuários conforme o cargo atribuído, permitindo permissões extras individuais (tabela `user_funcoes`).
+3. **Permissões parametrizadas nos cargos**
+   - Manter a tabela `funcao` com todas as funcionalidades do sistema.
+   - Exibir checkboxes listando cada `Funcao` nos formulários de criação e
+     edição de `Cargo`.
+   - Ao selecionar um cargo, carregar as permissões associadas e permitir
+     marcar ou desmarcar funções adicionais conforme necessário. Permissões
+     extras individuais continuam armazenadas em `user_funcoes`.
 
-4. **Checagem de acesso nas rotas**
-   - Todas as rotas devem verificar `current_user.has_permissao(<codigo>)` antes de permitir a ação.
-   - Utilizar o decorador `admin_required` apenas para rotas administrativas, mantendo o código de permissão `admin` como requisito.
+4. **Verificações de acesso nas páginas**
+   - Todas as rotas e telas devem checar `current_user.has_permissao(<codigo>)`
+     antes de liberar ações ou exibir recursos restritos.
+   - O decorador `admin_required` permanece apenas para rotas de
+     administração geral, exigindo a permissão `admin`.
 
-5. **Listar funções disponíveis**
-   - Criar um script de seed para popular a tabela `funcao` com todas as funcionalidades do sistema (ex.: `artigo_criar`, `artigo_aprovar`).
-   - Garantir que o front-end carregue essa lista para exibir nos checkboxes de cargos e usuários.
+5. **Lista completa de funções**
+   - Criar (ou atualizar) um script de seed que insira na tabela `funcao`
+     todas as funções disponíveis no sistema (por exemplo `artigo_criar`,
+     `artigo_aprovar`, etc.).
+   - Utilizar essa lista para preencher os checkboxes de cargos e dos
+     formulários de usuários.
 
-Seguindo essas tarefas, a lógica de exibição antiga será removida e todo o sistema passará a conceder acesso exclusivamente pelas permissões configuradas nos cargos.
+Com esses passos, todo o acesso passará a ser concedido
+exclusivamente pelas permissões configuradas nos cargos, sem depender
+da lógica antiga de exibição por função.
