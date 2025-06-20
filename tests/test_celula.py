@@ -21,13 +21,18 @@ def client():
         setor = Setor(nome='Setor 1', estabelecimento_id=est.id)
         db.session.add(setor)
         db.session.flush()
+        admin_cel = Celula(nome='AdminCel', estabelecimento_id=est.id, setor_id=setor.id)
+        db.session.add(admin_cel)
+        db.session.flush()
         admin_func = Funcao(nome_codigo='admin')
         admin_cargo = Cargo(nome='Admin', ativo=True)
         admin_cargo.funcoes.append(admin_func)
         db.session.add_all([admin_func, admin_cargo])
         db.session.flush()
-        admin = User(username='adm', email='adm@test.com', estabelecimento_id=est.id,
-                     setor_id=setor.id, celula_id=None, cargo=admin_cargo)
+        admin = User(
+            username='adm', email='adm@test.com', estabelecimento_id=est.id,
+            setor_id=setor.id, celula_id=admin_cel.id, cargo=admin_cargo
+        )
         admin.set_password('pass')
         db.session.add(admin)
         db.session.commit()

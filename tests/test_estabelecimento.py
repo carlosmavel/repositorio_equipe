@@ -6,7 +6,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Estabelecimento, Instituicao, Cargo, Funcao, User
+from models import Estabelecimento, Instituicao, Setor, Celula, Cargo, Funcao, User
 
 @pytest.fixture
 def client():
@@ -16,13 +16,27 @@ def client():
         inst = Instituicao(nome='Inst 1')
         db.session.add(inst)
         db.session.flush()
+
+        admin_est = Estabelecimento(codigo='ADM', nome_fantasia='AdminEst', instituicao_id=inst.id)
+        db.session.add(admin_est)
+        db.session.flush()
+        admin_setor = Setor(nome='SetAdm', estabelecimento_id=admin_est.id)
+        db.session.add(admin_setor)
+        db.session.flush()
+        admin_cel = Celula(nome='CelAdm', estabelecimento_id=admin_est.id, setor_id=admin_setor.id)
+        db.session.add(admin_cel)
+        db.session.flush()
+
         admin_func = Funcao(nome_codigo='admin')
         admin_cargo = Cargo(nome='Admin', ativo=True)
         admin_cargo.funcoes.append(admin_func)
         db.session.add_all([admin_func, admin_cargo])
         db.session.flush()
-        admin = User(username='adm', email='adm@test.com', estabelecimento_id=None,
-                     setor_id=None, celula_id=None, cargo=admin_cargo)
+
+        admin = User(
+            username='adm', email='adm@test.com', estabelecimento_id=admin_est.id,
+            setor_id=admin_setor.id, celula_id=admin_cel.id, cargo=admin_cargo
+        )
         admin.set_password('pass')
         db.session.add(admin)
         db.session.commit()
