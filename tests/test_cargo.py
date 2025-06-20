@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Cargo, Instituicao, Estabelecimento, Setor, Celula
+from models import Cargo, Instituicao, Estabelecimento, Setor, Celula, Funcao
 
 @pytest.fixture
 def client():
@@ -40,13 +40,19 @@ def login_admin(client):
 def test_create_cargo(client):
     login_admin(client)
     ids = client.base_ids
+    with app.app_context():
+        f = Funcao(codigo='TEST', nome='Teste')
+        db.session.add(f)
+        db.session.commit()
+        fid = f.id
     response = client.post('/admin/cargos', data={
         'nome': 'Analista',
         'descricao': 'Analisa as coisas',
         'nivel_hierarquico': '3',
         'ativo_check': 'on',
         'setor_ids': [str(ids['setor'])],
-        'celula_ids': [str(ids['cel'])]
+        'celula_ids': [str(ids['cel'])],
+        'funcao_ids': [str(fid)]
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():
@@ -57,3 +63,4 @@ def test_create_cargo(client):
         assert cargo.ativo is True
         assert cargo.default_setores.filter_by(id=ids['setor']).count() == 1
         assert cargo.default_celulas.filter_by(id=ids['cel']).count() == 1
+        assert cargo.permissoes.filter_by(id=fid).count() == 1

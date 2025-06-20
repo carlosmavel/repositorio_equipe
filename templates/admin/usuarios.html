@@ -188,11 +188,16 @@
                         </div>
 
                         <div class="card mb-3">
-                            <div class="card-header"><h6 class="mb-0">Permissões</h6></div>
-                            <div class="card-body">
-                                <ul id="permResumoNovo" class="small mb-0"></ul>
-                            </div>
+                        <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
+                        <div class="card-body">
+                            {% for f in funcoes %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
+                                    <label class="form-check-label" for="func{{ f.id }}">{{ f.nome }}</label>
+                                </div>
+                            {% endfor %}
                         </div>
+                    </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-1">
@@ -326,10 +331,16 @@
                     </div>
 
                     <div class="card mb-3">
-                        <div class="card-header"><h6 class="mb-0">Permissões</h6></div>
+                        <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
                         <div class="card-body">
-                            <ul id="permResumoEdit" class="small mb-0"></ul>
+                            {% for f in funcoes %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="edit_func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in user_editar.permissoes_personalizadas.all() or (user_editar.cargo and f in user_editar.cargo.permissoes.all()))) %}checked{% endif %}>
+                                    <label class="form-check-label" for="edit_func{{ f.id }}">{{ f.nome }}</label>
+                                </div>
+                            {% endfor %}
                         </div>
+                    </div>
                     </div>
 
                     <div class="row">
