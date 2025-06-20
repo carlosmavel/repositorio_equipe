@@ -33,7 +33,7 @@
                                             <tr>
                                                 <th>Usuário</th>
                                                 <th>Email</th>
-                                                <th>Perfil</th>
+                                                <th>Cargo</th>
                                                 <th>Status</th>
                                                 <th style="width: 200px;" class="text-end">Ações</th>
                                             </tr>
@@ -43,7 +43,7 @@
                                             <tr class="{{ 'table-light text-muted' if not u.ativo else '' }} clickable-row" data-href="{{ url_for('admin_usuarios', edit_id=u.id) }}">
                                                 <td>{{ u.username }}</td>
                                                 <td>{{ u.email }}</td>
-                                                <td>{{ u.role }}</td>
+                                                <td>{{ u.cargo.nome if u.cargo else '-' }}</td>
                                                 <td>
                                                     {% if u.ativo %}
                                                         <span class="badge bg-success">Ativo</span>

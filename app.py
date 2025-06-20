@@ -1210,7 +1210,7 @@ def novo_artigo():
 
         # 6) Notifica editores/admins, se necessário
         if status is ArticleStatus.PENDENTE:
-            destinatarios = User.query.filter(User.role.in_(['editor', 'admin'])).all()
+            destinatarios = [u for u in User.query.all() if u.has_permissao('editor') or u.has_permissao('admin')]
             for dest in destinatarios:
                 notif = Notification(
                     user_id = dest.id,
@@ -1312,8 +1312,8 @@ def editar_artigo(artigo_id):
 
     artigo = Article.query.get_or_404(artigo_id)
 
-    # somente autor ou admin
-    if session.get("role") != "admin" and artigo.author.username != session["username"]:
+    user = User.query.get(session['user_id'])
+    if not (user.has_permissao('admin') or artigo.author.id == user.id):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
@@ -1396,7 +1396,7 @@ def editar_artigo(artigo_id):
         if acao == "enviar":
             artigo.status = ArticleStatus.PENDENTE
             # 🔔 notifica editores / admins
-            editors = User.query.filter(User.role.in_(["editor", "admin"])).all()
+            editors = [u for u in User.query.all() if u.has_permissao('editor') or u.has_permissao('admin')]
             for dest in editors:
                 n = Notification(
                     user_id = dest.id,
@@ -1547,7 +1547,7 @@ def solicitar_revisao(artigo_id):
         artigo.status = ArticleStatus.EM_REVISAO
         db.session.commit()
 
-        destinatarios = [artigo.author] + User.query.filter_by(role='admin').all()
+        destinatarios = [artigo.author] + [u for u in User.query.all() if u.has_permissao('admin')]
         for u in destinatarios:
             n = Notification(
                 user_id=u.id,
