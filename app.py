@@ -36,6 +36,7 @@ from models import (
     Setor,
     Cargo,
     Instituicao,
+    Funcao,
 )
 from utils import (
     sanitize_html,
@@ -478,6 +479,7 @@ def admin_usuarios():
         setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
         cargo_id = request.form.get('cargo_id', type=int)
         celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
+        funcao_ids = [int(f) for f in request.form.getlist('funcao_ids') if f]
 
         cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
         if cargo_padrao:
@@ -541,6 +543,7 @@ def admin_usuarios():
                     usr.celula_id = celula_ids[0] if celula_ids else None
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
+                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in funcao_ids]
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
@@ -568,6 +571,7 @@ def admin_usuarios():
                     usr.set_password(password)
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
+                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in funcao_ids]
                     db.session.add(usr)
                     action_msg = 'criado'
 
@@ -594,6 +598,7 @@ def admin_usuarios():
     setores = Setor.query.order_by(Setor.nome).all()
     cargos = Cargo.query.order_by(Cargo.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
+    funcoes = Funcao.query.order_by(Funcao.nome).all()
     cargo_defaults = {
         c.id: {
             'setores': [s.id for s in c.default_setores],
@@ -609,6 +614,7 @@ def admin_usuarios():
         setores=setores,
         cargos=cargos,
         celulas=celulas,
+        funcoes=funcoes,
         cargo_defaults=json.dumps(cargo_defaults),
     )
 
@@ -820,6 +826,7 @@ def admin_cargos():
         ativo = request.form.get('ativo_check') == 'on'
         setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
         celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
+        funcao_ids = [int(f) for f in request.form.getlist('funcao_ids') if f]
 
         if not nome:
             flash('Nome do cargo é obrigatório.', 'danger')
@@ -850,6 +857,7 @@ def admin_cargos():
                     action_msg = 'criado'
                 cargo.default_setores = [Setor.query.get(sid) for sid in setor_ids]
                 cargo.default_celulas = [Celula.query.get(cid) for cid in celula_ids]
+                cargo.permissoes = [Funcao.query.get(fid) for fid in funcao_ids]
                 try:
                     db.session.commit()
                     flash(f'Cargo {action_msg} com sucesso!', 'success')
@@ -865,6 +873,7 @@ def admin_cargos():
     estabelecimentos = Estabelecimento.query.order_by(Estabelecimento.nome_fantasia).all()
     setores = Setor.query.order_by(Setor.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
+    funcoes = Funcao.query.order_by(Funcao.nome).all()
     return render_template(
         'admin/cargos.html',
         cargos=todos_cargos,
@@ -872,6 +881,7 @@ def admin_cargos():
         estabelecimentos=estabelecimentos,
         setores=setores,
         celulas=celulas,
+        funcoes=funcoes,
     )
 
 

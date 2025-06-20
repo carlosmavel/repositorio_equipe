@@ -46,6 +46,29 @@ cargo_default_setores = db.Table(
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
+# --- tabelas de permissões ---
+cargo_funcoes = db.Table(
+    'cargo_funcoes',
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+    db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
+)
+
+user_funcoes = db.Table(
+    'user_funcoes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
+)
+
+class Funcao(db.Model):
+    __tablename__ = 'funcao'
+
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(100), unique=True, nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
+
+    def __repr__(self):
+        return f"<Funcao {self.codigo}>"
+
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
 class Instituicao(db.Model):
@@ -164,6 +187,8 @@ class Cargo(db.Model):
         'Setor', secondary=cargo_default_setores, lazy='dynamic')
     default_celulas = db.relationship(
         'Celula', secondary=cargo_default_celulas, lazy='dynamic')
+    permissoes = db.relationship(
+        'Funcao', secondary=cargo_funcoes, lazy='dynamic')
 
     def __repr__(self):
         return f"<Cargo {self.nome}>"
@@ -210,6 +235,8 @@ class User(db.Model):
         'Celula', secondary=user_extra_celulas, lazy='dynamic')
     extra_setores = db.relationship(
         'Setor', secondary=user_extra_setores, lazy='dynamic')
+    permissoes_personalizadas = db.relationship(
+        'Funcao', secondary=user_funcoes, lazy='dynamic')
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
@@ -217,9 +244,7 @@ class User(db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', foreign_keys='Comment.user_id', back_populates='autor', lazy='dynamic', cascade='all, delete-orphan')
 
-    # Perfil (Fase 2) - Descomentar quando formos para a Fase 2
-    # perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=True)
-    # perfil = db.relationship('Perfil', backref=db.backref('users', lazy='dynamic'))
+
 
 
     def set_password(self, password):
@@ -227,6 +252,13 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_permissoes(self):
+        permissoes = set()
+        if self.cargo:
+            permissoes.update(self.cargo.permissoes.all())
+        permissoes.update(self.permissoes_personalizadas.all())
+        return list(permissoes)
 
     def __repr__(self):
         return f"<User {self.username}>"

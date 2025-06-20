@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo
+from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
 from utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
@@ -136,3 +136,31 @@ def test_user_defaults_from_cargo(client):
         assert usr.cargo_id == cargo_id
         assert usr.setor_id == ids['setor']
         assert usr.celula_id == ids['cel']
+
+
+def test_get_permissoes_combinadas(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        func1 = Funcao(codigo='A', nome='Perm A')
+        func2 = Funcao(codigo='B', nome='Perm B')
+        db.session.add_all([func1, func2])
+        cargo = Cargo(nome='Tester', ativo=True)
+        cargo.permissoes.append(func1)
+        db.session.add_all([cargo])
+        db.session.commit()
+        cargo_id = cargo.id
+        user = User(
+            username='permuser',
+            email='perm@example.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+            cargo_id=cargo_id,
+        )
+        user.set_password('x')
+        user.permissoes_personalizadas.append(func2)
+        db.session.add(user)
+        db.session.commit()
+        result = {f.codigo for f in user.get_permissoes()}
+        assert result == {'A', 'B'}

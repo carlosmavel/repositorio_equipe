@@ -42,10 +42,9 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
     * CRUD completo para **Setores**, vinculados a um Estabelecimento e status ativo/inativo.
     * CRUD completo para **Células**, vinculadas a um Setor e status ativo/inativo.
     * CRUD completo para **Cargos**, incluindo campo para nível hierárquico e status ativo/inativo.
-* **Gerenciamento de Perfis & Funções (Permissões - Planejado para Fase 2):**
-    * Criação e gestão de Perfis de Acesso (ex: "Líder de Suporte", "Técnico de Campo Nível 1").
-    * Definição de Funções (permissões granulares) dentro do sistema (ex: `pode_criar_os_ti`, `pode_aprovar_artigo_financeiro`).
-    * Associação flexível de múltiplas Funções a cada Perfil.
+* **Gerenciamento de Permissões por Funções:**
+    * Definição de Funções (permissões granulares) (ex: `pode_criar_os_ti`, `pode_aprovar_artigo_financeiro`).
+    * Associação de Funções aos Cargos e possibilidade de adicionar Funções extras a usuários específicos.
 
 ### 2.3. Página Inicial do Usuário (Pós-Login)
 * Saudação personalizada ao usuário logado.
@@ -149,7 +148,7 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
 
 * **User:**
     * Campos: `id`, `username`, `email`, `password_hash`, `nome_completo`, `foto`, `role` (papel base), `matricula`, `cpf`, `rg`, `ramal`, `data_nascimento`, `data_admissao`, `telefone_contato`, `ativo` (status do usuário).
-    * Relacionamentos: `estabelecimento_id`, `setor_id`, `celula_id`, `cargo_id`, (futuro) `perfil_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc.
+    * Relacionamentos: `estabelecimento_id`, `setor_id`, `celula_id`, `cargo_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc.
 * **Estabelecimento:**
     * Campos: `id`, `codigo`, `nome_fantasia`, `razao_social`, `cnpj`, `inscricao_estadual`, `inscricao_municipal`, `tipo_estabelecimento`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `estado`, `telefone_principal`, `email_contato`, `data_abertura`, `observacoes`, `ativo`.
 * **Setor:**
@@ -164,8 +163,7 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
     * Campos: `id`, `titulo`, `texto`, `status` (Enum: Rascunho, Pendente, Aprovado, etc.), `user_id` (autor), `created_at`, `updated_at`.
     * Relacionamentos: Anexos, Comentários de Revisão.
 * **Attachment, Comment, Notification, RevisionRequest:** (Existentes, conforme detalhado anteriormente).
-* **(Futuro - Fase 2) Perfil:** `id`, `nome`, `descricao`, `ativo`. Relacionamento Muitos-para-Muitos com `Funcao`.
-* **(Futuro - Fase 2) Funcao (Permissão):** `id`, `nome_codigo`, `descricao`.
+* **Funcao (Permissão):** `id`, `codigo`, `nome`. Associada a `Cargo` e personalizações de `User`.
 * **(Futuro - Fase 3) OrdemServico, TarefaOS, etc.**
 * **(Futuro - Fase 4) Comunicado, Classificado, MensagemChat, etc.**
 
@@ -189,10 +187,10 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
     * Perfil do Usuário Detalhado (visualização, edição de dados, foto, alteração de senha com UX aprimorada).
     * Estrutura da Área de Administração (Dashboard Admin, início do CRUD de Estabelecimentos).
     * Modelos Organizacionais Base (`Estabelecimento`, `Setor`, `Célula`, `Cargo`) com status "ativo/inativo".
-* **Fase 2 (Planejada - Próximos Passos):**
+* **Fase 2 (Em Andamento):**
 * Finalizar CRUDs da Área de Admin: Setores, Células e Cargos.
     * Gerenciamento Avançado de Usuários pelo Admin.
-    * Implementação do Sistema de Perfis & Funções (Permissões granulares).
+    * Sistema de permissões baseado em Funções associadas a Cargos e usuários.
     * Aplicar o novo sistema de permissões em todas as rotas e funcionalidades.
 * **Fase 3 (Planejada - Funcionalidade Principal):**
     * Desenvolvimento do Módulo de Ordens de Serviço (OS):
