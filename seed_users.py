@@ -4,7 +4,10 @@ try:
     from .database import db  # pragma: no cover
 except ImportError:
     from database import db
-from models import User, Celula
+try:
+    from .models import User, Celula
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from models import User, Celula
 from app import app      # importa o Flask já configurado
 # from datetime import date # Se você for adicionar datas como data_admissao
 

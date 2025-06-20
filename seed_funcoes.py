@@ -2,7 +2,10 @@ try:
     from .database import db  # pragma: no cover
 except ImportError:
     from database import db
-from models import Funcao
+try:
+    from .models import Funcao
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from models import Funcao
 from app import app
 
 FUNCOES = [
