@@ -36,6 +36,8 @@ from models import (
     Setor,
     Cargo,
     Instituicao,
+    Funcao,
+    UserFuncao,
 )
 from utils import (
     sanitize_html,
@@ -145,10 +147,10 @@ def admin_required(f):
         if 'user_id' not in session: # Verifica se está logado
             flash('Por favor, faça login para acessar esta página.', 'warning')
             return redirect(url_for('login', next=request.url))
-        if session.get('role') != 'admin': # Verifica se é admin
+        user = User.query.get(session.get('user_id'))
+        if not user or 'admin' not in user.get_permissoes():
             flash('Acesso negado. Você precisa ser um administrador para acessar esta página.', 'danger')
-            # Redireciona para uma página segura, talvez o perfil ou a lista de artigos do usuário
-            return redirect(url_for('meus_artigos')) # Ou 'index', ou uma página específica de "acesso negado"
+            return redirect(url_for('meus_artigos'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -478,13 +480,16 @@ def admin_usuarios():
         setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
         cargo_id = request.form.get('cargo_id', type=int)
         celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
+        funcao_ids = [int(f) for f in request.form.getlist('funcao_ids') if f]
 
         cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
+        cargo_funcoes_ids = set()
         if cargo_padrao:
             if not setor_ids:
                 setor_ids = [s.id for s in cargo_padrao.default_setores]
             if not celula_ids:
                 celula_ids = [c.id for c in cargo_padrao.default_celulas]
+            cargo_funcoes_ids = {f.id for f in cargo_padrao.funcoes}
             if not estabelecimento_id:
                 if setor_ids:
                     setor_obj = Setor.query.get(setor_ids[0])
@@ -571,6 +576,16 @@ def admin_usuarios():
                     db.session.add(usr)
                     action_msg = 'criado'
 
+                # Atualiza permissões específicas do usuário
+                usr.funcoes_diferenciadas.delete()
+                selecionadas = set(funcao_ids)
+                to_add = selecionadas - cargo_funcoes_ids
+                to_remove = cargo_funcoes_ids - selecionadas
+                for fid in to_add:
+                    usr.funcoes_diferenciadas.append(UserFuncao(funcao_id=fid, granted=True))
+                for fid in to_remove:
+                    usr.funcoes_diferenciadas.append(UserFuncao(funcao_id=fid, granted=False))
+
                 try:
                     db.session.commit()
                 except Exception as e:
@@ -594,13 +609,18 @@ def admin_usuarios():
     setores = Setor.query.order_by(Setor.nome).all()
     cargos = Cargo.query.order_by(Cargo.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
+    funcoes = Funcao.query.order_by(Funcao.nome_codigo).all()
     cargo_defaults = {
         c.id: {
             'setores': [s.id for s in c.default_setores],
             'celulas': [ce.id for ce in c.default_celulas],
+            'funcoes': [f.id for f in c.funcoes],
         }
         for c in cargos
     }
+    user_funcoes = {}
+    if usuario_para_editar:
+        user_funcoes = {uf.funcao_id: uf.granted for uf in usuario_para_editar.funcoes_diferenciadas}
     return render_template(
         'admin/usuarios.html',
         usuarios=usuarios,
@@ -609,7 +629,9 @@ def admin_usuarios():
         setores=setores,
         cargos=cargos,
         celulas=celulas,
+        funcoes=funcoes,
         cargo_defaults=json.dumps(cargo_defaults),
+        user_funcoes=user_funcoes,
     )
 
 @app.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
@@ -949,6 +971,7 @@ def login():
             session["user_id"] = user.id
             session["username"] = user.username
             session["role"] = user.role
+            session["permissoes"] = list(user.get_permissoes())
             
             # Redireciona para a página de destino após o login
             next_url = request.args.get('next')
@@ -1047,7 +1070,9 @@ def novo_artigo():
         return redirect(url_for('login'))
 
     # Só colaboradores, editores e admins podem criar
-    if request.method == 'POST' and session['role'] in ['colaborador', 'editor', 'admin']:
+    user = User.query.get(session.get('user_id'))
+    permissoes = user.get_permissoes() if user else set()
+    if request.method == 'POST' and permissoes.intersection({'colaborador', 'editor', 'admin'}):
       
         # 1) Coleta dados do formulário
         titulo      = request.form['titulo'].strip()
@@ -1235,7 +1260,9 @@ def editar_artigo(artigo_id):
     artigo = Article.query.get_or_404(artigo_id)
 
     # somente autor ou admin
-    if session.get("role") != "admin" and artigo.author.username != session["username"]:
+    user = User.query.get(session.get('user_id')) if 'user_id' in session else None
+    permissoes = user.get_permissoes() if user else set()
+    if 'admin' not in permissoes and artigo.author.username != session.get("username"):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
@@ -1316,7 +1343,10 @@ def editar_artigo(artigo_id):
 
 @app.route("/aprovacao")
 def aprovacao():
-    if "username" not in session or session["role"] not in ["editor", "admin"]:
+    user = None
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+    if not user or not user.get_permissoes().intersection({'editor', 'admin'}):
         flash("Permissão negada.", "danger")
         return redirect(url_for("login"))
 
@@ -1350,7 +1380,10 @@ def aprovacao():
 
 @app.route('/aprovacao/<int:artigo_id>', methods=['GET', 'POST'])
 def aprovacao_detail(artigo_id):
-    if 'username' not in session or session['role'] not in ['editor','admin']:
+    user = None
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+    if not user or not user.get_permissoes().intersection({'editor', 'admin'}):
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 

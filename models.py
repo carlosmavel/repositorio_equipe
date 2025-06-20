@@ -46,6 +46,13 @@ cargo_default_setores = db.Table(
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
+# --- Permissões / Funções ---
+cargo_funcoes = db.Table(
+    'cargo_funcoes',
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+    db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
+)
+
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
 class Instituicao(db.Model):
@@ -149,6 +156,26 @@ class Celula(db.Model):
     def __repr__(self):
         return f"<Celula {self.nome}>"
 
+
+class Funcao(db.Model):
+    __tablename__ = 'funcao'
+    id = db.Column(db.Integer, primary_key=True)
+    nome_codigo = db.Column(db.String(100), unique=True, nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f"<Funcao {self.nome_codigo}>"
+
+
+class UserFuncao(db.Model):
+    __tablename__ = 'user_funcoes'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    funcao_id = db.Column(db.Integer, db.ForeignKey('funcao.id'), primary_key=True)
+    granted = db.Column(db.Boolean, nullable=False, default=True)
+
+    funcao = db.relationship('Funcao')
+    user = db.relationship('User', back_populates='funcoes_diferenciadas')
+
 class Cargo(db.Model):
     __tablename__ = 'cargo'
     id = db.Column(db.Integer, primary_key=True)
@@ -164,6 +191,8 @@ class Cargo(db.Model):
         'Setor', secondary=cargo_default_setores, lazy='dynamic')
     default_celulas = db.relationship(
         'Celula', secondary=cargo_default_celulas, lazy='dynamic')
+    funcoes = db.relationship(
+        'Funcao', secondary=cargo_funcoes, lazy='dynamic')
 
     def __repr__(self):
         return f"<Cargo {self.nome}>"
@@ -210,6 +239,8 @@ class User(db.Model):
         'Celula', secondary=user_extra_celulas, lazy='dynamic')
     extra_setores = db.relationship(
         'Setor', secondary=user_extra_setores, lazy='dynamic')
+    funcoes_diferenciadas = db.relationship(
+        'UserFuncao', back_populates='user', cascade='all, delete-orphan', lazy='dynamic')
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
@@ -227,6 +258,17 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_permissoes(self):
+        permissoes = set()
+        if self.cargo:
+            permissoes.update(f.nome_codigo for f in self.cargo.funcoes)
+        for uf in self.funcoes_diferenciadas:
+            if uf.granted:
+                permissoes.add(uf.funcao.nome_codigo)
+            else:
+                permissoes.discard(uf.funcao.nome_codigo)
+        return permissoes
 
     def __repr__(self):
         return f"<User {self.username}>"

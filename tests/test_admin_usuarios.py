@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo
+from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
 from utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
@@ -24,8 +24,17 @@ def client():
         db.session.flush()
         cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
         db.session.add(cel)
+        admin_func = Funcao(nome_codigo='admin')
+        admin_cargo = Cargo(nome='Admin', ativo=True)
+        admin_cargo.funcoes.append(admin_func)
+        db.session.add_all([admin_func, admin_cargo])
+        db.session.flush()
+        admin = User(username='adm', email='adm@test.com', estabelecimento_id=est.id,
+                     setor_id=setor.id, celula_id=cel.id, cargo=admin_cargo)
+        admin.set_password('pass')
+        db.session.add(admin)
         db.session.commit()
-        base_ids = {'est': est.id, 'setor': setor.id, 'cel': cel.id}
+        base_ids = {'est': est.id, 'setor': setor.id, 'cel': cel.id, 'admin': admin.id}
         with app.test_client() as client:
             client.base_ids = base_ids
             yield client
@@ -34,8 +43,7 @@ def client():
 
 def login_admin(client):
     with client.session_transaction() as sess:
-        sess['user_id'] = 1
-        sess['role'] = 'admin'
+        sess['user_id'] = client.base_ids['admin']
 
 
 def test_create_user(client):
@@ -136,3 +144,49 @@ def test_user_defaults_from_cargo(client):
         assert usr.cargo_id == cargo_id
         assert usr.setor_id == ids['setor']
         assert usr.celula_id == ids['cel']
+
+
+def test_user_permissions_inherit_and_customize(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        func_edit = Funcao(nome_codigo='editor')
+        cargo = Cargo(nome='EditorCargo', ativo=True)
+        cargo.funcoes.append(func_edit)
+        db.session.add_all([func_edit, cargo])
+        db.session.commit()
+        cargo_id = cargo.id
+        func_id = func_edit.id
+    # Create user without selecting the permission (should remove)
+    response = client.post('/admin/usuarios', data={
+        'username': 'noedit',
+        'email': 'noedit@example.com',
+        'role': 'colaborador',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id,
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        usr = User.query.filter_by(username='noedit').first()
+        assert 'editor' not in usr.get_permissoes()
+    # Create user adding admin permission extra
+    response = client.post('/admin/usuarios', data={
+        'username': 'extraadmin',
+        'email': 'extraadmin@example.com',
+        'role': 'colaborador',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id,
+        'funcao_ids': [str(func_id), str(Funcao.query.filter_by(nome_codigo='admin').first().id)],
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        usr = User.query.filter_by(username='extraadmin').first()
+        perms = usr.get_permissoes()
+        assert 'editor' in perms
+        assert 'admin' in perms

@@ -6,7 +6,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Estabelecimento, Instituicao
+from models import Estabelecimento, Instituicao, Cargo, Funcao, User
 
 @pytest.fixture
 def client():
@@ -15,16 +15,26 @@ def client():
         db.create_all()
         inst = Instituicao(nome='Inst 1')
         db.session.add(inst)
+        db.session.flush()
+        admin_func = Funcao(nome_codigo='admin')
+        admin_cargo = Cargo(nome='Admin', ativo=True)
+        admin_cargo.funcoes.append(admin_func)
+        db.session.add_all([admin_func, admin_cargo])
+        db.session.flush()
+        admin = User(username='adm', email='adm@test.com', estabelecimento_id=None,
+                     setor_id=None, celula_id=None, cargo=admin_cargo)
+        admin.set_password('pass')
+        db.session.add(admin)
         db.session.commit()
         with app.test_client() as client:
+            client.admin_id = admin.id
             yield client
         db.session.remove()
         db.drop_all()
 
 def login_admin(client):
     with client.session_transaction() as sess:
-        sess['user_id'] = 1
-        sess['role'] = 'admin'
+        sess['user_id'] = client.admin_id
 
 
 def test_create_estabelecimento_saves_address_and_phone(client):

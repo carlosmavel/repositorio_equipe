@@ -87,6 +87,7 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 Para instruções de instalação e configuração **completas e detalhadas**, por favor, consulte nosso:
 * **[Guia de Instalação Completo](./GUIA_DE_INSTALACAO.md)**
 * **[Documentação Geral do Sistema](./DOCUMENTACAO_DO_SISTEMA.md)**
+* **[Gerenciamento de Permissões](./GERENCIAMENTO_PERMISSOES.md)**
 
 ## Estrutura do Projeto (Simplificada)
 ```text

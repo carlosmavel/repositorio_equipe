@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Cargo, Instituicao, Estabelecimento, Setor, Celula
+from models import Cargo, Instituicao, Estabelecimento, Setor, Celula, Funcao, User
 
 @pytest.fixture
 def client():
@@ -23,8 +23,17 @@ def client():
         db.session.flush()
         cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
         db.session.add(cel)
+        admin_func = Funcao(nome_codigo='admin')
+        admin_cargo = Cargo(nome='Admin', ativo=True)
+        admin_cargo.funcoes.append(admin_func)
+        db.session.add_all([admin_func, admin_cargo])
+        db.session.flush()
+        admin = User(username='adm', email='adm@test.com', estabelecimento_id=est.id,
+                     setor_id=setor.id, celula_id=cel.id, cargo=admin_cargo)
+        admin.set_password('pass')
+        db.session.add(admin)
         db.session.commit()
-        base_ids = {'setor': setor.id, 'cel': cel.id}
+        base_ids = {'setor': setor.id, 'cel': cel.id, 'admin': admin.id}
         with app.test_client() as client:
             client.base_ids = base_ids
             yield client
@@ -33,8 +42,7 @@ def client():
 
 def login_admin(client):
     with client.session_transaction() as sess:
-        sess['user_id'] = 1
-        sess['role'] = 'admin'
+        sess['user_id'] = client.base_ids['admin']
 
 
 def test_create_cargo(client):
