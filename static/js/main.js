@@ -203,6 +203,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(`input[id^='${prefix}celula']`).forEach((chk) => {
       chk.checked = defs.celulas.includes(parseInt(chk.value));
     });
+    document.querySelectorAll(`input[id^='${prefix}func']`).forEach((chk) => {
+      chk.checked = defs.funcoes.includes(parseInt(chk.value));
+    });
   }
 
   document.getElementById('cargo_id')?.addEventListener('change', (e) => {
@@ -211,4 +214,9 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById('edit_cargo_id')?.addEventListener('change', (e) => {
     applyCargoDefaults('edit_', e.target.value);
   });
+
+  const initialCargo = document.getElementById('cargo_id')?.value;
+  if (initialCargo) applyCargoDefaults('', initialCargo);
+  const initialEditCargo = document.getElementById('edit_cargo_id')?.value;
+  if (initialEditCargo) applyCargoDefaults('edit_', initialEditCargo);
 });

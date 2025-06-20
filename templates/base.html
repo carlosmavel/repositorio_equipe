@@ -199,7 +199,7 @@
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'meus_artigos' else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'novo_artigo' else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'pesquisar' else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
-                                {% if session.role in ['editor', 'admin'] %}
+                                {% if current_user and (current_user.has_permissao('editor') or current_user.has_permissao('admin')) %}
                                     <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'aprovacao' else '' }}" href="{{ url_for('aprovacao') }}"><i class="bi bi-check2-square me-2"></i> Aprovação</a></li>
                                 {% endif %}
                             </ul>
@@ -225,7 +225,7 @@
                     </li>
 
                     {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
-                    {% if session.role == 'admin' %}
+                    {% if current_user and current_user.has_permissao('admin') %}
                         <hr class="my-2">
                         <li class="nav-item">
                             <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_') else '' }} {{ 'collapsed' if not request.endpoint.startswith('admin_') }}"
@@ -274,7 +274,7 @@
                                 </ul>
                             </div>
                         </li>
-                    {% endif %} {# Fim do if session.role == 'admin' #}
+                    {% endif %} {# Fim do if admin permission #}
 
                     {# Item de Sair - no final da sidebar #}
                     <hr class="my-2" style="margin-top: auto !important;"> 

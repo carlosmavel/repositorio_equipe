@@ -33,9 +33,27 @@ def client():
         db.drop_all()
 
 def login_admin(client):
+    ids = client.base_ids
+    with app.app_context():
+        f = Funcao.query.filter_by(codigo='admin').first()
+        if not f:
+            f = Funcao(codigo='admin', nome='Admin')
+            db.session.add(f)
+            db.session.commit()
+        u = User(
+            username='adm',
+            email='adm@test',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+        )
+        u.set_password('x')
+        u.permissoes_personalizadas.append(f)
+        db.session.add(u)
+        db.session.commit()
+        uid = u.id
     with client.session_transaction() as sess:
-        sess['user_id'] = 1
-        sess['role'] = 'admin'
+        sess['user_id'] = uid
 
 
 def test_create_user(client):
@@ -164,3 +182,33 @@ def test_get_permissoes_combinadas(client):
         db.session.commit()
         result = {f.codigo for f in user.get_permissoes()}
         assert result == {'A', 'B'}
+
+
+def test_create_user_with_custom_permissions(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        f1 = Funcao(codigo='X', nome='Perm X')
+        f2 = Funcao(codigo='Y', nome='Perm Y')
+        cargo = Cargo(nome='Dev', ativo=True)
+        cargo.permissoes.append(f1)
+        db.session.add_all([f1, f2, cargo])
+        db.session.commit()
+        cargo_id = cargo.id
+        f2_id = f2.id
+    response = client.post('/admin/usuarios', data={
+        'username': 'uperm',
+        'email': 'uperm@example.com',
+        'role': 'colaborador',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id,
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])],
+        'funcao_ids': [str(f2_id)]
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        u = User.query.filter_by(username='uperm').first()
+        assert {f.codigo for f in u.get_permissoes()} == {'X', 'Y'}
+        assert {f.id for f in u.permissoes_personalizadas} == {f2_id}

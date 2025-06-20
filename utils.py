@@ -169,7 +169,7 @@ def user_can_view_article(user, article):
     if not isinstance(article, Article):
         return False
 
-    if user.role in ("admin", "editor") or user.id == article.user_id:
+    if user.has_permissao("admin") or user.has_permissao("editor") or user.id == article.user_id:
         return True
 
     # Extras concedidos especificamente
