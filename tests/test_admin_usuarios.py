@@ -195,6 +195,7 @@ def test_create_user_with_custom_permissions(client):
         db.session.add_all([f1, f2, cargo])
         db.session.commit()
         cargo_id = cargo.id
+        f2_id = f2.id
     response = client.post('/admin/usuarios', data={
         'username': 'uperm',
         'email': 'uperm@example.com',
@@ -204,10 +205,10 @@ def test_create_user_with_custom_permissions(client):
         'estabelecimento_id': ids['est'],
         'setor_ids': [str(ids['setor'])],
         'celula_ids': [str(ids['cel'])],
-        'funcao_ids': [str(f2.id)]
+        'funcao_ids': [str(f2_id)]
     }, follow_redirects=True)
     assert response.status_code == 200
     with app.app_context():
         u = User.query.filter_by(username='uperm').first()
         assert {f.codigo for f in u.get_permissoes()} == {'X', 'Y'}
-        assert {f.id for f in u.permissoes_personalizadas} == {f2.id}
+        assert {f.id for f in u.permissoes_personalizadas} == {f2_id}

@@ -26,12 +26,13 @@ def client():
 def login_admin(client):
     with app.app_context():
         est = Estabelecimento.query.first()
-        cel = Celula(nome='adm', estabelecimento=est)
+        setor = Setor(nome='Adm', estabelecimento=est)
+        cel = Celula(nome='adm', estabelecimento=est, setor=setor)
         func = Funcao(codigo='admin', nome='Admin')
-        user = User(username='adm', email='a@a', estabelecimento=est, setor=Setor.query.first(), celula=cel)
+        user = User(username='adm', email='a@a', estabelecimento=est, setor=setor, celula=cel)
         user.set_password('x')
         user.permissoes_personalizadas.append(func)
-        db.session.add_all([cel, func, user])
+        db.session.add_all([setor, cel, func, user])
         db.session.commit()
         uid = user.id
     with client.session_transaction() as sess:
