@@ -38,36 +38,41 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for cargo in cargos %}
-                                            <tr class="{{ 'table-light text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
-                                                <td>{{ cargo.nome }}</td>
-                                                <td>{{ NOME_NIVEL_CARGO.get(cargo.nivel_hierarquico, '--') }}</td>
-                                                <td>
-                                                    {% if cargo.ativo %}
-                                                        <span class="badge bg-success">Ativo</span>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary">Inativo</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">
-                                                    <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                                        <i class="bi bi-pencil-fill"></i>
-                                                    </a>
-                                                    {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                    {% set cargo_nome_js = cargo.nome | tojson %}
-                                                    <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                        {% if cargo.ativo %}
-                                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
-                                                                <i class="bi bi-archive-fill"></i> Desativar
-                                                            </button>
-                                                        {% else %}
-                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
-                                                                <i class="bi bi-archive-restore-fill"></i> Ativar
-                                                            </button>
-                                                        {% endif %}
-                                                    </form>
-                                                </td>
+                                            {% for nivel, lista in cargos|groupby('nivel_hierarquico') %}
+                                            <tr class="table-secondary">
+                                                <th colspan="4">{{ NOME_NIVEL_CARGO.get(nivel, '--') }}</th>
                                             </tr>
+                                                {% for cargo in lista %}
+                                                <tr class="{{ 'table-light text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
+                                                    <td>{{ cargo.nome }}</td>
+                                                    <td>{{ NOME_NIVEL_CARGO.get(cargo.nivel_hierarquico, '--') }}</td>
+                                                    <td>
+                                                        {% if cargo.ativo %}
+                                                            <span class="badge bg-success">Ativo</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Inativo</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                                            <i class="bi bi-pencil-fill"></i>
+                                                        </a>
+                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                        {% set cargo_nome_js = cargo.nome | tojson %}
+                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                            {% if cargo.ativo %}
+                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
+                                                                    <i class="bi bi-archive-fill"></i> Desativar
+                                                                </button>
+                                                            {% else %}
+                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
+                                                                    <i class="bi bi-archive-restore-fill"></i> Ativar
+                                                                </button>
+                                                            {% endif %}
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
                                             {% endfor %}
                                         </tbody>
                                     </table>
