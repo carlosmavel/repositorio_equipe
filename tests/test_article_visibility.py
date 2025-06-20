@@ -18,7 +18,14 @@ def client():
         cel = Celula(nome='Celula 1', estabelecimento=est, setor=setor)
         db.session.add_all([inst, est, setor, cel])
         db.session.commit()
-        user = User(username='u1', email='u1@test', password_hash='x', celula=cel)
+        user = User(
+            username='u1',
+            email='u1@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel,
+        )
         db.session.add(user)
         db.session.commit()
         with app.test_client() as client:
@@ -53,7 +60,14 @@ def test_user_can_view_by_celula(client):
         setor = user1.celula.setor
         cel2 = Celula(nome='Celula 2', estabelecimento=est, setor=setor)
         db.session.add(cel2)
-        user2 = User(username='u2', email='u2@test', password_hash='x', celula=cel2)
+        user2 = User(
+            username='u2',
+            email='u2@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel2,
+        )
         db.session.add(user2)
         art = Article(
             titulo='T2',
@@ -78,7 +92,14 @@ def test_user_can_view_by_estabelecimento(client):
         setor = user1.celula.setor
         cel2 = Celula(nome='Celula 3', estabelecimento=est, setor=setor)
         db.session.add(cel2)
-        user2 = User(username='u3', email='u3@test', password_hash='x', celula=cel2)
+        user2 = User(
+            username='u3',
+            email='u3@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel2,
+        )
         db.session.add(user2)
         art = Article(
             titulo='T3',
@@ -103,7 +124,14 @@ def test_user_can_view_by_setor(client):
         setor = user1.celula.setor
         cel2 = Celula(nome='Celula 4', estabelecimento=est, setor=setor)
         db.session.add(cel2)
-        user2 = User(username='u4', email='u4@test', password_hash='x', celula=cel2)
+        user2 = User(
+            username='u4',
+            email='u4@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel2,
+        )
         db.session.add(user2)
         art = Article(
             titulo='T4',
@@ -130,7 +158,14 @@ def test_user_can_view_by_instituicao(client):
         db.session.add(setor2)
         cel2 = Celula(nome='Celula 5', estabelecimento=est2, setor=setor2)
         db.session.add(cel2)
-        user2 = User(username='u5', email='u5@test', password_hash='x', celula=cel2)
+        user2 = User(
+            username='u5',
+            email='u5@test',
+            password_hash='x',
+            estabelecimento=est2,
+            setor=setor2,
+            celula=cel2,
+        )
         db.session.add(user2)
         art = Article(
             titulo='T5',

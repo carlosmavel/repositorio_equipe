@@ -88,20 +88,11 @@ def test_toggle_user_active(client):
 
 def test_create_user_with_celula(client):
     login_admin(client)
+    ids = client.base_ids
     with app.app_context():
-        inst = Instituicao(nome='Inst')
-        db.session.add(inst)
-        db.session.flush()
-        est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
-        db.session.add(est)
-        db.session.flush()
-        setor = Setor(nome='Setor1', estabelecimento_id=est.id)
-        db.session.add(setor)
-        db.session.flush()
-        cel = Celula(nome='Cel1', estabelecimento_id=est.id, setor_id=setor.id)
-        db.session.add(cel)
-        db.session.commit()
-        cel_id = cel.id
+        est = Estabelecimento.query.get(ids['est'])
+        setor = Setor.query.get(ids['setor'])
+        cel_id = ids['cel']
     response = client.post('/admin/usuarios', data={
         'username': 'celuser',
         'email': 'cel@example.com',
