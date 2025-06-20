@@ -11,13 +11,15 @@ from enums import ArticleStatus, ArticleVisibility
 article_extra_celulas = db.Table(
     'article_extra_celulas',
     db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
-    db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True)
+    db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
+    extend_existing=True,
 )
 
 article_extra_users = db.Table(
     'article_extra_users',
     db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    extend_existing=True,
 )
 
 # Association tables for users responsible for multiple setores/células
@@ -25,12 +27,14 @@ user_extra_celulas = db.Table(
     'user_extra_celulas',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
+    extend_existing=True,
 )
 
 user_extra_setores = db.Table(
     'user_extra_setores',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
+    extend_existing=True,
 )
 
 # Association tables for default hierarchy per cargo
@@ -38,12 +42,14 @@ cargo_default_celulas = db.Table(
     'cargo_default_celulas',
     db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
+    extend_existing=True,
 )
 
 cargo_default_setores = db.Table(
     'cargo_default_setores',
     db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
+    extend_existing=True,
 )
 
 # --- Permissões / Funções ---
@@ -51,6 +57,7 @@ cargo_funcoes = db.Table(
     'cargo_funcoes',
     db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
+    extend_existing=True,
 )
 
 user_funcoes = db.Table(
