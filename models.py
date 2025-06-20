@@ -53,6 +53,23 @@ cargo_funcoes = db.Table(
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
+user_funcoes = db.Table(
+    'user_funcoes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
+)
+
+class Funcao(db.Model):
+    __tablename__ = 'funcao'
+
+    id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(100), unique=True, nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
+
+    def __repr__(self):
+        return f"<Funcao {self.codigo}>"
+
+
 # --- NOVOS MODELOS ORGANIZACIONAIS (FASE 1) ---
 
 class Instituicao(db.Model):
@@ -241,6 +258,7 @@ class User(db.Model):
         'Setor', secondary=user_extra_setores, lazy='dynamic')
     funcoes_diferenciadas = db.relationship(
         'UserFuncao', back_populates='user', cascade='all, delete-orphan', lazy='dynamic')
+
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
@@ -248,9 +266,7 @@ class User(db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', foreign_keys='Comment.user_id', back_populates='autor', lazy='dynamic', cascade='all, delete-orphan')
 
-    # Perfil (Fase 2) - Descomentar quando formos para a Fase 2
-    # perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=True)
-    # perfil = db.relationship('Perfil', backref=db.backref('users', lazy='dynamic'))
+
 
 
     def set_password(self, password):
@@ -269,6 +285,7 @@ class User(db.Model):
             else:
                 permissoes.discard(uf.funcao.nome_codigo)
         return permissoes
+
 
     def __repr__(self):
         return f"<User {self.username}>"

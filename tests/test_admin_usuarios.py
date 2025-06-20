@@ -190,3 +190,4 @@ def test_user_permissions_inherit_and_customize(client):
         perms = usr.get_permissoes()
         assert 'editor' in perms
         assert 'admin' in perms
+
