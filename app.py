@@ -29,31 +29,61 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from enums import ArticleStatus, ArticleVisibility
 
-from models import (
-    User,
-    Article,
-    RevisionRequest,
-    Notification,
-    Comment,
-    Attachment,
-    Instituicao,
-    Celula,
-    Estabelecimento,
-    Setor,
-    Cargo,
-    Instituicao,
-    Funcao,
-)
-from utils import (
-    sanitize_html,
-    extract_text,
-    DEFAULT_NEW_USER_PASSWORD,
-    generate_random_password,
-    generate_token,
-    confirm_token,
-    send_email,
-    user_can_view_article,
-)
+try:
+    from .models import (
+        User,
+        Article,
+        RevisionRequest,
+        Notification,
+        Comment,
+        Attachment,
+        Instituicao,
+        Celula,
+        Estabelecimento,
+        Setor,
+        Cargo,
+        Instituicao,
+        Funcao,
+    )
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from models import (
+        User,
+        Article,
+        RevisionRequest,
+        Notification,
+        Comment,
+        Attachment,
+        Instituicao,
+        Celula,
+        Estabelecimento,
+        Setor,
+        Cargo,
+        Instituicao,
+        Funcao,
+    )
+
+try:
+    from .utils import (
+        sanitize_html,
+        extract_text,
+        DEFAULT_NEW_USER_PASSWORD,
+        generate_random_password,
+        generate_token,
+        confirm_token,
+        send_email,
+        user_can_view_article,
+    )
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from utils import (
+        sanitize_html,
+        extract_text,
+        DEFAULT_NEW_USER_PASSWORD,
+        generate_random_password,
+        generate_token,
+        confirm_token,
+        send_email,
+        user_can_view_article,
+    )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 

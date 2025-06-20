@@ -2,7 +2,10 @@ try:
     from .database import db  # pragma: no cover
 except ImportError:
     from database import db
-from models import Instituicao, Estabelecimento, Setor, Celula
+try:
+    from .models import Instituicao, Estabelecimento, Setor, Celula
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from models import Instituicao, Estabelecimento, Setor, Celula
 from app import app
 
 
