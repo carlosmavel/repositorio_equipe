@@ -1121,8 +1121,13 @@ def pagina_inicial():
 
 @app.route('/novo-artigo', methods=['GET', 'POST'])
 def novo_artigo():
-    if 'username' not in session:
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if not user or not (user.has_permissao('admin') or user.has_permissao('artigo_criar')):
+        flash('Permissão negada.', 'danger')
+        return redirect(url_for('meus_artigos'))
 
     # Processa envio do formulário de criação de artigo
     if request.method == 'POST':
@@ -1210,7 +1215,13 @@ def novo_artigo():
 
         # 6) Notifica editores/admins, se necessário
         if status is ArticleStatus.PENDENTE:
-            destinatarios = [u for u in User.query.all() if u.has_permissao('editor') or u.has_permissao('admin')]
+            destinatarios = [
+                u for u in User.query.all()
+                if u.has_permissao('admin')
+                or u.has_permissao('artigo_revisar')
+                or u.has_permissao('artigo_aprovar')
+                or u.has_permissao('editor')
+            ]
             for dest in destinatarios:
                 notif = Notification(
                     user_id = dest.id,
@@ -1263,6 +1274,9 @@ def artigo(artigo_id):
         return redirect(url_for('pagina_inicial'))
 
     if request.method == 'POST':
+        if not (user.has_permissao('admin') or user.has_permissao('artigo_editar') or artigo.user_id == user.id):
+            flash('Permissão negada.', 'danger')
+            return redirect(url_for('artigo', artigo_id=artigo_id))
         # 1) campos básicos
         artigo.titulo = request.form['titulo']
         artigo.texto  = request.form['texto']
@@ -1313,7 +1327,7 @@ def editar_artigo(artigo_id):
     artigo = Article.query.get_or_404(artigo_id)
 
     user = User.query.get(session['user_id'])
-    if not (user.has_permissao('admin') or artigo.author.id == user.id):
+    if not (user.has_permissao('admin') or user.has_permissao('artigo_editar') or artigo.author.id == user.id):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
@@ -1396,7 +1410,13 @@ def editar_artigo(artigo_id):
         if acao == "enviar":
             artigo.status = ArticleStatus.PENDENTE
             # 🔔 notifica editores / admins
-            editors = [u for u in User.query.all() if u.has_permissao('editor') or u.has_permissao('admin')]
+            editors = [
+                u for u in User.query.all()
+                if u.has_permissao('admin')
+                or u.has_permissao('artigo_revisar')
+                or u.has_permissao('artigo_aprovar')
+                or u.has_permissao('editor')
+            ]
             for dest in editors:
                 n = Notification(
                     user_id = dest.id,
@@ -1422,7 +1442,11 @@ def aprovacao():
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
-    if not user or not (user.has_permissao("admin") or user.has_permissao("artigo_aprovar")):
+    if not user or not (
+        user.has_permissao("admin")
+        or user.has_permissao("artigo_aprovar")
+        or user.has_permissao("artigo_revisar")
+    ):
         flash("Permissão negada.", "danger")
         return redirect(url_for("login"))
 
@@ -1465,7 +1489,11 @@ def aprovacao_detail(artigo_id):
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
-    if not user or not (user.has_permissao('admin') or user.has_permissao('artigo_aprovar')):
+    if not user or not (
+        user.has_permissao('admin')
+        or user.has_permissao('artigo_aprovar')
+        or user.has_permissao('artigo_revisar')
+    ):
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
