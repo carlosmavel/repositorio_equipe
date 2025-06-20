@@ -1328,6 +1328,29 @@ def editar_artigo(artigo_id):
         artigo.texto  = request.form["texto"]
         artigo.updated_at = datetime.now(timezone.utc)
 
+        # visibilidade
+        user = User.query.filter_by(username=session["username"]).first()
+        vis_str = (request.form.get("visibility") or artigo.visibility.value).split(',')[0]
+        vis = ArticleVisibility.CELULA
+        if vis_str in ArticleVisibility._value2member_map_:
+            vis = ArticleVisibility(vis_str)
+
+        inst_id = est_id = setor_vis_id = vis_cel_id = None
+        if vis is ArticleVisibility.INSTITUICAO and user.estabelecimento:
+            inst_id = user.estabelecimento.instituicao_id
+        elif vis is ArticleVisibility.ESTABELECIMENTO:
+            est_id = user.estabelecimento_id
+        elif vis is ArticleVisibility.SETOR:
+            setor_vis_id = user.setor_id
+        elif vis is ArticleVisibility.CELULA:
+            vis_cel_id = user.celula_id
+
+        artigo.visibility = vis
+        artigo.instituicao_id = inst_id
+        artigo.estabelecimento_id = est_id
+        artigo.setor_id = setor_vis_id
+        artigo.vis_celula_id = vis_cel_id
+
         # anexos ─ exclusões + novos
         existing = json.loads(artigo.arquivos or "[]")
 
