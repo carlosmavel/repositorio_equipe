@@ -47,6 +47,16 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
     cd NOME_DA_PASTA_DO_PROJETO
     ```
 
+    > **Dica Rápida:** em sistemas Unix ou usando o Git Bash você pode
+    > automatizar os passos de criação do ambiente virtual, instalação das
+    > dependências, aplicação de migrações e inclusão de dados de exemplo
+    > executando:
+    > ```bash
+    > ./setup.sh
+    > ```
+    > Após a execução do script, lembre-se apenas de configurar suas variáveis
+    > de ambiente conforme o guia.
+
 2.  **Crie e ative um ambiente virtual Python:**
     ```bash
     python -m venv venv
