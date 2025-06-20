@@ -143,13 +143,13 @@ def send_password_email(user: User, action: str) -> None:
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session: # Verifica se está logado
+        if 'user_id' not in session:
             flash('Por favor, faça login para acessar esta página.', 'warning')
             return redirect(url_for('login', next=request.url))
-        if session.get('role') != 'admin': # Verifica se é admin
+        user = User.query.get(session['user_id'])
+        if not user or not user.has_permissao('admin'):
             flash('Acesso negado. Você precisa ser um administrador para acessar esta página.', 'danger')
-            # Redireciona para uma página segura, talvez o perfil ou a lista de artigos do usuário
-            return redirect(url_for('meus_artigos')) # Ou 'index', ou uma página específica de "acesso negado"
+            return redirect(url_for('meus_artigos'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -543,7 +543,10 @@ def admin_usuarios():
                     usr.celula_id = celula_ids[0] if celula_ids else None
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
-                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in funcao_ids]
+                    extras = set(funcao_ids)
+                    if cargo_padrao:
+                        extras -= {f.id for f in cargo_padrao.permissoes}
+                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in extras]
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
@@ -571,7 +574,10 @@ def admin_usuarios():
                     usr.set_password(password)
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
-                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in funcao_ids]
+                    extras = set(funcao_ids)
+                    if cargo_padrao:
+                        extras -= {f.id for f in cargo_padrao.permissoes}
+                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in extras]
                     db.session.add(usr)
                     action_msg = 'criado'
 
@@ -603,6 +609,7 @@ def admin_usuarios():
         c.id: {
             'setores': [s.id for s in c.default_setores],
             'celulas': [ce.id for ce in c.default_celulas],
+            'funcoes': [f.id for f in c.permissoes],
         }
         for c in cargos
     }
@@ -959,6 +966,7 @@ def login():
             session["user_id"] = user.id
             session["username"] = user.username
             session["role"] = user.role
+            session["permissoes"] = [p.codigo for p in user.get_permissoes()]
             
             # Redireciona para a página de destino após o login
             next_url = request.args.get('next')

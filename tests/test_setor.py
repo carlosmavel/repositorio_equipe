@@ -5,7 +5,7 @@ os.environ.setdefault('SECRET_KEY', 'test_secret')
 os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
-from models import Instituicao, Setor, Estabelecimento
+from models import Instituicao, Setor, Estabelecimento, Celula, User, Funcao
 
 @pytest.fixture
 def client():
@@ -24,9 +24,18 @@ def client():
         db.drop_all()
 
 def login_admin(client):
+    with app.app_context():
+        est = Estabelecimento.query.first()
+        cel = Celula(nome='adm', estabelecimento=est)
+        func = Funcao(codigo='admin', nome='Admin')
+        user = User(username='adm', email='a@a', estabelecimento=est, setor=Setor.query.first(), celula=cel)
+        user.set_password('x')
+        user.permissoes_personalizadas.append(func)
+        db.session.add_all([cel, func, user])
+        db.session.commit()
+        uid = user.id
     with client.session_transaction() as sess:
-        sess['user_id'] = 1
-        sess['role'] = 'admin'
+        sess['user_id'] = uid
 
 def test_create_setor(client):
     login_admin(client)

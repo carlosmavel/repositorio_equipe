@@ -260,6 +260,10 @@ class User(db.Model):
         permissoes.update(self.permissoes_personalizadas.all())
         return list(permissoes)
 
+    def has_permissao(self, codigo: str) -> bool:
+        """Verifica se o usuário possui uma permissão pelo código."""
+        return any(f.codigo == codigo for f in self.get_permissoes())
+
     def __repr__(self):
         return f"<User {self.username}>"
 
