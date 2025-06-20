@@ -26,8 +26,31 @@
             <label class="form-label">Texto</label>
             <!-- Quill Editor -->
             <div id="quill-editor" class="bg-white border rounded" style="height:300px; overflow:auto;"></div>
-            <input type="hidden" name="texto" id="hidden-texto">
+          <input type="hidden" name="texto" id="hidden-texto">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Visibilidade</label>
+          {% set vis = artigo.visibility.value %}
+          <div class="form-check">
+            <input class="form-check-input vis-check" type="checkbox" value="instituicao" id="editVisInst" data-label="Instituição" {{ 'checked' if vis == 'instituicao' }}>
+            <label class="form-check-label" for="editVisInst">Instituição</label>
           </div>
+          <div class="form-check">
+            <input class="form-check-input vis-check" type="checkbox" value="estabelecimento" id="editVisEst" data-label="Estabelecimento" {{ 'checked' if vis == 'estabelecimento' }}>
+            <label class="form-check-label" for="editVisEst">Estabelecimento</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input vis-check" type="checkbox" value="setor" id="editVisSet" data-label="Setor" {{ 'checked' if vis == 'setor' }}>
+            <label class="form-check-label" for="editVisSet">Setor</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input vis-check" type="checkbox" value="celula" id="editVisCel" data-label="Célula" {{ 'checked' if vis == 'celula' }}>
+            <label class="form-check-label" for="editVisCel">Célula</label>
+          </div>
+          <input type="hidden" name="visibility" id="visibilityInput" value="{{ artigo.visibility.value }}">
+          <div id="visibilityDisplay" class="mt-2"></div>
+        </div>
 
           {# Anexos existentes com remoção imediata #}
           {% if arquivos %}
@@ -111,12 +134,24 @@
   // mas a linha anterior sem ponto e vírgula confundia o parser.
   // O fechamento do addEventListener é só no final do script.
 
+  // Visibilidade por checkboxes
+  const visChecks = document.querySelectorAll('.vis-check');
+  const visInput = document.getElementById('visibilityInput');
+  const visDisplay = document.getElementById('visibilityDisplay');
+  function updateVisibility() {
+    const opts = Array.from(visChecks).filter(c => c.checked);
+    visInput.value = opts.map(o => o.value).join(',');
+    visDisplay.innerHTML = opts.map(o => `<span class="badge bg-secondary me-1">${o.dataset.label}</span>`).join('');
+  }
+  visChecks.forEach(cb => cb.addEventListener('change', updateVisibility));
+  updateVisibility();
+
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
   if (form) {
     form.addEventListener('submit', () => {
       const hiddenTexto = document.getElementById('hidden-texto');
-      if (hiddenTexto) { // Verifica se o campo hidden existe
+      if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
       }
     });

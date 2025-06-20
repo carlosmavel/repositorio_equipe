@@ -30,13 +30,23 @@
           </div>
 
           <div class="mb-3">
-            <label for="visibilitySelect" class="form-label">Visibilidade</label>
-            <select id="visibilitySelect" class="form-select" multiple size="4">
-              <option value="instituicao">Instituição</option>
-              <option value="estabelecimento">Estabelecimento</option>
-              <option value="setor">Setor</option>
-              <option value="celula">Célula</option>
-            </select>
+            <label class="form-label">Visibilidade</label>
+            <div class="form-check">
+              <input class="form-check-input vis-check" type="checkbox" value="instituicao" id="visInst" data-label="Instituição">
+              <label class="form-check-label" for="visInst">Instituição</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input vis-check" type="checkbox" value="estabelecimento" id="visEst" data-label="Estabelecimento">
+              <label class="form-check-label" for="visEst">Estabelecimento</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input vis-check" type="checkbox" value="setor" id="visSet" data-label="Setor">
+              <label class="form-check-label" for="visSet">Setor</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input vis-check" type="checkbox" value="celula" id="visCel" data-label="Célula" checked>
+              <label class="form-check-label" for="visCel">Célula</label>
+            </div>
             <input type="hidden" name="visibility" id="visibilityInput">
             <div id="visibilityDisplay" class="mt-2"></div>
           </div>
@@ -83,16 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Visibilidade multi-select → atualiza hidden e badges
-  const visSelect = document.getElementById('visibilitySelect');
+  // Visibilidade por checkboxes → atualiza hidden e badges
+  const visChecks = document.querySelectorAll('.vis-check');
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
   function updateVisibility() {
-    const opts = Array.from(visSelect.selectedOptions);
+    const opts = Array.from(visChecks).filter(c => c.checked);
     visInput.value = opts.map(o => o.value).join(',');
-    visDisplay.innerHTML = opts.map(o => `<span class="badge bg-secondary me-1">${o.text}</span>`).join('');
+    visDisplay.innerHTML = opts.map(o => `<span class="badge bg-secondary me-1">${o.dataset.label}</span>`).join('');
   }
-  visSelect.addEventListener('change', updateVisibility);
+  visChecks.forEach(cb => cb.addEventListener('change', updateVisibility));
   updateVisibility();
 
   // Sincroniza conteúdo Quill no campo hidden antes de submeter
