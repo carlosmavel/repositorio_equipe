@@ -257,17 +257,17 @@
                                         </div>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_perfis') else '' }} {{ 'collapsed' if not (request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_perfis')) }}"
-                                        data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button" 
-                                        aria-expanded="{{ 'true' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_perfis') else 'false' }}" 
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_funcoes') else '' }} {{ 'collapsed' if not (request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_funcoes')) }}"
+                                        data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button"
+                                        aria-expanded="{{ 'true' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_funcoes') else 'false' }}"
                                         aria-controls="collapseSegurancaSub">
                                             <i class="bi bi-shield-lock-fill me-2"></i> Segurança 
                                             <i class="bi bi-chevron-down small ms-auto"></i>
                                         </a>
-                                        <div class="collapse {{ 'show' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_perfis') else '' }}" id="collapseSegurancaSub">
+                                        <div class="collapse {{ 'show' if request.endpoint.startswith('admin_usuarios') or request.endpoint.startswith('admin_funcoes') else '' }}" id="collapseSegurancaSub">
                                             <ul class="nav flex-column ps-3">
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_usuarios' else '' }}" href="{{ url_for('admin_usuarios') }}"><i class="bi bi-people-fill me-2"></i> Gerenciar Usuários</a></li>
-                                                <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-key-fill me-2"></i> Gerenciar Perfis</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_funcoes' else '' }}" href="{{ url_for('admin_funcoes') }}"><i class="bi bi-key-fill me-2"></i> Gerenciar Perfis</a></li>
                                             </ul>
                                         </div>
                                     </li>
