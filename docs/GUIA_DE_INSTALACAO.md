@@ -114,8 +114,21 @@ Após instalar o PostgreSQL, vamos criar um banco de dados dedicado e um usuári
     ```
 4.  Entre na pasta do projeto que foi clonada:
     ```bash
-    cd NOME_DA_PASTA_DO_PROJETO_ORQUETASK
-    ```
+cd NOME_DA_PASTA_DO_PROJETO_ORQUETASK
+```
+
+### (Opcional) Configuração rápida com script
+Se estiver em um ambiente baseado em Unix ou usando o **Git Bash**, você pode
+executar todas as etapas de criação do ambiente virtual, instalação das
+dependências, aplicação das migrações e popular os dados de exemplo com um único
+comando:
+
+```bash
+./setup.sh
+```
+
+O script não define as variáveis de ambiente, portanto siga a próxima seção para
+configurá-las corretamente.
 
 ## 7. Configurar o Ambiente Virtual Python (venv)
 1.  Dentro da pasta raiz do projeto, no terminal:
