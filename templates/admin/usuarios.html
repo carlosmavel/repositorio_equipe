@@ -86,93 +86,114 @@
                     </h5>
 
                     <form method="POST" action="{{ url_for('admin_usuarios') }}" novalidate class="compact-form">
-                        <div class="row">
-                            <div class="col-md-4 mb-1">
-                                <label for="username" class="form-label">Usuário <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" id="username" name="username" value="{{ request.form.get('username', '') }}" required maxlength="80">
-                            </div>
-                            <div class="col-md-4 mb-1">
-                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control form-control-sm" id="email" name="email" value="{{ request.form.get('email', '') }}" required maxlength="120">
-                            </div>
-                            <div class="col-md-4 mb-1">
-                                <label for="role" class="form-label">Perfil</label>
-                                <input type="text" class="form-control form-control-sm" id="role" name="role" value="{{ request.form.get('role', 'colaborador') }}" maxlength="50">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-1">
-                                <label for="nome_completo" class="form-label">Nome Completo</label>
-                                <input type="text" class="form-control form-control-sm" id="nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', '') }}">
-                            </div>
-                            <div class="col-md-6 mb-1">
-                                <label for="matricula" class="form-label">Matrícula</label>
-                                <input type="text" class="form-control form-control-sm" id="matricula" name="matricula" value="{{ request.form.get('matricula', '') }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-1">
-                                <label for="cpf" class="form-label">CPF</label>
-                                <input type="text" class="form-control form-control-sm" id="cpf" name="cpf" value="{{ request.form.get('cpf', '') }}">
-                            </div>
-                            <div class="col-md-4 mb-1">
-                                <label for="rg" class="form-label">RG</label>
-                                <input type="text" class="form-control form-control-sm" id="rg" name="rg" value="{{ request.form.get('rg', '') }}">
-                            </div>
-                            <div class="col-md-4 mb-1">
-                                <label for="ramal" class="form-label">Ramal</label>
-                                <input type="text" class="form-control form-control-sm" id="ramal" name="ramal" value="{{ request.form.get('ramal', '') }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-1">
-                                <label for="telefone_contato" class="form-label">Telefone de Contato</label>
-                                <input type="text" class="form-control form-control-sm" id="telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', '') }}">
-                            </div>
-                            <div class="col-md-3 mb-1">
-                                <label for="data_nascimento" class="form-label">Data Nascimento</label>
-                                <input type="date" class="form-control form-control-sm" id="data_nascimento" name="data_nascimento" value="{{ request.form.get('data_nascimento', '') }}">
-                            </div>
-                            <div class="col-md-3 mb-1">
-                                <label for="data_admissao" class="form-label">Data Admissão</label>
-                                <input type="date" class="form-control form-control-sm" id="data_admissao" name="data_admissao" value="{{ request.form.get('data_admissao', '') }}">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-3 mb-1">
-                                <label for="estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" id="estabelecimento_id" name="estabelecimento_id" required>
-                                    {% for est in estabelecimentos %}
-                                        <option value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}selected{% endif %}>{{ est.nome_fantasia }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-1">
-                                <label for="setor_ids" class="form-label">Setor <span class="text-danger">*</span></label>
-                                <select multiple class="form-select form-select-sm" id="setor_ids" name="setor_ids" required>
-                                    {% for st in setores %}
-                                        <option value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}selected{% endif %}>{{ st.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-1">
-                                <label for="cargo_id" class="form-label">Cargo</label>
-                                <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
-                                    <option value="">Selecione</option>
-                                    {% for cg in cargos %}
-                                        <option value="{{ cg.id }}" {% if request.form.get('cargo_id') == cg.id|string %}selected{% endif %}>{{ cg.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-1">
-                                <label for="celula_ids" class="form-label">Célula <span class="text-danger">*</span></label>
-                                <select multiple class="form-select form-select-sm" id="celula_ids" name="celula_ids" required>
-                                    {% for cel in celulas %}
-                                        <option value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}selected{% endif %}>{{ cel.nome }}</option>
-                                    {% endfor %}
-                                </select>
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Dados Cadastrais</h6></div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-1">
+                                        <label for="username" class="form-label">Usuário <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="username" name="username" value="{{ request.form.get('username', '') }}" required maxlength="80">
+                                    </div>
+                                    <div class="col-md-4 mb-1">
+                                        <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control form-control-sm" id="email" name="email" value="{{ request.form.get('email', '') }}" required maxlength="120">
+                                    </div>
+                                    <div class="col-md-4 mb-1">
+                                        <label for="role" class="form-label">Perfil</label>
+                                        <input type="text" class="form-control form-control-sm" id="role" name="role" value="{{ request.form.get('role', 'colaborador') }}" maxlength="50">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-1">
+                                        <label for="nome_completo" class="form-label">Nome Completo</label>
+                                        <input type="text" class="form-control form-control-sm" id="nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', '') }}">
+                                    </div>
+                                    <div class="col-md-6 mb-1">
+                                        <label for="matricula" class="form-label">Matrícula</label>
+                                        <input type="text" class="form-control form-control-sm" id="matricula" name="matricula" value="{{ request.form.get('matricula', '') }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-1">
+                                        <label for="cpf" class="form-label">CPF</label>
+                                        <input type="text" class="form-control form-control-sm" id="cpf" name="cpf" value="{{ request.form.get('cpf', '') }}">
+                                    </div>
+                                    <div class="col-md-4 mb-1">
+                                        <label for="rg" class="form-label">RG</label>
+                                        <input type="text" class="form-control form-control-sm" id="rg" name="rg" value="{{ request.form.get('rg', '') }}">
+                                    </div>
+                                    <div class="col-md-4 mb-1">
+                                        <label for="ramal" class="form-label">Ramal</label>
+                                        <input type="text" class="form-control form-control-sm" id="ramal" name="ramal" value="{{ request.form.get('ramal', '') }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-1">
+                                        <label for="telefone_contato" class="form-label">Telefone de Contato</label>
+                                        <input type="text" class="form-control form-control-sm" id="telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', '') }}">
+                                    </div>
+                                    <div class="col-md-3 mb-1">
+                                        <label for="data_nascimento" class="form-label">Data Nascimento</label>
+                                        <input type="date" class="form-control form-control-sm" id="data_nascimento" name="data_nascimento" value="{{ request.form.get('data_nascimento', '') }}">
+                                    </div>
+                                    <div class="col-md-3 mb-1">
+                                        <label for="data_admissao" class="form-label">Data Admissão</label>
+                                        <input type="date" class="form-control form-control-sm" id="data_admissao" name="data_admissao" value="{{ request.form.get('data_admissao', '') }}">
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Hierarquia</h6></div>
+                            <div class="card-body">
+                                {% for est in estabelecimentos %}
+                                    <div class="form-check">
+                                        <input class="form-check-input estab-checkbox" type="checkbox" id="est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                    </div>
+                                    {% set setores_est = est.setores.all() %}
+                                    {% if setores_est %}
+                                        <div class="ms-4">
+                                            {% for st in setores_est %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}checked{% endif %}>
+                                                    <label class="form-check-label" for="setor{{ st.id }}">{{ st.nome }}</label>
+                                                </div>
+                                                {% set celulas_set = st.celulas.all() %}
+                                                {% if celulas_set %}
+                                                    <div class="ms-4 mb-2">
+                                                        {% for cel in celulas_set %}
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}checked{% endif %}>
+                                                                <label class="form-check-label" for="celula{{ cel.id }}">{{ cel.nome }}</label>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                <div class="mt-2">
+                                    <label for="cargo_id" class="form-label">Cargo</label>
+                                    <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
+                                        <option value="">Selecione</option>
+                                        {% for cg in cargos %}
+                                            <option value="{{ cg.id }}" {% if request.form.get('cargo_id') == cg.id|string %}selected{% endif %}>{{ cg.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header"><h6 class="mb-0">Permissões</h6></div>
+                            <div class="card-body">
+                                <ul id="permResumoNovo" class="small mb-0"></ul>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-1">
                                 <div class="form-check form-switch mt-4 pt-1">
@@ -203,93 +224,114 @@
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('admin_usuarios') }}" novalidate class="compact-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ user_editar.id }}">
-                    <div class="row">
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_username" class="form-label">Usuário <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" id="edit_username" name="username" value="{{ request.form.get('username', user_editar.username) }}" required maxlength="80">
-                        </div>
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email) }}" required maxlength="120">
-                        </div>
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_role" class="form-label">Perfil</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_role" name="role" value="{{ request.form.get('role', user_editar.role) }}" maxlength="50">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-1">
-                            <label for="edit_nome_completo" class="form-label">Nome Completo</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', user_editar.nome_completo) }}">
-                        </div>
-                        <div class="col-md-6 mb-1">
-                            <label for="edit_matricula" class="form-label">Matrícula</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_matricula" name="matricula" value="{{ request.form.get('matricula', user_editar.matricula) }}">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_cpf" class="form-label">CPF</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_cpf" name="cpf" value="{{ request.form.get('cpf', user_editar.cpf) }}">
-                        </div>
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_rg" class="form-label">RG</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_rg" name="rg" value="{{ request.form.get('rg', user_editar.rg) }}">
-                        </div>
-                        <div class="col-md-4 mb-1">
-                            <label for="edit_ramal" class="form-label">Ramal</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_ramal" name="ramal" value="{{ request.form.get('ramal', user_editar.ramal) }}">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-1">
-                            <label for="edit_telefone_contato" class="form-label">Telefone de Contato</label>
-                            <input type="text" class="form-control form-control-sm" id="edit_telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', user_editar.telefone_contato) }}">
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_data_nascimento" class="form-label">Data Nascimento</label>
-                            <input type="date" class="form-control form-control-sm" id="edit_data_nascimento" name="data_nascimento" value="{{ request.form.get('data_nascimento', user_editar.data_nascimento.strftime('%Y-%m-%d') if user_editar.data_nascimento else '') }}">
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_data_admissao" class="form-label">Data Admissão</label>
-                            <input type="date" class="form-control form-control-sm" id="edit_data_admissao" name="data_admissao" value="{{ request.form.get('data_admissao', user_editar.data_admissao.strftime('%Y-%m-%d') if user_editar.data_admissao else '') }}">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_estabelecimento_id" class="form-label">Estabelecimento <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-sm" id="edit_estabelecimento_id" name="estabelecimento_id" required>
-                                {% for est in estabelecimentos %}
-                                <option value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}selected{% endif %}>{{ est.nome_fantasia }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_setor_ids" class="form-label">Setor <span class="text-danger">*</span></label>
-                            <select multiple class="form-select form-select-sm" id="edit_setor_ids" name="setor_ids" required>
-                                {% for st in setores %}
-                                <option value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in user_editar.extra_setores.all() or st.id == user_editar.setor_id)) %}selected{% endif %}>{{ st.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_cargo_id" class="form-label">Cargo</label>
-                            <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
-                                <option value="">Selecione</option>
-                                {% for cg in cargos %}
-                                <option value="{{ cg.id }}" {% if (request.form.get('cargo_id') == cg.id|string) or (not request.form.get('cargo_id') and user_editar.cargo_id == cg.id) %}selected{% endif %}>{{ cg.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-1">
-                            <label for="edit_celula_ids" class="form-label">Célula <span class="text-danger">*</span></label>
-                            <select multiple class="form-select form-select-sm" id="edit_celula_ids" name="celula_ids" required>
-                                {% for cel in celulas %}
-                                <option value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in user_editar.extra_celulas.all() or cel.id == user_editar.celula_id)) %}selected{% endif %}>{{ cel.nome }}</option>
-                                {% endfor %}
-                            </select>
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Dados Cadastrais</h6></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_username" class="form-label">Usuário <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_username" name="username" value="{{ request.form.get('username', user_editar.username) }}" required maxlength="80">
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email) }}" required maxlength="120">
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_role" class="form-label">Perfil</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_role" name="role" value="{{ request.form.get('role', user_editar.role) }}" maxlength="50">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-1">
+                                    <label for="edit_nome_completo" class="form-label">Nome Completo</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', user_editar.nome_completo) }}">
+                                </div>
+                                <div class="col-md-6 mb-1">
+                                    <label for="edit_matricula" class="form-label">Matrícula</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_matricula" name="matricula" value="{{ request.form.get('matricula', user_editar.matricula) }}">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_cpf" class="form-label">CPF</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_cpf" name="cpf" value="{{ request.form.get('cpf', user_editar.cpf) }}">
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_rg" class="form-label">RG</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_rg" name="rg" value="{{ request.form.get('rg', user_editar.rg) }}">
+                                </div>
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_ramal" class="form-label">Ramal</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_ramal" name="ramal" value="{{ request.form.get('ramal', user_editar.ramal) }}">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-1">
+                                    <label for="edit_telefone_contato" class="form-label">Telefone de Contato</label>
+                                    <input type="text" class="form-control form-control-sm" id="edit_telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', user_editar.telefone_contato) }}">
+                                </div>
+                                <div class="col-md-3 mb-1">
+                                    <label for="edit_data_nascimento" class="form-label">Data Nascimento</label>
+                                    <input type="date" class="form-control form-control-sm" id="edit_data_nascimento" name="data_nascimento" value="{{ request.form.get('data_nascimento', user_editar.data_nascimento.strftime('%Y-%m-%d') if user_editar.data_nascimento else '') }}">
+                                </div>
+                                <div class="col-md-3 mb-1">
+                                    <label for="edit_data_admissao" class="form-label">Data Admissão</label>
+                                    <input type="date" class="form-control form-control-sm" id="edit_data_admissao" name="data_admissao" value="{{ request.form.get('data_admissao', user_editar.data_admissao.strftime('%Y-%m-%d') if user_editar.data_admissao else '') }}">
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Hierarquia</h6></div>
+                        <div class="card-body">
+                            {% for est in estabelecimentos %}
+                                <div class="form-check">
+                                    <input class="form-check-input estab-checkbox" type="checkbox" id="edit_est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold" for="edit_est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                </div>
+                                {% set setores_est = est.setores.all() %}
+                                {% if setores_est %}
+                                    <div class="ms-4">
+                                        {% for st in setores_est %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="edit_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in user_editar.extra_setores.all() or st.id == user_editar.setor_id)) %}checked{% endif %}>
+                                                <label class="form-check-label" for="edit_setor{{ st.id }}">{{ st.nome }}</label>
+                                            </div>
+                                            {% set celulas_set = st.celulas.all() %}
+                                            {% if celulas_set %}
+                                                <div class="ms-4 mb-2">
+                                                    {% for cel in celulas_set %}
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="edit_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in user_editar.extra_celulas.all() or cel.id == user_editar.celula_id)) %}checked{% endif %}>
+                                                            <label class="form-check-label" for="edit_celula{{ cel.id }}">{{ cel.nome }}</label>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                            <div class="mt-2">
+                                <label for="edit_cargo_id" class="form-label">Cargo</label>
+                                <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
+                                    <option value="">Selecione</option>
+                                    {% for cg in cargos %}
+                                    <option value="{{ cg.id }}" {% if (request.form.get('cargo_id') == cg.id|string) or (not request.form.get('cargo_id') and user_editar.cargo_id == cg.id) %}selected{% endif %}>{{ cg.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Permissões</h6></div>
+                        <div class="card-body">
+                            <ul id="permResumoEdit" class="small mb-0"></ul>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-1">
                             <div class="form-check form-switch mt-4 pt-1">
