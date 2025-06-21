@@ -231,41 +231,41 @@
                             <div class="row">
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_username" class="form-label">Usuário <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_username" name="username" value="{{ request.form.get('username', user_editar.username) }}" required maxlength="80">
+                                    <input type="text" class="form-control form-control-sm" id="edit_username" name="username" value="{{ request.form.get('username', user_editar.username if user_editar.username else '') }}" required maxlength="80">
                                 </div>
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email) }}" required maxlength="120">
+                                    <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email if user_editar.email else '') }}" required maxlength="120">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-1">
                                     <label for="edit_nome_completo" class="form-label">Nome Completo</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', user_editar.nome_completo) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', user_editar.nome_completo if user_editar.nome_completo else '') }}">
                                 </div>
                                 <div class="col-md-6 mb-1">
                                     <label for="edit_matricula" class="form-label">Matrícula</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_matricula" name="matricula" value="{{ request.form.get('matricula', user_editar.matricula) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_matricula" name="matricula" value="{{ request.form.get('matricula', user_editar.matricula if user_editar.matricula else '') }}">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_cpf" class="form-label">CPF</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_cpf" name="cpf" value="{{ request.form.get('cpf', user_editar.cpf) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_cpf" name="cpf" value="{{ request.form.get('cpf', user_editar.cpf if user_editar.cpf else '') }}">
                                 </div>
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_rg" class="form-label">RG</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_rg" name="rg" value="{{ request.form.get('rg', user_editar.rg) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_rg" name="rg" value="{{ request.form.get('rg', user_editar.rg if user_editar.rg else '') }}">
                                 </div>
                                 <div class="col-md-4 mb-1">
                                     <label for="edit_ramal" class="form-label">Ramal</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_ramal" name="ramal" value="{{ request.form.get('ramal', user_editar.ramal) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_ramal" name="ramal" value="{{ request.form.get('ramal', user_editar.ramal if user_editar.ramal else '') }}">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-1">
                                     <label for="edit_telefone_contato" class="form-label">Telefone de Contato</label>
-                                    <input type="text" class="form-control form-control-sm" id="edit_telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', user_editar.telefone_contato) }}">
+                                    <input type="text" class="form-control form-control-sm" id="edit_telefone_contato" name="telefone_contato" value="{{ request.form.get('telefone_contato', user_editar.telefone_contato if user_editar.telefone_contato else '') }}">
                                 </div>
                                 <div class="col-md-3 mb-1">
                                     <label for="edit_data_nascimento" class="form-label">Data Nascimento</label>
