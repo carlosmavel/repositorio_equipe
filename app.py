@@ -15,6 +15,7 @@ from flask import (
     Flask, request, render_template, redirect, url_for,
     session, send_from_directory, flash, jsonify # Adicionei jsonify se for usar em APIs futuras
 )
+import logging
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
@@ -113,6 +114,8 @@ NOME_NIVEL_CARGO = {valor: nome for valor, nome in NIVEIS_HIERARQUICOS}
 # Configuração da Aplicação (Seu código existente)
 # -------------------------------------------------------------------------
 app = Flask(__name__)
+logging.basicConfig(level=logging.DEBUG)
+app.logger.setLevel(logging.DEBUG)
 
 # SECRET_KEY - Agora obrigatória via variável de ambiente
 SECRET_KEY_FROM_ENV = os.environ.get('SECRET_KEY')
@@ -497,8 +500,10 @@ def admin_usuarios():
         edit_id = request.args.get('edit_id', type=int)
         if edit_id:
             usuario_para_editar = User.query.get_or_404(edit_id)
+            app.logger.debug(f"Loading user {edit_id} for editing")
 
     if request.method == 'POST':
+        app.logger.debug(f"Received POST /admin/usuarios with data: {request.form}")
         id_para_atualizar = request.form.get('id_para_atualizar')
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -563,6 +568,7 @@ def admin_usuarios():
             else:
                 if id_para_atualizar:
                     usr = User.query.get_or_404(id_para_atualizar)
+                    app.logger.debug(f"Editing user {usr.id} ({usr.username})")
                     usr.username = username
                     usr.email = email
                     usr.ativo = ativo
@@ -611,6 +617,7 @@ def admin_usuarios():
                         cargo_id=cargo_id,
                         celula_id=celula_ids[0] if celula_ids else None,
                     )
+                    app.logger.debug("Creating new user record")
                     usr.set_password(password)
                     usr.extra_setores = []
                     usr.extra_celulas = []
@@ -625,6 +632,7 @@ def admin_usuarios():
 
                 try:
                     db.session.commit()
+                    app.logger.info(f"Usuario {action_msg}: id={usr.id}")
                 except Exception as e:
                     db.session.rollback()
                     flash(f'Erro ao salvar usuário: {str(e)}', 'danger')
@@ -676,10 +684,12 @@ def admin_toggle_ativo_usuario(id):
     # para que a funcionalidade possa ser exercitada sem necessidade de usuário
     # pré-existente. Em ambientes reais, recomenda-se validar essa condição.
     usr.ativo = not usr.ativo
+    app.logger.debug(f"Toggling ativo for user {usr.id} to {usr.ativo}")
     try:
         db.session.commit()
         status_texto = 'ativado' if usr.ativo else 'desativado'
         flash(f'Usuário "{usr.username}" foi {status_texto} com sucesso!', 'success')
+        app.logger.info(f"Usuario {usr.id} {status_texto}")
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao alterar status do usuário: {str(e)}', 'danger')
