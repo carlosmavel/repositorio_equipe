@@ -514,10 +514,10 @@ def admin_usuarios():
         data_nascimento_str = request.form.get('data_nascimento', '').strip()
         data_admissao_str = request.form.get('data_admissao', '').strip()
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
+        setor_ids = list({int(s) for s in request.form.getlist('setor_ids') if s})
         cargo_id = request.form.get('cargo_id', type=int)
-        celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
-        funcao_ids = [int(f) for f in request.form.getlist('funcao_ids') if f]
+        celula_ids = list({int(c) for c in request.form.getlist('celula_ids') if c})
+        funcao_ids = list({int(f) for f in request.form.getlist('funcao_ids') if f})
 
         cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
         if cargo_padrao:
@@ -585,11 +585,9 @@ def admin_usuarios():
                     extras = set(funcao_ids)
                     if cargo_padrao:
                         extras -= {f.id for f in cargo_padrao.permissoes}
-                    # replace permissions manually to handle dynamic relation
+                    # atualiza as permissões personalizadas do usuário
                     app.logger.debug(f"Updating permissoes for user {usr.id} -> {extras}")
-                    db.session.execute(user_funcoes.delete().where(user_funcoes.c.user_id == usr.id))
-                    for fid in extras:
-                        db.session.execute(user_funcoes.insert().values(user_id=usr.id, funcao_id=fid))
+                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in extras]
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
@@ -875,9 +873,9 @@ def admin_cargos():
         descricao = request.form.get('descricao', '').strip()
         nivel_hierarquico = request.form.get('nivel_hierarquico', type=int)
         ativo = request.form.get('ativo_check') == 'on'
-        setor_ids = [int(s) for s in request.form.getlist('setor_ids') if s]
-        celula_ids = [int(c) for c in request.form.getlist('celula_ids') if c]
-        funcao_ids = [int(f) for f in request.form.getlist('funcao_ids') if f]
+        setor_ids = list({int(s) for s in request.form.getlist('setor_ids') if s})
+        celula_ids = list({int(c) for c in request.form.getlist('celula_ids') if c})
+        funcao_ids = list({int(f) for f in request.form.getlist('funcao_ids') if f})
 
         if not nome:
             flash('Nome do cargo é obrigatório.', 'danger')
