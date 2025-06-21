@@ -11,7 +11,6 @@ from app import app
 FUNCOES = [
     ("admin", "Administrador"),
     ("colaborador", "Colaborador"),
-    ("editor", "Editor"),
     ("artigo_criar", "Criar artigo"),
     ("artigo_editar", "Editar artigo"),
     ("artigo_aprovar", "Aprovar artigo"),

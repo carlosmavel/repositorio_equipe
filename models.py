@@ -313,7 +313,7 @@ class Article(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
-    review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão do editor
+    review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão
     
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     author = db.relationship('User', back_populates='articles')
@@ -349,14 +349,14 @@ class RevisionRequest(db.Model):
         return f"<RevisionRequest artigo={self.artigo_id} user={self.user_id}>"
 
 class Comment(db.Model):
-    __tablename__ = "comment" # Comentários feitos por editores/admins durante o fluxo de aprovação
+    __tablename__ = "comment" # Comentários feitos durante o fluxo de aprovação
     id = db.Column(db.Integer, primary_key=True)
     artigo_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False) # Editor/Admin que comentou
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False) # Usuário responsável pelo comentário
     texto = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
-    autor = db.relationship("User", foreign_keys=[user_id], back_populates="comments") # Editor/Admin
+    autor = db.relationship("User", foreign_keys=[user_id], back_populates="comments")
     artigo = db.relationship("Article", back_populates="comments")
 
     def __repr__(self):

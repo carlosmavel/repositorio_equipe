@@ -21,7 +21,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
     * Criação e edição de rascunhos de artigos utilizando um editor de texto rico (Quill.js).
     * Submissão de artigos finalizados para um fluxo de revisão e aprovação.
     * Capacidade de anexar múltiplos arquivos relevantes (documentos, planilhas, PDFs, imagens) aos artigos.
-* **Editores/Administradores de Artigos:**
+* **Administradores de Artigos:**
     * Acesso a uma fila de artigos pendentes de aprovação.
     * Ferramentas para revisar o conteúdo e os anexos dos artigos submetidos.
     * Opções para aprovar artigos para publicação, solicitar ajustes específicos ao autor, ou rejeitar artigos com feedback.
@@ -172,7 +172,7 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
 * **Autenticação:** Usuário acessa `/login`, insere credenciais. Se válidas, é redirecionado para `/inicio`. Sessão é criada. Logout via link na navbar/sidebar.
 * **Visualização/Edição de Perfil:** Usuário acessa `/perfil`, visualiza seus dados. Pode editar campos permitidos e alterar foto ou senha.
 * **Criação de Artigo:** Usuário (colaborador) acessa `/novo_artigo`, preenche formulário, anexa arquivos, salva como rascunho ou envia para revisão.
-* **Aprovação de Artigo:** Editor/Admin acessa `/aprovacao`, visualiza artigos pendentes, abre um artigo (`/aprovacao_detail`), revisa, comenta, e aprova, rejeita ou solicita ajustes. Autor é notificado.
+* **Aprovação de Artigo:** Administrador acessa `/aprovacao`, visualiza artigos pendentes, abre um artigo (`/aprovacao_detail`), revisa, comenta, e aprova, rejeita ou solicita ajustes. Autor é notificado.
 * **Administração de Estabelecimentos (Exemplo de CRUD Admin):** Admin acessa `/admin/dashboard`, navega para "Gerenciar Estabelecimentos". Visualiza lista, clica para adicionar novo ou editar existente. Formulário é preenchido/submetido. Lista é atualizada. Pode ativar/desativar.
 * **(Futuro) Abertura de OS:** Usuário acessa formulário de OS, preenche detalhes, OS é criada com status inicial e atribuída ou entra em fila para triagem/atribuição. Notificações são geradas.
 
