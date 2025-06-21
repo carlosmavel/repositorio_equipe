@@ -163,7 +163,10 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
 
 def user_can_view_article(user, article):
     """Verifica se o usuário tem permissão para visualizar o artigo."""
-    from models import Article  # import interno para evitar dependência circular
+    try:
+        from .models import Article  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import Article
     try:
         from .enums import ArticleVisibility
     except ImportError:  # pragma: no cover - fallback for direct execution
