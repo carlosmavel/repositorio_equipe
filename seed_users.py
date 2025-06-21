@@ -30,18 +30,6 @@ def run():
             # ramal="1000"
         ),
         dict(
-            username="editor",
-            email="editor@seudominio.com", # E-mail adicionado
-            password_hash=generate_password_hash("Editor123!"),
-            funcoes=["editor"],
-            nome_completo="Maria Oliveira",
-            matricula="EDT001",
-            cpf="111.111.111-11", # Exemplo
-            estabelecimento_id=None,
-            setor_id=None,
-            cargo_id=None,
-        ),
-        dict(
             username="colaborador",
             email="colaborador@seudominio.com", # E-mail adicionado
             password_hash=generate_password_hash("Colab123!"),

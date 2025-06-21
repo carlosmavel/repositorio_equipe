@@ -1187,14 +1187,13 @@ def novo_artigo():
         # 5) Persiste tudo num único commit
         db.session.commit()
 
-        # 6) Notifica editores/admins, se necessário
+        # 6) Notifica responsáveis/admins, se necessário
         if status is ArticleStatus.PENDENTE:
             destinatarios = [
                 u for u in User.query.all()
                 if u.has_permissao('admin')
                 or u.has_permissao('artigo_revisar')
                 or u.has_permissao('artigo_aprovar')
-                or u.has_permissao('editor')
             ]
             for dest in destinatarios:
                 notif = Notification(
@@ -1383,15 +1382,14 @@ def editar_artigo(artigo_id):
         # se usuário clicou “Enviar para revisão”
         if acao == "enviar":
             artigo.status = ArticleStatus.PENDENTE
-            # 🔔 notifica editores / admins
-            editors = [
+            # 🔔 notifica responsáveis / admins
+            destinatarios = [
                 u for u in User.query.all()
                 if u.has_permissao('admin')
                 or u.has_permissao('artigo_revisar')
                 or u.has_permissao('artigo_aprovar')
-                or u.has_permissao('editor')
             ]
-            for dest in editors:
+            for dest in destinatarios:
                 n = Notification(
                     user_id = dest.id,
                     message = f"Novo artigo pendente para revisão: “{artigo.titulo}”",
@@ -1514,7 +1512,7 @@ def aprovacao_detail(artigo_id):
         db.session.add(notif)
         db.session.commit()
 
-        # 4) Mensagem para o editor e redirecionamento ------------------------
+        # 4) Mensagem de confirmação e redirecionamento -----------------------
         flash(msg, 'success')
         return redirect(url_for('aprovacao'))
 

@@ -24,10 +24,7 @@ db.session.add_all([ler, criar, aprovar])
 db.session.commit()
 
 # Associação das permissões a um cargo
-cargo_editor = Cargo(nome="Editor")
-cargo_editor.permissoes.extend([ler, criar, aprovar])
-db.session.add(cargo_editor)
-db.session.commit()
+# (exemplo de associação de permissões a um cargo)
 ```
 
 Para uma visão passo a passo das alterações pendentes e ações necessárias para consolidar esse modelo de permissões, consulte o documento [TAREFAS_PERMISSOES.md](./TAREFAS_PERMISSOES.md).
