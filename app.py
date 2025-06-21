@@ -18,7 +18,7 @@ from flask import (
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
-from models import user_funcoes
+#from models import user_funcoes
 from functools import wraps # Essencial para decoradores, você já tinha
 
 try:
@@ -45,6 +45,7 @@ try:
         Cargo,
         Instituicao,
         Funcao,
+        user_funcoes,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from models import (
