@@ -575,6 +575,8 @@ def admin_usuarios():
                     usr.setor_id = setor_ids[0] if setor_ids else None
                     usr.cargo_id = cargo_id
                     usr.celula_id = celula_ids[0] if celula_ids else None
+                    usr.extra_setores = []
+                    usr.extra_celulas = []
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
                     extras = set(funcao_ids)
@@ -605,6 +607,8 @@ def admin_usuarios():
                         celula_id=celula_ids[0] if celula_ids else None,
                     )
                     usr.set_password(password)
+                    usr.extra_setores = []
+                    usr.extra_celulas = []
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
                     usr.extra_celulas = [Celula.query.get(cid) for cid in celula_ids]
                     extras = set(funcao_ids)

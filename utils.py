@@ -205,10 +205,14 @@ def user_can_view_article(user, article):
         if user_setor and article.setor_id == user_setor.id:
             return True
     elif vis is ArticleVisibility.CELULA:
-        if user.celula_id == article.vis_celula_id:
+        # Usa a célula explícita de visibilidade se definida; caso contrário,
+        # faz fallback para a célula do autor (para artigos antigos que não
+        # possuam o campo vis_celula_id preenchido)
+        cel_id = article.vis_celula_id or article.celula_id
+        if user.celula_id == cel_id:
             return True
         # Considera usuários atribuídos a várias células
-        if article.vis_celula_id and user.extra_celulas.filter_by(id=article.vis_celula_id).count():
+        if cel_id and user.extra_celulas.filter_by(id=cel_id).count():
             return True
 
     return False
