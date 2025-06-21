@@ -142,9 +142,10 @@
                         </div>
                     </div>
                     <div class="card mb-3">
-                        <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
+                        <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes %}
+                            {% set article_codes = ['artigo_criar','artigo_editar','artigo_aprovar','artigo_revisar','artigo_assumir_revisao'] %}
+                            {% for f in funcoes if f.codigo in article_codes %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
                                     <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
@@ -237,9 +238,10 @@
                         </div>
                     </div>
                     <div class="card mb-3">
-                        <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
+                        <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes %}
+                            {% set article_codes = ['artigo_criar','artigo_editar','artigo_aprovar','artigo_revisar','artigo_assumir_revisao'] %}
+                            {% for f in funcoes if f.codigo in article_codes %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
                                     <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
