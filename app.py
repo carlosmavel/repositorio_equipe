@@ -925,68 +925,6 @@ def admin_cargos():
     )
 
 
-@app.route('/admin/funcoes', methods=['GET', 'POST'])
-@admin_required
-def admin_funcoes():
-    """CRUD de Funções."""
-    funcao_para_editar = None
-    if request.method == 'GET':
-        edit_id = request.args.get('edit_id', type=int)
-        if edit_id:
-            funcao_para_editar = Funcao.query.get_or_404(edit_id)
-
-    if request.method == 'POST':
-        id_para_atualizar = request.form.get('id_para_atualizar')
-        codigo = request.form.get('codigo', '').strip()
-        nome = request.form.get('nome', '').strip()
-
-        if not codigo or not nome:
-            flash('Código e Nome são obrigatórios.', 'danger')
-        else:
-            query_codigo = Funcao.query.filter_by(codigo=codigo)
-            if id_para_atualizar:
-                query_codigo = query_codigo.filter(Funcao.id != int(id_para_atualizar))
-            codigo_ja_existe = query_codigo.first()
-
-            if codigo_ja_existe:
-                flash(f'O código "{codigo}" já está em uso.', 'danger')
-            else:
-                if id_para_atualizar:
-                    funcao = Funcao.query.get_or_404(id_para_atualizar)
-                    funcao.codigo = codigo
-                    funcao.nome = nome
-                    action_msg = 'atualizada'
-                else:
-                    funcao = Funcao(codigo=codigo, nome=nome)
-                    db.session.add(funcao)
-                    action_msg = 'criada'
-                try:
-                    db.session.commit()
-                    flash(f'Função {action_msg} com sucesso!', 'success')
-                    return redirect(url_for('admin_funcoes'))
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f'Erro ao salvar função: {str(e)}', 'danger')
-
-        if id_para_atualizar:
-            funcao_para_editar = Funcao.query.get(id_para_atualizar)
-
-    funcoes = Funcao.query.order_by(Funcao.nome).all()
-    return render_template('admin/funcoes.html', funcoes=funcoes, funcao_editar=funcao_para_editar)
-
-
-@app.route('/admin/funcoes/delete/<int:id>', methods=['POST'])
-@admin_required
-def admin_delete_funcao(id):
-    funcao = Funcao.query.get_or_404(id)
-    try:
-        db.session.delete(funcao)
-        db.session.commit()
-        flash('Função removida com sucesso!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao remover função: {str(e)}', 'danger')
-    return redirect(url_for('admin_funcoes'))
 
 
 @app.route('/admin/cargos/toggle_ativo/<int:id>', methods=['POST'])
