@@ -208,3 +208,45 @@ def test_create_user_with_custom_permissions(client):
         u = User.query.filter_by(username='uperm').first()
         assert {f.codigo for f in u.get_permissoes()} == {'X', 'Y'}
         assert {f.id for f in u.permissoes_personalizadas} == {f2_id}
+
+
+def test_edit_user_updates_relations(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        func1 = Funcao(codigo='C', nome='Perm C')
+        func2 = Funcao(codigo='D', nome='Perm D')
+        cargo = Cargo(nome='Novo Cargo', ativo=True)
+        db.session.add_all([func1, func2, cargo])
+        db.session.commit()
+        u = User(
+            username='toedit',
+            email='old@example.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+        )
+        u.set_password('x')
+        u.permissoes_personalizadas.append(func1)
+        db.session.add(u)
+        db.session.commit()
+        uid = u.id
+        func2_id = func2.id
+        cargo_id = cargo.id
+    response = client.post('/admin/usuarios', data={
+        'id_para_atualizar': str(uid),
+        'username': 'toedit',
+        'email': 'new@example.com',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id,
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])],
+        'funcao_ids': [str(func2_id)]
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        u = User.query.get(uid)
+        assert u.email == 'new@example.com'
+        assert u.cargo_id == cargo_id
+        assert {f.id for f in u.permissoes_personalizadas} == {func2_id}

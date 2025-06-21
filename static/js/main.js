@@ -188,8 +188,4 @@ document.addEventListener("DOMContentLoaded", function () {
     applyCargoDefaults('edit_', e.target.value);
   });
 
-  const initialCargo = document.getElementById('cargo_id')?.value;
-  if (initialCargo) applyCargoDefaults('', initialCargo);
-  const initialEditCargo = document.getElementById('edit_cargo_id')?.value;
-  if (initialEditCargo) applyCargoDefaults('edit_', initialEditCargo);
 });
