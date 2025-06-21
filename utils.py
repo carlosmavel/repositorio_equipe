@@ -207,5 +207,8 @@ def user_can_view_article(user, article):
     elif vis is ArticleVisibility.CELULA:
         if user.celula_id == article.vis_celula_id:
             return True
+        # Considera usuários atribuídos a várias células
+        if article.vis_celula_id and user.extra_celulas.filter_by(id=article.vis_celula_id).count():
+            return True
 
     return False
