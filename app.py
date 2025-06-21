@@ -62,6 +62,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Cargo,
         Instituicao,
         Funcao,
+        user_funcoes,
     )
 
 try:
