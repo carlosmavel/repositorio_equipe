@@ -282,6 +282,8 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Hierarquia</h6></div>
                         <div class="card-body">
+                            {% set extra_celulas_ids = user_editar.extra_celulas | map(attribute='id') | list %}
+                            {% set extra_setores_ids = user_editar.extra_setores | map(attribute='id') | list %}
                             <div class="mb-2">
                                 <label for="edit_cargo_id" class="form-label">Cargo</label>
                                 <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
@@ -301,7 +303,7 @@
                                     <div class="ms-4">
                                         {% for st in setores_est %}
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="edit_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in user_editar.extra_setores.all() or st.id == user_editar.setor_id)) %}checked{% endif %}>
+                                                <input class="form-check-input" type="checkbox" id="edit_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st.id in extra_setores_ids or st.id == user_editar.setor_id)) %}checked{% endif %}>
                                                 <label class="form-check-label" for="edit_setor{{ st.id }}">{{ st.nome }}</label>
                                             </div>
                                             {% set celulas_set = st.celulas.all() %}
@@ -309,7 +311,7 @@
                                                 <div class="ms-4 mb-2">
                                                     {% for cel in celulas_set %}
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="edit_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in user_editar.extra_celulas.all() or cel.id == user_editar.celula_id)) %}checked{% endif %}>
+                                                            <input class="form-check-input" type="checkbox" id="edit_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel.id in extra_celulas_ids or cel.id == user_editar.celula_id)) %}checked{% endif %}>
                                                             <label class="form-check-label" for="edit_celula{{ cel.id }}">{{ cel.nome }}</label>
                                                         </div>
                                                     {% endfor %}
