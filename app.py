@@ -519,10 +519,10 @@ def admin_usuarios():
         data_nascimento_str = request.form.get('data_nascimento', '').strip()
         data_admissao_str = request.form.get('data_admissao', '').strip()
         estabelecimento_id = request.form.get('estabelecimento_id', type=int)
-        setor_ids = list({int(s) for s in request.form.getlist('setor_ids') if s})
+        setor_ids = list(dict.fromkeys(int(s) for s in request.form.getlist('setor_ids') if s))
         cargo_id = request.form.get('cargo_id', type=int)
-        celula_ids = list({int(c) for c in request.form.getlist('celula_ids') if c})
-        funcao_ids = list({int(f) for f in request.form.getlist('funcao_ids') if f})
+        celula_ids = list(dict.fromkeys(int(c) for c in request.form.getlist('celula_ids') if c))
+        funcao_ids = list(dict.fromkeys(int(f) for f in request.form.getlist('funcao_ids') if f))
 
         cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
         if cargo_padrao:
