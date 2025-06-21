@@ -153,6 +153,17 @@
                             {% endfor %}
                         </div>
                     </div>
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Permissões Globais</h6></div>
+                        <div class="card-body">
+                            {% for f in funcoes if f.codigo == 'admin' %}
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="c_admin{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
+                                    <label class="form-check-label" for="c_admin{{ f.id }}">Administrador Global</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                     <div class="col-md-12 mb-1">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check" checked>
@@ -245,6 +256,17 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
                                     <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header"><h6 class="mb-0">Permissões Globais</h6></div>
+                        <div class="card-body">
+                            {% for f in funcoes if f.codigo == 'admin' %}
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="e_admin{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
+                                    <label class="form-check-label" for="e_admin{{ f.id }}">Administrador Global</label>
                                 </div>
                             {% endfor %}
                         </div>
