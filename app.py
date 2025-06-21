@@ -18,6 +18,7 @@ from flask import (
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
+from models import user_funcoes
 from functools import wraps # Essencial para decoradores, você já tinha
 
 try:
@@ -582,7 +583,11 @@ def admin_usuarios():
                     extras = set(funcao_ids)
                     if cargo_padrao:
                         extras -= {f.id for f in cargo_padrao.permissoes}
-                    usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in extras]
+                    # replace permissions manually to handle dynamic relation
+                    app.logger.debug(f"Updating permissoes for user {usr.id} -> {extras}")
+                    db.session.execute(user_funcoes.delete().where(user_funcoes.c.user_id == usr.id))
+                    for fid in extras:
+                        db.session.execute(user_funcoes.insert().values(user_id=usr.id, funcao_id=fid))
                     if password:
                         usr.set_password(password)
                     action_msg = 'atualizado'
