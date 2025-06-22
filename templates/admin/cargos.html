@@ -26,56 +26,70 @@
                             <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Cargos Cadastrados ({{ cargos|length }})</h5>
                         </div>
                         <div class="card-body">
-                            {% if cargos %}
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-sm align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Nome</th>
-                                                <th>Nível</th>
-                                                <th>Status</th>
-                                                <th style="width: 200px;" class="text-end">Ações</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for nivel, lista in cargos|groupby('nivel_hierarquico') %}
-                                            <tr class="table-secondary">
-                                                <th colspan="4">{{ NOME_NIVEL_CARGO.get(nivel, '--') }}</th>
-                                            </tr>
-                                                {% for cargo in lista %}
-                                                <tr class="{{ 'table-light text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
-                                                    <td>{{ cargo.nome }}</td>
-                                                    <td>{{ NOME_NIVEL_CARGO.get(cargo.nivel_hierarquico, '--') }}</td>
-                                                    <td>
-                                                        {% if cargo.ativo %}
-                                                            <span class="badge bg-success">Ativo</span>
-                                                        {% else %}
-                                                            <span class="badge bg-secondary">Inativo</span>
+                            {% if estrutura %}
+                                <div class="ms-2">
+                                    {% for inst in estrutura %}
+                                        <h5>{{ inst.obj.nome }}</h5>
+                                        {% for est in inst.estabelecimentos %}
+                                            <div class="ms-3">
+                                                <h6>{{ est.obj.nome_fantasia }}</h6>
+                                                {% for setor in est.setores %}
+                                                    <div class="ms-3 mb-2">
+                                                        <strong>{{ setor.obj.nome }}</strong>
+                                                        {% if setor.cargos %}
+                                                            <ul class="list-group list-group-flush ms-3 mb-2">
+                                                                {% for cargo in setor.cargos %}
+                                                                <li class="list-group-item d-flex justify-content-between align-items-center {{ 'text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
+                                                                    <span>{{ cargo.nome }}</span>
+                                                                    <span>
+                                                                        <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                            {% if cargo.ativo %}
+                                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar"><i class="bi bi-archive-fill"></i></button>
+                                                                            {% else %}
+                                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar"><i class="bi bi-archive-restore-fill"></i></button>
+                                                                            {% endif %}
+                                                                        </form>
+                                                                    </span>
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
                                                         {% endif %}
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                                            <i class="bi bi-pencil-fill"></i>
-                                                        </a>
-                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                        {% set cargo_nome_js = cargo.nome | tojson %}
-                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                            {% if cargo.ativo %}
-                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar">
-                                                                    <i class="bi bi-archive-fill"></i> Desativar
-                                                                </button>
-                                                            {% else %}
-                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar">
-                                                                    <i class="bi bi-archive-restore-fill"></i> Ativar
-                                                                </button>
-                                                            {% endif %}
-                                                        </form>
-                                                    </td>
-                                                </tr>
+                                                        {% for cel in setor.celulas %}
+                                                            <div class="ms-3 mb-1">
+                                                                <span class="fw-bold">{{ cel.obj.nome }}</span>
+                                                                {% if cel.cargos %}
+                                                                    <ul class="list-group list-group-flush ms-3">
+                                                                        {% for cargo in cel.cargos %}
+                                                                        <li class="list-group-item d-flex justify-content-between align-items-center {{ 'text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
+                                                                            <span>{{ cargo.nome }}</span>
+                                                                            <span>
+                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                                                                {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                    {% if cargo.ativo %}
+                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar"><i class="bi bi-archive-fill"></i></button>
+                                                                                    {% else %}
+                                                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar"><i class="bi bi-archive-restore-fill"></i></button>
+                                                                                    {% endif %}
+                                                                                </form>
+                                                                            </span>
+                                                                        </li>
+                                                                        {% endfor %}
+                                                                    </ul>
+                                                                {% else %}
+                                                                    <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
                                                 {% endfor %}
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                            </div>
+                                        {% endfor %}
+                                    {% endfor %}
                                 </div>
                             {% else %}
                                 <p class="text-muted">Nenhum cargo cadastrado ainda. Adicione um acima!</p>

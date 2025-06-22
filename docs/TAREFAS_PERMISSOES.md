@@ -40,8 +40,12 @@ partir das permissões cadastradas em `Funcao` e vinculadas aos `Cargos`.
        - `artigo_aprovar`
        - `artigo_revisar`
        - `artigo_assumir_revisao`
-  - Utilizar essa lista para preencher os checkboxes de cargos e dos
-    formulários de usuários.
+  - Utilizar essa lista para preencher os checkboxes de cargos e dos formulários de usuários.
+6. **Reorganizar página de Cargos**
+   - Alterar `admin/cargos.html` para exibir os cargos seguindo o fluxo de permissão:
+     **Instituição → Estabelecimento → Setor → Célula → Cargo**.
+   - Cada nível deve agrupar visualmente o próximo para facilitar a localização dos cargos e sua relação dentro da estrutura organizacional.
+
 
 Com esses passos, todo o acesso passará a ser concedido
 exclusivamente pelas permissões configuradas nos cargos, sem depender
