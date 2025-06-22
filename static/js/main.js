@@ -167,9 +167,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const cargoDefaults = window.cargoDefaults || {};
 
+  function setCargoFuncoesDisabled(prefix, cargoId) {
+    const defs = cargoDefaults[cargoId] || { funcoes: [] };
+    document.querySelectorAll(`input[id^='${prefix}func']`).forEach((chk) => {
+      chk.disabled = defs.funcoes.includes(parseInt(chk.value));
+    });
+  }
+
   function applyCargoDefaults(prefix, cargoId) {
-    const defs = cargoDefaults[cargoId];
-    if (!defs) return;
+    const defs = cargoDefaults[cargoId] || { setores: [], celulas: [], funcoes: [] };
     document.querySelectorAll(`input[id^='${prefix}setor']`).forEach((chk) => {
       chk.checked = defs.setores.includes(parseInt(chk.value));
     });
@@ -177,7 +183,9 @@ document.addEventListener("DOMContentLoaded", function () {
       chk.checked = defs.celulas.includes(parseInt(chk.value));
     });
     document.querySelectorAll(`input[id^='${prefix}func']`).forEach((chk) => {
-      chk.checked = defs.funcoes.includes(parseInt(chk.value));
+      const isDefault = defs.funcoes.includes(parseInt(chk.value));
+      chk.checked = isDefault;
+      chk.disabled = isDefault;
     });
   }
 
@@ -187,5 +195,8 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById('edit_cargo_id')?.addEventListener('change', (e) => {
     applyCargoDefaults('edit_', e.target.value);
   });
+
+  // Expose helper for inline scripts
+  window.setCargoFuncoesDisabled = setCargoFuncoesDisabled;
 
 });
