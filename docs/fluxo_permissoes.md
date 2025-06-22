@@ -10,6 +10,12 @@ funções do cargo com as personalizadas do usuário. Decisões de acesso,
 como o decorador `admin_required`, utilizam `user.get_permissoes()` para
 validar se o usuário possui a permissão de código `admin`.
 
+## Hierarquia do Sistema
+
+Instituição → Estabelecimento → Setor → Célula → Cargo → Usuário
+
+As permissões de cada usuário resultam das permissões do cargo somadas às permissões extras que possam ser atribuídas a ele.
+
 ## Funções como Permissões
 
 Cada `Funcao` registrada no banco equivale a uma permissão específica, como `artigo_ler`, `artigo_criar` ou `artigo_aprovar_celula`. Um mesmo **Cargo** pode ter várias dessas funções associadas, assim como um usuário pode receber permissões extras além das herdadas do cargo. As checagens de acesso (em rotas ou templates) devem chamar `user.has_permissao(<codigo>)`.
