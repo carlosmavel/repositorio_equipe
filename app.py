@@ -76,6 +76,7 @@ try:
         confirm_token,
         send_email,
         user_can_view_article,
+        user_can_edit_article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from utils import (
@@ -87,6 +88,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         confirm_token,
         send_email,
         user_can_view_article,
+        user_can_edit_article,
     )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -1284,7 +1286,7 @@ def artigo(artigo_id):
         return redirect(url_for('pagina_inicial'))
 
     if request.method == 'POST':
-        if not (user.has_permissao('admin') or user.has_permissao('artigo_editar') or artigo.user_id == user.id):
+        if not user_can_edit_article(user, artigo):
             flash('Permissão negada.', 'danger')
             return redirect(url_for('artigo', artigo_id=artigo_id))
         # 1) campos básicos
@@ -1337,7 +1339,7 @@ def editar_artigo(artigo_id):
     artigo = Article.query.get_or_404(artigo_id)
 
     user = User.query.get(session['user_id'])
-    if not (user.has_permissao('admin') or user.has_permissao('artigo_editar') or artigo.author.id == user.id):
+    if not user_can_edit_article(user, artigo):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
