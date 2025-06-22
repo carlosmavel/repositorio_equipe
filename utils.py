@@ -161,6 +161,46 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
         current_app.logger.error(f'Erro ao enviar e-mail: {e}')
 
 
+def user_can_edit_article(user, article):
+    """Verifica se o usuário pode editar determinado artigo."""
+    try:
+        from .models import Article  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import Article
+
+    if not isinstance(article, Article):
+        return False
+
+    if user.has_permissao("admin") or user.id == article.user_id:
+        return True
+
+    if user.has_permissao("artigo_editar_todas") or user.has_permissao("artigo_editar"):
+        return True
+
+    if user.has_permissao("artigo_editar_instituicao"):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.instituicao_id == user_est.instituicao_id:
+            return True
+
+    if user.has_permissao("artigo_editar_estabelecimento"):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.estabelecimento_id == user_est.id:
+            return True
+
+    if user.has_permissao("artigo_editar_setor"):
+        if article.setor_id == user.setor_id:
+            return True
+        if user.extra_setores.filter_by(id=article.setor_id).count():
+            return True
+
+    if user.has_permissao("artigo_editar_celula"):
+        if article.celula_id == user.celula_id:
+            return True
+        if user.extra_celulas.filter_by(id=article.celula_id).count():
+            return True
+
+    return False
+
 def user_can_view_article(user, article):
     """Verifica se o usuário tem permissão para visualizar o artigo."""
     try:
@@ -175,12 +215,13 @@ def user_can_view_article(user, article):
     if not isinstance(article, Article):
         return False
 
+    if user_can_edit_article(user, article):
+        return True
+
     if (
         user.has_permissao("admin")
         or user.has_permissao("artigo_aprovar")
         or user.has_permissao("artigo_revisar")
-        or user.has_permissao("artigo_editar")
-        or user.id == article.user_id
     ):
         return True
 
