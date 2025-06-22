@@ -329,7 +329,7 @@
                         <div class="card-body">
                             {% for f in funcoes %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="edit_func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in user_editar.permissoes_personalizadas.all() or (user_editar.cargo and f in user_editar.cargo.permissoes.all()))) %}checked{% endif %}>
+                                    <input class="form-check-input" type="checkbox" id="edit_func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in user_editar.permissoes_personalizadas.all() or (user_editar.cargo and f in user_editar.cargo.permissoes.all()))) %}checked{% endif %} {% if user_editar.cargo and f in user_editar.cargo.permissoes.all() %}disabled{% endif %}>
                                     <label class="form-check-label" for="edit_func{{ f.id }}">{{ f.nome }}</label>
                                 </div>
                             {% endfor %}
@@ -371,6 +371,7 @@ window.cargoDefaults = {{ cargo_defaults|safe }};
 document.addEventListener('DOMContentLoaded', function() {
     var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     modal.show();
+    setCargoFuncoesDisabled('edit_', {{ user_editar.cargo_id or 'null' }});
 });
 </script>
 {% endif %}
