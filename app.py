@@ -933,6 +933,23 @@ def admin_cargos():
     setores = Setor.query.order_by(Setor.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
     funcoes = Funcao.query.order_by(Funcao.nome).all()
+
+    instituicoes = Instituicao.query.order_by(Instituicao.nome).all()
+    estrutura = []
+    for inst in instituicoes:
+        est_list = []
+        for est in inst.estabelecimentos.order_by(Estabelecimento.nome_fantasia).all():
+            setor_list = []
+            for setor in est.setores.order_by(Setor.nome).all():
+                celula_list = []
+                for cel in setor.celulas.order_by(Celula.nome).all():
+                    cargos_cel = [c for c in todos_cargos if cel in c.default_celulas]
+                    celula_list.append({'obj': cel, 'cargos': cargos_cel})
+                cargos_setor = [c for c in todos_cargos if c.default_celulas.count() == 0 and setor in c.default_setores]
+                setor_list.append({'obj': setor, 'celulas': celula_list, 'cargos': cargos_setor})
+            est_list.append({'obj': est, 'setores': setor_list})
+        estrutura.append({'obj': inst, 'estabelecimentos': est_list})
+
     return render_template(
         'admin/cargos.html',
         cargos=todos_cargos,
@@ -941,6 +958,7 @@ def admin_cargos():
         setores=setores,
         celulas=celulas,
         funcoes=funcoes,
+        estrutura=estrutura,
     )
 
 
