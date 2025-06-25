@@ -132,6 +132,11 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
 
+try:
+    from .enums import Permissao  # type: ignore  # pragma: no cover
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from enums import Permissao
+
 def generate_token(user_id: int, action: str, expires_sec: int = 3600) -> str:
     """Gera um token seguro para ações como reset ou criação de senha."""
     serializer = URLSafeTimedSerializer(current_app.secret_key)
@@ -174,26 +179,26 @@ def user_can_edit_article(user, article):
     if user.has_permissao("admin") or user.id == article.user_id:
         return True
 
-    if user.has_permissao("artigo_editar_todas") or user.has_permissao("artigo_editar"):
+    if user.has_permissao(Permissao.ARTIGO_EDITAR_TODAS.value):
         return True
 
-    if user.has_permissao("artigo_editar_instituicao"):
+    if user.has_permissao(Permissao.ARTIGO_EDITAR_INSTITUICAO.value):
         user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
         if user_est and article.instituicao_id == user_est.instituicao_id:
             return True
 
-    if user.has_permissao("artigo_editar_estabelecimento"):
+    if user.has_permissao(Permissao.ARTIGO_EDITAR_ESTABELECIMENTO.value):
         user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
         if user_est and article.estabelecimento_id == user_est.id:
             return True
 
-    if user.has_permissao("artigo_editar_setor"):
+    if user.has_permissao(Permissao.ARTIGO_EDITAR_SETOR.value):
         if article.setor_id == user.setor_id:
             return True
         if user.extra_setores.filter_by(id=article.setor_id).count():
             return True
 
-    if user.has_permissao("artigo_editar_celula"):
+    if user.has_permissao(Permissao.ARTIGO_EDITAR_CELULA.value):
         if article.celula_id == user.celula_id:
             return True
         if user.extra_celulas.filter_by(id=article.celula_id).count():
@@ -218,12 +223,44 @@ def user_can_view_article(user, article):
     if user_can_edit_article(user, article):
         return True
 
+    if user.has_permissao("admin"):
+        return True
+
     if (
-        user.has_permissao("admin")
-        or user.has_permissao("artigo_aprovar")
-        or user.has_permissao("artigo_revisar")
+        user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value)
+        or user.has_permissao(Permissao.ARTIGO_REVISAR_TODAS.value)
     ):
         return True
+
+    if (
+        user.has_permissao(Permissao.ARTIGO_APROVAR_INSTITUICAO.value)
+        or user.has_permissao(Permissao.ARTIGO_REVISAR_INSTITUICAO.value)
+    ):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.instituicao_id == user_est.instituicao_id:
+            return True
+
+    if (
+        user.has_permissao(Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value)
+        or user.has_permissao(Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value)
+    ):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.estabelecimento_id == user_est.id:
+            return True
+
+    if (
+        user.has_permissao(Permissao.ARTIGO_APROVAR_SETOR.value)
+        or user.has_permissao(Permissao.ARTIGO_REVISAR_SETOR.value)
+    ):
+        if article.setor_id == user.setor_id or user.extra_setores.filter_by(id=article.setor_id).count():
+            return True
+
+    if (
+        user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value)
+        or user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value)
+    ):
+        if article.celula_id == user.celula_id or user.extra_celulas.filter_by(id=article.celula_id).count():
+            return True
 
     # Extras concedidos especificamente
     if article.extra_users.filter_by(id=user.id).count():

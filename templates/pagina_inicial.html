@@ -46,8 +46,16 @@
         </div>
         {% if current_user and (
             current_user.has_permissao('admin') or
-            current_user.has_permissao('artigo_aprovar') or
-            current_user.has_permissao('artigo_revisar')
+            current_user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value) or
+            current_user.has_permissao(Permissao.ARTIGO_APROVAR_SETOR.value) or
+            current_user.has_permissao(Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value) or
+            current_user.has_permissao(Permissao.ARTIGO_APROVAR_INSTITUICAO.value) or
+            current_user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value) or
+            current_user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value) or
+            current_user.has_permissao(Permissao.ARTIGO_REVISAR_SETOR.value) or
+            current_user.has_permissao(Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value) or
+            current_user.has_permissao(Permissao.ARTIGO_REVISAR_INSTITUICAO.value) or
+            current_user.has_permissao(Permissao.ARTIGO_REVISAR_TODAS.value)
         ) %}
         <div class="col-md-4 col-lg-3 mb-3">
             <div class="card text-center h-100">

@@ -6,6 +6,7 @@ os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, ArticleStatus
+from enums import Permissao
 
 @pytest.fixture
 def client():
@@ -71,6 +72,6 @@ def test_aprovacao_requires_permission(client):
     resp = client.get('/aprovacao')
     assert resp.status_code == 302
 
-    login_user(client, ['artigo_aprovar'])
+    login_user(client, [Permissao.ARTIGO_APROVAR_CELULA.value])
     resp = client.get('/aprovacao')
     assert resp.status_code == 200
