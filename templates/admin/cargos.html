@@ -158,7 +158,29 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% set article_codes = ['artigo_criar','artigo_editar','artigo_aprovar','artigo_revisar','artigo_assumir_revisao'] %}
+                            {% set article_codes = [
+                                'artigo_criar',
+                                Permissao.ARTIGO_EDITAR_CELULA.value,
+                                Permissao.ARTIGO_EDITAR_SETOR.value,
+                                Permissao.ARTIGO_EDITAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_EDITAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_EDITAR_TODAS.value,
+                                Permissao.ARTIGO_APROVAR_CELULA.value,
+                                Permissao.ARTIGO_APROVAR_SETOR.value,
+                                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_APROVAR_TODAS.value,
+                                Permissao.ARTIGO_REVISAR_CELULA.value,
+                                Permissao.ARTIGO_REVISAR_SETOR.value,
+                                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_REVISAR_TODAS.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_INSTITUICAO.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_TODAS.value
+                            ] %}
                             {% for f in funcoes if f.codigo in article_codes %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
@@ -265,7 +287,29 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% set article_codes = ['artigo_criar','artigo_editar','artigo_aprovar','artigo_revisar','artigo_assumir_revisao'] %}
+                            {% set article_codes = [
+                                'artigo_criar',
+                                Permissao.ARTIGO_EDITAR_CELULA.value,
+                                Permissao.ARTIGO_EDITAR_SETOR.value,
+                                Permissao.ARTIGO_EDITAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_EDITAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_EDITAR_TODAS.value,
+                                Permissao.ARTIGO_APROVAR_CELULA.value,
+                                Permissao.ARTIGO_APROVAR_SETOR.value,
+                                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_APROVAR_TODAS.value,
+                                Permissao.ARTIGO_REVISAR_CELULA.value,
+                                Permissao.ARTIGO_REVISAR_SETOR.value,
+                                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
+                                Permissao.ARTIGO_REVISAR_TODAS.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_ESTABELECIMENTO.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_INSTITUICAO.value,
+                                Permissao.ARTIGO_ASSUMIR_REVISAO_TODAS.value
+                            ] %}
                             {% for f in funcoes if f.codigo in article_codes %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>

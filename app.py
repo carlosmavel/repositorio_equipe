@@ -27,9 +27,9 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from database import db
 try:
-    from .enums import ArticleStatus, ArticleVisibility
+    from .enums import ArticleStatus, ArticleVisibility, Permissao
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from enums import ArticleStatus, ArticleVisibility
+    from enums import ArticleStatus, ArticleVisibility, Permissao
 
 try:
     from .models import (
@@ -218,7 +218,7 @@ def inject_notificacoes():
 
 @app.context_processor
 def inject_enums():
-    return dict(ArticleStatus=ArticleStatus)
+    return dict(ArticleStatus=ArticleStatus, Permissao=Permissao)
 
 @app.context_processor
 def inject_current_user():
@@ -1228,11 +1228,22 @@ def novo_artigo():
 
         # 6) Notifica responsáveis/admins, se necessário
         if status is ArticleStatus.PENDENTE:
+            dest_perms = [
+                Permissao.ARTIGO_REVISAR_CELULA,
+                Permissao.ARTIGO_REVISAR_SETOR,
+                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
+                Permissao.ARTIGO_REVISAR_INSTITUICAO,
+                Permissao.ARTIGO_REVISAR_TODAS,
+                Permissao.ARTIGO_APROVAR_CELULA,
+                Permissao.ARTIGO_APROVAR_SETOR,
+                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
+                Permissao.ARTIGO_APROVAR_INSTITUICAO,
+                Permissao.ARTIGO_APROVAR_TODAS,
+            ]
             destinatarios = [
                 u for u in User.query.all()
                 if u.has_permissao('admin')
-                or u.has_permissao('artigo_revisar')
-                or u.has_permissao('artigo_aprovar')
+                or any(u.has_permissao(p.value) for p in dest_perms)
             ]
             for dest in destinatarios:
                 notif = Notification(
@@ -1422,11 +1433,22 @@ def editar_artigo(artigo_id):
         if acao == "enviar":
             artigo.status = ArticleStatus.PENDENTE
             # 🔔 notifica responsáveis / admins
+            dest_perms = [
+                Permissao.ARTIGO_REVISAR_CELULA,
+                Permissao.ARTIGO_REVISAR_SETOR,
+                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
+                Permissao.ARTIGO_REVISAR_INSTITUICAO,
+                Permissao.ARTIGO_REVISAR_TODAS,
+                Permissao.ARTIGO_APROVAR_CELULA,
+                Permissao.ARTIGO_APROVAR_SETOR,
+                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
+                Permissao.ARTIGO_APROVAR_INSTITUICAO,
+                Permissao.ARTIGO_APROVAR_TODAS,
+            ]
             destinatarios = [
                 u for u in User.query.all()
                 if u.has_permissao('admin')
-                or u.has_permissao('artigo_revisar')
-                or u.has_permissao('artigo_aprovar')
+                or any(u.has_permissao(p.value) for p in dest_perms)
             ]
             for dest in destinatarios:
                 n = Notification(
@@ -1453,16 +1475,27 @@ def aprovacao():
         return redirect(url_for("login"))
 
     user = User.query.get(session["user_id"])
+    rev_apr_perms = [
+        Permissao.ARTIGO_APROVAR_CELULA,
+        Permissao.ARTIGO_APROVAR_SETOR,
+        Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
+        Permissao.ARTIGO_APROVAR_INSTITUICAO,
+        Permissao.ARTIGO_APROVAR_TODAS,
+        Permissao.ARTIGO_REVISAR_CELULA,
+        Permissao.ARTIGO_REVISAR_SETOR,
+        Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
+        Permissao.ARTIGO_REVISAR_INSTITUICAO,
+        Permissao.ARTIGO_REVISAR_TODAS,
+    ]
     if not user or not (
         user.has_permissao("admin")
-        or user.has_permissao("artigo_aprovar")
-        or user.has_permissao("artigo_revisar")
+        or any(user.has_permissao(p.value) for p in rev_apr_perms)
     ):
         flash("Permissão negada.", "danger")
         return redirect(url_for("login"))
 
     pendentes_query = Article.query.filter_by(status=ArticleStatus.PENDENTE)
-    if not user.has_permissao("admin") and not user.has_permissao("artigo_aprovar_todas"):
+    if not user.has_permissao("admin") and not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
         pendentes_query = pendentes_query.filter(Article.celula_id == user.celula_id)
     pendentes = pendentes_query.order_by(Article.created_at.asc()).all()
 
@@ -1473,7 +1506,7 @@ def aprovacao():
         .filter(Comment.user_id == uid)
         .filter(Article.status != ArticleStatus.PENDENTE)
     )
-    if not user.has_permissao("admin") and not user.has_permissao("artigo_aprovar_todas"):
+    if not user.has_permissao("admin") and not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
         revisados_query = revisados_query.filter(Article.celula_id == user.celula_id)
     revisados = (
         revisados_query
@@ -1500,17 +1533,28 @@ def aprovacao_detail(artigo_id):
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+    rev_apr_perms = [
+        Permissao.ARTIGO_APROVAR_CELULA,
+        Permissao.ARTIGO_APROVAR_SETOR,
+        Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
+        Permissao.ARTIGO_APROVAR_INSTITUICAO,
+        Permissao.ARTIGO_APROVAR_TODAS,
+        Permissao.ARTIGO_REVISAR_CELULA,
+        Permissao.ARTIGO_REVISAR_SETOR,
+        Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
+        Permissao.ARTIGO_REVISAR_INSTITUICAO,
+        Permissao.ARTIGO_REVISAR_TODAS,
+    ]
     if not user or not (
         user.has_permissao('admin')
-        or user.has_permissao('artigo_aprovar')
-        or user.has_permissao('artigo_revisar')
+        or any(user.has_permissao(p.value) for p in rev_apr_perms)
     ):
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
     artigo = Article.query.get_or_404(artigo_id)
     if (not user.has_permissao("admin") and
-            not user.has_permissao("artigo_aprovar_todas") and
+            not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value) and
             artigo.celula_id != user.celula_id):
         flash("Permissão negada.", "danger")
         return redirect(url_for("aprovacao"))
