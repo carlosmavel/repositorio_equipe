@@ -31,12 +31,11 @@ def run():
         ),
         dict(
             username="colaborador",
-            email="colaborador@seudominio.com", # E-mail adicionado
+            email="colaborador@seudominio.com",  # E-mail adicionado
             password_hash=generate_password_hash("Colab123!"),
-            funcoes=["colaborador"],
             nome_completo="João Silva",
             matricula="COL001",
-            cpf="222.222.222-22", # Exemplo
+            cpf="222.222.222-22",  # Exemplo
             estabelecimento_id=None,
             setor_id=None,
             cargo_id=None,
