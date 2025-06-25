@@ -171,7 +171,7 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
 
 * **Autenticação:** Usuário acessa `/login`, insere credenciais. Se válidas, é redirecionado para `/inicio`. Sessão é criada. Logout via link na navbar/sidebar.
 * **Visualização/Edição de Perfil:** Usuário acessa `/perfil`, visualiza seus dados. Pode editar campos permitidos e alterar foto ou senha.
-* **Criação de Artigo:** Usuário (colaborador) acessa `/novo_artigo`, preenche formulário, anexa arquivos, salva como rascunho ou envia para revisão.
+* **Criação de Artigo:** Usuário acessa `/novo_artigo`, preenche formulário, anexa arquivos, salva como rascunho ou envia para revisão.
 * **Aprovação de Artigo:** Administrador acessa `/aprovacao`, visualiza artigos pendentes, abre um artigo (`/aprovacao_detail`), revisa, comenta, e aprova, rejeita ou solicita ajustes. Autor é notificado.
 * **Administração de Estabelecimentos (Exemplo de CRUD Admin):** Admin acessa `/admin/dashboard`, navega para "Gerenciar Estabelecimentos". Visualiza lista, clica para adicionar novo ou editar existente. Formulário é preenchido/submetido. Lista é atualizada. Pode ativar/desativar.
 * **(Futuro) Abertura de OS:** Usuário acessa formulário de OS, preenche detalhes, OS é criada com status inicial e atribuída ou entra em fila para triagem/atribuição. Notificações são geradas.

@@ -8,7 +8,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h3>Upload de Arquivo</h3>
-          {% if current_user and (current_user.has_permissao('colaborador') or current_user.has_permissao('admin')) %}
+          {% if current_user and current_user.has_permissao('admin') %}
             <form method="POST" enctype="multipart/form-data">
               <div class="mb-3">
                 <input type="file" name="file" class="form-control" required>
