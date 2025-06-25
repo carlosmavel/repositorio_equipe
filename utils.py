@@ -206,6 +206,82 @@ def user_can_edit_article(user, article):
 
     return False
 
+
+def user_can_approve_article(user, article):
+    """Verifica se o usuário pode aprovar determinado artigo."""
+    try:
+        from .models import Article  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import Article
+
+    if not isinstance(article, Article):
+        return False
+
+    if user.has_permissao("admin") or user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
+        return True
+
+    if user.has_permissao(Permissao.ARTIGO_APROVAR_INSTITUICAO.value):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.instituicao_id == user_est.instituicao_id:
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.estabelecimento_id == user_est.id:
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_APROVAR_SETOR.value):
+        if article.setor_id == user.setor_id:
+            return True
+        if user.extra_setores.filter_by(id=article.setor_id).count():
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value):
+        if article.celula_id == user.celula_id:
+            return True
+        if user.extra_celulas.filter_by(id=article.celula_id).count():
+            return True
+
+    return False
+
+
+def user_can_review_article(user, article):
+    """Verifica se o usuário pode revisar determinado artigo."""
+    try:
+        from .models import Article  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import Article
+
+    if not isinstance(article, Article):
+        return False
+
+    if user.has_permissao("admin") or user.has_permissao(Permissao.ARTIGO_REVISAR_TODAS.value):
+        return True
+
+    if user.has_permissao(Permissao.ARTIGO_REVISAR_INSTITUICAO.value):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.instituicao_id == user_est.instituicao_id:
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value):
+        user_est = user.estabelecimento or (user.celula.estabelecimento if user.celula else None)
+        if user_est and article.estabelecimento_id == user_est.id:
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_REVISAR_SETOR.value):
+        if article.setor_id == user.setor_id:
+            return True
+        if user.extra_setores.filter_by(id=article.setor_id).count():
+            return True
+
+    if user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value):
+        if article.celula_id == user.celula_id:
+            return True
+        if user.extra_celulas.filter_by(id=article.celula_id).count():
+            return True
+
+    return False
+
 def user_can_view_article(user, article):
     """Verifica se o usuário tem permissão para visualizar o artigo."""
     try:
