@@ -77,6 +77,8 @@ try:
         send_email,
         user_can_view_article,
         user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from utils import (
@@ -89,6 +91,8 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         send_email,
         user_can_view_article,
         user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
     )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -1495,9 +1499,10 @@ def aprovacao():
         return redirect(url_for("login"))
 
     pendentes_query = Article.query.filter_by(status=ArticleStatus.PENDENTE)
-    if not user.has_permissao("admin") and not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
-        pendentes_query = pendentes_query.filter(Article.celula_id == user.celula_id)
-    pendentes = pendentes_query.order_by(Article.created_at.asc()).all()
+    pendentes = [
+        a for a in pendentes_query.order_by(Article.created_at.asc()).all()
+        if user_can_approve_article(user, a) or user_can_review_article(user, a)
+    ]
 
     uid = user.id
     revisados_query = (
@@ -1506,14 +1511,15 @@ def aprovacao():
         .filter(Comment.user_id == uid)
         .filter(Article.status != ArticleStatus.PENDENTE)
     )
-    if not user.has_permissao("admin") and not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
-        revisados_query = revisados_query.filter(Article.celula_id == user.celula_id)
-    revisados = (
-        revisados_query
-        .group_by(Article.id)                                 # ← agrupa por artigo
-        .order_by(func.max(Comment.created_at).desc())        # ← último comentário
-        .all()
-    )
+    revisados = [
+        a for a in (
+            revisados_query
+            .group_by(Article.id)
+            .order_by(func.max(Comment.created_at).desc())
+            .all()
+        )
+        if user_can_approve_article(user, a) or user_can_review_article(user, a)
+    ]
 
     for lista in (pendentes, revisados):
         for art in lista:
@@ -1553,9 +1559,10 @@ def aprovacao_detail(artigo_id):
         return redirect(url_for('login'))
 
     artigo = Article.query.get_or_404(artigo_id)
-    if (not user.has_permissao("admin") and
-            not user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value) and
-            artigo.celula_id != user.celula_id):
+    if not (
+        user_can_approve_article(user, artigo) or
+        user_can_review_article(user, artigo)
+    ):
         flash("Permissão negada.", "danger")
         return redirect(url_for("aprovacao"))
 
@@ -1565,12 +1572,21 @@ def aprovacao_detail(artigo_id):
 
         # 1) Atualiza o status -------------------------------------------------
         if acao == 'aprovar':
+            if not user_can_approve_article(user, artigo):
+                flash('Permissão negada.', 'danger')
+                return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
             artigo.status = ArticleStatus.APROVADO
             msg = f"Artigo '{artigo.titulo}' aprovado!"
         elif acao == 'ajustar':
+            if not user_can_review_article(user, artigo):
+                flash('Permissão negada.', 'danger')
+                return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
             artigo.status = ArticleStatus.EM_AJUSTE
             msg = f"Artigo '{artigo.titulo}' marcado como Em Ajuste."
         elif acao == 'rejeitar':
+            if not user_can_review_article(user, artigo):
+                flash('Permissão negada.', 'danger')
+                return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
             artigo.status = ArticleStatus.REJEITADO
             msg = f"Artigo '{artigo.titulo}' rejeitado!"
         else:
