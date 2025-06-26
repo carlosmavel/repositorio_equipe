@@ -147,8 +147,8 @@ ORQUETASK_PROJECT_ROOT/
 Uma visão geral dos principais modelos de dados implementados e planejados:
 
 * **User:**
-    * Campos: `id`, `username`, `email`, `password_hash`, `nome_completo`, `foto`, `role` (papel base), `matricula`, `cpf`, `rg`, `ramal`, `data_nascimento`, `data_admissao`, `telefone_contato`, `ativo` (status do usuário).
-    * Relacionamentos: `estabelecimento_id`, `setor_id`, `celula_id`, `cargo_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc.
+    * Campos: `id`, `username`, `email`, `password_hash`, `nome_completo`, `foto`, `matricula`, `cpf`, `rg`, `ramal`, `data_nascimento`, `data_admissao`, `telefone_contato`, `ativo` (status do usuário).
+    * Relacionamentos: `estabelecimento_id`, `setor_id`, `celula_id`, `cargo_id`. Liga-se a Artigos (autor), Notificações, Comentários, etc. As permissões disponíveis para o usuário derivam do cargo e das funções extras cadastradas para ele.
 * **Estabelecimento:**
     * Campos: `id`, `codigo`, `nome_fantasia`, `razao_social`, `cnpj`, `inscricao_estadual`, `inscricao_municipal`, `tipo_estabelecimento`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `estado`, `telefone_principal`, `email_contato`, `data_abertura`, `observacoes`, `ativo`.
 * **Setor:**
@@ -163,7 +163,7 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
     * Campos: `id`, `titulo`, `texto`, `status` (Enum: Rascunho, Pendente, Aprovado, etc.), `user_id` (autor), `created_at`, `updated_at`.
     * Relacionamentos: Anexos, Comentários de Revisão.
 * **Attachment, Comment, Notification, RevisionRequest:** (Existentes, conforme detalhado anteriormente).
-* **Funcao (Permissão):** `id`, `codigo`, `nome`. Associada a `Cargo` e personalizações de `User`.
+* **Funcao (Permissão):** `id`, `codigo`, `nome`. Associada a `Cargo` e personalizações de `User`. Os códigos de permissão são definidos no enum `Permissao` (`enums.py`) e seguem o nível hierárquico em que a ação se aplica.
 * **(Futuro - Fase 3) OrdemServico, TarefaOS, etc.**
 * **(Futuro - Fase 4) Comunicado, Classificado, MensagemChat, etc.**
 

@@ -33,14 +33,16 @@ partir das permissões cadastradas em `Funcao` e vinculadas aos `Cargos`.
 
 5. **Lista completa de funções**
    - Criar (ou atualizar) um script de seed que insira na tabela `funcao`
-     todas as funções disponíveis no sistema. As principais permissões de
-     artigos são:
-       - `artigo_criar`
-       - `artigo_editar`
-       - `artigo_aprovar`
-       - `artigo_revisar`
-       - `artigo_assumir_revisao`
-  - Utilizar essa lista para preencher os checkboxes de cargos e dos formulários de usuários.
+     todas as funções disponíveis no sistema. As permissões ligadas a
+     artigos agora são definidas pelo enum `Permissao` em `enums.py`, que
+     diferencia cada ação conforme o nível da hierarquia. Exemplos de
+     códigos:
+       - `ARTIGO_EDITAR_CELULA`
+       - `ARTIGO_APROVAR_SETOR`
+       - `ARTIGO_REVISAR_ESTABELECIMENTO`
+       - `ARTIGO_ASSUMIR_REVISAO_INSTITUICAO`
+   - Utilize essa lista para preencher os checkboxes de cargos e dos
+     formulários de usuários.
 6. **Reorganizar página de Cargos**
    - Alterar `admin/cargos.html` para exibir os cargos seguindo o fluxo de permissão:
      **Instituição → Estabelecimento → Setor → Célula → Cargo**.
