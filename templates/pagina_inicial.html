@@ -44,19 +44,26 @@
                 </div>
             </div>
         </div>
-        {% if current_user and (
-            current_user.has_permissao('admin') or
-            current_user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value) or
-            current_user.has_permissao(Permissao.ARTIGO_APROVAR_SETOR.value) or
-            current_user.has_permissao(Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value) or
-            current_user.has_permissao(Permissao.ARTIGO_APROVAR_INSTITUICAO.value) or
-            current_user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value) or
-            current_user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value) or
-            current_user.has_permissao(Permissao.ARTIGO_REVISAR_SETOR.value) or
-            current_user.has_permissao(Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value) or
-            current_user.has_permissao(Permissao.ARTIGO_REVISAR_INSTITUICAO.value) or
-            current_user.has_permissao(Permissao.ARTIGO_REVISAR_TODAS.value)
-        ) %}
+        {% if current_user.is_authenticated %}
+            {% set codes = [
+                Permissao.ARTIGO_APROVAR_CELULA.value,
+                Permissao.ARTIGO_APROVAR_SETOR.value,
+                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
+                Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
+                Permissao.ARTIGO_APROVAR_TODAS.value,
+                Permissao.ARTIGO_REVISAR_CELULA.value,
+                Permissao.ARTIGO_REVISAR_SETOR.value,
+                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
+                Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
+                Permissao.ARTIGO_REVISAR_TODAS.value
+            ] %}
+            {% set ns = namespace(show=current_user.has_permissao('admin')) %}
+            {% for c in codes %}
+                {% if current_user.has_permissao(c) %}
+                    {% set ns.show = True %}
+                {% endif %}
+            {% endfor %}
+            {% if ns.show %}
         <div class="col-md-4 col-lg-3 mb-3">
             <div class="card text-center h-100">
                 <div class="card-body">
@@ -67,6 +74,7 @@
                 </div>
             </div>
         </div>
+            {% endif %}
         {% endif %}
     </div>
 

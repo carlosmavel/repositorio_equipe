@@ -8,7 +8,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h3>Upload de Arquivo</h3>
-          {% if current_user and current_user.has_permissao('admin') %}
+          {% if current_user.is_authenticated %}
             <form method="POST" enctype="multipart/form-data">
               <div class="mb-3">
                 <input type="file" name="file" class="form-control" required>
@@ -16,9 +16,13 @@
               <button type="submit" class="btn btn-primary">Enviar</button>
             </form>
           {% else %}
-            <p class="text-muted">Você não possui permissão para enviar arquivos.</p>
+            <p class="text-muted">Faça login para enviar arquivos.</p>
           {% endif %}
-          <a href="{{ url_for('logout') }}" class="btn btn-link mt-3">Sair</a>
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}" class="btn btn-link mt-3">Sair</a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-link mt-3">Entrar</a>
+          {% endif %}
         </div>
       </div>
     </div>
