@@ -1,11 +1,21 @@
 import os
 import pytest
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
+os.environ['SECRET_KEY'] = 'test_secret'
+os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 from app import app, db
-from models import Instituicao, Estabelecimento, Setor, Celula, User, Article, Funcao, ArticleVisibility
+from models import (
+    Instituicao,
+    Estabelecimento,
+    Setor,
+    Celula,
+    User,
+    Article,
+    Funcao,
+    ArticleVisibility,
+)
+from enums import Permissao
 from utils import user_can_edit_article, user_can_view_article
 
 @pytest.fixture
@@ -42,6 +52,8 @@ def base_setup():
         db.drop_all()
 
 def add_perm(user, code):
+    if isinstance(code, Permissao):
+        code = code.value
     f = Funcao.query.filter_by(codigo=code).first()
     if not f:
         f = Funcao(codigo=code, nome=code)
@@ -60,7 +72,7 @@ def test_edit_by_celula(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel1)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_editar_celula')
+    add_perm(user, Permissao.ARTIGO_EDITAR_CELULA)
     assert user_can_edit_article(user, art) is True
     assert user_can_view_article(user, art) is True
 
@@ -74,7 +86,7 @@ def test_edit_by_celula_wrong(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel2)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_editar_celula')
+    add_perm(user, Permissao.ARTIGO_EDITAR_CELULA)
     assert user_can_edit_article(user, art) is False
     assert user_can_view_article(user, art) is False
 
@@ -88,7 +100,7 @@ def test_edit_by_setor(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel2)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_editar_setor')
+    add_perm(user, Permissao.ARTIGO_EDITAR_SETOR)
     assert user_can_edit_article(user, art) is True
 
 
@@ -101,6 +113,6 @@ def test_edit_by_setor_wrong(base_setup):
                 estabelecimento=est, setor=setor2, celula=cel3)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_editar_setor')
+    add_perm(user, Permissao.ARTIGO_EDITAR_SETOR)
     assert user_can_edit_article(user, art) is False
 

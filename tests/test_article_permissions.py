@@ -1,8 +1,8 @@
 import os
 import pytest
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
+os.environ['SECRET_KEY'] = 'test_secret'
+os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 from app import app, db
 from models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, ArticleStatus
@@ -40,6 +40,8 @@ def login_user(client, perms=None):
         db.session.commit()
         funcoes = []
         for code in perms:
+            if isinstance(code, Permissao):
+                code = code.value
             f = Funcao.query.filter_by(codigo=code).first()
             if not f:
                 f = Funcao(codigo=code, nome=code)
@@ -72,6 +74,6 @@ def test_aprovacao_requires_permission(client):
     resp = client.get('/aprovacao')
     assert resp.status_code == 302
 
-    login_user(client, [Permissao.ARTIGO_APROVAR_CELULA.value])
+    login_user(client, [Permissao.ARTIGO_APROVAR_CELULA])
     resp = client.get('/aprovacao')
     assert resp.status_code == 200

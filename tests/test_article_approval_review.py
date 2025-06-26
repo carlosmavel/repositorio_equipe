@@ -1,11 +1,21 @@
 import os
 import pytest
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
+os.environ['SECRET_KEY'] = 'test_secret'
+os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 from app import app, db
-from models import Instituicao, Estabelecimento, Setor, Celula, User, Article, Funcao, ArticleVisibility
+from models import (
+    Instituicao,
+    Estabelecimento,
+    Setor,
+    Celula,
+    User,
+    Article,
+    Funcao,
+    ArticleVisibility,
+)
+from enums import Permissao
 from utils import (
     user_can_approve_article,
     user_can_review_article,
@@ -50,6 +60,8 @@ def base_setup():
 
 
 def add_perm(user, code):
+    if isinstance(code, Permissao):
+        code = code.value
     f = Funcao.query.filter_by(codigo=code).first()
     if not f:
         f = Funcao(codigo=code, nome=code)
@@ -68,7 +80,7 @@ def test_approve_by_celula(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel1)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_aprovar_celula')
+    add_perm(user, Permissao.ARTIGO_APROVAR_CELULA)
     assert user_can_approve_article(user, art) is True
 
 
@@ -81,7 +93,7 @@ def test_approve_by_celula_wrong(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel2)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_aprovar_celula')
+    add_perm(user, Permissao.ARTIGO_APROVAR_CELULA)
     assert user_can_approve_article(user, art) is False
 
 
@@ -94,7 +106,7 @@ def test_review_by_setor(base_setup):
                 estabelecimento=est, setor=setor1, celula=cel2)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_revisar_setor')
+    add_perm(user, Permissao.ARTIGO_REVISAR_SETOR)
     assert user_can_review_article(user, art) is True
 
 
@@ -107,5 +119,83 @@ def test_review_by_setor_wrong(base_setup):
                 estabelecimento=est, setor=setor2, celula=cel3)
     db.session.add(user)
     db.session.commit()
-    add_perm(user, 'artigo_revisar_setor')
+    add_perm(user, Permissao.ARTIGO_REVISAR_SETOR)
     assert user_can_review_article(user, art) is False
+
+
+def test_approve_levels(base_setup):
+    art = base_setup["article"]
+    inst = base_setup["inst"]
+    est = base_setup["est"]
+    setor1 = base_setup["setor1"]
+    setor2 = base_setup["setor2"]
+    cel1 = base_setup["cel1"]
+    cel2 = base_setup["cel2"]
+    cel3 = base_setup["cel3"]
+
+    est2 = Estabelecimento(codigo="E2", nome_fantasia="Est2", instituicao=inst)
+    setorx = Setor(nome="SX", estabelecimento=est2)
+    celx = Celula(nome="CX", estabelecimento=est2, setor=setorx)
+    db.session.add_all([est2, setorx, celx])
+    db.session.commit()
+
+    cases = [
+        (Permissao.ARTIGO_APROVAR_CELULA, est, setor1, cel1),
+        (Permissao.ARTIGO_APROVAR_SETOR, est, setor1, cel2),
+        (Permissao.ARTIGO_APROVAR_ESTABELECIMENTO, est, setor2, cel3),
+        (Permissao.ARTIGO_APROVAR_INSTITUICAO, est2, setorx, celx),
+        (Permissao.ARTIGO_APROVAR_TODAS, est2, setorx, celx),
+    ]
+
+    for perm, e, s, c in cases:
+        user = User(
+            username=f"u_{perm.value}",
+            email=f"{perm.value}@test",
+            password_hash="x",
+            estabelecimento=e,
+            setor=s,
+            celula=c,
+        )
+        db.session.add(user)
+        db.session.commit()
+        add_perm(user, perm)
+        assert user_can_approve_article(user, art) is True
+
+
+def test_review_levels(base_setup):
+    art = base_setup["article"]
+    inst = base_setup["inst"]
+    est = base_setup["est"]
+    setor1 = base_setup["setor1"]
+    setor2 = base_setup["setor2"]
+    cel1 = base_setup["cel1"]
+    cel2 = base_setup["cel2"]
+    cel3 = base_setup["cel3"]
+
+    est2 = Estabelecimento(codigo="E3", nome_fantasia="Est3", instituicao=inst)
+    setorx = Setor(nome="SY", estabelecimento=est2)
+    celx = Celula(nome="CY", estabelecimento=est2, setor=setorx)
+    db.session.add_all([est2, setorx, celx])
+    db.session.commit()
+
+    cases = [
+        (Permissao.ARTIGO_REVISAR_CELULA, est, setor1, cel1),
+        (Permissao.ARTIGO_REVISAR_SETOR, est, setor1, cel2),
+        (Permissao.ARTIGO_REVISAR_ESTABELECIMENTO, est, setor2, cel3),
+        (Permissao.ARTIGO_REVISAR_INSTITUICAO, est2, setorx, celx),
+        (Permissao.ARTIGO_REVISAR_TODAS, est2, setorx, celx),
+    ]
+
+    for perm, e, s, c in cases:
+        user = User(
+            username=f"u_{perm.value}",
+            email=f"{perm.value}@test",
+            password_hash="x",
+            estabelecimento=e,
+            setor=s,
+            celula=c,
+        )
+        db.session.add(user)
+        db.session.commit()
+        add_perm(user, perm)
+        assert user_can_review_article(user, art) is True
