@@ -272,6 +272,15 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.username}>"
 
+    # ------------------------------
+    # Compatibilidade com templates
+    # ------------------------------
+    @property
+    def is_authenticated(self) -> bool:
+        """Indica que a instância representa um usuário logado."""
+        return True
+
+
 # --- SEUS MODELOS EXISTENTES (Article, RevisionRequest, Notification, Comment, Attachment) ---
 # Cole eles aqui, ajustando os relacionamentos com User se necessário (ex: usando back_populates)
 
