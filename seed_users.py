@@ -5,9 +5,9 @@ try:
 except ImportError:
     from database import db
 try:
-    from .models import User, Celula
+    from .models import User, Celula, Funcao
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from models import User, Celula
+    from models import User, Celula, Funcao
 from app import app      # importa o Flask já configurado
 # from datetime import date # Se você for adicionar datas como data_admissao
 
@@ -28,6 +28,18 @@ def run():
             # Outros campos opcionais
             # data_admissao=date(2020, 1, 15),
             # ramal="1000"
+        ),
+        dict(
+            username="adminglobal",
+            email="adminglobal@seudominio.com",
+            password_hash=generate_password_hash("Admin123!"),
+            funcoes=["admin"],
+            nome_completo="Administrador Global",
+            matricula="ADM000",
+            cpf="999.999.999-99",
+            estabelecimento_id=None,
+            setor_id=None,
+            cargo_id=None,
         ),
         dict(
             username="colaborador",
@@ -52,6 +64,8 @@ def run():
             if not user:
                 if celula:
                     user_data["celula_id"] = celula.id
+                    user_data["setor_id"] = celula.setor_id
+                    user_data["estabelecimento_id"] = celula.estabelecimento_id
 
                 perms = user_data.pop("funcoes", [])
                 new_user = User(**user_data)
