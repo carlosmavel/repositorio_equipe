@@ -32,35 +32,49 @@ def run():
             ArticleVisibility.CELULA,
         ]
 
-        for idx, visibility in enumerate(visibilities):
-            user = users[idx % len(users)]
-            title = f"Artigo {visibility.value.title()}"
-            article = Article.query.filter_by(titulo=title, user_id=user.id).first()
-            if article:
-                print(f"{title} por {user.username} já existe.")
+        for user in users:
+            if not user.celula_id:
+                print(f"Usuário {user.username} sem célula associada. Pulando.")
                 continue
 
-            data = {
-                "titulo": title,
-                "texto": f"Conteúdo visível por {visibility.label}.",
-                "user_id": user.id,
-                "celula_id": user.celula_id,
-                "visibility": visibility,
-                "status": ArticleStatus.APROVADO,
-            }
+            for visibility in visibilities:
+                title = f"Artigo {visibility.value.title()} - {user.username}"
+                article = Article.query.filter_by(titulo=title, user_id=user.id).first()
+                if article:
+                    print(f"{title} já existe.")
+                    continue
 
-            if visibility is ArticleVisibility.INSTITUICAO:
-                data["instituicao_id"] = user.estabelecimento.instituicao_id
-            elif visibility is ArticleVisibility.ESTABELECIMENTO:
-                data["estabelecimento_id"] = user.estabelecimento_id
-            elif visibility is ArticleVisibility.SETOR:
-                data["setor_id"] = user.setor_id
-            elif visibility is ArticleVisibility.CELULA:
-                data["vis_celula_id"] = user.celula_id
+                data = {
+                    "titulo": title,
+                    "texto": f"Conteúdo visível por {visibility.label}.",
+                    "user_id": user.id,
+                    "celula_id": user.celula_id,
+                    "visibility": visibility,
+                    "status": ArticleStatus.APROVADO,
+                }
 
-            article = Article(**data)
-            db.session.add(article)
-            print(f"{title} criado para {user.username}.")
+                if visibility is ArticleVisibility.INSTITUICAO:
+                    inst_id = getattr(getattr(user, "estabelecimento", None), "instituicao_id", None)
+                    if not inst_id:
+                        print(f"Usuário {user.username} sem instituição. Pulando artigo de instituição.")
+                        continue
+                    data["instituicao_id"] = inst_id
+                elif visibility is ArticleVisibility.ESTABELECIMENTO:
+                    if not user.estabelecimento_id:
+                        print(f"Usuário {user.username} sem estabelecimento. Pulando artigo de estabelecimento.")
+                        continue
+                    data["estabelecimento_id"] = user.estabelecimento_id
+                elif visibility is ArticleVisibility.SETOR:
+                    if not user.setor_id:
+                        print(f"Usuário {user.username} sem setor. Pulando artigo de setor.")
+                        continue
+                    data["setor_id"] = user.setor_id
+                elif visibility is ArticleVisibility.CELULA:
+                    data["vis_celula_id"] = user.celula_id
+
+                article = Article(**data)
+                db.session.add(article)
+                print(f"{title} criado.")
 
         db.session.commit()
         print("🚀 Seed de artigos concluído.")
