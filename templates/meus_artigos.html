@@ -20,7 +20,8 @@
                 <div>
                   <div class="fw-bold">{{ artigo.titulo }}</div>
                   <small class="text-muted">
-                    {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+                    Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+                    Atualizado em: {{ artigo.local_updated.strftime('%d/%m/%Y %H:%M') }} |
                     Visibilidade: {{ artigo.visibility.label }}
                   </small>
                 </div>
