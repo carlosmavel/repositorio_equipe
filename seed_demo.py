@@ -127,12 +127,13 @@ def run():
                     username=username,
                     email=f"{username}@example.com",
                     password_hash=generate_password_hash("Senha123!"),
-                    estabelecimento_id=cel.estabelecimento_id,
-                    setor_id=cel.setor_id,
-                    celula_id=cel.id,
-                    cargo=cargo_objs[cargo_nome],
                 )
                 db.session.add(user)
+
+            user.estabelecimento_id = cel.estabelecimento_id
+            user.setor_id = cel.setor_id
+            user.celula_id = cel.id
+            user.cargo = cargo_objs[cargo_nome]
 
         db.session.commit()
         print("Seed completo concluído.")
