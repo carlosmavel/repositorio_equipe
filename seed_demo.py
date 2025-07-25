@@ -67,8 +67,8 @@ def run():
                 Permissao.ARTIGO_REVISAR_CELULA.value,
                 Permissao.ARTIGO_EDITAR_CELULA.value,
             ]),
-            ("Analista Celula 2 JR", [setor2], [cel2], ["artigo_criar"]),
-            ("Analista Celula 2 SR", [setor2], [cel2], [
+            ("Analista Celula 2 JR", [setor2], [cel5], ["artigo_criar"]),
+            ("Analista Celula 2 SR", [setor2], [cel5], [
                 "artigo_criar",
                 Permissao.ARTIGO_APROVAR_CELULA.value,
                 Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
@@ -113,10 +113,10 @@ def run():
         users = [
             ("analista1jr", "Analista Celula 1 JR", cel1),
             ("analista1sr", "Analista Celula 1 SR", cel1),
-            ("analista2jr", "Analista Celula 2 JR", cel2),
-            ("analista2sr", "Analista Celula 2 SR", cel2),
+            ("analista2jr", "Analista Celula 2 JR", cel5),
+            ("analista2sr", "Analista Celula 2 SR", cel5),
             ("gestor1", "Gestor Setor 1", cel1),
-            ("gestor2", "Gestor Setor 2", cel2),
+            ("gestor2", "Gestor Setor 2", cel5),
             ("gestor1e2", "Gestor Setor 1 Estab 2", cel3),
         ]
 
@@ -127,12 +127,13 @@ def run():
                     username=username,
                     email=f"{username}@example.com",
                     password_hash=generate_password_hash("Senha123!"),
-                    estabelecimento_id=cel.estabelecimento_id,
-                    setor_id=cel.setor_id,
-                    celula_id=cel.id,
-                    cargo=cargo_objs[cargo_nome],
                 )
                 db.session.add(user)
+
+            user.estabelecimento_id = cel.estabelecimento_id
+            user.setor_id = cel.setor_id
+            user.celula_id = cel.id
+            user.cargo = cargo_objs[cargo_nome]
 
         db.session.commit()
         print("Seed completo concluído.")
