@@ -23,10 +23,14 @@
           <div>
             <div class="fw-bold">{{ artigo.titulo }}</div>
             <small class="text-muted">
-              Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
-              Aprovado em: {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }} |
-              Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
-              Setor: {{ artigo.author.setor.nome }}
+              <strong>Criado em:</strong>
+              {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+              <strong>Aprovado em:</strong>
+              {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }} |
+              <strong>Autor:</strong>
+              {{ artigo.author.nome_completo or artigo.author.username }} |
+              <strong>Setor:</strong>
+              {{ artigo.author.setor.nome }}
             </small>
           </div>
 
