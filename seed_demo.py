@@ -55,6 +55,8 @@ def run():
         cel2 = get_or_create(Celula, nome="Celula 2", estabelecimento=est1, setor=setor1)
         cel3 = get_or_create(Celula, nome="CelulaEstab2 1", estabelecimento=est2, setor=setor2_e2)
         cel4 = get_or_create(Celula, nome="CelulaEstab2 2", estabelecimento=est2, setor=setor2_e2)
+        cel5 = get_or_create(Celula, nome="Celula 1 S2", estabelecimento=est1, setor=setor2)
+        cel6 = get_or_create(Celula, nome="Celula 2 S2", estabelecimento=est1, setor=setor2)
 
         cargos = [
             ("Analista Celula 1 JR", [setor1], [cel1], ["artigo_criar"]),
