@@ -24,7 +24,9 @@
             <div class="fw-bold">{{ artigo.titulo }}</div>
             <small class="text-muted">
               Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
-              Aprovado em: {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }}
+              Aprovado em: {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }} |
+              Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
+              Setor: {{ artigo.author.setor.nome }}
             </small>
           </div>
 

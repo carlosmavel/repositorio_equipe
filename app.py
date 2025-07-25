@@ -1284,6 +1284,10 @@ def meus_artigos():
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         art.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+        dt2 = art.updated_at or dt
+        if dt2.tzinfo is None:
+            dt2 = dt2.replace(tzinfo=timezone.utc)
+        art.local_updated = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template(
         'meus_artigos.html',
         artigos=artigos,
