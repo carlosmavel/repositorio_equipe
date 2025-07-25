@@ -180,3 +180,107 @@ def test_user_can_view_by_instituicao(client):
 
         assert user_can_view_article(user2, art) is True
 
+
+def test_user_cannot_view_wrong_estabelecimento(client):
+    from utils import user_can_view_article
+    with app.app_context():
+        user1 = User.query.first()
+        est1 = user1.celula.estabelecimento
+        inst = est1.instituicao
+        est2 = Estabelecimento(codigo='E3', nome_fantasia='Est 3', instituicao=inst)
+        db.session.add(est2)
+        setor2 = Setor(nome='Setor Y', estabelecimento=est2)
+        db.session.add(setor2)
+        cel2 = Celula(nome='Celula X', estabelecimento=est2, setor=setor2)
+        db.session.add(cel2)
+        user2 = User(
+            username='u6',
+            email='u6@test',
+            password_hash='x',
+            estabelecimento=est2,
+            setor=setor2,
+            celula=cel2,
+        )
+        db.session.add(user2)
+        art = Article(
+            titulo='T6',
+            texto='C6',
+            user_id=user1.id,
+            celula_id=user1.celula_id,
+            visibility=ArticleVisibility.ESTABELECIMENTO,
+            estabelecimento_id=est1.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(user2, art) is False
+
+
+def test_user_cannot_view_wrong_setor(client):
+    from utils import user_can_view_article
+    with app.app_context():
+        user1 = User.query.first()
+        est = user1.celula.estabelecimento
+        setor1 = user1.celula.setor
+        setor2 = Setor(nome='Setor Z', estabelecimento=est)
+        db.session.add(setor2)
+        cel2 = Celula(nome='Celula Y', estabelecimento=est, setor=setor2)
+        db.session.add(cel2)
+        user2 = User(
+            username='u7',
+            email='u7@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor2,
+            celula=cel2,
+        )
+        db.session.add(user2)
+        art = Article(
+            titulo='T7',
+            texto='C7',
+            user_id=user1.id,
+            celula_id=user1.celula_id,
+            visibility=ArticleVisibility.SETOR,
+            setor_id=setor1.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(user2, art) is False
+
+
+def test_user_cannot_view_wrong_instituicao(client):
+    from utils import user_can_view_article
+    with app.app_context():
+        user1 = User.query.first()
+        inst1 = user1.celula.estabelecimento.instituicao
+        inst2 = Instituicao(nome='Inst 2')
+        db.session.add(inst2)
+        est2 = Estabelecimento(codigo='E4', nome_fantasia='Est 4', instituicao=inst2)
+        db.session.add(est2)
+        setor2 = Setor(nome='Setor W', estabelecimento=est2)
+        db.session.add(setor2)
+        cel2 = Celula(nome='Celula Z', estabelecimento=est2, setor=setor2)
+        db.session.add(cel2)
+        user2 = User(
+            username='u8',
+            email='u8@test',
+            password_hash='x',
+            estabelecimento=est2,
+            setor=setor2,
+            celula=cel2,
+        )
+        db.session.add(user2)
+        art = Article(
+            titulo='T8',
+            texto='C8',
+            user_id=user1.id,
+            celula_id=user1.celula_id,
+            visibility=ArticleVisibility.INSTITUICAO,
+            instituicao_id=inst1.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(user2, art) is False
+
