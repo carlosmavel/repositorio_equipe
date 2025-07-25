@@ -29,13 +29,13 @@
                             {% if estrutura %}
                                 <div class="ms-2">
                                     {% for inst in estrutura %}
-                                        <h5>{{ inst.obj.nome }}</h5>
+                                        <h5>Instituição: {{ inst.obj.nome }}</h5>
                                         {% for est in inst.estabelecimentos %}
                                             <div class="ms-3">
-                                                <h6>{{ est.obj.nome_fantasia }}</h6>
+                                                <h6>Estabelecimento: {{ est.obj.nome_fantasia }}</h6>
                                                 {% for setor in est.setores %}
                                                     <div class="ms-3 mb-2">
-                                                        <strong>{{ setor.obj.nome }}</strong>
+                                                        <strong>Setor: {{ setor.obj.nome }}</strong>
                                                         {% if setor.cargos %}
                                                             <ul class="list-group list-group-flush ms-3 mb-2">
                                                                 {% for cargo in setor.cargos %}
@@ -59,7 +59,7 @@
                                                         {% endif %}
                                                         {% for cel in setor.celulas %}
                                                             <div class="ms-3 mb-1">
-                                                                <span class="fw-bold">{{ cel.obj.nome }}</span>
+                                                                <span class="fw-bold">Célula: {{ cel.obj.nome }}</span>
                                                                 {% if cel.cargos %}
                                                                     <ul class="list-group list-group-flush ms-3">
                                                                         {% for cargo in cel.cargos %}
