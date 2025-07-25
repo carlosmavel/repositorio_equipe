@@ -370,3 +370,16 @@ def user_can_view_article(user, article):
             return True
 
     return False
+
+
+def eligible_review_notification_users(article):
+    """Retorna os usuários que devem ser notificados sobre a revisão do artigo."""
+    try:
+        from .models import User  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import User
+
+    return [
+        u for u in User.query.all()
+        if user_can_approve_article(u, article) or user_can_review_article(u, article)
+    ]

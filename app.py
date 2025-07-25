@@ -79,6 +79,7 @@ try:
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        eligible_review_notification_users,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from utils import (
@@ -93,6 +94,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        eligible_review_notification_users,
     )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -1232,23 +1234,7 @@ def novo_artigo():
 
         # 6) Notifica responsáveis/admins, se necessário
         if status is ArticleStatus.PENDENTE:
-            dest_perms = [
-                Permissao.ARTIGO_REVISAR_CELULA,
-                Permissao.ARTIGO_REVISAR_SETOR,
-                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
-                Permissao.ARTIGO_REVISAR_INSTITUICAO,
-                Permissao.ARTIGO_REVISAR_TODAS,
-                Permissao.ARTIGO_APROVAR_CELULA,
-                Permissao.ARTIGO_APROVAR_SETOR,
-                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
-                Permissao.ARTIGO_APROVAR_INSTITUICAO,
-                Permissao.ARTIGO_APROVAR_TODAS,
-            ]
-            destinatarios = [
-                u for u in User.query.all()
-                if u.has_permissao('admin')
-                or any(u.has_permissao(p.value) for p in dest_perms)
-            ]
+            destinatarios = eligible_review_notification_users(artigo)
             for dest in destinatarios:
                 notif = Notification(
                     user_id = dest.id,
@@ -1441,23 +1427,7 @@ def editar_artigo(artigo_id):
         if acao == "enviar":
             artigo.status = ArticleStatus.PENDENTE
             # 🔔 notifica responsáveis / admins
-            dest_perms = [
-                Permissao.ARTIGO_REVISAR_CELULA,
-                Permissao.ARTIGO_REVISAR_SETOR,
-                Permissao.ARTIGO_REVISAR_ESTABELECIMENTO,
-                Permissao.ARTIGO_REVISAR_INSTITUICAO,
-                Permissao.ARTIGO_REVISAR_TODAS,
-                Permissao.ARTIGO_APROVAR_CELULA,
-                Permissao.ARTIGO_APROVAR_SETOR,
-                Permissao.ARTIGO_APROVAR_ESTABELECIMENTO,
-                Permissao.ARTIGO_APROVAR_INSTITUICAO,
-                Permissao.ARTIGO_APROVAR_TODAS,
-            ]
-            destinatarios = [
-                u for u in User.query.all()
-                if u.has_permissao('admin')
-                or any(u.has_permissao(p.value) for p in dest_perms)
-            ]
+            destinatarios = eligible_review_notification_users(artigo)
             for dest in destinatarios:
                 n = Notification(
                     user_id = dest.id,
