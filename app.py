@@ -1527,8 +1527,15 @@ def aprovacao():
 
     for lista in (pendentes, revisados):
         for art in lista:
-            dt = art.updated_at or art.created_at
-            art.local_dt = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+            dt_created = art.created_at or datetime.now(timezone.utc)
+            if dt_created.tzinfo is None:
+                dt_created = dt_created.replace(tzinfo=timezone.utc)
+            art.local_created = dt_created.astimezone(ZoneInfo("America/Sao_Paulo"))
+
+            dt_updated = art.updated_at or dt_created
+            if dt_updated.tzinfo is None:
+                dt_updated = dt_updated.replace(tzinfo=timezone.utc)
+            art.local_updated = dt_updated.astimezone(ZoneInfo("America/Sao_Paulo"))
 
     return render_template(
         "aprovacao.html",

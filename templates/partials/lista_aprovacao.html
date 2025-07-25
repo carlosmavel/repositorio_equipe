@@ -8,7 +8,16 @@
            class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
           <div>
             <div class="fw-bold">{{ art.titulo }}</div>
-            <small class="text-muted">{{ art.local_dt.strftime('%d/%m/%Y %H:%M') }}</small>
+            <small class="text-muted">
+              <span class="fw-bold">Criado em:</span>
+              {{ art.local_created.strftime('%d/%m/%Y %H:%M') }} |
+              <span class="fw-bold">Atualizado em:</span>
+              {{ art.local_updated.strftime('%d/%m/%Y %H:%M') }} |
+              <span class="fw-bold">Autor:</span>
+              {{ art.author.nome_completo or art.author.username }} |
+              <span class="fw-bold">Setor:</span>
+              {{ art.author.setor.nome }}
+            </small>
           </div>
           <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">
             {{ st.label }}
