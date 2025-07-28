@@ -16,7 +16,26 @@ try:
 except ImportError:
     from enums import ArticleStatus, ArticleVisibility, Permissao
 
-from utils import sanitize_html, extract_text, eligible_review_notification_users, user_can_view_article, user_can_edit_article, user_can_approve_article, user_can_review_article
+try:
+    from ..utils import (
+        sanitize_html,
+        extract_text,
+        eligible_review_notification_users,
+        user_can_view_article,
+        user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
+    )
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from utils import (
+        sanitize_html,
+        extract_text,
+        eligible_review_notification_users,
+        user_can_view_article,
+        user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
+    )
 import time
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone

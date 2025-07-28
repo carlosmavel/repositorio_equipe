@@ -9,7 +9,10 @@ try:
 except ImportError:
     from models import User
 
-from utils import generate_token, confirm_token, send_email, password_meets_requirements
+try:
+    from ..utils import generate_token, confirm_token, send_email, password_meets_requirements
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from utils import generate_token, confirm_token, send_email, password_meets_requirements
 
 auth_bp = Blueprint('auth_bp', __name__)
 

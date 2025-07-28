@@ -219,7 +219,10 @@ def send_password_email(user: User, action: str) -> None:
 # -------------------------------------------------------------------------
 # DECORADORES
 # -------------------------------------------------------------------------
-from decorators import admin_required
+try:
+    from .decorators import admin_required
+except ImportError:  # pragma: no cover
+    from decorators import admin_required
 
 # -------------------------------------------------------------------------
 # Context Processors

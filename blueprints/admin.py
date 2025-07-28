@@ -42,17 +42,32 @@ try:
 except ImportError:
     from enums import ArticleStatus
 
-from decorators import admin_required
-from utils import (
-    DEFAULT_NEW_USER_PASSWORD,
-    send_email,
-    generate_token,
-    eligible_review_notification_users,
-    user_can_view_article,
-    user_can_edit_article,
-    user_can_approve_article,
-    user_can_review_article,
-)
+try:
+    from ..decorators import admin_required
+except ImportError:  # pragma: no cover
+    from decorators import admin_required
+try:
+    from ..utils import (
+        DEFAULT_NEW_USER_PASSWORD,
+        send_email,
+        generate_token,
+        eligible_review_notification_users,
+        user_can_view_article,
+        user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
+    )
+except ImportError:  # pragma: no cover
+    from utils import (
+        DEFAULT_NEW_USER_PASSWORD,
+        send_email,
+        generate_token,
+        eligible_review_notification_users,
+        user_can_view_article,
+        user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
+    )
 import json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
