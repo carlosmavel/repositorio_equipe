@@ -10,6 +10,7 @@ Antes de iniciar, certifique-se de que possui os seguintes softwares instalados 
 * **Git:** Para controle de versão e clonagem do repositório.
 * **PostgreSQL:** Sistema de gerenciamento de banco de dados, versão 12 ou superior.
 * **pgAdmin 4:** Interface gráfica para gerenciar o PostgreSQL (geralmente instalada junto com o PostgreSQL).
+* **Tesseract OCR:** Necessário para reconhecer texto em PDFs digitalizados.
 * Um **editor de código** de sua preferência (ex: VS Code, PyCharm, Sublime Text).
 * **Acesso à Internet.**
 * **Permissões de Administrador** no Windows (podem ser necessárias para algumas instalações).
