@@ -1,8 +1,5 @@
-import os
 import pytest
 
-os.environ['SECRET_KEY'] = 'test_secret'
-os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 from app import app, db
 from models import (
@@ -22,10 +19,10 @@ from utils import (
 )
 
 @pytest.fixture
-def base_setup():
-    app.config['TESTING'] = True
+def base_setup(app_ctx):
+    
     with app.app_context():
-        db.create_all()
+        
         inst = Instituicao(nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
         setor1 = Setor(nome='S1', estabelecimento=est)
@@ -55,8 +52,8 @@ def base_setup():
             'author': author, 'article': art
         }
         yield data
-        db.session.remove()
-        db.drop_all()
+        
+        
 
 
 def add_perm(user, code):
