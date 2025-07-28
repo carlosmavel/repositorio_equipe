@@ -1,9 +1,6 @@
-import os
 import pytest
 from io import BytesIO
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import (
@@ -31,10 +28,10 @@ def add_perm(user, code):
 
 
 @pytest.fixture
-def client_with_users():
-    app.config['TESTING'] = True
+def client_with_users(app_ctx):
+    
     with app.app_context():
-        db.create_all()
+        
         inst = Instituicao(nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
         setor = Setor(nome='S1', estabelecimento=est)
@@ -55,10 +52,10 @@ def client_with_users():
         add_perm(ap2, Permissao.ARTIGO_APROVAR_CELULA)
         db.session.commit()
         data = {'author': author, 'ap1': ap1, 'ap2': ap2}
-        with app.test_client() as client:
+        with app_ctx.test_client() as client:
             yield client, data
-        db.session.remove()
-        db.drop_all()
+        
+        
 
 
 def login(client, user):

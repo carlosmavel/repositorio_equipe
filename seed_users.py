@@ -1,5 +1,7 @@
 # seed_users.py
 from werkzeug.security import generate_password_hash
+
+DEFAULT_PASSWORD = "Senha123!"
 try:
     from .database import db  # pragma: no cover
 except ImportError:
@@ -16,7 +18,7 @@ def run():
         dict(
             username="admin",
             email="admin@seudominio.com", # E-mail adicionado
-            password_hash=generate_password_hash("Admin123!"),
+            password_hash=generate_password_hash(DEFAULT_PASSWORD),
             funcoes=["admin"],
             nome_completo="Admin de Souza",
             matricula="ADM001",
@@ -32,7 +34,7 @@ def run():
         dict(
             username="adminglobal",
             email="adminglobal@seudominio.com",
-            password_hash=generate_password_hash("Admin123!"),
+            password_hash=generate_password_hash(DEFAULT_PASSWORD),
             funcoes=["admin"],
             nome_completo="Administrador Global",
             matricula="ADM000",
@@ -44,7 +46,7 @@ def run():
         dict(
             username="colaborador",
             email="colaborador@seudominio.com",  # E-mail adicionado
-            password_hash=generate_password_hash("Colab123!"),
+            password_hash=generate_password_hash(DEFAULT_PASSWORD),
             nome_completo="João Silva",
             matricula="COL001",
             cpf="222.222.222-22",  # Exemplo

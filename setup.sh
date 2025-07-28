@@ -21,7 +21,6 @@ if [ -n "$DATABASE_URI" ]; then
 fi
 
 # Seed initial data (optional but recommended)
-python seed_users.py
-python seed_organizacao.py
+python seed.py
 
 echo "Setup complete."
