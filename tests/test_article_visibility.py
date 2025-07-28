@@ -1,17 +1,14 @@
-import os
 import pytest
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import Instituicao, Estabelecimento, Setor, Celula, User, Article, ArticleVisibility
 
 @pytest.fixture
-def client():
-    app.config['TESTING'] = True
+def client(app_ctx):
+    
     with app.app_context():
-        db.create_all()
+        
         inst = Instituicao(nome='Inst 1')
         est = Estabelecimento(codigo='EST1', nome_fantasia='Est', instituicao=inst)
         setor = Setor(nome='Setor 1', estabelecimento=est)
@@ -28,10 +25,10 @@ def client():
         )
         db.session.add(user)
         db.session.commit()
-        with app.test_client() as client:
+        with app_ctx.test_client() as client:
             yield client
-        db.session.remove()
-        db.drop_all()
+        
+        
 
 
 def test_article_visibility_fields(client):

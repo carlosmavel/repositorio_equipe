@@ -3,15 +3,13 @@ from flask import Flask
 from unittest.mock import MagicMock
 
 # Set environment variables required by send_email
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
-os.environ['SENDGRID_API_KEY'] = 'test_key'
-os.environ['EMAIL_FROM'] = 'from@example.com'
 
 from utils import send_email
 
 
 def test_send_email_constructs_and_sends_message(monkeypatch):
+    os.environ['SENDGRID_API_KEY'] = 'test_key'
+    os.environ['EMAIL_FROM'] = 'from@example.com'
     app = Flask(__name__)
     with app.app_context():
         captured = {}

@@ -1,21 +1,13 @@
-import os
 import pytest
-
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import Instituicao, Estabelecimento, Setor, Celula, User, Funcao
 
 @pytest.fixture
-def client():
-    app.config['TESTING'] = True
+def client(app_ctx):
     with app.app_context():
-        db.create_all()
-        with app.test_client() as client:
+        with app_ctx.test_client() as client:
             yield client
-        db.session.remove()
-        db.drop_all()
 
 def login_admin(client):
     with app.app_context():

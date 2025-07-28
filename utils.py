@@ -2,6 +2,7 @@
 
 import bleach
 from bleach.css_sanitizer import CSSSanitizer
+import re
 
 import os
 from docx import Document
@@ -139,6 +140,16 @@ import secrets
 import string
 
 DEFAULT_NEW_USER_PASSWORD = 'Mudanca123!'
+
+
+def password_meets_requirements(password: str) -> bool:
+    return (
+        len(password) >= 8
+        and re.search(r"[A-Z]", password)
+        and re.search(r"[a-z]", password)
+        and re.search(r"[0-9]", password)
+        and re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
+    )
 
 def generate_random_password(length=12):
     """Gera uma senha aleatória com letras, números e caracteres especiais."""
