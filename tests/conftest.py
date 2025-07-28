@@ -6,8 +6,10 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
+
+os.environ['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'test_secret')
+os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
+
 
 # Stub external OCR dependencies when not available
 import types
