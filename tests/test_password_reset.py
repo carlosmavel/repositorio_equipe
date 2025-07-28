@@ -1,18 +1,15 @@
-import os
 import pytest
 
-os.environ.setdefault('SECRET_KEY', 'test_secret')
-os.environ.setdefault('DATABASE_URI', 'sqlite:///:memory:')
 
 from app import app, db
 from models import User, Instituicao, Estabelecimento, Setor, Celula
 from utils import generate_token
 
 @pytest.fixture
-def client():
-    app.config['TESTING'] = True
+def client(app_ctx):
+    
     with app.app_context():
-        db.create_all()
+        
         inst = Instituicao(nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao=inst)
         setor = Setor(nome='Setor1', estabelecimento=est)
@@ -29,10 +26,10 @@ def client():
         u.set_password('OldPass1!')
         db.session.add(u)
         db.session.commit()
-        with app.test_client() as client:
+        with app_ctx.test_client() as client:
             yield client
-        db.session.remove()
-        db.drop_all()
+        
+        
 
 def test_reset_password_token(client):
     with app.app_context():

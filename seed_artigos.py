@@ -14,6 +14,7 @@ except ImportError:
     from enums import ArticleVisibility, ArticleStatus
 
 from app import app
+from datetime import datetime, timezone
 
 
 def run():
@@ -51,6 +52,8 @@ def run():
                     "celula_id": user.celula_id,
                     "visibility": visibility,
                     "status": ArticleStatus.APROVADO,
+                    "created_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
                 }
 
                 if visibility is ArticleVisibility.INSTITUICAO:
