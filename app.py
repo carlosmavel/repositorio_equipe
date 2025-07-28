@@ -164,6 +164,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 migrate = Migrate(app, db)
+
 try:
     from .blueprints.admin import admin_bp
     from .blueprints.auth import auth_bp
@@ -172,6 +173,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
     from blueprints.admin import admin_bp
     from blueprints.auth import auth_bp
     from blueprints.articles import articles_bp
+
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(auth_bp)
