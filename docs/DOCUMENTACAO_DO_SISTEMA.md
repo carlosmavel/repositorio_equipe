@@ -107,8 +107,7 @@ ORQUETASK_PROJECT_ROOT/
 ├── enums.py                   # Enumerações (ex: ArticleStatus)
 ├── utils.py                   # Funções utilitárias
 ├── requirements.txt           # Dependências Python
-├── seed_users.py              # Script para dados iniciais de usuários
-├── seed_organizacao.py        # Popula instituições, estabelecimentos e setores
+├── seed.py                    # Executa os seeds de demonstração (estrutura, usuários e artigos)
 ├── .env                       # (Local, não versionado) Variáveis de ambiente
 ├── .env.example               # (Versionado) Exemplo de variáveis de ambiente
 ├── .gitignore                 # Arquivos ignorados pelo Git
