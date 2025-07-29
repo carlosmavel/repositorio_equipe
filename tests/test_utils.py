@@ -28,13 +28,11 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     calls = []
 
-    class DummyOCR:
-        def ocr(self, img, **kwargs):
-            calls.append(img)
-            return [[None, ("Texto1" if len(calls) == 1 else "Texto2", 1.0)]]
+    def dummy_image_to_string(img, **kwargs):
+        calls.append(img)
+        return "Texto1" if len(calls) == 1 else "Texto2"
 
-    monkeypatch.setattr("utils.get_ocr_engine", lambda: DummyOCR())
-    monkeypatch.setattr("utils.np", types.SimpleNamespace(array=lambda x: x))
+    monkeypatch.setattr("utils.pytesseract", types.SimpleNamespace(image_to_string=dummy_image_to_string))
     monkeypatch.setattr("utils.Image", object())
 
     text = extract_text(str(pdf_file))

@@ -16,13 +16,9 @@ try:
 except Exception:  # pragma: no cover
     convert_from_path = None
 try:
-    from paddleocr import PaddleOCR
+    import pytesseract
 except Exception:  # pragma: no cover
-    PaddleOCR = None
-try:
-    import numpy as np
-except Exception:  # pragma: no cover
-    np = None
+    pytesseract = None
 try:
     from PIL import Image
 except Exception:  # pragma: no cover
@@ -32,14 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 
-OCR_ENGINE = None
 
-def get_ocr_engine():
-    """Retorna instancia unica do PaddleOCR configurada."""
-    global OCR_ENGINE
-    if OCR_ENGINE is None and PaddleOCR:
-        OCR_ENGINE = PaddleOCR(use_angle_cls=True, lang="pt", use_gpu=False)
-    return OCR_ENGINE
 
 
 #-------------------------------------------------------------------------------------------
@@ -141,16 +130,11 @@ def extract_text(path: str) -> str:
 
 
 def extract_text_from_pdf(path: str) -> str:
-    """Extrai texto de PDFs usando pdf2image + PaddleOCR."""
+    """Extrai texto de PDFs usando pdf2image + pytesseract."""
     text_parts = []
 
-    if not (convert_from_path and Image and np):
-        logger.warning("pdf2image ou PIL numpy indisponivel para %s", path)
-        return ""
-
-    ocr_engine = get_ocr_engine()
-    if not ocr_engine:
-        logger.warning("PaddleOCR nao disponivel para %s", path)
+    if not (convert_from_path and Image and pytesseract):
+        logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
 
     try:
@@ -161,11 +145,8 @@ def extract_text_from_pdf(path: str) -> str:
 
     for img in images:
         try:
-            arr = np.array(img)
-            result = ocr_engine.ocr(arr, cls=True)
-            for res in result:
-                if res and len(res) > 1:
-                    text_parts.append(res[1][0])
+            text = pytesseract.image_to_string(img, lang="por")
+            text_parts.append(text)
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina do PDF %s: %s", path, e)
 

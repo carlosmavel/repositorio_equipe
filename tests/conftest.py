@@ -18,18 +18,10 @@ if 'pdf2image' not in sys.modules:
     pdf2image.convert_from_path = lambda *a, **k: []
     sys.modules['pdf2image'] = pdf2image
 
-if 'paddleocr' not in sys.modules:
-    paddleocr = types.ModuleType('paddleocr')
-
-    class DummyOCR:
-        def __init__(self, *a, **k):
-            pass
-
-        def ocr(self, img, **k):
-            return []
-
-    paddleocr.PaddleOCR = DummyOCR
-    sys.modules['paddleocr'] = paddleocr
+if 'pytesseract' not in sys.modules:
+    pytesseract = types.ModuleType('pytesseract')
+    pytesseract.image_to_string = lambda *a, **k: ''
+    sys.modules['pytesseract'] = pytesseract
 
 
 import pytest
