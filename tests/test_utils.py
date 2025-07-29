@@ -22,28 +22,9 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy.pdf"
     pdf_file.write_bytes(b"%PDF-1.4")
 
-    class DummyPage:
-        def get_text(self):
-            return ""
-
-        def get_pixmap(self, dpi=200):
-            class Pix:
-                def tobytes(self, fmt):
-                    return b"data"
-
-            return Pix()
-
-    class DummyDoc:
-        def __init__(self, path):
-            pass
-
-        def __iter__(self):
-            return iter([DummyPage(), DummyPage()])
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr("utils.fitz.open", lambda p: DummyDoc(p))
+    img1 = object()
+    img2 = object()
+    monkeypatch.setattr("utils.convert_from_path", lambda p, dpi=200: [img1, img2])
 
     calls = []
 
@@ -53,9 +34,8 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
             return [[None, ("Texto1" if len(calls) == 1 else "Texto2", 1.0)]]
 
     monkeypatch.setattr("utils.get_ocr_engine", lambda: DummyOCR())
-    monkeypatch.setattr("utils.Image", types.SimpleNamespace(open=lambda b: b))
-    monkeypatch.setattr("utils.BytesIO", lambda b: b)
     monkeypatch.setattr("utils.np", types.SimpleNamespace(array=lambda x: x))
+    monkeypatch.setattr("utils.Image", object())
 
     text = extract_text(str(pdf_file))
 
