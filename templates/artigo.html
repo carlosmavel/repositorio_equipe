@@ -89,7 +89,8 @@
         <h5 class="mt-4">Histórico de Ajustes</h5>
         <ul class="list-group mb-3">
           {% for c in artigo.comments|sort(attribute='created_at') %}
-          {% set parts = c.autor.nome_completo.split() %}
+          {% set nome = c.autor.nome_completo if c.autor.nome_completo else c.autor.username %}
+          {% set parts = nome.split() %}
           <li class="list-group-item">
             <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
             <small class="text-muted">
@@ -106,7 +107,8 @@
         <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
         <ul class="list-group mb-3">
           {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
-          {% set p = rr.user.nome_completo.split() %}
+          {% set nome = rr.user.nome_completo if rr.user.nome_completo else rr.user.username %}
+          {% set p = nome.split() %}
           <li class="list-group-item">
             <strong>{{ p[0] }} {{ p[-1] }}</strong>
             <small class="text-muted">
