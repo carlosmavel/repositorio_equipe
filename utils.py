@@ -11,6 +11,7 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 from PyPDF2 import PdfReader
+import logging
 try:
     from pdf2image import convert_from_path
 except Exception:  # pragma: no cover
@@ -19,6 +20,8 @@ try:
     import pytesseract
 except Exception:  # pragma: no cover
     pytesseract = None
+
+logger = logging.getLogger(__name__)
 
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
@@ -118,18 +121,23 @@ def extract_text(path: str) -> str:
                 text = page.extract_text()
                 if text:
                     text_parts.append(text)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Erro ao extrair texto de PDF %s: %s", path, e)
 
-        if not text_parts and convert_from_path and pytesseract:
-            try:
-                pages = convert_from_path(path)
-                for img in pages:
-                    ocr_text = pytesseract.image_to_string(img)
-                    if ocr_text:
-                        text_parts.append(ocr_text)
-            except Exception:
-                pass
+        if not text_parts:
+            if not (convert_from_path and pytesseract):
+                logger.warning(
+                    "Dependencias de OCR ausentes para PDF %s", path
+                )
+            else:
+                try:
+                    pages = convert_from_path(path)
+                    for img in pages:
+                        ocr_text = pytesseract.image_to_string(img)
+                        if ocr_text:
+                            text_parts.append(ocr_text)
+                except Exception as e:
+                    logger.error("Erro ao executar OCR em %s: %s", path, e)
 
         return '\n'.join(text_parts)
 
