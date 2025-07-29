@@ -559,26 +559,34 @@ def pesquisar():
     query = Article.query.filter_by(status=ArticleStatus.APROVADO)
 
     if q:
-        like   = f"%{q}%"
-        ts_q   = func.plainto_tsquery('portuguese', q)
+        exact = False
+        term = q
+        if len(term) >= 2 and term.startswith('"') and term.endswith('"'):
+            term = term[1:-1]
+            exact = True
 
-        # subquery: todos os artigos cujos anexos batem no tsquery
-        sub = (
-            db.session.query(Attachment.article_id)
-            .filter(
-                func.to_tsvector('portuguese', Attachment.content)
-                .op('@@')(ts_q)
-            )
-            .subquery()
-        )
+        tokens = [term] if exact else [t for t in term.split() if t]
 
-        query = query.filter(
-            or_(
-                Article.titulo.ilike(like),
-                Article.texto.ilike(like),
-                Article.id.in_(sub)
+        for token in tokens:
+            like = f"%{token}%"
+            sub = (
+                db.session.query(Attachment.article_id)
+                .filter(
+                    or_(
+                        Attachment.filename.ilike(like),
+                        Attachment.content.ilike(like)
+                    )
+                )
+                .subquery()
             )
-        )
+
+            query = query.filter(
+                or_(
+                    Article.titulo.ilike(like),
+                    Article.texto.ilike(like),
+                    Article.id.in_(sub)
+                )
+            )
 
     artigos = query.order_by(Article.created_at.desc()).all()
 
