@@ -35,11 +35,15 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
             return [DummyPage(), DummyPage()]
 
     monkeypatch.setattr("utils.PdfReader", DummyReader)
-    monkeypatch.setattr("utils.convert_from_path", lambda path: ["img1", "img2"])
 
     calls = []
+    def fake_convert(path, **kwargs):
+        calls.append(("convert", kwargs))
+        return ["img1", "img2"]
 
-    def fake_ocr(img):
+    monkeypatch.setattr("utils.convert_from_path", fake_convert)
+
+    def fake_ocr(img, **kwargs):
         calls.append(img)
         return "Texto1" if img == "img1" else "Texto2"
 
@@ -49,4 +53,4 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     assert "Texto1" in text
     assert "Texto2" in text
-    assert calls == ["img1", "img2"]
+    assert calls == [("convert", {"poppler_path": None}), "img1", "img2"]
