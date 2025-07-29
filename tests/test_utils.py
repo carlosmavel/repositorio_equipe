@@ -43,11 +43,15 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     monkeypatch.setattr("utils.convert_from_path", fake_convert)
 
-    def fake_ocr(img, **kwargs):
-        calls.append(img)
-        return "Texto1" if img == "img1" else "Texto2"
+    class FakeOCR:
+        def ocr(self, img, **kwargs):
+            calls.append(img)
+            if img == "img1":
+                return [[(None, ("", "Texto1"))]]
+            return [[(None, ("", "Texto2"))]]
 
-    monkeypatch.setattr("utils.pytesseract.image_to_string", fake_ocr)
+    monkeypatch.setattr("utils.paddle_ocr", FakeOCR())
+    monkeypatch.setattr("utils.np", types.SimpleNamespace(array=lambda x: x))
 
     text = extract_text(str(pdf_file))
 

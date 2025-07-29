@@ -17,18 +17,24 @@ try:
 except Exception:  # pragma: no cover
     convert_from_path = None
 try:
-    import pytesseract
+    from paddleocr import PaddleOCR
 except Exception:  # pragma: no cover
-    pytesseract = None
+    PaddleOCR = None
+try:
+    import numpy as np
+except Exception:  # pragma: no cover
+    np = None
 
 logger = logging.getLogger(__name__)
 
 
 # Permite configurar caminhos externos para ferramentas de OCR.
 POPPLER_PATH = os.environ.get("POPPLER_PATH")
-TESSERACT_CMD = os.environ.get("TESSERACT_CMD")
-if pytesseract and TESSERACT_CMD:
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+OCR_LANG = os.environ.get("OCR_LANG", "por")
+paddle_ocr = (
+    PaddleOCR(use_angle_cls=True, lang=OCR_LANG, show_log=False)
+    if PaddleOCR else None
+)
 
 
 #-------------------------------------------------------------------------------------------
@@ -133,19 +139,22 @@ def extract_text(path: str) -> str:
             logger.error("Erro ao extrair texto de PDF %s: %s", path, e)
 
         if not text_parts:
-            if not (convert_from_path and pytesseract):
+            if not (convert_from_path and paddle_ocr and np):
                 logger.warning(
                     "Dependencias de OCR ausentes para PDF %s", path
                 )
             else:
                 try:
-
                     pages = convert_from_path(path, poppler_path=POPPLER_PATH)
-                    logger.debug("%d paginas convertidas para OCR de %s", len(pages), path)
+                    logger.debug(
+                        "%d paginas convertidas para OCR de %s", len(pages), path
+                    )
                     for img in pages:
-                        ocr_text = pytesseract.image_to_string(img, lang='por')
+                        result = paddle_ocr.ocr(np.array(img), cls=True)
+                        ocr_text = " ".join(
+                            seg[1][0] for line in result for seg in line
+                        )
                         if ocr_text and ocr_text.strip():
-
                             text_parts.append(ocr_text)
                 except Exception as e:
                     logger.error("Erro ao executar OCR em %s: %s", path, e)

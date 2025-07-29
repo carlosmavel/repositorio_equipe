@@ -38,7 +38,7 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 * Git
 * PostgreSQL (versão 12 ou superior)
 * (Opcional, mas recomendado para gerenciamento do DB) pgAdmin 4
-* Tesseract OCR instalado no sistema
+* Dependências do PaddleOCR instaladas (paddleocr, paddlepaddle, numpy)
 
 ## Como Rodar o Projeto (Desenvolvimento)
 
