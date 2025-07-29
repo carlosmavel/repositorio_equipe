@@ -1,14 +1,14 @@
-from seed_funcoes import run as seed_funcoes
-from seed_organizacao import run as seed_organizacao
-from seed_users import run as seed_users
-from seed_artigos import run as seed_artigos
+try:
+    from . import seed_demo, seed_articles
+except ImportError:  # pragma: no cover - fallback for direct execution
+    import seed_demo, seed_articles
 
 
 def run():
-    seed_funcoes()
-    seed_organizacao()
-    seed_users()
-    seed_artigos()
+    """Execute os scripts de seed de exemplo."""
+    seed_demo.run()
+    seed_articles.run()
+
 
 
 if __name__ == "__main__":

@@ -214,13 +214,11 @@ Este comando executará todos os scripts de migração na pasta migrations/versi
 
 > **Observação:** se você adicionar uma nova coluna marcada como `nullable=True` em modelos existentes (como o `User`), remova previamente os registros ou deixe o campo temporariamente como `nullable=False` para rodar o `flask db upgrade`. Após a migração, altere o campo no banco para aceitar valores nulos, se desejar.
 
-## 11. (Opcional, mas Recomendado) Popular Dados Iniciais
-Se você possui scripts para criar usuários e dados organizacionais de exemplo (como `seed_users.py` e `seed_organizacao.py`):
+## 11. (Opcional, mas Recomendado) Popular Dados de Exemplo
+Execute o script abaixo para criar funções, organização, usuários e artigos básicos:
 ```bash
-python seed_users.py
-python seed_organizacao.py
+python seed.py
 ```
-Lembre-se que ambos os scripts devem estar atualizados para refletir os campos obrigatórios de cada modelo.
 
 ## 12. Rodar a Aplicação Flask
 Finalmente! Para rodar o servidor de desenvolvimento do Flask:
