@@ -16,15 +16,23 @@
       </div>
 
       {% if artigos %}
-      <div class="list-group">
-        {% for artigo in artigos %}
-        <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
-          class="list-group-item list-group-item-action d-flex justify-content-between align-items-start position-relative">
-          <div>
+      <div class="card shadow-sm mb-4 aprovacao-list">
+        <div class="card-body">
+        <div class="list-group">
+          {% for artigo in artigos %}
+          <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
+            class="list-group-item list-group-item-action d-flex justify-content-between align-items-start position-relative">
+            <div>
             <div class="fw-bold">{{ artigo.titulo }}</div>
             <small class="text-muted">
-              Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
-              Aprovado em: {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }}
+              <strong>Criado em:</strong>
+              {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+              <strong>Aprovado em:</strong>
+              {{ artigo.local_aprovado.strftime('%d/%m/%Y %H:%M') }} |
+              <strong>Autor:</strong>
+              {{ artigo.author.nome_completo or artigo.author.username }} |
+              <strong>Setor:</strong>
+              {{ artigo.author.setor.nome }}
             </small>
           </div>
 
@@ -37,8 +45,10 @@
           <i class="bi bi-copy text-secondary copy-link-icon"
             data-url="{{ url_for('artigo', artigo_id=artigo.id, _external=True) }}"
             style="position:absolute; bottom:5px; right:10px; cursor:pointer; font-size:1.2rem;"></i>
-        </a>
-        {% endfor %}
+          </a>
+          {% endfor %}
+        </div>
+        </div>
       </div>
       {% else %}
       <p class="text-muted mt-3">Nenhum artigo encontrado.</p>

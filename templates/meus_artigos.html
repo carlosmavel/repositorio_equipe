@@ -6,7 +6,7 @@
 <div class="container-fluid px-5">
   <div class="row">
     <div class="col-md-10 mx-auto">
-    <div class="card shadow-sm">
+    <div class="card shadow-sm aprovacao-list">
       <div class="card-body">
         <h3>Meus Artigos</h3>
 
@@ -20,7 +20,8 @@
                 <div>
                   <div class="fw-bold">{{ artigo.titulo }}</div>
                   <small class="text-muted">
-                    {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+                    Criado em: {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }} |
+                    Atualizado em: {{ artigo.local_updated.strftime('%d/%m/%Y %H:%M') }} |
                     Visibilidade: {{ artigo.visibility.label }}
                   </small>
                 </div>

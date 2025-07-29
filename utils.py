@@ -2,6 +2,7 @@
 
 import bleach
 from bleach.css_sanitizer import CSSSanitizer
+import re
 
 import os
 from docx import Document
@@ -10,6 +11,14 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 from PyPDF2 import PdfReader
+try:
+    from pdf2image import convert_from_path
+except Exception:  # pragma: no cover
+    convert_from_path = None
+try:
+    import pytesseract
+except Exception:  # pragma: no cover
+    pytesseract = None
 
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
@@ -101,7 +110,7 @@ def extract_text(path: str) -> str:
             text_parts.append(str(elem))
         return '\n'.join(text_parts)
 
-    # PDF (texto)
+    # PDF (texto ou imagem)
     if ext == '.pdf':
         try:
             reader = PdfReader(path)
@@ -109,9 +118,20 @@ def extract_text(path: str) -> str:
                 text = page.extract_text()
                 if text:
                     text_parts.append(text)
-            return '\n'.join(text_parts)
         except Exception:
-            return ''
+            pass
+
+        if not text_parts and convert_from_path and pytesseract:
+            try:
+                pages = convert_from_path(path)
+                for img in pages:
+                    ocr_text = pytesseract.image_to_string(img)
+                    if ocr_text:
+                        text_parts.append(ocr_text)
+            except Exception:
+                pass
+
+        return '\n'.join(text_parts)
 
     # outros formatos não suportados
     return ''
@@ -120,6 +140,16 @@ import secrets
 import string
 
 DEFAULT_NEW_USER_PASSWORD = 'Mudanca123!'
+
+
+def password_meets_requirements(password: str) -> bool:
+    return (
+        len(password) >= 8
+        and re.search(r"[A-Z]", password)
+        and re.search(r"[a-z]", password)
+        and re.search(r"[0-9]", password)
+        and re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
+    )
 
 def generate_random_password(length=12):
     """Gera uma senha aleatória com letras, números e caracteres especiais."""
@@ -370,3 +400,16 @@ def user_can_view_article(user, article):
             return True
 
     return False
+
+
+def eligible_review_notification_users(article):
+    """Retorna os usuários que devem ser notificados sobre a revisão do artigo."""
+    try:
+        from .models import User  # type: ignore  # pragma: no cover
+    except ImportError:  # pragma: no cover - fallback for direct execution
+        from models import User
+
+    return [
+        u for u in User.query.all()
+        if user_can_approve_article(u, article) or user_can_review_article(u, article)
+    ]
