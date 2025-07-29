@@ -1,13 +1,12 @@
 try:
-    from . import seed_demo, seed_articles
+    from . import seed_demonstration
 except ImportError:  # pragma: no cover - fallback for direct execution
-    import seed_demo, seed_articles
+    import seed_demonstration
 
 
 def run():
     """Execute os scripts de seed de exemplo."""
-    seed_demo.run()
-    seed_articles.run()
+    seed_demonstration.run()
 
 
 
