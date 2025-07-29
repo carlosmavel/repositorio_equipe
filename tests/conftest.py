@@ -13,10 +13,10 @@ os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 # Stub external OCR dependencies when not available
 import types
-if 'fitz' not in sys.modules:
-    fitz = types.ModuleType('fitz')
-    fitz.open = lambda path: None
-    sys.modules['fitz'] = fitz
+if 'pdf2image' not in sys.modules:
+    pdf2image = types.ModuleType('pdf2image')
+    pdf2image.convert_from_path = lambda *a, **k: []
+    sys.modules['pdf2image'] = pdf2image
 
 if 'paddleocr' not in sys.modules:
     paddleocr = types.ModuleType('paddleocr')

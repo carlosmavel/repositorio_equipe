@@ -12,9 +12,9 @@ from odf import opendocument
 from odf.text import P
 import logging
 try:
-    import fitz  # PyMuPDF
+    from pdf2image import convert_from_path
 except Exception:  # pragma: no cover
-    fitz = None
+    convert_from_path = None
 try:
     from paddleocr import PaddleOCR
 except Exception:  # pragma: no cover
@@ -23,8 +23,10 @@ try:
     import numpy as np
 except Exception:  # pragma: no cover
     np = None
-from PIL import Image
-from io import BytesIO
+try:
+    from PIL import Image
+except Exception:  # pragma: no cover
+    Image = None
 
 logger = logging.getLogger(__name__)
 
@@ -139,42 +141,34 @@ def extract_text(path: str) -> str:
 
 
 def extract_text_from_pdf(path: str) -> str:
-    """Extrai texto de PDFs, usando OCR quando necessario."""
+    """Extrai texto de PDFs usando pdf2image + PaddleOCR."""
     text_parts = []
 
-    if not fitz:
-        logger.warning("PyMuPDF nao disponivel para %s", path)
-        return ""
-
-    try:
-        doc = fitz.open(path)
-    except Exception as e:  # pragma: no cover - erro ao abrir
-        logger.error("Erro ao abrir PDF %s: %s", path, e)
+    if not (convert_from_path and Image and np):
+        logger.warning("pdf2image ou PIL numpy indisponivel para %s", path)
         return ""
 
     ocr_engine = get_ocr_engine()
-    for page in doc:
+    if not ocr_engine:
+        logger.warning("PaddleOCR nao disponivel para %s", path)
+        return ""
+
+    try:
+        images = convert_from_path(path, dpi=200)
+    except Exception as e:  # pragma: no cover - erro ao converter
+        logger.error("Erro ao converter PDF %s: %s", path, e)
+        return ""
+
+    for img in images:
         try:
-            text = page.get_text().strip()
-        except Exception:  # pragma: no cover
-            text = ""
-        if text:
-            text_parts.append(text)
-        else:
-            if not (ocr_engine and np and Image):
-                logger.warning("OCR indisponivel para pagina em %s", path)
-                continue
-            try:
-                pix = page.get_pixmap(dpi=200)
-                img = Image.open(BytesIO(pix.tobytes("png")))
-                arr = np.array(img)
-                result = ocr_engine.ocr(arr, cls=True)
-                for res in result:
-                    if res and len(res) > 1:
-                        text_parts.append(res[1][0])
-            except Exception as e:  # pragma: no cover
-                logger.error("Erro no OCR da pagina do PDF %s: %s", path, e)
-    doc.close()
+            arr = np.array(img)
+            result = ocr_engine.ocr(arr, cls=True)
+            for res in result:
+                if res and len(res) > 1:
+                    text_parts.append(res[1][0])
+        except Exception as e:  # pragma: no cover
+            logger.error("Erro no OCR da pagina do PDF %s: %s", path, e)
+
     return "\n".join(text_parts)
 
 import secrets

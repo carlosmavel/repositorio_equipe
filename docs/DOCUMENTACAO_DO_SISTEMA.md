@@ -95,7 +95,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
     * `openpyxl` (Extração de texto de arquivos `.xlsx`)
     * `xlrd` (Extração de texto de arquivos `.xls` antigos)
     * `odfpy` (Extração de texto de arquivos `.ods`)
-    * `PyMuPDF` (Leitura e renderização de arquivos `.pdf`)
+    * `pdf2image` (Conversão de PDFs em imagens para OCR)
     * `PaddleOCR` (OCR para PDFs escaneados)
 
 ## 4. Estrutura de Diretórios Principal
