@@ -23,34 +23,42 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     pdf_file.write_bytes(b"%PDF-1.4")
 
     class DummyPage:
-        def extract_text(self):
-            return None
+        def get_text(self):
+            return ""
 
-    class DummyReader:
+        def get_pixmap(self, dpi=200):
+            class Pix:
+                def tobytes(self, fmt):
+                    return b"data"
+
+            return Pix()
+
+    class DummyDoc:
         def __init__(self, path):
             pass
 
-        @property
-        def pages(self):
-            return [DummyPage(), DummyPage()]
+        def __iter__(self):
+            return iter([DummyPage(), DummyPage()])
 
-    monkeypatch.setattr("utils.PdfReader", DummyReader)
+        def close(self):
+            pass
+
+    monkeypatch.setattr("utils.fitz.open", lambda p: DummyDoc(p))
 
     calls = []
-    def fake_convert(path, **kwargs):
-        calls.append(("convert", kwargs))
-        return ["img1", "img2"]
 
-    monkeypatch.setattr("utils.convert_from_path", fake_convert)
+    class DummyOCR:
+        def ocr(self, img, **kwargs):
+            calls.append(img)
+            return [[None, ("Texto1" if len(calls) == 1 else "Texto2", 1.0)]]
 
-    def fake_ocr(img, **kwargs):
-        calls.append(img)
-        return "Texto1" if img == "img1" else "Texto2"
-
-    monkeypatch.setattr("utils.pytesseract.image_to_string", fake_ocr)
+    monkeypatch.setattr("utils.get_ocr_engine", lambda: DummyOCR())
+    monkeypatch.setattr("utils.Image", types.SimpleNamespace(open=lambda b: b))
+    monkeypatch.setattr("utils.BytesIO", lambda b: b)
+    monkeypatch.setattr("utils.np", types.SimpleNamespace(array=lambda x: x))
 
     text = extract_text(str(pdf_file))
 
     assert "Texto1" in text
     assert "Texto2" in text
-    assert calls == [("convert", {"poppler_path": None}), "img1", "img2"]
+    assert len(calls) == 2

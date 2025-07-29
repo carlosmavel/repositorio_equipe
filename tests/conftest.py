@@ -13,15 +13,24 @@ os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 # Stub external OCR dependencies when not available
 import types
-if 'pdf2image' not in sys.modules:
-    pdf2image = types.ModuleType('pdf2image')
-    pdf2image.convert_from_path = lambda path: []
-    sys.modules['pdf2image'] = pdf2image
+if 'fitz' not in sys.modules:
+    fitz = types.ModuleType('fitz')
+    fitz.open = lambda path: None
+    sys.modules['fitz'] = fitz
 
-if 'pytesseract' not in sys.modules:
-    pytesseract = types.ModuleType('pytesseract')
-    pytesseract.image_to_string = lambda img: ''
-    sys.modules['pytesseract'] = pytesseract
+if 'paddleocr' not in sys.modules:
+    paddleocr = types.ModuleType('paddleocr')
+
+    class DummyOCR:
+        def __init__(self, *a, **k):
+            pass
+
+        def ocr(self, img, **k):
+            return []
+
+    paddleocr.PaddleOCR = DummyOCR
+    sys.modules['paddleocr'] = paddleocr
+
 
 import pytest
 from app import app, db
