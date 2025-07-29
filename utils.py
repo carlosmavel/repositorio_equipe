@@ -23,11 +23,13 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+
 # Permite configurar caminhos externos para ferramentas de OCR.
 POPPLER_PATH = os.environ.get("POPPLER_PATH")
 TESSERACT_CMD = os.environ.get("TESSERACT_CMD")
 if pytesseract and TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+
 
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
@@ -137,11 +139,13 @@ def extract_text(path: str) -> str:
                 )
             else:
                 try:
+
                     pages = convert_from_path(path, poppler_path=POPPLER_PATH)
                     logger.debug("%d paginas convertidas para OCR de %s", len(pages), path)
                     for img in pages:
                         ocr_text = pytesseract.image_to_string(img, lang='por')
                         if ocr_text and ocr_text.strip():
+
                             text_parts.append(ocr_text)
                 except Exception as e:
                     logger.error("Erro ao executar OCR em %s: %s", path, e)
