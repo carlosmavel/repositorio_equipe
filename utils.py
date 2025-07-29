@@ -10,25 +10,34 @@ import openpyxl
 import xlrd
 from odf import opendocument
 from odf.text import P
-from PyPDF2 import PdfReader
 import logging
 try:
-    from pdf2image import convert_from_path
+    import fitz  # PyMuPDF
 except Exception:  # pragma: no cover
-    convert_from_path = None
+    fitz = None
 try:
-    import pytesseract
+    from paddleocr import PaddleOCR
 except Exception:  # pragma: no cover
-    pytesseract = None
+    PaddleOCR = None
+try:
+    import numpy as np
+except Exception:  # pragma: no cover
+    np = None
+from PIL import Image
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
 
-# Permite configurar caminhos externos para ferramentas de OCR.
-POPPLER_PATH = os.environ.get("POPPLER_PATH")
-TESSERACT_CMD = os.environ.get("TESSERACT_CMD")
-if pytesseract and TESSERACT_CMD:
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+
+OCR_ENGINE = None
+
+def get_ocr_engine():
+    """Retorna instancia unica do PaddleOCR configurada."""
+    global OCR_ENGINE
+    if OCR_ENGINE is None and PaddleOCR:
+        OCR_ENGINE = PaddleOCR(use_angle_cls=True, lang="pt", use_gpu=False)
+    return OCR_ENGINE
 
 
 #-------------------------------------------------------------------------------------------
@@ -123,37 +132,50 @@ def extract_text(path: str) -> str:
 
     # PDF (texto ou imagem)
     if ext == '.pdf':
-        try:
-            reader = PdfReader(path)
-            for page in reader.pages:
-                text = page.extract_text() or ""
-                if text.strip():
-                    text_parts.append(text)
-        except Exception as e:
-            logger.error("Erro ao extrair texto de PDF %s: %s", path, e)
-
-        if not text_parts:
-            if not (convert_from_path and pytesseract):
-                logger.warning(
-                    "Dependencias de OCR ausentes para PDF %s", path
-                )
-            else:
-                try:
-
-                    pages = convert_from_path(path, poppler_path=POPPLER_PATH)
-                    logger.debug("%d paginas convertidas para OCR de %s", len(pages), path)
-                    for img in pages:
-                        ocr_text = pytesseract.image_to_string(img, lang='por')
-                        if ocr_text and ocr_text.strip():
-
-                            text_parts.append(ocr_text)
-                except Exception as e:
-                    logger.error("Erro ao executar OCR em %s: %s", path, e)
-
-        return '\n'.join(text_parts)
+        return extract_text_from_pdf(path)
 
     # outros formatos não suportados
     return ''
+
+
+def extract_text_from_pdf(path: str) -> str:
+    """Extrai texto de PDFs, usando OCR quando necessario."""
+    text_parts = []
+
+    if not fitz:
+        logger.warning("PyMuPDF nao disponivel para %s", path)
+        return ""
+
+    try:
+        doc = fitz.open(path)
+    except Exception as e:  # pragma: no cover - erro ao abrir
+        logger.error("Erro ao abrir PDF %s: %s", path, e)
+        return ""
+
+    ocr_engine = get_ocr_engine()
+    for page in doc:
+        try:
+            text = page.get_text().strip()
+        except Exception:  # pragma: no cover
+            text = ""
+        if text:
+            text_parts.append(text)
+        else:
+            if not (ocr_engine and np and Image):
+                logger.warning("OCR indisponivel para pagina em %s", path)
+                continue
+            try:
+                pix = page.get_pixmap(dpi=200)
+                img = Image.open(BytesIO(pix.tobytes("png")))
+                arr = np.array(img)
+                result = ocr_engine.ocr(arr, cls=True)
+                for res in result:
+                    if res and len(res) > 1:
+                        text_parts.append(res[1][0])
+            except Exception as e:  # pragma: no cover
+                logger.error("Erro no OCR da pagina do PDF %s: %s", path, e)
+    doc.close()
+    return "\n".join(text_parts)
 
 import secrets
 import string

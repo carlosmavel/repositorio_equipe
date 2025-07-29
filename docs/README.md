@@ -29,7 +29,7 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
 * **Frontend:** HTML5, CSS3 (Bootstrap 5), JavaScript (Vanilla JS), Quill.js
 * **Banco de Dados:** PostgreSQL
 * **ORM / Migrations:** SQLAlchemy, Alembic (via Flask-SQLAlchemy, Flask-Migrate)
-* **Principais Bibliotecas:** Werkzeug, Jinja2, psycopg2-binary, python-docx, openpyxl, xlrd, odfpy, PyPDF2, Bleach, python-dotenv.
+* **Principais Bibliotecas:** Werkzeug, Jinja2, psycopg2-binary, python-docx, openpyxl, xlrd, odfpy, PyMuPDF, PaddleOCR, Bleach, python-dotenv.
 
 ## Pré-requisitos
 
@@ -38,7 +38,6 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 * Git
 * PostgreSQL (versão 12 ou superior)
 * (Opcional, mas recomendado para gerenciamento do DB) pgAdmin 4
-* Tesseract OCR instalado no sistema
 
 ## Como Rodar o Projeto (Desenvolvimento)
 
