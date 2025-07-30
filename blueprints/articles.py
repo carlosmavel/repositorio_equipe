@@ -577,7 +577,7 @@ def pesquisar():
                         Attachment.content.ilike(like)
                     )
                 )
-                .subquery()
+                .scalar_subquery()
             )
 
             query = query.filter(
