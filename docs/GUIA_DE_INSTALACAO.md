@@ -72,7 +72,7 @@ Após instalar o PostgreSQL, vamos criar um banco de dados dedicado e um usuári
         * **Role Name:** Escolha um nome para o usuário da aplicação, por exemplo: `orquetask_user`
     * Na aba **"Definition"**:
         * **Password:** **DIGITE UMA SENHA NOVA, FORTE E ÚNICA AQUI.** Não use senhas fáceis ou reutilizadas.
-        * **ANOTE ESTA SENHA em um local seguro.** Você precisará dela no Passo 9 para configurar a variável de ambiente `DATABASE_URI`.
+        * **ANOTE ESTA SENHA em um local seguro.** Você precisará dela no Passo 10 para configurar a variável de ambiente `DATABASE_URI`.
     * Na aba **"Privileges"**:
         * **Can login?:** Marque como `Yes`.
         * Garanta que as outras opções de superusuário (Create DB, Superuser, etc.) estejam como `No`.
@@ -105,7 +105,33 @@ Após instalar o PostgreSQL, vamos criar um banco de dados dedicado e um usuári
         ```
     * **Explicação Breve dos `GRANT`s:** Esses comandos permitem que o `orquetask_user` se conecte ao banco, use o schema principal, realize operações de leitura e escrita nas tabelas, utilize as sequências para IDs automáticos e crie novas tabelas quando você rodar as migrações do Alembic. Ele não terá permissão para deletar o banco ou tabelas que não criou, ou realizar ações de superusuário.
 
-## 6. Obter o Código do Projeto (Clonar o Repositório)
+## 6. Instalação do Poppler e do Tesseract (Dependências de OCR)
+
+Para que a funcionalidade de extração de texto de PDFs funcione corretamente é
+necessário instalar dois programas adicionais:
+
+1. **Poppler** – conjunto de utilitários para manipulação de PDF usado pelo
+   `pdf2image`.
+   * Baixe a versão para Windows em:
+     [github.com/oschwartz10612/poppler-windows/releases](https://github.com/oschwartz10612/poppler-windows/releases)
+   * Extraia o arquivo ZIP para um diretório de sua preferência, por exemplo
+     `C:\Poppler`.
+
+2. **Tesseract OCR** – mecanismo de reconhecimento óptico de caracteres utilizado
+   pelo `pytesseract`.
+   * Baixe o instalador em:
+     [github.com/UB-Mannheim/tesseract/wiki](https://github.com/UB-Mannheim/tesseract/wiki)
+   * Execute o instalador e mantenha a opção de adicionar o Tesseract ao PATH.
+
+Após instalar ambos, **adicione as pastas `bin` do Poppler e do Tesseract à
+variável de ambiente `PATH` do Windows** (veja o Passo 10 para detalhes de como
+editar variáveis de ambiente). Isso permitirá que o `pdf2image` encontre o
+`pdftoppm.exe` do Poppler e que o `pytesseract` localize o executável do
+Tesseract.
+
+---
+
+## 7. Obter o Código do Projeto (Clonar o Repositório)
 1.  Abra o **Git Bash** (ou outro terminal com Git configurado).
 2.  Navegue até a pasta onde você deseja salvar os seus projetos (ex: `cd C:/Users/SeuUsuario/Documents/Projetos`).
 3.  Clone o repositório do Orquetask (substitua pela URL correta do seu repositório):
@@ -130,7 +156,7 @@ comando:
 O script não define as variáveis de ambiente, portanto siga a próxima seção para
 configurá-las corretamente.
 
-## 7. Configurar o Ambiente Virtual Python (venv)
+## 8. Configurar o Ambiente Virtual Python (venv)
 1.  Dentro da pasta raiz do projeto, no terminal:
     ```bash
     python -m venv venv
@@ -141,13 +167,13 @@ configurá-las corretamente.
     * **No Git Bash / CMD:** `source venv/Scripts/activate` ou `venv\Scripts\activate.bat`
     * O prompt do seu terminal deve mudar, mostrando `(venv)` no início.
 
-## 8. Instalar as Dependências Python do Projeto
+## 9. Instalar as Dependências Python do Projeto
 Com o ambiente virtual (`venv`) ativo:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 9. Configurar Variáveis de Ambiente Essenciais (no Windows)
+## 10. Configurar Variáveis de Ambiente Essenciais (no Windows)
 Para que o Orquetask funcione corretamente e de forma segura, é crucial configurar algumas **variáveis de ambiente** no seu sistema Windows. Essas variáveis permitem que a aplicação acesse configurações importantes sem que elas precisem estar escritas diretamente no código.
 
 Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha os valores de `SENDGRID_API_KEY`, `EMAIL_FROM`, `SECRET_KEY` e `DATABASE_URI` com suas próprias configurações. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
@@ -204,7 +230,7 @@ O arquivo `app.py` do Orquetask está programado para ler essas variáveis do se
 
 Com essas variáveis corretamente configuradas, o Orquetask estará pronto para rodar usando configurações seguras e específicas do seu setup.
 
-## 10. Aplicar as Migrações do Banco de Dados
+## 11. Aplicar as Migrações do Banco de Dados
 Com o ambiente virtual ativo e as variáveis de ambiente configuradas (especialmente a `DATABASE_URI` correta):
 ```bash
 flask db upgrade
@@ -213,13 +239,13 @@ Este comando executará todos os scripts de migração na pasta migrations/versi
 
 > **Observação:** se você adicionar uma nova coluna marcada como `nullable=True` em modelos existentes (como o `User`), remova previamente os registros ou deixe o campo temporariamente como `nullable=False` para rodar o `flask db upgrade`. Após a migração, altere o campo no banco para aceitar valores nulos, se desejar.
 
-## 11. (Opcional, mas Recomendado) Popular Dados de Exemplo
+## 12. (Opcional, mas Recomendado) Popular Dados de Exemplo
 Execute o script abaixo para criar funções, organização, usuários e artigos básicos:
 ```bash
 python seed.py
 ```
 
-## 12. Rodar a Aplicação Flask
+## 13. Rodar a Aplicação Flask
 Finalmente! Para rodar o servidor de desenvolvimento do Flask:
 ```bash
 flask run (ou `python -m flask run`)
@@ -228,7 +254,7 @@ O terminal deverá exibir mensagens indicando que o servidor está rodando, gera
 
 Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá ver a página de login do Orquetask ou ser redirecionado para ela.
 
-## 13. Solução de Problemas Comuns no Windows
+## 14. Solução de Problemas Comuns no Windows
 
 * **Comandos não encontrados (`python`, `pip`, `flask`, `git`):**
     * Verifique se o software correspondente foi adicionado ao **PATH** do sistema durante sua instalação.
@@ -249,7 +275,7 @@ Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá 
 
 ---
 
-## 14. Configurar Envio de E-mails com SendGrid (Opcional)
+## 15. Configurar Envio de E-mails com SendGrid (Opcional)
 
 Para que o Orquetask possa enviar notificações por e-mail é possível utilizar o
 serviço **SendGrid**. Os passos abaixo cobrem a configuração mínima para testes:
