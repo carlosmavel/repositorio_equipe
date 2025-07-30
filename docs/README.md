@@ -38,6 +38,11 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 * Git
 * PostgreSQL (versão 12 ou superior)
 * (Opcional, mas recomendado para gerenciamento do DB) pgAdmin 4
+* Poppler (utilitário para conversão de PDFs) – [download](https://github.com/oschwartz10612/poppler-windows/releases)
+* Tesseract OCR – [download](https://github.com/UB-Mannheim/tesseract/wiki)
+
+Consulte o passo a passo de instalação dessas dependências e a configuração do
+`PATH` em nosso [Guia de Instalação](./GUIA_DE_INSTALACAO.md#6-instalacao-do-poppler-e-do-tesseract-dependencias-de-ocr).
 
 ## Como Rodar o Projeto (Desenvolvimento)
 
