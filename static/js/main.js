@@ -105,6 +105,57 @@ document.addEventListener("DOMContentLoaded", function () {
       // alterados dinamicamente (o que não é o caso agora, mas não prejudica).
       attachClickListeners();
     });
+
+    const menu = document.getElementById("notificationMenu");
+    if (menu) {
+      let offset = menu.querySelectorAll(".notification-link").length;
+      const limit = 10;
+      let loading = false;
+      let endReached = false;
+
+      function appendNotifications(items) {
+        if (items.length === 0) {
+          endReached = true;
+          return;
+        }
+        for (const n of items) {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.href = n.url;
+          a.textContent = n.message;
+          a.className = "dropdown-item notification-link fw-bold";
+          a.dataset.id = n.id;
+          li.appendChild(a);
+          menu.appendChild(li);
+        }
+        refreshLinks();
+        styleLinks();
+        attachClickListeners();
+      }
+
+      function loadMore() {
+        if (loading || endReached) return;
+        loading = true;
+        fetch(`/api/notifications?offset=${offset}&limit=${limit}`)
+          .then((r) => r.json())
+          .then((data) => {
+            appendNotifications(data);
+            offset += data.length;
+            updateBadge();
+          })
+          .finally(() => {
+            loading = false;
+          });
+      }
+
+      menu.addEventListener("scroll", () => {
+        if (
+          menu.scrollTop + menu.clientHeight >= menu.scrollHeight - 5
+        ) {
+          loadMore();
+        }
+      });
+    }
   }
 
   // --- NOVA FUNÇÃO GLOBAL PARA MARCAR NOTIFICAÇÃO PELA URL ---

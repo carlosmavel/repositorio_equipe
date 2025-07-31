@@ -147,7 +147,7 @@
                             <i class="bi bi-bell-fill fs-5"></i>
                             <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; transform: translate(-100%, 40%) !important; display: none;" data-server-count="{{ notificacoes }}"></span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end" id="notificationMenu" aria-labelledby="notificationDropdown">
                             {% if notificacoes_list %}{% for n in notificacoes_list %}<li><a href="{{ n.url }}" class="dropdown-item notification-link fw-bold" data-id="{{ n.id }}">{{ n.message }}</a></li>{% endfor %}
                             {% else %}<li><a class="dropdown-item text-muted" href="#">Nenhuma notificação</a></li>{% endif %}
                         </ul>

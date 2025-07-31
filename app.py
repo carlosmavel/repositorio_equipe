@@ -217,6 +217,31 @@ def send_password_email(user: User, action: str) -> None:
     send_email(user.email, 'Definição de Senha', html)
 
 # -------------------------------------------------------------------------
+# NOTIFICAÇÕES - API
+# -------------------------------------------------------------------------
+@app.route('/api/notifications')
+def api_notifications():
+    """Retorna notificações paginadas para o usuário atual."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 10))
+    notifs = (
+        Notification.query
+        .filter_by(user_id=session['user_id'], lido=False)
+        .order_by(Notification.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return jsonify([
+        {'id': n.id, 'message': n.message, 'url': n.url}
+        for n in notifs
+    ])
+
+# -------------------------------------------------------------------------
 # DECORADORES
 # -------------------------------------------------------------------------
 try:

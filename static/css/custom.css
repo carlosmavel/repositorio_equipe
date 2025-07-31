@@ -131,3 +131,9 @@ body > .container {
   justify-content: center;
   z-index: 1055;
 }
+
+/* Área de notificações com rolagem */
+#notificationMenu {
+  max-height: 300px;
+  overflow-y: auto;
+}
