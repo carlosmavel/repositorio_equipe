@@ -241,6 +241,20 @@ def api_notifications():
         for n in notifs
     ])
 
+
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+def api_notification_mark_read(notif_id):
+    """Marca uma notificação específica como lida."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+    notif = Notification.query.filter_by(id=notif_id, user_id=session['user_id']).first()
+    if not notif:
+        return jsonify({'error': 'not found'}), 404
+    if not notif.lido:
+        notif.lido = True
+        db.session.commit()
+    return jsonify({'success': True})
+
 # -------------------------------------------------------------------------
 # DECORADORES
 # -------------------------------------------------------------------------

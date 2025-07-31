@@ -71,9 +71,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const c = parseInt(badge.dataset.serverCount, 10);
         if (c > 0) {
           badge.dataset.serverCount = String(c - 1);
-
         }
       }
+      // Persiste no servidor
+      fetch(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+
     }
     if (linkElement) {
       linkElement.classList.remove("fw-bold");
