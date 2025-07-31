@@ -257,14 +257,16 @@ def inject_notificacoes():
     if 'user_id' in session: # Usar user_id é mais seguro que username para buscar no banco
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
-            notifs = (Notification.query
-                      .filter_by(user_id=user.id, lido=False)
-                      .order_by(Notification.created_at.desc())
-                      .limit(10)
-                      .all())
+            q = Notification.query.filter_by(user_id=user.id, lido=False)
+            total_unread = q.count()
+            notifs = (
+                q.order_by(Notification.created_at.desc())
+                 .limit(10)
+                 .all()
+            )
             return {
-                'notificacoes': len(notifs), # Passa a contagem diretamente
-                'notificacoes_list': notifs
+                'notificacoes': total_unread,
+                'notificacoes_list': notifs,
             }
     return {'notificacoes': 0, 'notificacoes_list': []}
 
