@@ -304,3 +304,9 @@ serviço **SendGrid**. Os passos abaixo cobrem a configuração mínima para tes
 
 Com essas configurações, a função de envio de e-mails presente em `utils.py`
 conseguirá utilizar o serviço do SendGrid sempre que necessário.
+
+## 16. Implantação em Produção
+
+Após concluir as etapas de instalação e configuração, consulte o
+[Guia de Implantação](./DEPLOY.md) para instruções detalhadas de como colocar o
+Orquetask em um servidor de produção.
