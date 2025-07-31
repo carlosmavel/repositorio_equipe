@@ -29,3 +29,4 @@ sendgrid==6.10.0
 pytest==8.1.1
 pdf2image==1.17.0
 pytesseract==0.3.10
+opencv-python==4.10.0.82

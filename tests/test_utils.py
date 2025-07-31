@@ -22,9 +22,11 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy.pdf"
     pdf_file.write_bytes(b"%PDF-1.4")
 
-    img1 = object()
-    img2 = object()
-    monkeypatch.setattr("utils.convert_from_path", lambda p, dpi=200: [img1, img2])
+    from PIL import Image
+
+    img1 = Image.new("RGB", (10, 10), color="white")
+    img2 = Image.new("RGB", (10, 10), color="black")
+    monkeypatch.setattr("utils.convert_from_path", lambda p, dpi=300: [img1, img2])
 
     calls = []
 
@@ -33,7 +35,7 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
         return "Texto1" if len(calls) == 1 else "Texto2"
 
     monkeypatch.setattr("utils.pytesseract", types.SimpleNamespace(image_to_string=dummy_image_to_string))
-    monkeypatch.setattr("utils.Image", object())
+    monkeypatch.setattr("utils.preprocess_image", lambda img, **k: img)
 
     text = extract_text(str(pdf_file))
 

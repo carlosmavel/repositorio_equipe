@@ -12,6 +12,12 @@ from odf import opendocument
 from odf.text import P
 import logging
 try:
+    import cv2
+    import numpy as np
+except Exception:  # pragma: no cover
+    cv2 = None
+    np = None
+try:
     from pdf2image import convert_from_path
 except Exception:  # pragma: no cover
     convert_from_path = None
@@ -129,8 +135,36 @@ def extract_text(path: str) -> str:
     return ''
 
 
+def preprocess_image(img, debug_dir=None, page_idx=0):
+    """Aplica etapas de pre-processamento utilizando OpenCV."""
+    if not (cv2 and np):  # pragma: no cover - dependencias ausentes
+        return img
+
+    img_array = np.array(img)
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_gray.png"), gray)
+
+    sharp = cv2.addWeighted(gray, 1.5, cv2.GaussianBlur(gray, (0, 0), 1.0), -0.5, 0)
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_sharp.png"), sharp)
+
+    _, binary = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_binary.png"), binary)
+
+    return Image.fromarray(binary)
+
+
+def extract_text_from_image(image, lang="por") -> str:
+    """Realiza OCR na imagem usando pytesseract."""
+    if not pytesseract:  # pragma: no cover - dependencias ausentes
+        return ""
+    return pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 6")
+
+
 def extract_text_from_pdf(path: str) -> str:
-    """Extrai texto de PDFs usando pdf2image + pytesseract."""
+    """Extrai texto de PDFs usando pdf2image, OpenCV e pytesseract."""
     text_parts = []
 
     if not (convert_from_path and Image and pytesseract):
@@ -138,17 +172,22 @@ def extract_text_from_pdf(path: str) -> str:
         return ""
 
     try:
-        images = convert_from_path(path, dpi=200)
+        images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
         return ""
 
-    for img in images:
+    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
+    os.makedirs(debug_dir, exist_ok=True)
+
+    for i, img in enumerate(images, start=1):
         try:
-            text = pytesseract.image_to_string(img, lang="por")
+            pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
+            text = extract_text_from_image(pre, lang="por")
             text_parts.append(text)
+            logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover
-            logger.error("Erro no OCR da pagina do PDF %s: %s", path, e)
+            logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
 
     return "\n".join(text_parts)
 
