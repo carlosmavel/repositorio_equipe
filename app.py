@@ -241,6 +241,20 @@ def api_notifications():
         for n in notifs
     ])
 
+
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+def api_notification_mark_read(notif_id):
+    """Marca uma notificação específica como lida."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+    notif = Notification.query.filter_by(id=notif_id, user_id=session['user_id']).first()
+    if not notif:
+        return jsonify({'error': 'not found'}), 404
+    if not notif.lido:
+        notif.lido = True
+        db.session.commit()
+    return jsonify({'success': True})
+
 # -------------------------------------------------------------------------
 # DECORADORES
 # -------------------------------------------------------------------------
@@ -257,14 +271,16 @@ def inject_notificacoes():
     if 'user_id' in session: # Usar user_id é mais seguro que username para buscar no banco
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
-            notifs = (Notification.query
-                      .filter_by(user_id=user.id, lido=False)
-                      .order_by(Notification.created_at.desc())
-                      .limit(10)
-                      .all())
+            q = Notification.query.filter_by(user_id=user.id, lido=False)
+            total_unread = q.count()
+            notifs = (
+                q.order_by(Notification.created_at.desc())
+                 .limit(10)
+                 .all()
+            )
             return {
-                'notificacoes': len(notifs), # Passa a contagem diretamente
-                'notificacoes_list': notifs
+                'notificacoes': total_unread,
+                'notificacoes_list': notifs,
             }
     return {'notificacoes': 0, 'notificacoes_list': []}
 
