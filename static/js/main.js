@@ -49,10 +49,12 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateBadge() {
     if (!badge) return;
     // Não precisa chamar refreshLinks() aqui se já foi chamado antes de styleLinks e updateBadge
-    const unread = links.reduce(
+    const serverCount = parseInt(badge.dataset.serverCount || '0', 10);
+    const domCount = links.reduce(
       (acc, link) => acc + (readIds.includes(link.dataset.id) ? 0 : 1),
       0
     );
+    const unread = Math.max(serverCount, domCount);
     badge.style.display = unread > 0 ? "inline-block" : "none";
     badge.textContent = unread;
   }
@@ -62,6 +64,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!readIds.includes(notificationId)) {
       readIds.push(notificationId);
       localStorage.setItem(READ_KEY, JSON.stringify(readIds));
+      if (badge && badge.dataset.serverCount) {
+        const c = parseInt(badge.dataset.serverCount, 10);
+        if (c > 0) {
+          badge.dataset.serverCount = String(c - 1);
+        }
+      }
     }
     if (linkElement) {
       linkElement.classList.remove("fw-bold");
