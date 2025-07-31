@@ -102,6 +102,7 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 * **[Guia de Instalação Completo](./GUIA_DE_INSTALACAO.md)**
 * **[Documentação Geral do Sistema](./DOCUMENTACAO_DO_SISTEMA.md)**
 * **[Tarefas de Revisão e Testes](./TAREFAS_REVISAO_SISTEMA.md)**
+* **[Guia de Implantação em Produção](./DEPLOY.md)**
 
 ## Estrutura do Projeto (Simplificada)
 ```text

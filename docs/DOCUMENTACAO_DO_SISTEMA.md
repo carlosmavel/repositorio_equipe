@@ -200,6 +200,9 @@ Uma visão geral dos principais modelos de dados implementados e planejados:
     * Desenvolvimento do Kanban de OS para visualização de fluxo.
 * **Fase 4 (Planejada - Expansão e Colaboração):**
     * Implementação da Central de Comunicação da Empresa (Mural, Notícias de Setor, Classificados).
-    * (Opcional, muito avançado) Desenvolvimento de um Comunicador Interno básico (Chat).
+* (Opcional, muito avançado) Desenvolvimento de um Comunicador Interno básico (Chat).
 
 ---
+
+Para informações de como implantar o Orquetask em produção, consulte o
+[Guia de Implantação](./DEPLOY.md).
