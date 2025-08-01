@@ -21,10 +21,34 @@ def run():
         db.session.add(processo)
         db.session.flush()
 
-        # assume que existam cargos e setores com ids 1 para exemplo
-        etapa_rh = EtapaProcesso(nome="RH - Cadastro", ordem=1, processo=processo, cargo_id=1, obrigatoria=True)
-        etapa_ti = EtapaProcesso(nome="TI - Acesso", ordem=2, processo=processo, cargo_id=1, obrigatoria=True)
-        etapa_gestor = EtapaProcesso(nome="Gestor - Boas-vindas", ordem=3, processo=processo, cargo_id=1, obrigatoria=True)
+        # obtém um cargo existente ou cria um genérico
+        cargo = Cargo.query.first()
+        if not cargo:
+            cargo = Cargo(nome="Cargo Padrão", ativo=True)
+            db.session.add(cargo)
+            db.session.flush()
+
+        etapa_rh = EtapaProcesso(
+            nome="RH - Cadastro",
+            ordem=1,
+            processo=processo,
+            cargo_id=cargo.id,
+            obrigatoria=True,
+        )
+        etapa_ti = EtapaProcesso(
+            nome="TI - Acesso",
+            ordem=2,
+            processo=processo,
+            cargo_id=cargo.id,
+            obrigatoria=True,
+        )
+        etapa_gestor = EtapaProcesso(
+            nome="Gestor - Boas-vindas",
+            ordem=3,
+            processo=processo,
+            cargo_id=cargo.id,
+            obrigatoria=True,
+        )
 
         db.session.add_all([etapa_rh, etapa_ti, etapa_gestor])
         db.session.flush()

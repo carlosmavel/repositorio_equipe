@@ -1,4 +1,4 @@
-"""add process tables and notification type
+"""add process tables
 
 Revision ID: 09981b61c779
 Revises: fa23b0c1c9d0
@@ -16,11 +16,7 @@ depends_on = None
 
 
 def upgrade():
-    # 1) add column tipo to notification
-    with op.batch_alter_table('notification') as batch_op:
-        batch_op.add_column(sa.Column('tipo', sa.String(length=50), nullable=False, server_default='geral'))
-
-    # 2) create processo table
+    # 1) create processo table
     op.create_table(
         'processo',
         sa.Column('id', sa.String(length=36), primary_key=True),
@@ -29,7 +25,7 @@ def upgrade():
         sa.Column('ativo', sa.Boolean(), nullable=False, server_default='true'),
     )
 
-    # 3) etapa_processo table
+    # 2) etapa_processo table
     op.create_table(
         'etapa_processo',
         sa.Column('id', sa.String(length=36), primary_key=True),
@@ -41,7 +37,7 @@ def upgrade():
         sa.Column('obrigatoria', sa.Boolean(), nullable=False, server_default='true'),
     )
 
-    # 4) campo_etapa table
+    # 3) campo_etapa table
     op.create_table(
         'campo_etapa',
         sa.Column('id', sa.String(length=36), primary_key=True),
@@ -53,7 +49,7 @@ def upgrade():
         sa.Column('dica', sa.String(length=255), nullable=True),
     )
 
-    # 5) resposta_etapa_os table
+    # 4) resposta_etapa_os table
     op.create_table(
         'resposta_etapa_os',
         sa.Column('id', sa.String(length=36), primary_key=True),
@@ -70,5 +66,3 @@ def downgrade():
     op.drop_table('campo_etapa')
     op.drop_table('etapa_processo')
     op.drop_table('processo')
-    with op.batch_alter_table('notification') as batch_op:
-        batch_op.drop_column('tipo')
