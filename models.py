@@ -3,6 +3,7 @@ from sqlalchemy.sql import func
 from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey, Date, Boolean, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
+import uuid
 
 try:
     from .database import db  # type: ignore  # pragma: no cover
@@ -392,6 +393,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Para quem é a notificação
     message = db.Column(db.String(255), nullable=False)
     url = db.Column(db.String(255), nullable=False) # nullable=False conforme última migration
+    tipo = db.Column(db.String(50), nullable=False, server_default='geral')
     lido = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -399,5 +401,74 @@ class Notification(db.Model):
     
     def __repr__(self):
         return f"<Notification to_user_id={self.user_id} message='{self.message[:30]}...'>"
+
+# --- MODELOS DE PROCESSOS ---
+
+class Processo(db.Model):
+    __tablename__ = 'processo'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    nome = db.Column(db.String(255), nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+
+    etapas = db.relationship('EtapaProcesso', back_populates='processo', lazy='dynamic')
+
+    def __repr__(self):
+        return f"<Processo {self.nome}>"
+
+
+class EtapaProcesso(db.Model):
+    __tablename__ = 'etapa_processo'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    nome = db.Column(db.String(255), nullable=False)
+    ordem = db.Column(db.Integer, nullable=False)
+    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
+    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=True)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    obrigatoria = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+
+    processo = db.relationship('Processo', back_populates='etapas')
+    cargo = db.relationship('Cargo')
+    setor = db.relationship('Setor')
+    campos = db.relationship('CampoEtapa', back_populates='etapa', lazy='dynamic')
+
+    def __repr__(self):
+        return f"<EtapaProcesso {self.nome} ({self.ordem})>"
+
+
+class CampoEtapa(db.Model):
+    __tablename__ = 'campo_etapa'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    etapa_id = db.Column(db.String(36), db.ForeignKey('etapa_processo.id'), nullable=False)
+    nome = db.Column(db.String(255), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    opcoes = db.Column(db.JSON, nullable=True)
+    dica = db.Column(db.String(255), nullable=True)
+
+    etapa = db.relationship('EtapaProcesso', back_populates='campos')
+
+    def __repr__(self):
+        return f"<CampoEtapa {self.nome} ({self.tipo})>"
+
+
+class RespostaEtapaOS(db.Model):
+    __tablename__ = 'resposta_etapa_os'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    ordem_servico_id = db.Column(db.String(36), nullable=False)
+    campo_etapa_id = db.Column(db.String(36), db.ForeignKey('campo_etapa.id'), nullable=False)
+    valor = db.Column(db.Text, nullable=True)
+    preenchido_por = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    data_hora = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    campo = db.relationship('CampoEtapa')
+    usuario = db.relationship('User')
+
+    def __repr__(self):
+        return f"<RespostaEtapaOS {self.ordem_servico_id} campo={self.campo_etapa_id}>"
 
 # --- FIM DOS MODELOS ---
