@@ -5,7 +5,7 @@ Este documento descreve os passos para implantar a aplicação **OrqueTask** em 
 Esta versão inclui o módulo **Processos**, que define fluxos compostos por etapas e campos dinâmicos. Certifique-se de aplicar as migrações mais recentes antes de executar o sistema.
 
 ## 1. Pré-requisitos
-- Python 3.9 ou superior
+ - Python 3.11 (ou 3.10) instalado
 - Git
 - PostgreSQL 12 ou superior (recomenda-se o uso do pgAdmin para administração)
 - Poppler para conversão de PDFs

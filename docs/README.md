@@ -34,7 +34,7 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
 ## Pré-requisitos
 
 Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter instalado:
-* Python (versão 3.9 ou superior recomendado)
+* Python (versão 3.11 recomendada – 3.10 também é compatível)
 * Git
 * PostgreSQL (versão 12 ou superior)
 * (Opcional, mas recomendado para gerenciamento do DB) pgAdmin 4
@@ -74,6 +74,9 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
 3.  **Instale as dependências:**
     ```bash
     pip install -r requirements.txt
+    # Caso ocorra erro envolvendo NumPy ou lxml em Python 3.11,
+    # reinstale os pacotes compilados:
+    pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
     ```
 
 4.  **Configure o Banco de Dados PostgreSQL e Variáveis de Ambiente:**
@@ -85,6 +88,8 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     ```bash
     flask db upgrade
     ```
+    > A pasta `migrations/` já inclui uma revisão de merge para que o comando funcione
+    > em um repositório recém-clonado sem conflitos de cabeças.
     > Se suas migrações incluírem novas colunas com `nullable=True` em tabelas já existentes (ex.: `User`), remova os registros atuais ou defina o campo como `nullable=False` temporariamente para que a migração execute sem erros. Depois do `flask db upgrade`, ajuste o campo para permitir nulos, se for o caso.
 
 6.  **(Opcional) Popule dados de exemplo (funções, organização, usuários e artigos):**

@@ -74,7 +74,7 @@ O **Orquetask** é um sistema web integrado, desenvolvido em Python com o framew
 ## 3. Arquitetura e Tecnologias
 
 * **Backend:**
-    * Linguagem: Python (3.9+)
+    * Linguagem: Python (3.11+)
     * Framework: Flask
 * **Frontend:**
     * HTML5, CSS3, JavaScript (Vanilla)
