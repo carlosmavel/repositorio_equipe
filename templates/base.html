@@ -200,46 +200,45 @@
                     {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
                     {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
                         <li class="nav-item">
-                            <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_') else '' }} {{ 'collapsed' if not request.endpoint.startswith('admin_') }}"
+                            <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_' in request.endpoint else '' }} {{ 'collapsed' if 'admin_' not in request.endpoint }}"
                             data-bs-toggle="collapse" href="#collapseAdministracao" role="button"
-                            aria-expanded="{{ 'true' if request.endpoint.startswith('admin_') else 'false' }}"
+                            aria-expanded="{{ 'true' if 'admin_' in request.endpoint else 'false' }}"
                             aria-controls="collapseAdministracao">
                                 <span><i class="bi bi-gear-fill me-2"></i> Administração</span>
                                 <i class="bi bi-chevron-down small"></i>
                             </a>
-                            <div class="collapse {{ 'show' if request.endpoint.startswith('admin_') }}" id="collapseAdministracao">
+                            <div class="collapse {{ 'show' if 'admin_' in request.endpoint }}" id="collapseAdministracao">
                                 <ul class="nav flex-column ps-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_instituicoes') or request.endpoint.startswith('admin_estabelecimentos') or request.endpoint.startswith('admin_setores') or request.endpoint.startswith('admin_celulas') or request.endpoint.startswith('admin_cargos') else '' }} {{ 'collapsed' if not (request.endpoint.startswith('admin_instituicoes') or request.endpoint.startswith('admin_estabelecimentos') or request.endpoint.startswith('admin_setores') or request.endpoint.startswith('admin_celulas') or request.endpoint.startswith('admin_cargos')) }}"
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else '' }} {{ 'collapsed' if not ('admin_instituicoes' in request.endpoint or 'admin_estabelecimentos' in request.endpoint or 'admin_setores' in request.endpoint or 'admin_celulas' in request.endpoint or 'admin_cargos' in request.endpoint) }}"
                                         data-bs-toggle="collapse" href="#collapseCadastrosOrgSub" role="button"
-                                        aria-expanded="{{ 'true' if request.endpoint.startswith('admin_instituicoes') or request.endpoint.startswith('admin_estabelecimentos') or request.endpoint.startswith('admin_setores') or request.endpoint.startswith('admin_celulas') or request.endpoint.startswith('admin_cargos') else 'false' }}"
+                                        aria-expanded="{{ 'true' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else 'false' }}"
                                         aria-controls="collapseCadastrosOrgSub">
                                             <i class="bi bi-buildings-fill me-2"></i> Cadastros Base
                                             <i class="bi bi-chevron-down small ms-auto"></i>
                                         </a>
-                                        <div class="collapse {{ 'show' if request.endpoint.startswith('admin_instituicoes') or request.endpoint.startswith('admin_estabelecimentos') or request.endpoint.startswith('admin_setores') or request.endpoint.startswith('admin_celulas') or request.endpoint.startswith('admin_cargos') else '' }}" id="collapseCadastrosOrgSub">
+                                        <div class="collapse {{ 'show' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else '' }}" id="collapseCadastrosOrgSub">
                                             <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_cargos' else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_celulas' else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_estabelecimentos' else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_instituicoes' else '' }}" href="{{ url_for('admin_instituicoes') }}"><i class="bi bi-bank me-2"></i> Instituições</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_setores' else '' }}" href="{{ url_for('admin_setores') }}"><i class="bi bi-tags-fill me-2"></i> Setores</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_estabelecimentos' in request.endpoint else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_instituicoes' in request.endpoint else '' }}" href="{{ url_for('admin_instituicoes') }}"><i class="bi bi-bank me-2"></i> Instituições</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_setores') }}"><i class="bi bi-tags-fill me-2"></i> Setores</a></li>
                                             </ul>
                                         </div>
                                     </li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint.startswith('admin_processos') or request.endpoint.startswith('admin_etapas') or request.endpoint.startswith('admin_campos') else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Processos</a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint.startswith('admin_usuarios') else '' }} {{ 'collapsed' if not request.endpoint.startswith('admin_usuarios') }}"
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_usuarios' in request.endpoint else '' }} {{ 'collapsed' if 'admin_usuarios' not in request.endpoint }}"
                                         data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button"
-                                        aria-expanded="{{ 'true' if request.endpoint.startswith('admin_usuarios') else 'false' }}"
+                                        aria-expanded="{{ 'true' if 'admin_usuarios' in request.endpoint else 'false' }}"
                                         aria-controls="collapseSegurancaSub">
                                             <i class="bi bi-shield-lock-fill me-2"></i> Segurança
                                             <i class="bi bi-chevron-down small ms-auto"></i>
                                         </a>
-                                        <div class="collapse {{ 'show' if request.endpoint.startswith('admin_usuarios') else '' }}" id="collapseSegurancaSub">
+                                        <div class="collapse {{ 'show' if 'admin_usuarios' in request.endpoint else '' }}" id="collapseSegurancaSub">
                                             <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin_usuarios' else '' }}" href="{{ url_for('admin_usuarios') }}"><i class="bi bi-people-fill me-2"></i> Gerenciar Usuários</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_usuarios' in request.endpoint else '' }}" href="{{ url_for('admin_usuarios') }}"><i class="bi bi-people-fill me-2"></i> Gerenciar Usuários</a></li>
                                             </ul>
                                         </div>
                                     </li>
@@ -251,14 +250,14 @@
 
                     {# Bloco BIBLIOTECA #}
                     <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and not request.endpoint.startswith('admin_') else '' }} {{ 'collapsed' if not (request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and not request.endpoint.startswith('admin_')) }}"
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint else '' }} {{ 'collapsed' if not (request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint) }}"
                         data-bs-toggle="collapse" href="#collapseBiblioteca" role="button" 
-                        aria-expanded="{{ 'true' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and not request.endpoint.startswith('admin_') else 'false' }}" 
+                        aria-expanded="{{ 'true' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint else 'false' }}"
                         aria-controls="collapseBiblioteca">
                             <span><i class="bi bi-book-half me-2"></i> Biblioteca</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
-                        <div class="collapse {{ 'show' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and not request.endpoint.startswith('admin_') }}" id="collapseBiblioteca">
+                        <div class="collapse {{ 'show' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint }}" id="collapseBiblioteca">
                             <ul class="nav flex-column ps-3">
                                 {% if current_user.is_authenticated %}
                                     {% set codes = [
@@ -280,15 +279,20 @@
                                         {% endif %}
                                     {% endfor %}
                                     {% if ns.show %}
-                                        <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'aprovacao' else '' }}" href="{{ url_for('aprovacao') }}"><i class="bi bi-check2-square me-2"></i> Aprovação</a></li>
+                                        <li class="nav-item"><a class="nav-link {{ 'active' if 'aprovacao' in request.endpoint else '' }}" href="{{ url_for('aprovacao') }}"><i class="bi bi-check2-square me-2"></i> Aprovação</a></li>
                                     {% endif %}
                                 {% endif %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'meus_artigos' else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'novo_artigo' else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'pesquisar' else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'meus_artigos' in request.endpoint else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'novo_artigo' in request.endpoint else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'pesquisar' in request.endpoint else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
                             </ul>
                         </div>
                     </li>
+
+                    <hr class="my-2">
+
+                    {# Link para Processos #}
+                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_processos' in request.endpoint or 'admin_etapas' in request.endpoint or 'admin_campos' in request.endpoint else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Processos</a></li>
 
                     <hr class="my-2">
 
