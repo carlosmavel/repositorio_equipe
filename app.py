@@ -169,18 +169,21 @@ try:
     from .blueprints.admin import admin_bp
     from .blueprints.auth import auth_bp
     from .blueprints.articles import articles_bp
+    from .blueprints.processos import processos_bp
 except ImportError:  # pragma: no cover - fallback for direct execution
     from blueprints.admin import admin_bp
     from blueprints.auth import auth_bp
     from blueprints.articles import articles_bp
+    from blueprints.processos import processos_bp
 
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(articles_bp)
+app.register_blueprint(processos_bp)
 
 for rule in list(app.url_map.iter_rules()):
-    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.'):
+    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.'):
         app.add_url_rule(
             rule.rule,
             endpoint=rule.endpoint.split('.',1)[-1],

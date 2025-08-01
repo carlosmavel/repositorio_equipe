@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Admin - Etapas{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+        <h1 class="h2">Etapas do Processo: {{ processo.nome }}</h1>
+    </div>
+    <a href="{{ url_for('processos_bp.admin_processos') }}" class="btn btn-sm btn-outline-secondary mb-3"><i class="bi bi-arrow-left"></i> Voltar</a>
+    <ul class="nav nav-tabs" id="tabEtapa" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button>
+        </li>
+    </ul>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="tab-content" id="tabEtapaContent">
+                <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Etapas ({{ etapas|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if etapas %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Ordem</th>
+                                                <th>Nome</th>
+                                                <th>Cargo</th>
+                                                <th>Setor</th>
+                                                <th>Obrigatória</th>
+                                                <th style="width: 220px;" class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for etapa in etapas %}
+                                            <tr class="clickable-row" data-href="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id, edit_id=etapa.id) }}">
+                                                <td>{{ etapa.ordem }}</td>
+                                                <td>{{ etapa.nome }}</td>
+                                                <td>{{ etapa.cargo.nome if etapa.cargo else '-' }}</td>
+                                                <td>{{ etapa.setor.nome if etapa.setor else '-' }}</td>
+                                                <td>{% if etapa.obrigatoria %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-secondary">Não</span>{% endif %}</td>
+                                                <td class="text-end">
+                                                    <a href="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id) }}" class="btn btn-sm btn-outline-secondary me-1" title="Campos"><i class="bi bi-ui-checks-grid"></i></a>
+                                                    <a href="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id, edit_id=etapa.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                                    <form action="{{ url_for('processos_bp.admin_delete_etapa', etapa_id=etapa.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja remover esta etapa?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash-fill"></i></button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Nenhuma etapa cadastrada.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
+                    <h5 class="mb-3"><i class="bi bi-plus-circle-fill me-2"></i>Adicionar Etapa</h5>
+                    <form method="POST" action="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id) }}" novalidate class="compact-form">
+                        <div class="row mb-1">
+                            <div class="col-md-2">
+                                <label for="ordem" class="form-label">Ordem <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-sm" id="ordem" name="ordem" value="{{ request.form.get('ordem', '') }}" required>
+                            </div>
+                            <div class="col-md-10">
+                                <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" required maxlength="255">
+                            </div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-md-6">
+                                <label for="cargo_id" class="form-label">Cargo</label>
+                                <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
+                                    <option value="">-- Nenhum --</option>
+                                    {% for c in cargos %}
+                                        <option value="{{ c.id }}" {% if request.form.get('cargo_id') == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="setor_id" class="form-label">Setor</label>
+                                <select class="form-select form-select-sm" id="setor_id" name="setor_id">
+                                    <option value="">-- Nenhum --</option>
+                                    {% for s in setores %}
+                                        <option value="{{ s.id }}" {% if request.form.get('setor_id') == s.id|string %}selected{% endif %}>{{ s.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="obrigatoria_check" name="obrigatoria_check" checked>
+                            <label class="form-check-label" for="obrigatoria_check">Obrigatória</label>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar Etapa</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if etapa_editar %}
+    <div class="modal fade" id="modalEditarEtapa" tabindex="-1" aria-labelledby="modalEditarEtapaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarEtapaLabel">Editar Etapa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id) }}" novalidate class="compact-form">
+                        <input type="hidden" name="id_para_atualizar" value="{{ etapa_editar.id }}">
+                        <div class="row mb-1">
+                            <div class="col-md-2">
+                                <label for="edit_ordem" class="form-label">Ordem <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-sm" id="edit_ordem" name="ordem" value="{{ request.form.get('ordem', etapa_editar.ordem) }}" required>
+                            </div>
+                            <div class="col-md-10">
+                                <label for="edit_nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', etapa_editar.nome) }}" required maxlength="255">
+                            </div>
+                        </div>
+                        <div class="row mb-1">
+                            <div class="col-md-6">
+                                <label for="edit_cargo_id" class="form-label">Cargo</label>
+                                <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
+                                    <option value="">-- Nenhum --</option>
+                                    {% for c in cargos %}
+                                        <option value="{{ c.id }}" {% if (request.form.get('cargo_id', etapa_editar.cargo_id|string) == c.id|string) %}selected{% endif %}>{{ c.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_setor_id" class="form-label">Setor</label>
+                                <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id">
+                                    <option value="">-- Nenhum --</option>
+                                    {% for s in setores %}
+                                        <option value="{{ s.id }}" {% if (request.form.get('setor_id', etapa_editar.setor_id|string) == s.id|string) %}selected{% endif %}>{{ s.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="edit_obrigatoria_check" name="obrigatoria_check" {% if etapa_editar.obrigatoria %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_obrigatoria_check">Obrigatória</label>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}
+{% block extra_js %}
+{% if etapa_editar %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var modal = new bootstrap.Modal(document.getElementById('modalEditarEtapa'));
+        modal.show();
+    });
+</script>
+{% endif %}
+{% endblock %}
