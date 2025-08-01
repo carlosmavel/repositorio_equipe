@@ -84,7 +84,33 @@ admin_bp = Blueprint('admin_bp', __name__)
 @admin_bp.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    return render_template('admin/dashboard.html')
+    """Exibe o dashboard administrativo com estatísticas básicas."""
+    user_total = User.query.count()
+    users_active = User.query.filter_by(ativo=True).count()
+    users_inactive = user_total - users_active
+
+    status_counts = dict(
+        db.session.query(Article.status, func.count(Article.id))
+        .group_by(Article.status)
+        .all()
+    )
+    status_counts = {
+        (s.value if hasattr(s, "value") else s): status_counts.get(s, 0)
+        for s in ArticleStatus
+    }
+
+    notifications_unread = Notification.query.filter_by(lido=False).count()
+    notifications_read = Notification.query.filter_by(lido=True).count()
+
+    return render_template(
+        "admin/dashboard.html",
+        user_total=user_total,
+        users_active=users_active,
+        users_inactive=users_inactive,
+        article_status_counts=status_counts,
+        notifications_unread=notifications_unread,
+        notifications_read=notifications_read,
+    )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])
 @admin_required
