@@ -193,6 +193,157 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   // --- FIM DA NOVA FUNÇÃO GLOBAL ---
 
+  /* -------------------------------------------------------------
+   * Notificações de Ordens de Serviço
+   * ------------------------------------------------------------- */
+  const READ_KEY_OS = `readOsNotifications_${currentUser}`;
+  let readOsIds = JSON.parse(localStorage.getItem(READ_KEY_OS) || "[]");
+
+  const osBadge = document.getElementById("osNotificationBadge");
+  const osDropdownToggle = document.getElementById("osNotificationDropdown");
+  let osLinks = [];
+
+  function refreshOsLinks() {
+    osLinks = Array.from(document.querySelectorAll(".os-notification-link"));
+  }
+
+  function styleOsLinks() {
+    osLinks.forEach((link) => {
+      const id = link.dataset.id;
+      link.classList.toggle("fw-bold", !readOsIds.includes(id));
+    });
+  }
+
+  function updateOsBadge() {
+    if (!osBadge) return;
+
+    const serverCount = parseInt(osBadge.dataset.serverCount || '0', 10);
+    const domCount = osLinks.reduce(
+      (acc, link) => acc + (readOsIds.includes(link.dataset.id) ? 0 : 1),
+      0
+    );
+    const unread = Math.max(serverCount, domCount);
+    osBadge.style.display = unread > 0 ? "inline-block" : "none";
+    osBadge.textContent = unread;
+  }
+
+  function _markOsNotificationAsReadLogic(notificationId, linkElement) {
+    if (!readOsIds.includes(notificationId)) {
+      readOsIds.push(notificationId);
+      localStorage.setItem(READ_KEY_OS, JSON.stringify(readOsIds));
+      if (osBadge && osBadge.dataset.serverCount) {
+        const c = parseInt(osBadge.dataset.serverCount, 10);
+        if (c > 0) {
+          osBadge.dataset.serverCount = String(c - 1);
+        }
+      }
+      fetch(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+    }
+    if (linkElement) {
+      linkElement.classList.remove("fw-bold");
+    } else {
+      const linkToStyle = osLinks.find(l => l.dataset.id === notificationId);
+      if (linkToStyle) {
+        linkToStyle.classList.remove("fw-bold");
+      }
+    }
+    updateOsBadge();
+  }
+
+  function attachOsClickListeners() {
+    osLinks.forEach((link) => {
+      if (link.dataset.listenerAttached === "true") return;
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const id = link.dataset.id;
+        _markOsNotificationAsReadLogic(id, link);
+        setTimeout(() => (window.location.href = link.href), 150);
+      });
+      link.dataset.listenerAttached = "true";
+    });
+  }
+
+  refreshOsLinks();
+  styleOsLinks();
+  updateOsBadge();
+  attachOsClickListeners();
+
+  if (osDropdownToggle) {
+    osDropdownToggle.addEventListener("show.bs.dropdown", () => {
+      refreshOsLinks();
+      styleOsLinks();
+      updateOsBadge();
+      attachOsClickListeners();
+    });
+
+    const menu = document.getElementById("osNotificationMenu");
+    if (menu) {
+      let offset = menu.querySelectorAll(".os-notification-link").length;
+      const limit = 10;
+      let loading = false;
+      let endReached = false;
+
+      function appendNotifications(items) {
+        if (items.length === 0) {
+          endReached = true;
+          return;
+        }
+        for (const n of items) {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.href = n.url;
+          a.textContent = n.message;
+          a.className = "dropdown-item os-notification-link fw-bold";
+          a.dataset.id = n.id;
+          li.appendChild(a);
+          menu.appendChild(li);
+        }
+        refreshOsLinks();
+        styleOsLinks();
+        attachOsClickListeners();
+      }
+
+      function loadMore() {
+        if (loading || endReached) return;
+        loading = true;
+        fetch(`/api/os_notifications?offset=${offset}&limit=${limit}`)
+          .then((r) => r.json())
+          .then((data) => {
+            appendNotifications(data);
+            offset += data.length;
+            updateOsBadge();
+          })
+          .finally(() => {
+            loading = false;
+          });
+      }
+
+      menu.addEventListener("scroll", () => {
+        if (
+          menu.scrollTop + menu.clientHeight >= menu.scrollHeight - 5
+        ) {
+          loadMore();
+        }
+      });
+    }
+  }
+
+  window.markOsNotificationAsReadMatchingUrl = function(targetPageUrl) {
+    refreshOsLinks();
+
+    const currentAbsoluteUrl = new URL(targetPageUrl, window.location.origin).href;
+
+    osLinks.forEach(link => {
+        const notificationUrl = new URL(link.href, window.location.origin).href;
+        const notificationId = link.dataset.id;
+
+        if (notificationUrl === currentAbsoluteUrl && !readOsIds.includes(notificationId)) {
+            _markOsNotificationAsReadLogic(notificationId, link);
+        }
+    });
+  }
+  /* ----------------------------------------------------------- */
+
   // Torna linhas de tabela com a classe .clickable-row navegáveis
   document.querySelectorAll('.clickable-row').forEach((row) => {
     row.addEventListener('click', (e) => {
