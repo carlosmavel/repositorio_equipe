@@ -6,7 +6,7 @@ Este guia detalha os passos necessários para configurar e executar o projeto Or
 
 Antes de iniciar, certifique-se de que possui os seguintes softwares instalados em sua máquina:
 
-* **Python:** Versão 3.9 ou superior.
+* **Python:** Versão 3.11 (recomendado) ou 3.10.
 * **Git:** Para controle de versão e clonagem do repositório.
 * **PostgreSQL:** Sistema de gerenciamento de banco de dados, versão 12 ou superior.
 * **pgAdmin 4:** Interface gráfica para gerenciar o PostgreSQL (geralmente instalada junto com o PostgreSQL).
@@ -171,6 +171,9 @@ configurá-las corretamente.
 Com o ambiente virtual (`venv`) ativo:
 ```bash
 pip install -r requirements.txt
+# Se ocorrerem erros de compilação (lxml, numpy ou opencv),
+# execute a reinstalação a seguir para Python 3.11:
+pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
 ```
 
 ## 10. Configurar Variáveis de Ambiente Essenciais (no Windows)
