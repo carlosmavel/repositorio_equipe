@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Admin - Campos{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+        <h1 class="h2">Campos da Etapa: {{ etapa.nome }}</h1>
+    </div>
+    <a href="{{ url_for('processos_bp.admin_etapas', processo_id=etapa.processo_id) }}" class="btn btn-sm btn-outline-secondary mb-3"><i class="bi bi-arrow-left"></i> Voltar</a>
+    <ul class="nav nav-tabs" id="tabCampo" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button>
+        </li>
+    </ul>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="tab-content" id="tabCampoContent">
+                <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Campos ({{ campos|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if campos %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-sm align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Tipo</th>
+                                                <th>Obrigatório</th>
+                                                <th style="width: 180px;" class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for campo in campos %}
+                                            <tr class="clickable-row" data-href="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id, edit_id=campo.id) }}">
+                                                <td>{{ campo.nome }}</td>
+                                                <td>{{ campo.tipo }}</td>
+                                                <td>{% if campo.obrigatorio %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-secondary">Não</span>{% endif %}</td>
+                                                <td class="text-end">
+                                                    <a href="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id, edit_id=campo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                                    <form action="{{ url_for('processos_bp.admin_delete_campo', campo_id=campo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja remover este campo?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash-fill"></i></button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Nenhum campo cadastrado.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
+                    <h5 class="mb-3"><i class="bi bi-plus-circle-fill me-2"></i>Adicionar Campo</h5>
+                    <form method="POST" action="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id) }}" novalidate class="compact-form">
+                        <div class="mb-1">
+                            <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" required maxlength="255">
+                        </div>
+                        <div class="mb-1">
+                            <label for="tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="tipo" name="tipo" value="{{ request.form.get('tipo', '') }}" required>
+                        </div>
+                        <div class="mb-1">
+                            <label for="opcoes" class="form-label">Opções (separadas por vírgula)</label>
+                            <input type="text" class="form-control form-control-sm" id="opcoes" name="opcoes" value="{{ request.form.get('opcoes', '') }}">
+                        </div>
+                        <div class="mb-1">
+                            <label for="dica" class="form-label">Dica</label>
+                            <input type="text" class="form-control form-control-sm" id="dica" name="dica" value="{{ request.form.get('dica', '') }}">
+                        </div>
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="obrigatorio_check" name="obrigatorio_check">
+                            <label class="form-check-label" for="obrigatorio_check">Obrigatório</label>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar Campo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if campo_editar %}
+    <div class="modal fade" id="modalEditarCampo" tabindex="-1" aria-labelledby="modalEditarCampoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarCampoLabel">Editar Campo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id) }}" novalidate class="compact-form">
+                        <input type="hidden" name="id_para_atualizar" value="{{ campo_editar.id }}">
+                        <div class="mb-1">
+                            <label for="edit_nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', campo_editar.nome) }}" required maxlength="255">
+                        </div>
+                        <div class="mb-1">
+                            <label for="edit_tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="edit_tipo" name="tipo" value="{{ request.form.get('tipo', campo_editar.tipo) }}" required>
+                        </div>
+                        <div class="mb-1">
+                            <label for="edit_opcoes" class="form-label">Opções (separadas por vírgula)</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_opcoes" name="opcoes" value="{{ request.form.get('opcoes', campo_editar.opcoes | join(', ') if campo_editar.opcoes else '') }}">
+                        </div>
+                        <div class="mb-1">
+                            <label for="edit_dica" class="form-label">Dica</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_dica" name="dica" value="{{ request.form.get('dica', campo_editar.dica or '') }}">
+                        </div>
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="edit_obrigatorio_check" name="obrigatorio_check" {% if campo_editar.obrigatorio %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_obrigatorio_check">Obrigatório</label>
+                        </div>
+                        <div class="d-flex pt-2 border-top">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock content %}
+{% block extra_js %}
+{% if campo_editar %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var modal = new bootstrap.Modal(document.getElementById('modalEditarCampo'));
+        modal.show();
+    });
+</script>
+{% endif %}
+{% endblock %}
