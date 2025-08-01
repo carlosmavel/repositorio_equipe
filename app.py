@@ -229,7 +229,30 @@ def api_notifications():
     limit = int(request.args.get('limit', 10))
     notifs = (
         Notification.query
-        .filter_by(user_id=session['user_id'], lido=False)
+        .filter_by(user_id=session['user_id'], lido=False, tipo='geral')
+        .order_by(Notification.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return jsonify([
+        {'id': n.id, 'message': n.message, 'url': n.url}
+        for n in notifs
+    ])
+
+
+@app.route('/api/os_notifications')
+def api_os_notifications():
+    """Retorna notificações de ordem de serviço paginadas."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 10))
+    notifs = (
+        Notification.query
+        .filter_by(user_id=session['user_id'], lido=False, tipo='os')
         .order_by(Notification.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -271,18 +294,36 @@ def inject_notificacoes():
     if 'user_id' in session: # Usar user_id é mais seguro que username para buscar no banco
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
-            q = Notification.query.filter_by(user_id=user.id, lido=False)
-            total_unread = q.count()
-            notifs = (
-                q.order_by(Notification.created_at.desc())
-                 .limit(10)
-                 .all()
+            q_general = Notification.query.filter_by(user_id=user.id, lido=False, tipo='geral')
+            q_os = Notification.query.filter_by(user_id=user.id, lido=False, tipo='os')
+
+            general_count = q_general.count()
+            os_count = q_os.count()
+
+            general_list = (
+                q_general.order_by(Notification.created_at.desc())
+                        .limit(10)
+                        .all()
             )
+
+            os_list = (
+                q_os.order_by(Notification.created_at.desc())
+                     .limit(10)
+                     .all()
+            )
+
             return {
-                'notificacoes': total_unread,
-                'notificacoes_list': notifs,
+                'notificacoes': general_count,
+                'notificacoes_list': general_list,
+                'os_notificacoes': os_count,
+                'os_notificacoes_list': os_list,
             }
-    return {'notificacoes': 0, 'notificacoes_list': []}
+    return {
+        'notificacoes': 0,
+        'notificacoes_list': [],
+        'os_notificacoes': 0,
+        'os_notificacoes_list': [],
+    }
 
 @app.context_processor
 def inject_enums():

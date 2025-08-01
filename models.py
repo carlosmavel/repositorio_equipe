@@ -392,6 +392,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Para quem é a notificação
     message = db.Column(db.String(255), nullable=False)
     url = db.Column(db.String(255), nullable=False) # nullable=False conforme última migration
+    tipo = db.Column(db.String(20), nullable=False, default='geral', server_default='geral')
     lido = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 

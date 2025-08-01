@@ -152,6 +152,18 @@
                             {% else %}<li><a class="dropdown-item text-muted" href="#">Nenhuma notificação</a></li>{% endif %}
                         </ul>
                     </li>
+
+                    {# Notificações de Ordens de Serviço #}
+                    <li class="nav-item dropdown me-2">
+                        <a class="nav-link position-relative" href="#" id="osNotificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-clipboard-check fs-5"></i>
+                            <span id="osNotificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; transform: translate(-100%, 40%) !important; display: none;" data-server-count="{{ os_notificacoes }}"></span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" id="osNotificationMenu" aria-labelledby="osNotificationDropdown">
+                            {% if os_notificacoes_list %}{% for n in os_notificacoes_list %}<li><a href="{{ n.url }}" class="dropdown-item os-notification-link fw-bold" data-id="{{ n.id }}">{{ n.message }}</a></li>{% endfor %}
+                            {% else %}<li><a class="dropdown-item text-muted" href="#">Nenhuma notificação</a></li>{% endif %}
+                        </ul>
+                    </li>
                     
                     {# Foto/Nome do Usuário como LINK DIRETO para o Perfil #}
                     <li class="nav-item">
