@@ -117,6 +117,30 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 └── base.html
 ```
 
+## Módulo Processos
+
+O módulo **Processos** define fluxos operacionais reutilizáveis dentro do sistema.
+Um processo é composto por diversas etapas ligadas a cargos e setores, cada uma
+com campos personalizados que devem ser preenchidos quando a etapa é executada.
+
+Diagrama simplificado:
+```text
+Processo → EtapaProcesso → CampoEtapa → RespostaEtapaOS
+```
+
+Exemplo de fluxo (`Onboarding de Novo Colaborador`):
+1. **RH - Cadastro**
+2. **TI - Acesso**
+3. **Gestor - Boas-vindas**
+
+Para cadastrar um processo, utilize a interface de administração ou scripts de
+seed. Cada etapa pode estar vinculada a um cargo e setor para controle de
+responsáveis. Uma Ordem de Serviço pode selecionar um `processo_id` e avançar
+entre as etapas conforme as permissões do usuário.
+
+Os processos se integram aos módulos de OS, Artigos e permissões por meio das
+notificações e da atribuição de cargos responsáveis.
+
 ## Integração Contínua
 
 O repositório conta com um workflow do **GitHub Actions** localizado em
