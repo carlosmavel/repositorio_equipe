@@ -29,7 +29,7 @@
                 <div class="tab-pane fade show active p-3" id="pendentes" role="tabpanel" aria-labelledby="pend-tab"> {# Adicionado p-3 aqui #}
                     {% if pendentes %}
                         {% set items = pendentes %}
-                        {% include 'partials/lista_aprovacao.html' %}
+                        {% include 'artigos/partials/lista_aprovacao.html' %}
                     {% else %}
                         <p class="text-muted m-0">Nenhum artigo pendente.</p> {# m-0 para remover margem se o p-3 já deu espaço #}
                     {% endif %}
@@ -38,7 +38,7 @@
                 <div class="tab-pane fade p-3" id="revisados" role="tabpanel" aria-labelledby="rev-tab"> {# Adicionado p-3 aqui #}
                     {% if revisados %}
                         {% set items = revisados %}
-                        {% include 'partials/lista_aprovacao.html' %}
+                        {% include 'artigos/partials/lista_aprovacao.html' %}
                     {% else %}
                         <p class="text-muted m-0">Nenhum artigo revisado.</p>
                     {% endif %}

@@ -162,7 +162,7 @@ def novo_artigo():
         return redirect(url_for('meus_artigos'))
 
     # GET → exibe formulário
-    return render_template('novo_artigo.html')
+    return render_template('artigos/novo_artigo.html')
 
 @articles_bp.route('/meus-artigos', endpoint='meus_artigos')
 def meus_artigos():
@@ -183,7 +183,7 @@ def meus_artigos():
             dt2 = dt2.replace(tzinfo=timezone.utc)
         art.local_updated = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template(
-        'meus_artigos.html',
+        'artigos/meus_artigos.html',
         artigos=artigos,
         now=datetime.now(ZoneInfo("America/Sao_Paulo"))
     )
@@ -242,7 +242,7 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
-    return render_template('artigo.html', artigo=artigo, arquivos=arquivos)
+    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos)
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
@@ -352,7 +352,7 @@ def editar_artigo(artigo_id):
 
     # GET
     arquivos = json.loads(artigo.arquivos or "[]")
-    return render_template("editar_artigo.html", artigo=artigo, arquivos=arquivos)
+    return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
 def aprovacao():
@@ -416,7 +416,7 @@ def aprovacao():
             art.local_updated = dt_updated.astimezone(ZoneInfo("America/Sao_Paulo"))
 
     return render_template(
-        "aprovacao.html",
+        "artigos/aprovacao.html",
         pendentes=pendentes,
         revisados=revisados
     )
@@ -507,7 +507,7 @@ def aprovacao_detail(artigo_id):
     # GET → renderiza detalhes e histórico
     arquivos = json.loads(artigo.arquivos or '[]')
     return render_template(
-        'aprovacao_detail.html',
+        'artigos/aprovacao_detail.html',
         artigo   = artigo,
         arquivos = arquivos
     )
@@ -548,7 +548,7 @@ def solicitar_revisao(artigo_id):
         flash('Pedido de revisão enviado!', 'success')
         return redirect(url_for('artigo', artigo_id=artigo.id))
 
-    return render_template('solicitar_revisao.html', artigo=artigo)
+    return render_template('artigos/solicitar_revisao.html', artigo=artigo)
 
 @articles_bp.route('/pesquisar', endpoint='pesquisar')
 def pesquisar():
@@ -606,7 +606,7 @@ def pesquisar():
         art.local_aprovado = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
 
     return render_template(
-        'pesquisar.html',
+        'artigos/pesquisar.html',
         artigos=artigos,
         q=q,
         now=datetime.now(ZoneInfo("America/Sao_Paulo"))

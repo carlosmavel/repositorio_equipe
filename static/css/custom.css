@@ -16,6 +16,11 @@
   transform: translateY(-2px);
 }
 
+/* Altura padronizada para gráficos do dashboard */
+.dashboard-chart {
+  height: 300px !important;
+}
+
 /* 2. Abas mais definidas, porém clean */
 /* ——————————————————————————————————————————————————————
    Abas com fundo claro e borda suave
