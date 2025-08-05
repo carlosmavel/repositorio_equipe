@@ -170,3 +170,10 @@ body > .container {
   padding: 0 2px;
   border-radius: 3px;
 }
+/* Form builder styles */
+#fieldsContainer .field.card {
+  border: 1px solid #dee2e6;
+}
+#fieldsContainer .field .remove-field {
+  float: right;
+}

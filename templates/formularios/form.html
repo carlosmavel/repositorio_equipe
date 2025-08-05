@@ -3,17 +3,22 @@
 {% block content %}
 <div class="container mt-3">
   <h1>{{ 'Editar' if formulario else 'Novo' }} Formulário</h1>
-  <form method="POST">
+  <form method="POST" id="formBuilderForm">
     <div class="mb-3">
       <label for="nome" class="form-label">Nome</label>
       <input type="text" class="form-control" id="nome" name="nome" value="{{ formulario.nome if formulario else '' }}" required>
     </div>
-    <div class="mb-3">
-      <label for="estrutura" class="form-label">Estrutura (JSON)</label>
-      <textarea class="form-control" id="estrutura" name="estrutura" rows="6">{{ formulario.estrutura if formulario else '' }}</textarea>
+    <div id="fieldsContainer"></div>
+    <button type="button" class="btn btn-outline-primary mb-3" id="addField">Adicionar Pergunta</button>
+    <input type="hidden" id="estrutura" name="estrutura" value="{{ formulario.estrutura|e if formulario else '' }}">
+    <div class="mt-3">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="{{ url_for('formularios_bp.listar_formularios') }}" class="btn btn-secondary">Cancelar</a>
     </div>
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{{ url_for('formularios_bp.listar_formularios') }}" class="btn btn-secondary">Cancelar</a>
   </form>
 </div>
+{% endblock %}
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/form_builder.js') }}"></script>
 {% endblock %}
