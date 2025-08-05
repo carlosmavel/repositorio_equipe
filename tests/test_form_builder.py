@@ -98,7 +98,7 @@ def test_section_model_relationship(app_ctx):
         s = Secao(formulario_id=f.id, titulo='Sec', ordem=0)
         db.session.add(s)
         db.session.flush()
-        c = CampoFormulario(formulario_id=f.id, secao_id=s.id, tipo='text', label='Perg', obrigatorio=False, ordem=0)
+        c = CampoFormulario(formulario_id=f.id, secao_id=s.id, tipo='text', label='Perg', obrigatoria=False, ordem=0)
         db.session.add(c)
         db.session.commit()
         sec = Secao.query.filter_by(formulario_id=f.id).first()

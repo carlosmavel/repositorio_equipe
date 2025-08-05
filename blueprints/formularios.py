@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 import json
+import random
 
 # Importação dos módulos de nível superior da aplicação.
 # Como este blueprint está dentro do pacote "blueprints", precisamos subir um
@@ -68,6 +69,9 @@ def preencher_formulario(id):
     if formulario.estrutura:
         try:
             estrutura = json.loads(formulario.estrutura)
+            for campo in estrutura:
+                if campo.get('embaralharOpcoes') and campo.get('opcoes'):
+                    random.shuffle(campo['opcoes'])
         except ValueError:
             flash('Estrutura do formulário inválida.', 'danger')
     return render_template(
