@@ -12,11 +12,40 @@ document.addEventListener('DOMContentLoaded', () => {
       const tipo = fieldEl.querySelector('.field-tipo').value;
       const label = fieldEl.querySelector('.field-label').value.trim();
       const obrigatorio = fieldEl.querySelector('.field-obrigatorio').checked;
-      const opcoes = fieldEl.querySelector('.field-opcoes').value
-        .split(',')
-        .map(o => o.trim())
-        .filter(o => o);
-      fields.push({ tipo, label, obrigatorio, ordem: idx, opcoes });
+      const fieldData = { tipo, label, obrigatorio, ordem: idx };
+
+      if (tipo === 'likert') {
+        const linhas = fieldEl
+          .querySelector('.field-likert-linhas')
+          .value.split(',')
+          .map(o => o.trim())
+          .filter(o => o);
+        const colunas = fieldEl
+          .querySelector('.field-likert-colunas')
+          .value.split(',')
+          .map(o => o.trim())
+          .filter(o => o);
+        fieldData.linhas = linhas;
+        fieldData.colunas = colunas;
+      } else if (tipo === 'table') {
+        const linhas = parseInt(fieldEl.querySelector('.field-table-rows').value, 10) || 0;
+        const colunas = fieldEl
+          .querySelector('.field-table-cabecalhos')
+          .value.split(',')
+          .map(o => o.trim())
+          .filter(o => o);
+        fieldData.linhas = linhas;
+        fieldData.opcoes = colunas;
+      } else {
+        const opcoes = fieldEl
+          .querySelector('.field-opcoes')
+          .value.split(',')
+          .map(o => o.trim())
+          .filter(o => o);
+        fieldData.opcoes = opcoes;
+      }
+
+      fields.push(fieldData);
     });
     estruturaInput.value = JSON.stringify(fields);
   }
@@ -50,6 +79,18 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="form-label">Opções (separadas por vírgula)</label>
           <input type="text" class="form-control field-opcoes">
         </div>
+        <div class="mb-2 field-likert-wrapper d-none">
+          <label class="form-label">Linhas (separadas por vírgula)</label>
+          <input type="text" class="form-control field-likert-linhas">
+          <label class="form-label mt-2">Colunas (separadas por vírgula)</label>
+          <input type="text" class="form-control field-likert-colunas">
+        </div>
+        <div class="mb-2 field-table-wrapper d-none">
+          <label class="form-label">Número de linhas</label>
+          <input type="number" min="1" class="form-control field-table-rows" value="1">
+          <label class="form-label mt-2">Cabeçalhos (separados por vírgula)</label>
+          <input type="text" class="form-control field-table-cabecalhos">
+        </div>
         <div class="form-check mb-2">
           <input class="form-check-input field-obrigatorio" type="checkbox" id="field-obrig-${Date.now()}">
           <label class="form-check-label" for="field-obrig-${Date.now()}">Obrigatório</label>
@@ -60,13 +101,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tipoSelect = div.querySelector('.field-tipo');
     const opcoesWrapper = div.querySelector('.field-opcoes-wrapper');
-    const opcoesInput = div.querySelector('.field-opcoes');
+    const likertWrapper = div.querySelector('.field-likert-wrapper');
+    const tableWrapper = div.querySelector('.field-table-wrapper');
 
     tipoSelect.addEventListener('change', () => {
-      if (['select', 'option', 'likert', 'table'].includes(tipoSelect.value)) {
+      if (['select', 'option'].includes(tipoSelect.value)) {
         opcoesWrapper.classList.remove('d-none');
+        likertWrapper.classList.add('d-none');
+        tableWrapper.classList.add('d-none');
+      } else if (tipoSelect.value === 'likert') {
+        opcoesWrapper.classList.add('d-none');
+        likertWrapper.classList.remove('d-none');
+        tableWrapper.classList.add('d-none');
+      } else if (tipoSelect.value === 'table') {
+        opcoesWrapper.classList.add('d-none');
+        likertWrapper.classList.add('d-none');
+        tableWrapper.classList.remove('d-none');
       } else {
         opcoesWrapper.classList.add('d-none');
+        likertWrapper.classList.add('d-none');
+        tableWrapper.classList.add('d-none');
       }
       updateJSON();
     });
@@ -85,9 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
     tipoSelect.value = data.tipo || tipo || 'text';
     div.querySelector('.field-label').value = data.label || '';
     div.querySelector('.field-obrigatorio').checked = data.obrigatorio || false;
-    if (['select', 'option', 'likert', 'table'].includes(data.tipo)) {
+    if (['select', 'option'].includes(data.tipo)) {
       opcoesWrapper.classList.remove('d-none');
-      opcoesInput.value = (data.opcoes || []).join(', ');
+      div.querySelector('.field-opcoes').value = (data.opcoes || []).join(', ');
+    } else if (data.tipo === 'likert') {
+      likertWrapper.classList.remove('d-none');
+      div.querySelector('.field-likert-linhas').value = (data.linhas || []).join(', ');
+      div.querySelector('.field-likert-colunas').value = (data.colunas || []).join(', ');
+    } else if (data.tipo === 'table') {
+      tableWrapper.classList.remove('d-none');
+      div.querySelector('.field-table-rows').value = data.linhas || 1;
+      div.querySelector('.field-table-cabecalhos').value = (data.opcoes || []).join(', ');
     }
 
     updateJSON();

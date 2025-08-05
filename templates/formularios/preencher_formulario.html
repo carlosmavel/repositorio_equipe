@@ -38,14 +38,32 @@
               {% elif campo.tipo == 'date' %}
                 <input type="date" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
               {% elif campo.tipo == 'likert' %}
-                {% set opcoes = campo.opcoes if campo.opcoes else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
-                <div>
-                  {% for opcao in opcoes %}
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ opcao }}" {% if campo.obrigatorio %}required{% endif %}>
-                      <label class="form-check-label">{{ opcao }}</label>
-                    </div>
-                  {% endfor %}
+                {% set linhas = campo.linhas if campo.linhas else ['Item 1'] %}
+                {% set colunas = campo.colunas if campo.colunas else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        {% for col in colunas %}
+                          <th class="text-center">{{ col }}</th>
+                        {% endfor %}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for linha in linhas %}
+                        {% set row_index = loop.index0 %}
+                        <tr>
+                          <th>{{ linha }}</th>
+                          {% for col in colunas %}
+                            <td class="text-center">
+                              <input class="form-check-input" type="radio" name="campo{{ idx }}_{{ row_index }}" value="{{ col }}" {% if campo.obrigatorio %}required{% endif %}>
+                            </td>
+                          {% endfor %}
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
               {% elif campo.tipo == 'file' %}
                 <input type="file" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
@@ -61,24 +79,30 @@
               {% elif campo.tipo == 'table' %}
                 <div class="table-responsive">
                   <table class="table table-bordered">
-                    {% if campo.opcoes %}
+                    {% set cabecalhos = campo.opcoes if campo.opcoes else [] %}
+                    {% if cabecalhos %}
                       <thead>
                         <tr>
-                          {% for cab in campo.opcoes %}
+                          {% for cab in cabecalhos %}
                             <th>{{ cab }}</th>
                           {% endfor %}
                         </tr>
                       </thead>
-                      <tbody>
-                        <tr>
-                          {% for cab in campo.opcoes %}
-                            <td><input type="text" class="form-control"></td>
-                          {% endfor %}
-                        </tr>
-                      </tbody>
-                    {% else %}
-                      <tbody><tr><td>Sem dados</td></tr></tbody>
                     {% endif %}
+                    <tbody>
+                      {% set total_linhas = campo.linhas if campo.linhas else 1 %}
+                      {% for r in range(total_linhas) %}
+                        <tr>
+                          {% if cabecalhos %}
+                            {% for cab in cabecalhos %}
+                              <td><input type="text" class="form-control"></td>
+                            {% endfor %}
+                          {% else %}
+                            <td>Sem colunas definidas</td>
+                          {% endif %}
+                        </tr>
+                      {% endfor %}
+                    </tbody>
                   </table>
                 </div>
               {% else %}
