@@ -1,6 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
 import json
 import random
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 # Importação dos módulos de nível superior da aplicação.
 # Como este blueprint está dentro do pacote "blueprints", precisamos subir um
@@ -11,13 +14,15 @@ import random
 # aplicativo era carregado como parte do pacote ``repositorio_equipe``.
 # Utilizando ``..`` garantimos que o Python procure os módulos no pacote pai.
 try:
-    from ..models import Formulario
+    from ..models import Formulario, User
     from ..database import db
     from ..decorators import form_builder_required
+    from ..utils import user_can_access_form_builder
 except ImportError:  # pragma: no cover - fallback para execução direta
-    from models import Formulario
+    from models import Formulario, User
     from database import db
     from decorators import form_builder_required
+    from utils import user_can_access_form_builder
 
 formularios_bp = Blueprint('formularios_bp', __name__, url_prefix='/ordem-servico/formularios')
 
@@ -28,12 +33,13 @@ def formularios():
     aba_ativa = 'consulta'
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
         estrutura = request.form.get('estrutura', '').strip()
         if not nome:
             flash('Nome é obrigatório.', 'danger')
             aba_ativa = 'cadastro'
         else:
-            f = Formulario(nome=nome, estrutura=estrutura)
+            f = Formulario(nome=nome, descricao=descricao, estrutura=estrutura)
             db.session.add(f)
             db.session.commit()
             flash('Formulário criado com sucesso!', 'success')
@@ -48,11 +54,13 @@ def editar_formulario(id):
     formulario = Formulario.query.get_or_404(id)
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
         estrutura = request.form.get('estrutura', '').strip()
         if not nome:
             flash('Nome é obrigatório.', 'danger')
         else:
             formulario.nome = nome
+            formulario.descricao = descricao
             formulario.estrutura = estrutura
             db.session.commit()
             flash('Formulário atualizado!', 'success')
@@ -60,22 +68,46 @@ def editar_formulario(id):
     return render_template('formularios/editar_formulario.html', formulario=formulario)
 
 
-@formularios_bp.route('/<int:id>/preencher', methods=['GET'])
+@formularios_bp.route('/upload-imagem', methods=['POST'])
 @form_builder_required
+def upload_imagem():
+    arquivo = request.files.get('imagem')
+    if not arquivo or arquivo.filename == '':
+        return jsonify({'error': 'no file'}), 400
+    filename = secure_filename(arquivo.filename)
+    unique = f"{uuid.uuid4().hex}_{filename}"
+    path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique)
+    arquivo.save(path)
+    url = url_for('uploaded_file', filename=unique)
+    return jsonify({'url': url})
+
+
+@formularios_bp.route('/<int:id>/preencher', methods=['GET'])
 def preencher_formulario(id):
-    """Renderiza um formulário para teste de preenchimento."""
+    """Renderiza um formulário para preenchimento."""
     formulario = Formulario.query.get_or_404(id)
     estrutura = []
     if formulario.estrutura:
         try:
             estrutura = json.loads(formulario.estrutura)
-            for campo in estrutura:
-                if campo.get('embaralharOpcoes') and campo.get('opcoes'):
-                    random.shuffle(campo['opcoes'])
+            for bloco in estrutura:
+                if bloco.get('tipo') == 'section':
+                    for campo in bloco.get('campos', []):
+                        if campo.get('embaralharOpcoes') and campo.get('opcoes'):
+                            random.shuffle(campo['opcoes'])
+                else:
+                    if bloco.get('embaralharOpcoes') and bloco.get('opcoes'):
+                        random.shuffle(bloco['opcoes'])
         except ValueError:
             flash('Estrutura do formulário inválida.', 'danger')
+    can_edit = False
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user and user_can_access_form_builder(user):
+            can_edit = True
     return render_template(
         'formularios/preencher_formulario.html',
         formulario=formulario,
         estrutura=estrutura,
+        can_edit=can_edit,
     )
