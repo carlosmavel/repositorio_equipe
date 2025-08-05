@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if formulario else 'Novo' }} Formulário{% endblock %}
+{% block content %}
+<div class="container mt-3">
+  <h1>{{ 'Editar' if formulario else 'Novo' }} Formulário</h1>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="nome" class="form-label">Nome</label>
+      <input type="text" class="form-control" id="nome" name="nome" value="{{ formulario.nome if formulario else '' }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="estrutura" class="form-label">Estrutura (JSON)</label>
+      <textarea class="form-control" id="estrutura" name="estrutura" rows="6">{{ formulario.estrutura if formulario else '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Salvar</button>
+    <a href="{{ url_for('listar_formularios') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
