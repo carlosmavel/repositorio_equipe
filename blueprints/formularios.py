@@ -40,7 +40,7 @@ def novo_formulario():
             db.session.add(f)
             db.session.commit()
             flash('Formulário criado com sucesso!', 'success')
-            return redirect(url_for('listar_formularios'))
+            return redirect(url_for('formularios_bp.listar_formularios'))
     return render_template('formularios/form.html', formulario=None)
 
 
@@ -58,5 +58,5 @@ def editar_formulario(id):
             formulario.estrutura = estrutura
             db.session.commit()
             flash('Formulário atualizado!', 'success')
-            return redirect(url_for('listar_formularios'))
+            return redirect(url_for('formularios_bp.listar_formularios'))
     return render_template('formularios/form.html', formulario=formulario)

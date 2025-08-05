@@ -318,7 +318,7 @@
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
                                 {% if user_can_access_form_builder(current_user) %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('listar_formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.listar_formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
                                 {% endif %}
                             </ul>
                         </div>

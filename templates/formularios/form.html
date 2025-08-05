@@ -13,7 +13,7 @@
       <textarea class="form-control" id="estrutura" name="estrutura" rows="6">{{ formulario.estrutura if formulario else '' }}</textarea>
     </div>
     <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{{ url_for('listar_formularios') }}" class="btn btn-secondary">Cancelar</a>
+    <a href="{{ url_for('formularios_bp.listar_formularios') }}" class="btn btn-secondary">Cancelar</a>
   </form>
 </div>
 {% endblock %}
