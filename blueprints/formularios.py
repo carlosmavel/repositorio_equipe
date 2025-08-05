@@ -1,9 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+
+# Importação dos módulos de nível superior da aplicação.
+# Como este blueprint está dentro do pacote "blueprints", precisamos subir um
+# nível na hierarquia para acessar ``models``, ``database`` e ``decorators``.
+# As importações anteriores tentavam usar ``.models`` (que procurava por um
+# módulo ``models`` dentro do próprio pacote ``blueprints``) e, ao falhar,
+# recorriam a um import absoluto ``models``.  Isso causava erros quando o
+# aplicativo era carregado como parte do pacote ``repositorio_equipe``.
+# Utilizando ``..`` garantimos que o Python procure os módulos no pacote pai.
 try:
-    from .models import Formulario
-    from .database import db
-    from .decorators import form_builder_required
-except ImportError:  # pragma: no cover
+    from ..models import Formulario
+    from ..database import db
+    from ..decorators import form_builder_required
+except ImportError:  # pragma: no cover - fallback para execução direta
     from models import Formulario
     from database import db
     from decorators import form_builder_required
