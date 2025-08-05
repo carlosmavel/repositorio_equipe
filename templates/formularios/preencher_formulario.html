@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Preencher Formulário{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <h3 class="mb-3">Preencher Formulário: {{ formulario.nome }}</h3>
+      <form>
+        {% for campo in estrutura %}
+          <div class="mb-3">
+            <label class="form-label">{{ campo.label }}{% if campo.obrigatorio %} *{% endif %}</label>
+            {% if campo.tipo == 'textarea' %}
+              <textarea class="form-control" {% if campo.obrigatorio %}required{% endif %}></textarea>
+            {% elif campo.tipo == 'select' %}
+              <select class="form-select" {% if campo.obrigatorio %}required{% endif %}>
+                {% for opcao in campo.opcoes %}
+                  <option value="{{ opcao }}">{{ opcao }}</option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <input type="text" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Enviar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

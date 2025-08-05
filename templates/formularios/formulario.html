@@ -37,7 +37,10 @@
                 {% for f in formularios %}
                   <tr data-nome="{{ f.nome }}">
                     <td>{{ f.nome }}</td>
-                    <td><a class="btn btn-sm btn-secondary" href="{{ url_for('formularios_bp.editar_formulario', id=f.id) }}">Editar</a></td>
+                    <td>
+                      <a class="btn btn-sm btn-primary" href="{{ url_for('formularios_bp.preencher_formulario', id=f.id) }}">Preencher</a>
+                      <a class="btn btn-sm btn-secondary ms-1" href="{{ url_for('formularios_bp.editar_formulario', id=f.id) }}">Editar</a>
+                    </td>
                   </tr>
                 {% endfor %}
                 </tbody>
