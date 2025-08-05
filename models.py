@@ -529,13 +529,29 @@ class CampoFormulario(db.Model):
     secao_id = db.Column(db.Integer, db.ForeignKey('secao.id'), nullable=True)
     tipo = db.Column(db.String(50), nullable=False)
     label = db.Column(db.String(200), nullable=False)
-    obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    subtitulo = db.Column(db.String(200), nullable=True)
+    midia_url = db.Column(db.String(255), nullable=True)
+    obrigatoria = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    permite_multipla_escolha = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    usar_menu_suspenso = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    embaralhar_opcoes = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    tem_opcao_outra = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    ramificacoes = db.Column(db.JSON, nullable=True)
     ordem = db.Column(db.Integer, nullable=False)
     opcoes = db.Column(db.Text, nullable=True)
     condicional = db.Column(db.Text, nullable=True)
 
     formulario = db.relationship('Formulario', back_populates='campos')
     secao = db.relationship('Secao', back_populates='campos')
+
+    # Backwards compatibility alias
+    @property
+    def obrigatorio(self):  # pragma: no cover - property alias
+        return self.obrigatoria
+
+    @obrigatorio.setter
+    def obrigatorio(self, value):  # pragma: no cover - property alias
+        self.obrigatoria = value
 
     def __repr__(self):
         return f"<CampoFormulario {self.label} ({self.tipo})>"
