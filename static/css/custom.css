@@ -142,3 +142,31 @@ body > .container {
   max-height: 300px;
   overflow-y: auto;
 }
+
+/* Hierarquia de cargos */
+.caret-toggle .bi {
+  transition: transform .2s ease;
+}
+.caret-toggle.expanded .bi {
+  transform: rotate(90deg);
+}
+
+.setor-container {
+  margin-left: 1rem;
+}
+.celula-container {
+  margin-left: 2rem;
+  border-left: 1px solid #dee2e6;
+  padding-left: 1rem;
+}
+.cargo-item {
+  margin-left: 3rem;
+  border-left: 1px solid #f1f3f5;
+  padding-left: 1rem;
+}
+
+.search-highlight {
+  background-color: #ffe69c;
+  padding: 0 2px;
+  border-radius: 3px;
+}
