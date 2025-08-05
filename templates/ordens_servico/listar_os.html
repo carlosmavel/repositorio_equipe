@@ -21,7 +21,7 @@
               <td>{{ os.titulo }}</td>
               <td>{{ os.status }}</td>
               <td class="text-end">
-                <a href="{{ url_for('ordens_servico_bp.detalhar_os', ordem_id=os.id) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.id) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
               </td>
             </tr>
           {% endfor %}
