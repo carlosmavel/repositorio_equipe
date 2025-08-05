@@ -5,148 +5,154 @@
   <div class="row justify-content-center">
     <div class="col-md-10">
       <h3 class="mb-3">Preencher Formulário: {{ formulario.nome }}</h3>
+      {% if can_edit %}
+        <a href="{{ url_for('formularios_bp.editar_formulario', id=formulario.id) }}" class="btn btn-secondary mb-3">Editar</a>
+      {% endif %}
       <form>
-        {% for campo in estrutura %}
-          {% set idx = loop.index0 %}
-          <div class="mb-3">
-            {% if campo.tipo == 'section' %}
-              <div class="p-3 bg-light border rounded">
-                <h4 class="mb-1">{{ campo.titulo or campo.label }}</h4>
-                {% if campo.subtitulo %}<p class="text-muted mb-2">{{ campo.subtitulo }}</p>{% endif %}
-                {% if campo.imagem_url %}
-                  <img src="{{ campo.imagem_url }}" alt="" class="img-fluid mb-2" style="max-width: 200px;">
+        {% macro render_campo(campo, idx) %}
+        <div class="mb-3">
+          <label class="form-label">{{ campo.label }}{% if campo.obrigatoria %} *{% endif %}</label>
+          {% if campo.subtitulo %}<div class="form-text mb-2">{{ campo.subtitulo }}</div>{% endif %}
+          {% if campo.midia_url %}
+            <div class="mb-2"><img src="{{ campo.midia_url }}" class="img-fluid" alt=""></div>
+          {% endif %}
+          {% if campo.video_url %}
+            <div class="ratio ratio-16x9 mb-2"><iframe src="{{ campo.video_url }}" allowfullscreen></iframe></div>
+          {% endif %}
+          {% if campo.tipo == 'textarea' %}
+            <textarea class="form-control" {% if campo.obrigatoria %}required{% endif %}></textarea>
+          {% elif campo.tipo == 'select' %}
+            <select class="form-select" {% if campo.obrigatoria %}required{% endif %}>
+              {% for opcao in campo.opcoes %}
+                <option value="{{ opcao }}">{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          {% elif campo.tipo == 'option' %}
+            {% if campo.usarMenuSuspenso %}
+              <select class="form-select" {% if campo.permiteMultiplaEscolha %}multiple{% endif %} {% if campo.obrigatoria %}required{% endif %}>
+                {% for opcao in campo.opcoes %}
+                  <option value="{{ opcao }}">{{ opcao }}</option>
+                {% endfor %}
+                {% if campo.temOpcaoOutra %}
+                  <option value="outra">Outra</option>
                 {% endif %}
-                {% if campo.video_url %}
-                  <div class="ratio ratio-16x9 mb-2"><iframe src="{{ campo.video_url }}" allowfullscreen></iframe></div>
-                {% endif %}
-              </div>
+              </select>
+              {% if campo.temOpcaoOutra %}<input type="text" class="form-control mt-2" placeholder="Especifique">{% endif %}
             {% else %}
-              <label class="form-label">{{ campo.label }}{% if campo.obrigatoria %} *{% endif %}</label>
-              {% if campo.subtitulo %}<div class="form-text mb-2">{{ campo.subtitulo }}</div>{% endif %}
-              {% if campo.midia_url %}
-                {% if campo.midia_url.endswith('.mp4') or 'youtube' in campo.midia_url %}
-                  <div class="mb-2"><video src="{{ campo.midia_url }}" class="img-fluid" controls></video></div>
-                {% else %}
-                  <div class="mb-2"><img src="{{ campo.midia_url }}" class="img-fluid" alt=""></div>
-                {% endif %}
-              {% endif %}
-              {% if campo.tipo == 'textarea' %}
-                <textarea class="form-control" {% if campo.obrigatoria %}required{% endif %}></textarea>
-              {% elif campo.tipo == 'select' %}
-                <select class="form-select" {% if campo.obrigatoria %}required{% endif %}>
-                  {% for opcao in campo.opcoes %}
-                    <option value="{{ opcao }}">{{ opcao }}</option>
-                  {% endfor %}
-                </select>
-              {% elif campo.tipo == 'option' %}
-                {% if campo.usarMenuSuspenso %}
-                  <select class="form-select" {% if campo.permiteMultiplaEscolha %}multiple{% endif %} {% if campo.obrigatoria %}required{% endif %}>
-                    {% for opcao in campo.opcoes %}
-                      <option value="{{ opcao }}">{{ opcao }}</option>
-                    {% endfor %}
-                    {% if campo.temOpcaoOutra %}
-                      <option value="outra">Outra</option>
-                    {% endif %}
-                  </select>
-                  {% if campo.temOpcaoOutra %}<input type="text" class="form-control mt-2" placeholder="Especifique">{% endif %}
-                {% else %}
-                  {% set input_type = 'checkbox' if campo.permiteMultiplaEscolha else 'radio' %}
-                  {% for opcao in campo.opcoes %}
-                    <div class="form-check">
-                      <input class="form-check-input" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="{{ opcao }}" {% if campo.obrigatoria %}required{% endif %}>
-                      <label class="form-check-label">{{ opcao }}</label>
-                    </div>
-                  {% endfor %}
-                  {% if campo.temOpcaoOutra %}
-                    <div class="form-check mt-2">
-                      <input class="form-check-input" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="outra">
-                      <label class="form-check-label">Outra</label>
-                    </div>
-                    <input type="text" class="form-control mt-2" placeholder="Especifique">
-                  {% endif %}
-                {% endif %}
-              {% elif campo.tipo == 'rating' %}
-                {% set opcoes = campo.opcoes if campo.opcoes else ['1','2','3','4','5'] %}
-                <select class="form-select" {% if campo.obrigatoria %}required{% endif %}>
-                  {% for opcao in opcoes %}
-                    <option value="{{ opcao }}">{{ opcao }}</option>
-                  {% endfor %}
-                </select>
-              {% elif campo.tipo == 'date' %}
-                <input type="date" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
-              {% elif campo.tipo == 'likert' %}
-                {% set linhas = campo.linhas if campo.linhas else ['Item 1'] %}
-                {% set colunas = campo.colunas if campo.colunas else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
-                <div class="table-responsive">
-                  <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th></th>
-                        {% for col in colunas %}
-                          <th class="text-center">{{ col }}</th>
-                        {% endfor %}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for linha in linhas %}
-                        {% set row_index = loop.index0 %}
-                        <tr>
-                          <th>{{ linha }}</th>
-                          {% for col in colunas %}
-                            <td class="text-center">
-                              <input class="form-check-input" type="radio" name="campo{{ idx }}_{{ row_index }}" value="{{ col }}" {% if campo.obrigatoria %}required{% endif %}>
-                            </td>
-                          {% endfor %}
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
+              {% set input_type = 'checkbox' if campo.permiteMultiplaEscolha else 'radio' %}
+              {% for opcao in campo.opcoes %}
+                <div class="form-check">
+                  <input class="form-check-input" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="{{ opcao }}" {% if campo.obrigatoria %}required{% endif %}>
+                  <label class="form-check-label">{{ opcao }}</label>
                 </div>
-              {% elif campo.tipo == 'file' %}
-                <input type="file" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
-              {% elif campo.tipo == 'nps' %}
-                <div class="d-flex flex-wrap">
-                  {% for i in range(11) %}
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ i }}" {% if campo.obrigatoria %}required{% endif %}>
-                      <label class="form-check-label">{{ i }}</label>
-                    </div>
-                  {% endfor %}
+              {% endfor %}
+              {% if campo.temOpcaoOutra %}
+                <div class="form-check mt-2">
+                  <input class="form-check-input" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="outra">
+                  <label class="form-check-label">Outra</label>
                 </div>
-              {% elif campo.tipo == 'table' %}
-                <div class="table-responsive">
-                  <table class="table table-bordered">
-                    {% set cabecalhos = campo.opcoes if campo.opcoes else [] %}
-                    {% if cabecalhos %}
-                      <thead>
-                        <tr>
-                          {% for cab in cabecalhos %}
-                            <th>{{ cab }}</th>
-                          {% endfor %}
-                        </tr>
-                      </thead>
-                    {% endif %}
-                    <tbody>
-                      {% set total_linhas = campo.linhas if campo.linhas else 1 %}
-                      {% for r in range(total_linhas) %}
-                        <tr>
-                          {% if cabecalhos %}
-                            {% for cab in cabecalhos %}
-                              <td><input type="text" class="form-control"></td>
-                            {% endfor %}
-                          {% else %}
-                            <td>Sem colunas definidas</td>
-                          {% endif %}
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              {% else %}
-                <input type="text" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
+                <input type="text" class="form-control mt-2" placeholder="Especifique">
               {% endif %}
             {% endif %}
-          </div>
+          {% elif campo.tipo == 'rating' %}
+            {% set opcoes = campo.opcoes if campo.opcoes else ['1','2','3','4','5'] %}
+            <select class="form-select" {% if campo.obrigatoria %}required{% endif %}>
+              {% for opcao in opcoes %}
+                <option value="{{ opcao }}">{{ opcao }}</option>
+              {% endfor %}
+            </select>
+          {% elif campo.tipo == 'date' %}
+            <input type="date" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
+          {% elif campo.tipo == 'likert' %}
+            {% set linhas = campo.linhas if campo.linhas else ['Item 1'] %}
+            {% set colunas = campo.colunas if campo.colunas else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th></th>
+                    {% for col in colunas %}
+                      <th class="text-center">{{ col }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for linha in linhas %}
+                    {% set row_index = loop.index0 %}
+                    <tr>
+                      <th>{{ linha }}</th>
+                      {% for col in colunas %}
+                        <td class="text-center">
+                          <input class="form-check-input" type="radio" name="campo{{ idx }}_{{ row_index }}" value="{{ col }}" {% if campo.obrigatoria %}required{% endif %}>
+                        </td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% elif campo.tipo == 'file' %}
+            <input type="file" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
+          {% elif campo.tipo == 'nps' %}
+            <div class="d-flex flex-wrap">
+              {% for i in range(11) %}
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ i }}" {% if campo.obrigatoria %}required{% endif %}>
+                  <label class="form-check-label">{{ i }}</label>
+                </div>
+              {% endfor %}
+            </div>
+          {% elif campo.tipo == 'table' %}
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                {% set cabecalhos = campo.opcoes if campo.opcoes else [] %}
+                {% if cabecalhos %}
+                  <thead>
+                    <tr>
+                      {% for cab in cabecalhos %}
+                        <th>{{ cab }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                {% endif %}
+                <tbody>
+                  {% set total_linhas = campo.linhas if campo.linhas else 1 %}
+                  {% for r in range(total_linhas) %}
+                    <tr>
+                      {% if cabecalhos %}
+                        {% for cab in cabecalhos %}
+                          <td><input type="text" class="form-control"></td>
+                        {% endfor %}
+                      {% else %}
+                        <td>Sem colunas definidas</td>
+                      {% endif %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <input type="text" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
+          {% endif %}
+        </div>
+        {% endmacro %}
+        {% set q_idx = namespace(value=0) %}
+        {% for bloco in estrutura %}
+          {% if bloco.tipo == 'section' %}
+            <div class="mb-4 pb-2 border-bottom">
+              <h4 class="mb-1">{{ bloco.titulo }}</h4>
+              {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
+              {% if bloco.imagem_url %}<img src="{{ bloco.imagem_url }}" class="img-fluid mb-2" style="max-width: 200px;" alt="">{% endif %}
+              {% if bloco.video_url %}<div class="ratio ratio-16x9 mb-2"><iframe src="{{ bloco.video_url }}" allowfullscreen></iframe></div>{% endif %}
+              {% for campo in bloco.campos %}
+                {{ render_campo(campo, q_idx.value) }}
+                {% set q_idx.value = q_idx.value + 1 %}
+              {% endfor %}
+            </div>
+          {% else %}
+            {{ render_campo(bloco, q_idx.value) }}
+            {% set q_idx.value = q_idx.value + 1 %}
+          {% endif %}
         {% endfor %}
         <button type="submit" class="btn btn-primary">Enviar</button>
       </form>

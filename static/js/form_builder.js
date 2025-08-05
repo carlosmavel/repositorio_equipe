@@ -6,6 +6,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const estruturaInput = document.getElementById('estrutura');
   const form = document.getElementById('formBuilderForm');
 
+  async function uploadImage(file) {
+    const fd = new FormData();
+    fd.append('imagem', file);
+    const resp = await fetch('/ordem-servico/formularios/upload-imagem', {
+      method: 'POST',
+      body: fd,
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return data.url;
+    }
+    return '';
+  }
+
+  function parseYouTube(url) {
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : '';
+  }
+
   function updateNumbers() {
     let pergunta = 0;
     let secao = 0;
@@ -36,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateJSON() {
     const fields = [];
+    let currentSection = null;
     fieldsContainer.querySelectorAll('.field').forEach((fieldEl, idx) => {
       const tipo = fieldEl.querySelector('.field-tipo').value;
       const id = fieldEl.dataset.id;
@@ -44,16 +64,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const titulo = fieldEl.querySelector('.field-label').value.trim();
         const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
         const imagem = fieldEl.querySelector('.field-imagem')?.value.trim() || '';
-        const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
-        fields.push({ id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem: idx });
+        const video = fieldEl.querySelector('.field-section-video')?.value.trim() || '';
+        currentSection = { id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem: idx, campos: [] };
+        fields.push(currentSection);
         return;
       }
 
       const label = fieldEl.querySelector('.field-label').value.trim();
       const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
-      const midia = fieldEl.querySelector('.field-midia')?.value.trim() || '';
+      const imagem = fieldEl.querySelector('.field-midia')?.value.trim() || '';
+      const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
       const obrigatoria = fieldEl.querySelector('.field-obrigatoria').checked;
-      const fieldData = { id, tipo, label, subtitulo, midia_url: midia, obrigatoria, ordem: idx };
+      const fieldData = {
+        id,
+        tipo,
+        label,
+        subtitulo,
+        midia_url: imagem,
+        video_url: video,
+        obrigatoria,
+        ordem: idx,
+        secao_id: currentSection ? currentSection.id : null,
+      };
 
       if (tipo === 'likert') {
         const linhas = fieldEl
@@ -107,7 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
         fieldData.opcoes = opcoes;
       }
 
-      fields.push(fieldData);
+      if (currentSection) {
+        currentSection.campos.push(fieldData);
+      } else {
+        fields.push(fieldData);
+      }
     });
     estruturaInput.value = JSON.stringify(fields);
   }
@@ -155,18 +191,24 @@ document.addEventListener('DOMContentLoaded', () => {
           <input type="text" class="form-control field-subtitulo" placeholder="Subtítulo da Pergunta">
         </div>
         <div class="mb-2 field-media-wrapper">
-          <label class="form-label">Mídia (URL)</label>
-          <input type="text" class="form-control field-midia" placeholder="URL da imagem ou vídeo">
+          <label class="form-label">Imagem</label>
+          <input type="file" class="form-control field-midia-file">
+          <input type="hidden" class="field-midia">
+          <div class="field-image-preview mt-2"></div>
+          <label class="form-label mt-2">Vídeo (YouTube)</label>
+          <input type="text" class="form-control field-video" placeholder="URL do vídeo">
         </div>
         <div class="mb-2 field-section-subtitulo-wrapper d-none">
           <label class="form-label">Subtítulo</label>
           <input type="text" class="form-control field-subtitulo" placeholder="Insira um subtítulo">
         </div>
         <div class="mb-2 field-section-media-wrapper d-none">
-          <label class="form-label">Imagem (URL)</label>
-          <input type="text" class="form-control field-imagem" placeholder="URL da imagem">
-          <label class="form-label mt-2">Vídeo (URL)</label>
-          <input type="text" class="form-control field-video" placeholder="URL do vídeo">
+          <label class="form-label">Imagem</label>
+          <input type="file" class="form-control field-imagem-file">
+          <input type="hidden" class="field-imagem">
+          <div class="field-section-image-preview mt-2"></div>
+          <label class="form-label mt-2">Vídeo (YouTube)</label>
+          <input type="text" class="form-control field-section-video" placeholder="URL do vídeo">
         </div>
         <div class="mb-2 field-opcoes-wrapper d-none">
           <label class="form-label">Opções (separadas por vírgula)</label>
@@ -227,6 +269,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const embaralharWrapper = div.querySelector('.field-embaralhar-wrapper');
     const ramificacoesWrapper = div.querySelector('.field-ramificacoes-wrapper');
     const labelInput = div.querySelector('.field-label');
+    const midiaFile = div.querySelector('.field-midia-file');
+    const midiaHidden = div.querySelector('.field-midia');
+    const midiaPreview = div.querySelector('.field-image-preview');
+    const videoInput = div.querySelector('.field-media-wrapper .field-video');
+    const imagemFile = div.querySelector('.field-imagem-file');
+    const imagemHidden = div.querySelector('.field-imagem');
+    const sectionImagePreview = div.querySelector('.field-section-image-preview');
+    const sectionVideoInput = div.querySelector('.field-section-video');
 
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
@@ -358,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    div.querySelectorAll('input, select').forEach(el => {
+    div.querySelectorAll('input, select, textarea').forEach(el => {
       el.addEventListener('input', () => {
         updateQuestionTitle(div);
         updateJSON();
@@ -366,12 +416,54 @@ document.addEventListener('DOMContentLoaded', () => {
       el.addEventListener('change', updateJSON);
     });
 
+    if (midiaFile) {
+      midiaFile.addEventListener('change', async () => {
+        if (midiaFile.files[0]) {
+          const url = await uploadImage(midiaFile.files[0]);
+          midiaHidden.value = url;
+          midiaPreview.innerHTML = url ? `<img src="${url}" class="img-fluid">` : '';
+          updateJSON();
+        }
+      });
+    }
+
+    if (imagemFile) {
+      imagemFile.addEventListener('change', async () => {
+        if (imagemFile.files[0]) {
+          const url = await uploadImage(imagemFile.files[0]);
+          imagemHidden.value = url;
+          sectionImagePreview.innerHTML = url ? `<img src="${url}" class="img-fluid">` : '';
+          updateJSON();
+        }
+      });
+    }
+
+    if (videoInput) {
+      videoInput.addEventListener('change', () => {
+        const embed = parseYouTube(videoInput.value.trim());
+        if (embed) videoInput.value = embed;
+        updateJSON();
+      });
+    }
+
+    if (sectionVideoInput) {
+      sectionVideoInput.addEventListener('change', () => {
+        const embed = parseYouTube(sectionVideoInput.value.trim());
+        if (embed) sectionVideoInput.value = embed;
+        updateJSON();
+      });
+    }
+
     // Prefill data if editing existing structure
     tipoSelect.value = data.tipo || tipo || 'text';
     labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatoria').checked = data.obrigatoria || data.obrigatorio || false;
     div.querySelector('.field-subtitulo').value = data.subtitulo || '';
     div.querySelector('.field-midia').value = data.midia_url || '';
+    if (data.midia_url) {
+      midiaPreview.innerHTML = `<img src="${data.midia_url}" class="img-fluid">`;
+    }
+    div.querySelector('.field-video').value = data.video_url || '';
     div.querySelector('.field-outra').checked = data.temOpcaoOutra || false;
     div.querySelector('.field-multipla').checked = data.permiteMultiplaEscolha || false;
     div.querySelector('.field-menu-suspenso').checked = data.usarMenuSuspenso || false;
@@ -405,7 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
       labelInput.placeholder = 'Insira o seu título aqui';
       div.querySelector('.field-subtitulo').value = data.subtitulo || '';
       div.querySelector('.field-imagem').value = data.imagem_url || '';
-      div.querySelector('.field-video').value = data.video_url || '';
+      if (data.imagem_url) {
+        sectionImagePreview.innerHTML = `<img src="${data.imagem_url}" class="img-fluid">`;
+      }
+      div.querySelector('.field-section-video').value = data.video_url || '';
     }
 
     updateQuestionTitle(div);
@@ -446,7 +541,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (estruturaInput.value) {
     try {
       const parsed = JSON.parse(estruturaInput.value);
-      parsed.forEach(f => addField(f.tipo, f));
+      parsed.forEach(f => {
+        if (f.tipo === 'section') {
+          const secData = { ...f };
+          delete secData.campos;
+          addField('section', secData);
+          (f.campos || []).forEach(c => addField(c.tipo, c));
+        } else {
+          addField(f.tipo, f);
+        }
+      });
     } catch (e) {
       console.error('Erro ao carregar estrutura existente', e);
     }
