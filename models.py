@@ -186,6 +186,7 @@ class Cargo(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     nivel_hierarquico = db.Column(db.Integer, nullable=True) # Para lógica de hierarquia (ex: 1=Alto, 10=Baixo)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    atende_ordem_servico = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
 
     # Relacionamentos: Um Cargo pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='cargo', lazy='dynamic')
@@ -472,5 +473,41 @@ class RespostaEtapaOS(db.Model):
 
     def __repr__(self):
         return f"<RespostaEtapaOS {self.ordem_servico_id} campo={self.campo_etapa_id}>"
+
+
+# --- MODELOS DO CRIADOR DE FORMULÁRIOS ---
+
+
+class Formulario(db.Model):
+    __tablename__ = 'formulario'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(200), nullable=False)
+    estrutura = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    campos = db.relationship('CampoFormulario', back_populates='formulario', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<Formulario {self.nome}>"
+
+
+class CampoFormulario(db.Model):
+    __tablename__ = 'campo_formulario'
+
+    id = db.Column(db.Integer, primary_key=True)
+    formulario_id = db.Column(db.Integer, db.ForeignKey('formulario.id'), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)
+    label = db.Column(db.String(200), nullable=False)
+    obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    ordem = db.Column(db.Integer, nullable=False)
+    opcoes = db.Column(db.Text, nullable=True)
+    condicional = db.Column(db.Text, nullable=True)
+
+    formulario = db.relationship('Formulario', back_populates='campos')
+
+    def __repr__(self):
+        return f"<CampoFormulario {self.label} ({self.tipo})>"
 
 # --- FIM DOS MODELOS ---
