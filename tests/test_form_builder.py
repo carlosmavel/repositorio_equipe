@@ -1,6 +1,6 @@
 import pytest
 from app import app, db
-from models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User, Formulario
+from models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User, Formulario, Secao, CampoFormulario
 from utils import user_can_access_form_builder
 
 def setup_org(prefix):
@@ -88,3 +88,20 @@ def test_field_added_after_type_selection(client):
     html = resp.data.decode('utf-8')
     assert 'id="previewContainer"' in html
     assert "onclick=\"addField('text')\"" in html
+
+
+def test_section_model_relationship(app_ctx):
+    with app_ctx.app_context():
+        f = Formulario(nome='F', estrutura='[]')
+        db.session.add(f)
+        db.session.flush()
+        s = Secao(formulario_id=f.id, titulo='Sec', ordem=0)
+        db.session.add(s)
+        db.session.flush()
+        c = CampoFormulario(formulario_id=f.id, secao_id=s.id, tipo='text', label='Perg', obrigatorio=False, ordem=0)
+        db.session.add(c)
+        db.session.commit()
+        sec = Secao.query.filter_by(formulario_id=f.id).first()
+        assert sec.titulo == 'Sec'
+        assert sec.campos[0].label == 'Perg'
+        assert sec.campos[0].secao_id == sec.id

@@ -7,25 +7,50 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('formBuilderForm');
 
   function updateNumbers() {
-    fieldsContainer.querySelectorAll('.field').forEach((el, idx) => {
+    let pergunta = 0;
+    let secao = 0;
+    fieldsContainer.querySelectorAll('.field').forEach(el => {
       const numero = el.querySelector('.question-number');
-      if (numero) numero.textContent = `Pergunta ${idx + 1}`;
+      const tipoEl = el.querySelector('.field-tipo');
+      if (tipoEl && tipoEl.value === 'section') {
+        secao += 1;
+        if (numero) numero.textContent = `Seção ${secao}`;
+      } else {
+        pergunta += 1;
+        if (numero) numero.textContent = `Pergunta ${pergunta}`;
+      }
     });
   }
 
   function updateQuestionTitle(fieldEl) {
     const titulo = fieldEl.querySelector('.field-label').value.trim();
+    const tipo = fieldEl.querySelector('.field-tipo').value;
     const titleSpan = fieldEl.querySelector('.question-title');
-    if (titleSpan) titleSpan.textContent = titulo || 'Pergunta';
+    if (!titleSpan) return;
+    if (tipo === 'section') {
+      titleSpan.textContent = titulo || 'Seção';
+    } else {
+      titleSpan.textContent = titulo || 'Pergunta';
+    }
   }
 
   function updateJSON() {
     const fields = [];
     fieldsContainer.querySelectorAll('.field').forEach((fieldEl, idx) => {
       const tipo = fieldEl.querySelector('.field-tipo').value;
+      const id = fieldEl.dataset.id;
+
+      if (tipo === 'section') {
+        const titulo = fieldEl.querySelector('.field-label').value.trim();
+        const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
+        const imagem = fieldEl.querySelector('.field-imagem')?.value.trim() || '';
+        const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
+        fields.push({ id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem: idx });
+        return;
+      }
+
       const label = fieldEl.querySelector('.field-label').value.trim();
       const obrigatorio = fieldEl.querySelector('.field-obrigatorio').checked;
-      const id = fieldEl.dataset.id;
       const fieldData = { id, tipo, label, obrigatorio, ordem: idx };
 
       if (tipo === 'likert') {
@@ -95,6 +120,16 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="form-label">Título</label>
           <input type="text" class="form-control field-label" placeholder="Título da Pergunta">
         </div>
+        <div class="mb-2 field-section-subtitulo-wrapper d-none">
+          <label class="form-label">Subtítulo</label>
+          <input type="text" class="form-control field-subtitulo" placeholder="Insira um subtítulo">
+        </div>
+        <div class="mb-2 field-section-media-wrapper d-none">
+          <label class="form-label">Imagem (URL)</label>
+          <input type="text" class="form-control field-imagem" placeholder="URL da imagem">
+          <label class="form-label mt-2">Vídeo (URL)</label>
+          <input type="text" class="form-control field-video" placeholder="URL do vídeo">
+        </div>
         <div class="mb-2 field-opcoes-wrapper d-none">
           <label class="form-label">Opções (separadas por vírgula)</label>
           <input type="text" class="form-control field-opcoes">
@@ -111,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="form-label mt-2">Cabeçalhos (separados por vírgula)</label>
           <input type="text" class="form-control field-table-cabecalhos">
         </div>
-        <div class="form-check mb-2">
+        <div class="form-check mb-2 field-obrigatorio-wrapper">
           <input class="form-check-input field-obrigatorio" type="checkbox" id="field-obrig-${Date.now()}">
           <label class="form-check-label" for="field-obrig-${Date.now()}">Obrigatório</label>
         </div>
@@ -124,25 +159,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const opcoesWrapper = div.querySelector('.field-opcoes-wrapper');
     const likertWrapper = div.querySelector('.field-likert-wrapper');
     const tableWrapper = div.querySelector('.field-table-wrapper');
+    const obrigatorioWrapper = div.querySelector('.field-obrigatorio-wrapper');
+    const sectionSubtitleWrapper = div.querySelector('.field-section-subtitulo-wrapper');
+    const sectionMediaWrapper = div.querySelector('.field-section-media-wrapper');
+    const labelInput = div.querySelector('.field-label');
 
     tipoSelect.addEventListener('change', () => {
       if (['select', 'option'].includes(tipoSelect.value)) {
         opcoesWrapper.classList.remove('d-none');
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
+        sectionSubtitleWrapper.classList.add('d-none');
+        sectionMediaWrapper.classList.add('d-none');
+        obrigatorioWrapper.classList.remove('d-none');
+        labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoSelect.value === 'likert') {
         opcoesWrapper.classList.add('d-none');
         likertWrapper.classList.remove('d-none');
         tableWrapper.classList.add('d-none');
+        sectionSubtitleWrapper.classList.add('d-none');
+        sectionMediaWrapper.classList.add('d-none');
+        obrigatorioWrapper.classList.remove('d-none');
+        labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoSelect.value === 'table') {
         opcoesWrapper.classList.add('d-none');
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.remove('d-none');
+        sectionSubtitleWrapper.classList.add('d-none');
+        sectionMediaWrapper.classList.add('d-none');
+        obrigatorioWrapper.classList.remove('d-none');
+        labelInput.placeholder = 'Título da Pergunta';
+      } else if (tipoSelect.value === 'section') {
+        opcoesWrapper.classList.add('d-none');
+        likertWrapper.classList.add('d-none');
+        tableWrapper.classList.add('d-none');
+        obrigatorioWrapper.classList.add('d-none');
+        sectionSubtitleWrapper.classList.remove('d-none');
+        sectionMediaWrapper.classList.remove('d-none');
+        labelInput.placeholder = 'Insira o seu título aqui';
       } else {
         opcoesWrapper.classList.add('d-none');
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
+        sectionSubtitleWrapper.classList.add('d-none');
+        sectionMediaWrapper.classList.add('d-none');
+        obrigatorioWrapper.classList.remove('d-none');
+        labelInput.placeholder = 'Título da Pergunta';
       }
+      updateNumbers();
+      updateQuestionTitle(div);
       updateJSON();
     });
 
@@ -162,19 +227,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Prefill data if editing existing structure
     tipoSelect.value = data.tipo || tipo || 'text';
-    div.querySelector('.field-label').value = data.label || '';
+    labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatorio').checked = data.obrigatorio || false;
-    if (['select', 'option'].includes(data.tipo)) {
+    if (['select', 'option'].includes(tipoSelect.value)) {
       opcoesWrapper.classList.remove('d-none');
       div.querySelector('.field-opcoes').value = (data.opcoes || []).join(', ');
-    } else if (data.tipo === 'likert') {
+    } else if (tipoSelect.value === 'likert') {
       likertWrapper.classList.remove('d-none');
       div.querySelector('.field-likert-linhas').value = (data.linhas || []).join(', ');
       div.querySelector('.field-likert-colunas').value = (data.colunas || []).join(', ');
-    } else if (data.tipo === 'table') {
+    } else if (tipoSelect.value === 'table') {
       tableWrapper.classList.remove('d-none');
       div.querySelector('.field-table-rows').value = data.linhas || 1;
       div.querySelector('.field-table-cabecalhos').value = (data.opcoes || []).join(', ');
+    } else if (tipoSelect.value === 'section') {
+      obrigatorioWrapper.classList.add('d-none');
+      sectionSubtitleWrapper.classList.remove('d-none');
+      sectionMediaWrapper.classList.remove('d-none');
+      labelInput.placeholder = 'Insira o seu título aqui';
+      div.querySelector('.field-subtitulo').value = data.subtitulo || '';
+      div.querySelector('.field-imagem').value = data.imagem_url || '';
+      div.querySelector('.field-video').value = data.video_url || '';
     }
 
     updateQuestionTitle(div);
