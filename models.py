@@ -510,6 +510,12 @@ class Formulario(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     campos = db.relationship('CampoFormulario', back_populates='formulario', cascade='all, delete-orphan')
+    secoes = db.relationship(
+        'Secao',
+        back_populates='formulario',
+        cascade='all, delete-orphan',
+        order_by='Secao.ordem'
+    )
 
     def __repr__(self):
         return f"<Formulario {self.nome}>"
@@ -520,6 +526,7 @@ class CampoFormulario(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     formulario_id = db.Column(db.Integer, db.ForeignKey('formulario.id'), nullable=False)
+    secao_id = db.Column(db.Integer, db.ForeignKey('secao.id'), nullable=True)
     tipo = db.Column(db.String(50), nullable=False)
     label = db.Column(db.String(200), nullable=False)
     obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
@@ -528,8 +535,27 @@ class CampoFormulario(db.Model):
     condicional = db.Column(db.Text, nullable=True)
 
     formulario = db.relationship('Formulario', back_populates='campos')
+    secao = db.relationship('Secao', back_populates='campos')
 
     def __repr__(self):
         return f"<CampoFormulario {self.label} ({self.tipo})>"
+
+
+class Secao(db.Model):
+    __tablename__ = 'secao'
+
+    id = db.Column(db.Integer, primary_key=True)
+    formulario_id = db.Column(db.Integer, db.ForeignKey('formulario.id'), nullable=False)
+    titulo = db.Column(db.String(200), nullable=True)
+    subtitulo = db.Column(db.String(200), nullable=True)
+    imagem_url = db.Column(db.String(255), nullable=True)
+    video_url = db.Column(db.String(255), nullable=True)
+    ordem = db.Column(db.Integer, nullable=False)
+
+    formulario = db.relationship('Formulario', back_populates='secoes')
+    campos = db.relationship('CampoFormulario', back_populates='secao', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"<Secao {self.titulo}>"
 
 # --- FIM DOS MODELOS ---

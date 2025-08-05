@@ -10,7 +10,16 @@
           {% set idx = loop.index0 %}
           <div class="mb-3">
             {% if campo.tipo == 'section' %}
-              <h4 class="mt-4">{{ campo.label }}</h4>
+              <div class="p-3 bg-light border rounded">
+                <h4 class="mb-1">{{ campo.titulo or campo.label }}</h4>
+                {% if campo.subtitulo %}<p class="text-muted mb-2">{{ campo.subtitulo }}</p>{% endif %}
+                {% if campo.imagem_url %}
+                  <img src="{{ campo.imagem_url }}" alt="" class="img-fluid mb-2" style="max-width: 200px;">
+                {% endif %}
+                {% if campo.video_url %}
+                  <div class="ratio ratio-16x9 mb-2"><iframe src="{{ campo.video_url }}" allowfullscreen></iframe></div>
+                {% endif %}
+              </div>
             {% else %}
               <label class="form-label">{{ campo.label }}{% if campo.obrigatorio %} *{% endif %}</label>
               {% if campo.tipo == 'textarea' %}
