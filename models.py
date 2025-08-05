@@ -463,6 +463,23 @@ class CampoEtapa(db.Model):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
 
 
+class OrdemServico(db.Model):
+    __tablename__ = 'ordem_servico'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    titulo = db.Column(db.String(255), nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='aberta', server_default='aberta')
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    processo = db.relationship('Processo')
+
+    def __repr__(self):
+        return f"<OrdemServico {self.titulo} ({self.status})>"
+
+
 class RespostaEtapaOS(db.Model):
     __tablename__ = 'resposta_etapa_os'
 
