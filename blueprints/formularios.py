@@ -44,8 +44,14 @@ def formularios():
             db.session.commit()
             flash('Formulário criado com sucesso!', 'success')
             return redirect(url_for('formularios_bp.formularios'))
-    formularios = Formulario.query.order_by(Formulario.created_at.desc()).all()
-    return render_template('formularios/formulario.html', formularios=formularios, aba_ativa=aba_ativa)
+    status = request.args.get('status', 'ativos')
+    query = Formulario.query
+    if status == 'ativos':
+        query = query.filter_by(ativo=True)
+    elif status == 'inativos':
+        query = query.filter_by(ativo=False)
+    formularios = query.order_by(Formulario.created_at.desc()).all()
+    return render_template('formularios/formulario.html', formularios=formularios, aba_ativa=aba_ativa, status=status)
 
 
 @formularios_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
@@ -66,6 +72,17 @@ def editar_formulario(id):
             flash('Formulário atualizado!', 'success')
             return redirect(url_for('formularios_bp.formularios'))
     return render_template('formularios/editar_formulario.html', formulario=formulario)
+
+
+@formularios_bp.route('/<int:id>/toggle-ativo', methods=['POST'])
+@form_builder_required
+def toggle_ativo_formulario(id):
+    formulario = Formulario.query.get_or_404(id)
+    formulario.ativo = not formulario.ativo
+    db.session.commit()
+    status_texto = 'ativado' if formulario.ativo else 'inativado'
+    flash(f'Formulário {status_texto} com sucesso!', 'success')
+    return redirect(url_for('formularios_bp.formularios'))
 
 
 @formularios_bp.route('/upload-imagem', methods=['POST'])

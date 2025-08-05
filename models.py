@@ -509,6 +509,7 @@ class Formulario(db.Model):
     estrutura = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     campos = db.relationship('CampoFormulario', back_populates='formulario', cascade='all, delete-orphan')
     secoes = db.relationship(
