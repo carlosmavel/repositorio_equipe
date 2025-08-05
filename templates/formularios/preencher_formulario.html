@@ -7,18 +7,83 @@
       <h3 class="mb-3">Preencher Formulário: {{ formulario.nome }}</h3>
       <form>
         {% for campo in estrutura %}
+          {% set idx = loop.index0 %}
           <div class="mb-3">
-            <label class="form-label">{{ campo.label }}{% if campo.obrigatorio %} *{% endif %}</label>
-            {% if campo.tipo == 'textarea' %}
-              <textarea class="form-control" {% if campo.obrigatorio %}required{% endif %}></textarea>
-            {% elif campo.tipo == 'select' %}
-              <select class="form-select" {% if campo.obrigatorio %}required{% endif %}>
-                {% for opcao in campo.opcoes %}
-                  <option value="{{ opcao }}">{{ opcao }}</option>
-                {% endfor %}
-              </select>
+            {% if campo.tipo == 'section' %}
+              <h4 class="mt-4">{{ campo.label }}</h4>
             {% else %}
-              <input type="text" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
+              <label class="form-label">{{ campo.label }}{% if campo.obrigatorio %} *{% endif %}</label>
+              {% if campo.tipo == 'textarea' %}
+                <textarea class="form-control" {% if campo.obrigatorio %}required{% endif %}></textarea>
+              {% elif campo.tipo == 'select' %}
+                <select class="form-select" {% if campo.obrigatorio %}required{% endif %}>
+                  {% for opcao in campo.opcoes %}
+                    <option value="{{ opcao }}">{{ opcao }}</option>
+                  {% endfor %}
+                </select>
+              {% elif campo.tipo == 'option' %}
+                {% for opcao in campo.opcoes %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ opcao }}" {% if campo.obrigatorio %}required{% endif %}>
+                    <label class="form-check-label">{{ opcao }}</label>
+                  </div>
+                {% endfor %}
+              {% elif campo.tipo == 'rating' %}
+                {% set opcoes = campo.opcoes if campo.opcoes else ['1','2','3','4','5'] %}
+                <select class="form-select" {% if campo.obrigatorio %}required{% endif %}>
+                  {% for opcao in opcoes %}
+                    <option value="{{ opcao }}">{{ opcao }}</option>
+                  {% endfor %}
+                </select>
+              {% elif campo.tipo == 'date' %}
+                <input type="date" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
+              {% elif campo.tipo == 'likert' %}
+                {% set opcoes = campo.opcoes if campo.opcoes else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
+                <div>
+                  {% for opcao in opcoes %}
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ opcao }}" {% if campo.obrigatorio %}required{% endif %}>
+                      <label class="form-check-label">{{ opcao }}</label>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif campo.tipo == 'file' %}
+                <input type="file" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
+              {% elif campo.tipo == 'nps' %}
+                <div class="d-flex flex-wrap">
+                  {% for i in range(11) %}
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" name="campo{{ idx }}" value="{{ i }}" {% if campo.obrigatorio %}required{% endif %}>
+                      <label class="form-check-label">{{ i }}</label>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif campo.tipo == 'table' %}
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    {% if campo.opcoes %}
+                      <thead>
+                        <tr>
+                          {% for cab in campo.opcoes %}
+                            <th>{{ cab }}</th>
+                          {% endfor %}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {% for cab in campo.opcoes %}
+                            <td><input type="text" class="form-control"></td>
+                          {% endfor %}
+                        </tr>
+                      </tbody>
+                    {% else %}
+                      <tbody><tr><td>Sem dados</td></tr></tbody>
+                    {% endif %}
+                  </table>
+                </div>
+              {% else %}
+                <input type="text" class="form-control" {% if campo.obrigatorio %}required{% endif %}>
+              {% endif %}
             {% endif %}
           </div>
         {% endfor %}
