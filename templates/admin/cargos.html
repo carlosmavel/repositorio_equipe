@@ -28,34 +28,37 @@
                         <div class="card-body">
                             {% if estrutura %}
                                 <div class="mb-3">
-                                    <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor ou célula">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor, célula ou instituição">
+                                    </div>
                                 </div>
                                 <div class="ms-2" id="cargoContainer">
                                     {% for inst in estrutura %}
                                         <div class="card mb-2 instituicao-container">
                                             <div class="card-header d-flex align-items-center">
-                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
-                                                <h5 class="mb-0">Instituição: {{ inst.obj.nome }}</h5>
+                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="setores" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                <h5 class="mb-0">Instituição: <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h5>
                                             </div>
                                             <div id="inst-{{ inst.obj.id }}" class="collapse show">
                                                 {% for est in inst.estabelecimentos %}
-                                                    <div class="ms-3 estabelecimento-container">
-                                                        <h6 class="fw-bold">Estabelecimento: {{ est.obj.nome_fantasia }}</h6>
+                                                    <div class="ms-4 estabelecimento-container">
+                                                        <h6 class="fw-bold">Estabelecimento: <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h6>
                                                         {% for setor in est.setores %}
                                                             <div class="setor-container border rounded p-2 mb-2">
                                                                 <div class="d-flex align-items-center">
-                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
-                                                                    <strong class="mb-0">Setor: {{ setor.obj.nome }}</strong>
+                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="celulas" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                                    <strong class="mb-0">Setor: <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></strong>
                                                                 </div>
                                                                 <div id="setor-{{ setor.obj.id }}" class="ms-3 collapse show">
                                                                     {% if setor.cargos %}
                                                                         <ul class="list-group list-group-flush mb-2">
                                                                             {% for cargo in setor.cargos %}
-                                                                            <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="">
+                                                                            <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
                                                                                 <span>
-                                                                                    {{ cargo.nome }}
-                                                                                    {% if cargo.atende_ordem_servico %}
-                                                                                        <span class="badge bg-success ms-2">Atende OS</span>
+                                                                                    <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
+                                                                                    {% if cargo.permiteAtenderOrdemServico or cargo.atende_ordem_servico %}
+                                                                                        <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                     {% endif %}
                                                                                 </span>
                                                                                 <div class="dropdown">
@@ -77,20 +80,20 @@
                                                                         </ul>
                                                                     {% endif %}
                                                                     {% for cel in setor.celulas %}
-                                                                        <div class="celula-container border-start ps-3 mb-2">
+                                                                        <div class="celula-container ps-3 mb-2">
                                                                             <div class="d-flex align-items-center">
-                                                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
-                                                                                <span class="fw-bold">Célula: {{ cel.obj.nome }}</span>
+                                                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="cargos" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                                                <span class="fw-bold">Célula: <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></span>
                                                                             </div>
                                                                             <div id="cel-{{ cel.obj.id }}" class="ms-3 collapse show">
                                                                                 {% if cel.cargos %}
                                                                                     <ul class="list-group list-group-flush">
                                                                                         {% for cargo in cel.cargos %}
-                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}">
+                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
                                                                                             <span>
-                                                                                                {{ cargo.nome }}
-                                                                                                {% if cargo.atende_ordem_servico %}
-                                                                                                    <span class="badge bg-success ms-2">Atende OS</span>
+                                                                                                <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
+                                                                                                {% if cargo.permiteAtenderOrdemServico or cargo.atende_ordem_servico %}
+                                                                                                    <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                                 {% endif %}
                                                                                             </span>
                                                                                             <div class="dropdown">
@@ -450,17 +453,25 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const mostrarSetores = {};
+    const mostrarCelulas = {};
+    const mostrarCargos = {};
+
     document.querySelectorAll('.toggle-section').forEach(function(btn) {
+        const targetSelector = btn.getAttribute('data-bs-target');
+        const level = btn.dataset.level;
+        const target = document.querySelector(targetSelector);
+        const stateMap = level === 'celulas' ? mostrarCelulas : level === 'cargos' ? mostrarCargos : mostrarSetores;
+        stateMap[targetSelector] = true;
+
         btn.addEventListener('click', function() {
-            var icon = btn.querySelector('i');
-            var target = document.querySelector(btn.getAttribute('data-bs-target'));
             setTimeout(function() {
                 if (target.classList.contains('show')) {
-                    icon.classList.remove('bi-plus-lg');
-                    icon.classList.add('bi-dash-lg');
+                    btn.classList.add('expanded');
+                    stateMap[targetSelector] = true;
                 } else {
-                    icon.classList.remove('bi-dash-lg');
-                    icon.classList.add('bi-plus-lg');
+                    btn.classList.remove('expanded');
+                    stateMap[targetSelector] = false;
                 }
             }, 200);
         });
@@ -468,6 +479,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const searchInput = document.getElementById('cargoSearch');
     if (searchInput) {
+        const highlightText = (term) => {
+            document.querySelectorAll('.inst-name, .setor-name, .celula-name, .cargo-name').forEach(function(el) {
+                const text = el.dataset.name;
+                if (term && text.toLowerCase().includes(term)) {
+                    const regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + ')', 'gi');
+                    el.innerHTML = text.replace(regex, '<span class="search-highlight">$1</span>');
+                } else {
+                    el.textContent = text;
+                }
+            });
+        };
+
         searchInput.addEventListener('input', function() {
             const term = searchInput.value.toLowerCase();
 
@@ -475,7 +498,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cargo = item.dataset.cargo.toLowerCase();
                 const setor = item.dataset.setor.toLowerCase();
                 const celula = item.dataset.celula.toLowerCase();
-                const match = cargo.includes(term) || setor.includes(term) || celula.includes(term);
+                const inst = item.dataset.instituicao.toLowerCase();
+                const match = cargo.includes(term) || setor.includes(term) || celula.includes(term) || inst.includes(term);
                 item.style.display = match ? '' : 'none';
             });
 
@@ -493,6 +517,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const hasVisible = Array.from(inst.querySelectorAll('.cargo-item')).some(el => el.style.display !== 'none');
                 inst.style.display = hasVisible ? '' : 'none';
             });
+
+            highlightText(term);
         });
     }
 });
