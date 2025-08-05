@@ -72,7 +72,7 @@ def test_create_formulario(client):
     with app.app_context():
         user_allowed_id = create_user('creator', True)
     login(client, user_allowed_id)
-    resp = client.post('/ordem-servico/formularios/novo', data={'nome': 'Form1', 'estrutura': '{}'}, follow_redirects=True)
+    resp = client.post('/ordem-servico/formularios/', data={'nome': 'Form1', 'estrutura': '{}'}, follow_redirects=True)
     assert resp.status_code == 200
     assert b'Form1' in resp.data
     with app.app_context():

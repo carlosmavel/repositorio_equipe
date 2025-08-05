@@ -20,28 +20,24 @@ except ImportError:  # pragma: no cover - fallback para execução direta
 formularios_bp = Blueprint('formularios_bp', __name__, url_prefix='/ordem-servico/formularios')
 
 
-@formularios_bp.route('/')
+@formularios_bp.route('/', methods=['GET', 'POST'])
 @form_builder_required
-def listar_formularios():
-    formularios = Formulario.query.order_by(Formulario.created_at.desc()).all()
-    return render_template('formularios/lista.html', formularios=formularios)
-
-
-@formularios_bp.route('/novo', methods=['GET', 'POST'])
-@form_builder_required
-def novo_formulario():
+def formularios():
+    aba_ativa = 'consulta'
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         estrutura = request.form.get('estrutura', '').strip()
         if not nome:
             flash('Nome é obrigatório.', 'danger')
+            aba_ativa = 'cadastro'
         else:
             f = Formulario(nome=nome, estrutura=estrutura)
             db.session.add(f)
             db.session.commit()
             flash('Formulário criado com sucesso!', 'success')
-            return redirect(url_for('formularios_bp.listar_formularios'))
-    return render_template('formularios/form.html', formulario=None)
+            return redirect(url_for('formularios_bp.formularios'))
+    formularios = Formulario.query.order_by(Formulario.created_at.desc()).all()
+    return render_template('formularios/formulario.html', formularios=formularios, aba_ativa=aba_ativa)
 
 
 @formularios_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
@@ -58,5 +54,5 @@ def editar_formulario(id):
             formulario.estrutura = estrutura
             db.session.commit()
             flash('Formulário atualizado!', 'success')
-            return redirect(url_for('formularios_bp.listar_formularios'))
-    return render_template('formularios/form.html', formulario=formulario)
+            return redirect(url_for('formularios_bp.formularios'))
+    return render_template('formularios/editar_formulario.html', formulario=formulario)
