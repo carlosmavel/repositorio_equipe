@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Nova Ordem de Serviço{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3>Abrir Nova Ordem de Serviço</h3>
+          <form method="POST">
+            <div class="mb-3">
+              <label for="titulo" class="form-label">Título <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="titulo" name="titulo" required>
+            </div>
+            <div class="mb-3">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea class="form-control" id="descricao" name="descricao" rows="4"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="processo_id" class="form-label">Processo</label>
+              <select class="form-select" id="processo_id" name="processo_id">
+                <option value="">--</option>
+                {% for proc in processos %}
+                <option value="{{ proc.id }}">{{ proc.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

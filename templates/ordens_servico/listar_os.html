@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Ordens de Serviço{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3>Ordens de Serviço</h3>
+      {% if ordens %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for os in ordens %}
+            <tr>
+              <td>{{ os.titulo }}</td>
+              <td>{{ os.status }}</td>
+              <td class="text-end">
+                <a href="{{ url_for('ordens_servico_bp.detalhar_os', ordem_id=os.id) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted">Nenhuma Ordem de Serviço encontrada.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

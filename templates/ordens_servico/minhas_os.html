@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Minhas Ordens de Serviço{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3>Minhas Ordens de Serviço</h3>
+      {% if ordens %}
+      <div class="list-group">
+        {% for os in ordens %}
+        <a href="{{ url_for('ordens_servico_bp.detalhar_os', ordem_id=os.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+          <span>{{ os.titulo }}</span>
+          <span class="badge bg-secondary">{{ os.status }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted">Nenhuma Ordem de Serviço encontrada.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

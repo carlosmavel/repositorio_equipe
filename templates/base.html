@@ -314,9 +314,9 @@
                         </a>
                         <div class="collapse {{ 'show' if os_active }}" id="collapseOSGlobal">
                             <ul class="nav flex-column ps-3">
-                                <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
-                                <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_nova' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_minhas' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
                                 {% if user_can_access_form_builder(current_user) %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.listar_formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
                                 {% endif %}
