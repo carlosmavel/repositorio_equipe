@@ -4,7 +4,7 @@
 <div class="container mt-3">
   <div class="d-flex justify-content-between mb-3">
     <h1>Formulários</h1>
-    <a class="btn btn-primary" href="{{ url_for('novo_formulario') }}">Novo Formulário</a>
+    <a class="btn btn-primary" href="{{ url_for('formularios_bp.novo_formulario') }}">Novo Formulário</a>
   </div>
   {% if formularios %}
   <table class="table table-striped">
@@ -13,7 +13,7 @@
     {% for f in formularios %}
       <tr>
         <td>{{ f.nome }}</td>
-        <td><a class="btn btn-sm btn-secondary" href="{{ url_for('editar_formulario', id=f.id) }}">Editar</a></td>
+        <td><a class="btn btn-sm btn-secondary" href="{{ url_for('formularios_bp.editar_formulario', id=f.id) }}">Editar</a></td>
       </tr>
     {% endfor %}
     </tbody>
