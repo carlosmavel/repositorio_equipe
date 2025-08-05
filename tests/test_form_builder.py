@@ -77,3 +77,14 @@ def test_create_formulario(client):
     assert b'Form1' in resp.data
     with app.app_context():
         assert Formulario.query.filter_by(nome='Form1').first() is not None
+
+
+def test_field_added_after_type_selection(client):
+    with app.app_context():
+        user_allowed_id = create_user('builder_menu', True)
+    login(client, user_allowed_id)
+    resp = client.get('/ordem-servico/formularios/')
+    assert resp.status_code == 200
+    html = resp.data.decode('utf-8')
+    assert 'id="previewContainer"' in html
+    assert "onclick=\"addField('text')\"" in html
