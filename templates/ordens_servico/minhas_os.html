@@ -8,7 +8,7 @@
       {% if ordens %}
       <div class="list-group">
         {% for os in ordens %}
-        <a href="{{ url_for('ordens_servico_bp.detalhar_os', ordem_id=os.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
           <span>{{ os.titulo }}</span>
           <span class="badge bg-secondary">{{ os.status }}</span>
         </a>
