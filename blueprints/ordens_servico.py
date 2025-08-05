@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 try:
     from ..database import db
@@ -82,4 +82,56 @@ def admin_delete_ordem(ordem_id):
         db.session.rollback()
         flash(f'Erro ao remover ordem de serviço: {str(e)}', 'danger')
     return redirect(url_for('ordens_servico_bp.admin_ordens_servico'))
+
+
+@ordens_servico_bp.route('/os/nova', methods=['GET', 'POST'], endpoint='os_nova')
+def os_nova():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        titulo = request.form.get('titulo', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        processo_id = request.form.get('processo_id') or None
+        if not titulo:
+            flash('Título da Ordem de Serviço é obrigatório.', 'danger')
+        else:
+            ordem = OrdemServico(
+                titulo=titulo,
+                descricao=descricao,
+                processo_id=processo_id,
+            )
+            try:
+                db.session.add(ordem)
+                db.session.commit()
+                flash('Ordem de Serviço criada com sucesso!', 'success')
+                return redirect(url_for('ordens_servico_bp.os_listar'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao salvar ordem de serviço: {str(e)}', 'danger')
+    processos = Processo.query.order_by(Processo.nome).all()
+    return render_template('ordens_servico/nova_os.html', processos=processos)
+
+
+@ordens_servico_bp.route('/os', endpoint='os_listar')
+def os_listar():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    ordens = OrdemServico.query.order_by(OrdemServico.created_at.desc()).all()
+    return render_template('ordens_servico/listar_os.html', ordens=ordens)
+
+
+@ordens_servico_bp.route('/os/<ordem_id>', endpoint='os_detalhar')
+def os_detalhar(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    return render_template('ordens_servico/detalhe_os.html', ordem=ordem)
+
+
+@ordens_servico_bp.route('/os/minhas', endpoint='os_minhas')
+def os_minhas():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    ordens = OrdemServico.query.order_by(OrdemServico.created_at.desc()).all()
+    return render_template('ordens_servico/minhas_os.html', ordens=ordens)
 
