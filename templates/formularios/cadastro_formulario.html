@@ -27,8 +27,26 @@
               </div>
 
               <div class="tab-pane fade p-3" id="fields" role="tabpanel" aria-labelledby="fields-tab">
+                <div id="previewContainer" class="mb-3"></div>
                 <div id="fieldsContainer"></div>
-                <button type="button" class="btn btn-outline-primary mb-3" id="addField">Adicionar Pergunta</button>
+                <div class="dropdown mb-3">
+                  <button class="btn btn-outline-primary dropdown-toggle" type="button" id="addField" data-bs-toggle="dropdown" aria-expanded="false">
+                    Adicionar Pergunta
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="addField" id="questionTypeMenu">
+                    <li><button class="dropdown-item" type="button" onclick="addField('text')">Texto</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('textarea')">Parágrafo</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('select')">Escolha</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('option')">Opção</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('rating')">Classificação</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('date')">Data</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('likert')">Likert</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('file')">Carregar Arquivo</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('nps')">Net Promoter Score®</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('section')">Seção</button></li>
+                    <li><button class="dropdown-item" type="button" onclick="addField('table')">Tabelas</button></li>
+                  </ul>
+                </div>
                 <input type="hidden" id="estrutura" name="estrutura" value="{{ formulario.estrutura|e if formulario else '' }}">
               </div>
             </div>

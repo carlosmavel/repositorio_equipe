@@ -3,7 +3,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const fieldsContainer = document.getElementById('fieldsContainer');
-  const addFieldBtn = document.getElementById('addField');
   const estruturaInput = document.getElementById('estrutura');
   const form = document.getElementById('formBuilderForm');
 
@@ -22,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     estruturaInput.value = JSON.stringify(fields);
   }
 
-  function addField(data = {}) {
+  function addField(tipo, data = {}) {
     const div = document.createElement('div');
     div.className = 'field card mb-3';
     div.innerHTML = `
@@ -83,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Prefill data if editing existing structure
-    tipoSelect.value = data.tipo || 'text';
+    tipoSelect.value = data.tipo || tipo || 'text';
     div.querySelector('.field-label').value = data.label || '';
     div.querySelector('.field-obrigatorio').checked = data.obrigatorio || false;
     if (['select', 'option', 'likert', 'table'].includes(data.tipo)) {
@@ -94,13 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateJSON();
   }
 
-  addFieldBtn.addEventListener('click', () => addField());
+  window.addField = addField;
 
   // Load existing structure if present
   if (estruturaInput.value) {
     try {
       const parsed = JSON.parse(estruturaInput.value);
-      parsed.forEach(f => addField(f));
+      parsed.forEach(f => addField(f.tipo, f));
     } catch (e) {
       console.error('Erro ao carregar estrutura existente', e);
     }
