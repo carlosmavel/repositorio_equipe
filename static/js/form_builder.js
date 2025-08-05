@@ -33,6 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="text">Texto</option>
             <option value="textarea">Parágrafo</option>
             <option value="select">Escolha</option>
+            <option value="option">Opção</option>
+            <option value="rating">Classificação</option>
+            <option value="date">Data</option>
+            <option value="likert">Likert</option>
+            <option value="file">Carregar Arquivo</option>
+            <option value="nps">Net Promoter Score®</option>
+            <option value="section">Seção</option>
+            <option value="table">Tabelas</option>
           </select>
         </div>
         <div class="mb-2">
@@ -56,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const opcoesInput = div.querySelector('.field-opcoes');
 
     tipoSelect.addEventListener('change', () => {
-      if (tipoSelect.value === 'select') {
+      if (['select', 'option', 'likert', 'table'].includes(tipoSelect.value)) {
         opcoesWrapper.classList.remove('d-none');
       } else {
         opcoesWrapper.classList.add('d-none');
@@ -78,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tipoSelect.value = data.tipo || 'text';
     div.querySelector('.field-label').value = data.label || '';
     div.querySelector('.field-obrigatorio').checked = data.obrigatorio || false;
-    if (data.tipo === 'select') {
+    if (['select', 'option', 'likert', 'table'].includes(data.tipo)) {
       opcoesWrapper.classList.remove('d-none');
       opcoesInput.value = (data.opcoes || []).join(', ');
     }
