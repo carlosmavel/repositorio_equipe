@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Editar Formulário{% endblock %}
+{% block content %}
+{% set action_url = url_for('formularios_bp.editar_formulario', id=formulario.id) %}
+{% include 'formularios/cadastro_formulario.html' %}
+{% endblock %}
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/form_builder.js') }}"></script>
+{% endblock %}
