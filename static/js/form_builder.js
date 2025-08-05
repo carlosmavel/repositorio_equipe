@@ -1,53 +1,23 @@
 // static/js/form_builder.js
-// Simple form builder interface similar to Microsoft Forms
+// Interface de construção de formulários com ordenação de perguntas
 
 document.addEventListener('DOMContentLoaded', () => {
   const fieldsContainer = document.getElementById('fieldsContainer');
   const estruturaInput = document.getElementById('estrutura');
   const form = document.getElementById('formBuilderForm');
 
-  let draggedField = null;
-
-  function addDragAndDropHandlers(field) {
-    field.draggable = true;
-    field.style.cursor = 'move';
-    field.addEventListener('dragstart', () => {
-      draggedField = field;
-      field.classList.add('dragging');
-    });
-    field.addEventListener('dragend', () => {
-      field.classList.remove('dragging');
-      draggedField = null;
-      updateJSON();
+  function updateNumbers() {
+    fieldsContainer.querySelectorAll('.field').forEach((el, idx) => {
+      const numero = el.querySelector('.question-number');
+      if (numero) numero.textContent = `Pergunta ${idx + 1}`;
     });
   }
 
-  function getDragAfterElement(container, y) {
-    const elements = [...container.querySelectorAll('.field:not(.dragging)')];
-    return elements.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset, element: child };
-        } else {
-          return closest;
-        }
-      },
-      { offset: Number.NEGATIVE_INFINITY }
-    ).element;
+  function updateQuestionTitle(fieldEl) {
+    const titulo = fieldEl.querySelector('.field-label').value.trim();
+    const titleSpan = fieldEl.querySelector('.question-title');
+    if (titleSpan) titleSpan.textContent = titulo || 'Pergunta';
   }
-
-  fieldsContainer.addEventListener('dragover', e => {
-    if (!draggedField) return;
-    e.preventDefault();
-    const afterElement = getDragAfterElement(fieldsContainer, e.clientY);
-    if (afterElement == null) {
-      fieldsContainer.appendChild(draggedField);
-    } else if (afterElement !== draggedField) {
-      fieldsContainer.insertBefore(draggedField, afterElement);
-    }
-  });
 
   function updateJSON() {
     const fields = [];
@@ -55,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const tipo = fieldEl.querySelector('.field-tipo').value;
       const label = fieldEl.querySelector('.field-label').value.trim();
       const obrigatorio = fieldEl.querySelector('.field-obrigatorio').checked;
-      const fieldData = { tipo, label, obrigatorio, ordem: idx };
+      const id = fieldEl.dataset.id;
+      const fieldData = { id, tipo, label, obrigatorio, ordem: idx };
 
       if (tipo === 'likert') {
         const linhas = fieldEl
@@ -96,7 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function addField(tipo, data = {}) {
     const div = document.createElement('div');
     div.className = 'field card mb-3';
+    div.dataset.id = data.id || Date.now();
     div.innerHTML = `
+      <div class="card-header d-flex align-items-center">
+        <button type="button" class="btn btn-light btn-sm drag-handle me-2"><i class="bi bi-grip-vertical"></i></button>
+        <span class="question-number me-2"></span>
+        <span class="question-title flex-grow-1">${data.label || ''}</span>
+      </div>
       <div class="card-body">
         <div class="mb-2">
           <label class="form-label">Tipo</label>
@@ -115,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </select>
         </div>
         <div class="mb-2">
-          <label class="form-label">Label</label>
-          <input type="text" class="form-control field-label">
+          <label class="form-label">Título</label>
+          <input type="text" class="form-control field-label" placeholder="Título da Pergunta">
         </div>
         <div class="mb-2 field-opcoes-wrapper d-none">
           <label class="form-label">Opções (separadas por vírgula)</label>
@@ -140,8 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <button type="button" class="btn btn-sm btn-outline-danger remove-field">Remover</button>
       </div>`;
+
     fieldsContainer.appendChild(div);
-    addDragAndDropHandlers(div);
 
     const tipoSelect = div.querySelector('.field-tipo');
     const opcoesWrapper = div.querySelector('.field-opcoes-wrapper');
@@ -171,11 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     div.querySelector('.remove-field').addEventListener('click', () => {
       div.remove();
+      updateNumbers();
       updateJSON();
     });
 
     div.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('input', updateJSON);
+      el.addEventListener('input', () => {
+        updateQuestionTitle(div);
+        updateJSON();
+      });
       el.addEventListener('change', updateJSON);
     });
 
@@ -196,10 +177,39 @@ document.addEventListener('DOMContentLoaded', () => {
       div.querySelector('.field-table-cabecalhos').value = (data.opcoes || []).join(', ');
     }
 
+    updateQuestionTitle(div);
+    updateNumbers();
     updateJSON();
   }
 
   window.addField = addField;
+
+  new Sortable(fieldsContainer, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onStart: () => {
+      fieldsContainer.classList.add('sorting');
+    },
+    onEnd: () => {
+      fieldsContainer.classList.remove('sorting');
+      updateNumbers();
+      updateJSON();
+      const ids = Array.from(fieldsContainer.querySelectorAll('.field'))
+        .map(el => el.dataset.id)
+        .filter(id => !!id);
+      if (ids.length) {
+        fetch('/formulario/reordenar_perguntas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        }).then(r => {
+          if (r.ok) showToast('Ordem atualizada!');
+        });
+      }
+    }
+  });
 
   // Load existing structure if present
   if (estruturaInput.value) {
@@ -214,5 +224,24 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', () => {
     updateJSON();
   });
+
+  function showToast(message) {
+    const container = document.createElement('div');
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = 1080;
+    const toastEl = document.createElement('div');
+    toastEl.className = 'toast align-items-center text-bg-success border-0';
+    toastEl.role = 'alert';
+    toastEl.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>`;
+    container.appendChild(toastEl);
+    document.body.appendChild(container);
+    const bsToast = new bootstrap.Toast(toastEl);
+    bsToast.show();
+    toastEl.addEventListener('hidden.bs.toast', () => container.remove());
+  }
 });
 

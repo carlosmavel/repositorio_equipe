@@ -177,3 +177,18 @@ body > .container {
 #fieldsContainer .field .remove-field {
   float: right;
 }
+
+/* Ordenação de perguntas no construtor */
+#fieldsContainer.sorting .field .card-body {
+  display: none;
+}
+#fieldsContainer .drag-handle {
+  cursor: grab;
+}
+.sortable-chosen {
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+.sortable-ghost {
+  border: 2px dashed #0d6efd;
+  background: #f8f9fa;
+}
