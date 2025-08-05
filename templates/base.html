@@ -305,7 +305,7 @@
                     <hr class="my-2">
 
                     {# Bloco ORDENS DE SERVIÇO #}
-                    {% set os_active = 'os_' in request.endpoint %}
+                    {% set os_active = 'os_' in request.endpoint or 'formularios' in request.endpoint %}
                     <li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} {{ 'collapsed' if not os_active }}"
                         data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="{{ 'true' if os_active else 'false' }}" aria-controls="collapseOSGlobal">
@@ -317,6 +317,9 @@
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
+                                {% if user_can_access_form_builder(current_user) %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('listar_formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
+                                {% endif %}
                             </ul>
                         </div>
                     </li>

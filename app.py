@@ -79,6 +79,7 @@ try:
         user_can_approve_article,
         user_can_review_article,
         eligible_review_notification_users,
+        user_can_access_form_builder,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from utils import (
@@ -94,6 +95,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_approve_article,
         user_can_review_article,
         eligible_review_notification_users,
+        user_can_access_form_builder,
     )
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -170,20 +172,23 @@ try:
     from .blueprints.auth import auth_bp
     from .blueprints.articles import articles_bp
     from .blueprints.processos import processos_bp
+    from .blueprints.formularios import formularios_bp
 except ImportError:  # pragma: no cover - fallback for direct execution
     from blueprints.admin import admin_bp
     from blueprints.auth import auth_bp
     from blueprints.articles import articles_bp
     from blueprints.processos import processos_bp
+    from blueprints.formularios import formularios_bp
 
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(articles_bp)
 app.register_blueprint(processos_bp)
+app.register_blueprint(formularios_bp)
 
 for rule in list(app.url_map.iter_rules()):
-    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.'):
+    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.') or rule.endpoint.startswith('formularios_bp.'):
         app.add_url_rule(
             rule.rule,
             endpoint=rule.endpoint.split('.',1)[-1],
@@ -346,4 +351,9 @@ def inject_zoneinfo():
 def inject_niveis_cargo():
     """Disponibiliza o mapeamento de níveis hierárquicos para todos os templates."""
     return dict(NOME_NIVEL_CARGO=NOME_NIVEL_CARGO, NIVEIS_HIERARQUICOS=NIVEIS_HIERARQUICOS)
+
+
+@app.context_processor
+def inject_form_builder_permission():
+    return dict(user_can_access_form_builder=user_can_access_form_builder)
 

@@ -468,3 +468,8 @@ def eligible_review_notification_users(article):
         u for u in User.query.all()
         if user_can_approve_article(u, article) or user_can_review_article(u, article)
     ]
+
+
+def user_can_access_form_builder(user):
+    """Verifica se o usuário tem acesso ao criador de formulários."""
+    return bool(user and user.cargo and getattr(user.cargo, 'atende_ordem_servico', False))
