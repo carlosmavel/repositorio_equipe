@@ -46,6 +46,7 @@ try:
         Instituicao,
         Funcao,
         user_funcoes,
+        OrdemServico,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from models import (
@@ -63,6 +64,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Instituicao,
         Funcao,
         user_funcoes,
+        OrdemServico,
     )
 
 try:
@@ -173,12 +175,14 @@ try:
     from .blueprints.articles import articles_bp
     from .blueprints.processos import processos_bp
     from .blueprints.formularios import formularios_bp
+    from .blueprints.ordens_servico import ordens_servico_bp
 except ImportError:  # pragma: no cover - fallback for direct execution
     from blueprints.admin import admin_bp
     from blueprints.auth import auth_bp
     from blueprints.articles import articles_bp
     from blueprints.processos import processos_bp
     from blueprints.formularios import formularios_bp
+    from blueprints.ordens_servico import ordens_servico_bp
 
 
 app.register_blueprint(admin_bp)
@@ -186,9 +190,10 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(articles_bp)
 app.register_blueprint(processos_bp)
 app.register_blueprint(formularios_bp)
+app.register_blueprint(ordens_servico_bp)
 
 for rule in list(app.url_map.iter_rules()):
-    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.') or rule.endpoint.startswith('formularios_bp.'):
+    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.') or rule.endpoint.startswith('formularios_bp.') or rule.endpoint.startswith('ordens_servico_bp.'):
         app.add_url_rule(
             rule.rule,
             endpoint=rule.endpoint.split('.',1)[-1],
