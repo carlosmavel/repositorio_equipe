@@ -271,6 +271,11 @@ class User(db.Model):
         """Verifica se o usuário possui uma permissão pelo código."""
         return any(f.codigo == codigo for f in self.get_permissoes())
 
+    @property
+    def atende_ordem_servico(self) -> bool:
+        """Indica se o usuário pode atender ordens de serviço."""
+        return bool(self.cargo and getattr(self.cargo, 'atende_ordem_servico', False))
+
     def __repr__(self):
         return f"<User {self.username}>"
 

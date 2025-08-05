@@ -48,6 +48,8 @@ def test_permission_function(app_ctx):
         user_denied_id = create_user('u2', False)
         user_allowed = User.query.get(user_allowed_id)
         user_denied = User.query.get(user_denied_id)
+        assert user_allowed.atende_ordem_servico is True
+        assert user_denied.atende_ordem_servico is False
         assert user_can_access_form_builder(user_allowed) is True
         assert user_can_access_form_builder(user_denied) is False
 
