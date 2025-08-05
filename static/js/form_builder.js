@@ -6,6 +6,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const estruturaInput = document.getElementById('estrutura');
   const form = document.getElementById('formBuilderForm');
 
+  let draggedField = null;
+
+  function addDragAndDropHandlers(field) {
+    field.draggable = true;
+    field.style.cursor = 'move';
+    field.addEventListener('dragstart', () => {
+      draggedField = field;
+      field.classList.add('dragging');
+    });
+    field.addEventListener('dragend', () => {
+      field.classList.remove('dragging');
+      draggedField = null;
+      updateJSON();
+    });
+  }
+
+  function getDragAfterElement(container, y) {
+    const elements = [...container.querySelectorAll('.field:not(.dragging)')];
+    return elements.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        } else {
+          return closest;
+        }
+      },
+      { offset: Number.NEGATIVE_INFINITY }
+    ).element;
+  }
+
+  fieldsContainer.addEventListener('dragover', e => {
+    if (!draggedField) return;
+    e.preventDefault();
+    const afterElement = getDragAfterElement(fieldsContainer, e.clientY);
+    if (afterElement == null) {
+      fieldsContainer.appendChild(draggedField);
+    } else if (afterElement !== draggedField) {
+      fieldsContainer.insertBefore(draggedField, afterElement);
+    }
+  });
+
   function updateJSON() {
     const fields = [];
     fieldsContainer.querySelectorAll('.field').forEach((fieldEl, idx) => {
@@ -98,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <button type="button" class="btn btn-sm btn-outline-danger remove-field">Remover</button>
       </div>`;
     fieldsContainer.appendChild(div);
+    addDragAndDropHandlers(div);
 
     const tipoSelect = div.querySelector('.field-tipo');
     const opcoesWrapper = div.querySelector('.field-opcoes-wrapper');
