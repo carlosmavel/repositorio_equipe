@@ -249,15 +249,23 @@
                     {% endif %} {# Fim do if admin permission #}
 
                     {# Bloco BIBLIOTECA #}
+                    {% set biblioteca_active = (
+                        'meus_artigos' in request.endpoint or
+                        'novo_artigo' in request.endpoint or
+                        'pesquisar' in request.endpoint or
+                        'aprovacao' in request.endpoint or
+                        'artigo' in request.endpoint or
+                        'editar_artigo' in request.endpoint
+                    ) and 'admin_' not in request.endpoint %}
                     <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint else '' }} {{ 'collapsed' if not (request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint) }}"
-                        data-bs-toggle="collapse" href="#collapseBiblioteca" role="button" 
-                        aria-expanded="{{ 'true' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint else 'false' }}"
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if biblioteca_active else '' }} {{ 'collapsed' if not biblioteca_active }}"
+                        data-bs-toggle="collapse" href="#collapseBiblioteca" role="button"
+                        aria-expanded="{{ 'true' if biblioteca_active else 'false' }}"
                         aria-controls="collapseBiblioteca">
                             <span><i class="bi bi-book-half me-2"></i> Biblioteca</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
-                        <div class="collapse {{ 'show' if request.endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'artigo', 'editar_artigo'] and 'admin_' not in request.endpoint }}" id="collapseBiblioteca">
+                        <div class="collapse {{ 'show' if biblioteca_active }}" id="collapseBiblioteca">
                             <ul class="nav flex-column ps-3">
                                 {% if current_user.is_authenticated %}
                                     {% set codes = [
@@ -297,13 +305,14 @@
                     <hr class="my-2">
 
                     {# Bloco ORDENS DE SERVIÇO #}
+                    {% set os_active = 'os_' in request.endpoint %}
                     <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center collapsed" 
-                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="false" aria-controls="collapseOSGlobal">
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} {{ 'collapsed' if not os_active }}"
+                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="{{ 'true' if os_active else 'false' }}" aria-controls="collapseOSGlobal">
                             <span><i class="bi bi-card-checklist me-2"></i> Ordens de Serviço</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
-                        <div class="collapse" id="collapseOSGlobal">
+                        <div class="collapse {{ 'show' if os_active }}" id="collapseOSGlobal">
                             <ul class="nav flex-column ps-3">
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
