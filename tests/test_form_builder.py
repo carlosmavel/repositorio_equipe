@@ -105,3 +105,23 @@ def test_section_model_relationship(app_ctx):
         assert sec.titulo == 'Sec'
         assert sec.campos[0].label == 'Perg'
         assert sec.campos[0].secao_id == sec.id
+
+
+def test_toggle_and_filter_formulario(client):
+    with app.app_context():
+        user_allowed_id = create_user('filter', True)
+    login(client, user_allowed_id)
+    client.post('/ordem-servico/formularios/', data={'nome': 'FormAtivo', 'estrutura': '{}'}, follow_redirects=True)
+    client.post('/ordem-servico/formularios/', data={'nome': 'FormInativo', 'estrutura': '{}'}, follow_redirects=True)
+    with app.app_context():
+        form_inativo = Formulario.query.filter_by(nome='FormInativo').first()
+        form_id = form_inativo.id
+    client.post(f'/ordem-servico/formularios/{form_id}/toggle-ativo', follow_redirects=True)
+    resp = client.get('/ordem-servico/formularios/?status=ativos')
+    assert b'FormAtivo' in resp.data
+    assert b'FormInativo' not in resp.data
+    resp = client.get('/ordem-servico/formularios/?status=inativos')
+    assert b'FormInativo' in resp.data
+    assert b'FormAtivo' not in resp.data
+    resp = client.get('/ordem-servico/formularios/?status=todos')
+    assert b'FormAtivo' in resp.data and b'FormInativo' in resp.data
