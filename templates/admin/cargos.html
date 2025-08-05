@@ -27,68 +27,102 @@
                         </div>
                         <div class="card-body">
                             {% if estrutura %}
-                                <div class="ms-2">
+                                <div class="mb-3">
+                                    <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor ou célula">
+                                </div>
+                                <div class="ms-2" id="cargoContainer">
                                     {% for inst in estrutura %}
-                                        <h5>Instituição: {{ inst.obj.nome }}</h5>
-                                        {% for est in inst.estabelecimentos %}
-                                            <div class="ms-3">
-                                                <h6>Estabelecimento: {{ est.obj.nome_fantasia }}</h6>
-                                                {% for setor in est.setores %}
-                                                    <div class="ms-3 mb-2">
-                                                        <strong>Setor: {{ setor.obj.nome }}</strong>
-                                                        {% if setor.cargos %}
-                                                            <ul class="list-group list-group-flush ms-3 mb-2">
-                                                                {% for cargo in setor.cargos %}
-                                                                <li class="list-group-item d-flex justify-content-between align-items-center {{ 'text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
-                                                                    <span>{{ cargo.nome }}</span>
-                                                                    <span>
-                                                                        <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
-                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                            {% if cargo.ativo %}
-                                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar"><i class="bi bi-archive-fill"></i></button>
-                                                                            {% else %}
-                                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar"><i class="bi bi-archive-restore-fill"></i></button>
-                                                                            {% endif %}
-                                                                        </form>
-                                                                    </span>
-                                                                </li>
-                                                                {% endfor %}
-                                                            </ul>
-                                                        {% endif %}
-                                                        {% for cel in setor.celulas %}
-                                                            <div class="ms-3 mb-1">
-                                                                <span class="fw-bold">Célula: {{ cel.obj.nome }}</span>
-                                                                {% if cel.cargos %}
-                                                                    <ul class="list-group list-group-flush ms-3">
-                                                                        {% for cargo in cel.cargos %}
-                                                                        <li class="list-group-item d-flex justify-content-between align-items-center {{ 'text-muted' if not cargo.ativo else '' }} clickable-row" data-href="{{ url_for('admin_cargos', edit_id=cargo.id) }}">
-                                                                            <span>{{ cargo.nome }}</span>
-                                                                            <span>
-                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
-                                                                                {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                    {% if cargo.ativo %}
-                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar"><i class="bi bi-archive-fill"></i></button>
-                                                                                    {% else %}
-                                                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar"><i class="bi bi-archive-restore-fill"></i></button>
+                                        <div class="card mb-2 instituicao-container">
+                                            <div class="card-header d-flex align-items-center">
+                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
+                                                <h5 class="mb-0">Instituição: {{ inst.obj.nome }}</h5>
+                                            </div>
+                                            <div id="inst-{{ inst.obj.id }}" class="collapse show">
+                                                {% for est in inst.estabelecimentos %}
+                                                    <div class="ms-3 estabelecimento-container">
+                                                        <h6 class="fw-bold">Estabelecimento: {{ est.obj.nome_fantasia }}</h6>
+                                                        {% for setor in est.setores %}
+                                                            <div class="setor-container border rounded p-2 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
+                                                                    <strong class="mb-0">Setor: {{ setor.obj.nome }}</strong>
+                                                                </div>
+                                                                <div id="setor-{{ setor.obj.id }}" class="ms-3 collapse show">
+                                                                    {% if setor.cargos %}
+                                                                        <ul class="list-group list-group-flush mb-2">
+                                                                            {% for cargo in setor.cargos %}
+                                                                            <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="">
+                                                                                <span>
+                                                                                    {{ cargo.nome }}
+                                                                                    {% if cargo.permiteAtenderOrdemServico %}
+                                                                                        <span class="badge bg-success ms-2">Atende OS</span>
                                                                                     {% endif %}
-                                                                                </form>
-                                                                            </span>
-                                                                        </li>
-                                                                        {% endfor %}
-                                                                    </ul>
-                                                                {% else %}
-                                                                    <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
-                                                                {% endif %}
+                                                                                </span>
+                                                                                <div class="dropdown">
+                                                                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                                                        <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">Editar Cargo</a></li>
+                                                                                        <li>
+                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                <button type="submit" class="dropdown-item">Excluir Cargo</button>
+                                                                                            </form>
+                                                                                        </li>
+                                                                                        <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes">Gerenciar Permissões</a></li>
+                                                                                    </ul>
+                                                                                </div>
+                                                                            </li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    {% endif %}
+                                                                    {% for cel in setor.celulas %}
+                                                                        <div class="celula-container border-start ps-3 mb-2">
+                                                                            <div class="d-flex align-items-center">
+                                                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-dash-lg"></i></button>
+                                                                                <span class="fw-bold">Célula: {{ cel.obj.nome }}</span>
+                                                                            </div>
+                                                                            <div id="cel-{{ cel.obj.id }}" class="ms-3 collapse show">
+                                                                                {% if cel.cargos %}
+                                                                                    <ul class="list-group list-group-flush">
+                                                                                        {% for cargo in cel.cargos %}
+                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}">
+                                                                                            <span>
+                                                                                                {{ cargo.nome }}
+                                                                                                {% if cargo.permiteAtenderOrdemServico %}
+                                                                                                    <span class="badge bg-success ms-2">Atende OS</span>
+                                                                                                {% endif %}
+                                                                                            </span>
+                                                                                            <div class="dropdown">
+                                                                                                <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                                                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                                                                    <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">Editar Cargo</a></li>
+                                                                                                    <li>
+                                                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                            <button type="submit" class="dropdown-item">Excluir Cargo</button>
+                                                                                                        </form>
+                                                                                                    </li>
+                                                                                                    <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes">Gerenciar Permissões</a></li>
+                                                                                                </ul>
+                                                                                            </div>
+                                                                                        </li>
+                                                                                        {% endfor %}
+                                                                                    </ul>
+                                                                                {% else %}
+                                                                                    <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
+                                                                                {% endif %}
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                </div>
                                                             </div>
                                                         {% endfor %}
                                                     </div>
                                                 {% endfor %}
                                             </div>
-                                        {% endfor %}
+                                        </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
@@ -396,6 +430,55 @@
 {% endblock content %}
 
 {% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-section').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var icon = btn.querySelector('i');
+            var target = document.querySelector(btn.getAttribute('data-bs-target'));
+            setTimeout(function() {
+                if (target.classList.contains('show')) {
+                    icon.classList.remove('bi-plus-lg');
+                    icon.classList.add('bi-dash-lg');
+                } else {
+                    icon.classList.remove('bi-dash-lg');
+                    icon.classList.add('bi-plus-lg');
+                }
+            }, 200);
+        });
+    });
+
+    const searchInput = document.getElementById('cargoSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const term = searchInput.value.toLowerCase();
+
+            document.querySelectorAll('.cargo-item').forEach(function(item) {
+                const cargo = item.dataset.cargo.toLowerCase();
+                const setor = item.dataset.setor.toLowerCase();
+                const celula = item.dataset.celula.toLowerCase();
+                const match = cargo.includes(term) || setor.includes(term) || celula.includes(term);
+                item.style.display = match ? '' : 'none';
+            });
+
+            document.querySelectorAll('.celula-container').forEach(function(cel) {
+                const hasVisible = Array.from(cel.querySelectorAll('.cargo-item')).some(li => li.style.display !== 'none');
+                cel.style.display = hasVisible ? '' : 'none';
+            });
+
+            document.querySelectorAll('.setor-container').forEach(function(setor) {
+                const hasVisible = Array.from(setor.querySelectorAll('.cargo-item, .celula-container')).some(el => el.style.display !== 'none');
+                setor.style.display = hasVisible ? '' : 'none';
+            });
+
+            document.querySelectorAll('.instituicao-container').forEach(function(inst) {
+                const hasVisible = Array.from(inst.querySelectorAll('.cargo-item')).some(el => el.style.display !== 'none');
+                inst.style.display = hasVisible ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
 {% if cargo_editar %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
