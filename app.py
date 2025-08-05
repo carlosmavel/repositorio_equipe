@@ -47,6 +47,8 @@ try:
         Funcao,
         user_funcoes,
         OrdemServico,
+        Formulario,
+        CampoFormulario,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from models import (
@@ -65,6 +67,8 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Funcao,
         user_funcoes,
         OrdemServico,
+        Formulario,
+        CampoFormulario,
     )
 
 try:
@@ -99,6 +103,10 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         eligible_review_notification_users,
         user_can_access_form_builder,
     )
+try:
+    from .decorators import form_builder_required
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from decorators import form_builder_required
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -337,6 +345,19 @@ def inject_notificacoes():
         'os_notificacoes': 0,
         'os_notificacoes_list': [],
     }
+
+
+@app.route("/formulario/reordenar_perguntas", methods=["POST"])
+@form_builder_required
+def reordenar_perguntas():
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids", [])
+    for ordem, campo_id in enumerate(ids):
+        campo = CampoFormulario.query.get(campo_id)
+        if campo:
+            campo.ordem = ordem
+    db.session.commit()
+    return jsonify({"status": "ok"})
 
 @app.context_processor
 def inject_enums():
