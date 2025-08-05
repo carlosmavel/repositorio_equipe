@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+import json
 
 # Importação dos módulos de nível superior da aplicação.
 # Como este blueprint está dentro do pacote "blueprints", precisamos subir um
@@ -56,3 +57,21 @@ def editar_formulario(id):
             flash('Formulário atualizado!', 'success')
             return redirect(url_for('formularios_bp.formularios'))
     return render_template('formularios/editar_formulario.html', formulario=formulario)
+
+
+@formularios_bp.route('/<int:id>/preencher', methods=['GET'])
+@form_builder_required
+def preencher_formulario(id):
+    """Renderiza um formulário para teste de preenchimento."""
+    formulario = Formulario.query.get_or_404(id)
+    estrutura = []
+    if formulario.estrutura:
+        try:
+            estrutura = json.loads(formulario.estrutura)
+        except ValueError:
+            flash('Estrutura do formulário inválida.', 'danger')
+    return render_template(
+        'formularios/preencher_formulario.html',
+        formulario=formulario,
+        estrutura=estrutura,
+    )
