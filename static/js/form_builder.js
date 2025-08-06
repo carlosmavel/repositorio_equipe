@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="btn btn-light btn-sm duplicate-field" title="Duplicar"><i class="bi bi-files"></i></button>
           <button type="button" class="btn btn-light btn-sm move-up-field" title="Mover para cima"><i class="bi bi-arrow-up"></i></button>
           <button type="button" class="btn btn-light btn-sm move-down-field" title="Mover para baixo"><i class="bi bi-arrow-down"></i></button>
-          <button type="button" class="btn btn-light btn-sm branch-field" title="Ramificação"><i class="bi bi-diagram-3"></i></button>
+          <button type="button" class="btn btn-light btn-sm branch-field" title="Ramificação"><i class="bi bi-bezier2"></i></button>
           <button type="button" class="btn btn-light btn-sm remove-field" title="Excluir"><i class="bi bi-trash"></i></button>
         </div>
       </div>
@@ -266,13 +266,23 @@ document.addEventListener('DOMContentLoaded', () => {
           <input class="form-check-input field-embaralhar" type="checkbox" id="field-embaralhar-${unique}">
           <label class="form-check-label" for="field-embaralhar-${unique}">Ordenar aleatoriamente</label>
         </div>
-        <div class="mb-2 field-ramificacoes-wrapper d-none">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <strong>Ramificação</strong>
-            <button type="button" class="btn btn-sm btn-link text-danger remove-branching">Desativar</button>
+        <input type="hidden" class="field-ramificacoes">
+        <div class="modal fade" id="branchModal-${unique}" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Configurar ramificações</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="branch-rules"></div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-link text-danger remove-branching">Desativar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              </div>
+            </div>
           </div>
-          <div class="branch-rules"></div>
-          <input type="hidden" class="field-ramificacoes">
         </div>
         <div class="mb-2 field-likert-wrapper d-none">
           <label class="form-label">Linhas (separadas por vírgula)</label>
@@ -341,10 +351,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiplaWrapper = div.querySelector('.field-multipla-wrapper');
     const menuSuspensoWrapper = div.querySelector('.field-menu-suspenso-wrapper');
     const embaralharWrapper = div.querySelector('.field-embaralhar-wrapper');
-    const ramificacoesWrapper = div.querySelector('.field-ramificacoes-wrapper');
     const branchBtn = div.querySelector('.branch-field');
-    const branchRulesDiv = ramificacoesWrapper.querySelector('.branch-rules');
-    const removeBranchBtn = ramificacoesWrapper.querySelector('.remove-branching');
+    const ramificacoesHidden = div.querySelector('.field-ramificacoes');
+    const branchModalEl = div.querySelector(`#branchModal-${unique}`);
+    const branchModal = new bootstrap.Modal(branchModalEl);
+    const branchRulesDiv = branchModalEl.querySelector('.branch-rules');
+    const removeBranchBtn = branchModalEl.querySelector('.remove-branching');
     const labelInput = div.querySelector('.field-label');
     const imgBtn = div.querySelector('.add-image');
     const vidBtn = div.querySelector('.add-video');
@@ -398,13 +410,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const dest = group.querySelector('select').value;
         data.push({ opcao: opt, destino: dest });
       });
-      ramificacoesWrapper.querySelector('.field-ramificacoes').value = data.length ? JSON.stringify(data) : '';
+      ramificacoesHidden.value = data.length ? JSON.stringify(data) : '';
     }
 
     function renderBranchingPanel() {
       const opcoes = div.querySelector('.field-opcoes').value.split(',').map(o => o.trim()).filter(o => o);
       branchRulesDiv.innerHTML = '';
-      const existentes = JSON.parse(ramificacoesWrapper.querySelector('.field-ramificacoes').value || '[]');
+      const existentes = JSON.parse(ramificacoesHidden.value || '[]');
       opcoes.forEach(opt => {
         const group = document.createElement('div');
         group.className = 'input-group mb-1';
@@ -419,22 +431,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     branchBtn.addEventListener('click', () => {
-      if (ramificacoesWrapper.classList.contains('d-none')) {
-        renderBranchingPanel();
-        ramificacoesWrapper.classList.remove('d-none');
-      } else {
-        ramificacoesWrapper.classList.add('d-none');
-      }
+      renderBranchingPanel();
+      branchModal.show();
     });
 
     removeBranchBtn.addEventListener('click', () => {
       branchRulesDiv.innerHTML = '';
-      ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
-      ramificacoesWrapper.classList.add('d-none');
+      ramificacoesHidden.value = '';
+      branchModal.hide();
     });
 
     div.querySelector('.field-opcoes').addEventListener('input', () => {
-      if (!ramificacoesWrapper.classList.contains('d-none')) {
+      if (branchModalEl.classList.contains('show')) {
         renderBranchingPanel();
       }
     });
@@ -449,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.remove('d-none');
         menuSuspensoWrapper.classList.remove('d-none');
         embaralharWrapper.classList.remove('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
@@ -463,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.add('d-none');
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
@@ -477,9 +485,9 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.add('d-none');
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchRulesDiv.innerHTML = '';
-        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        ramificacoesHidden.value = '';
         branchBtn.disabled = true;
         likertWrapper.classList.remove('d-none');
         tableWrapper.classList.add('d-none');
@@ -493,9 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.add('d-none');
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchRulesDiv.innerHTML = '';
-        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        ramificacoesHidden.value = '';
         branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.remove('d-none');
@@ -509,9 +517,9 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.add('d-none');
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchRulesDiv.innerHTML = '';
-        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        ramificacoesHidden.value = '';
         branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
@@ -551,9 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.add('d-none');
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
-        ramificacoesWrapper.classList.add('d-none');
+        branchModal.hide();
         branchRulesDiv.innerHTML = '';
-        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        ramificacoesHidden.value = '';
         branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
@@ -756,8 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (data.ramificacoes && data.ramificacoes.length && ['option', 'select'].includes(tipoSelect.value)) {
-      ramificacoesWrapper.classList.remove('d-none');
-      renderBranchingPanel();
+      ramificacoesHidden.value = JSON.stringify(data.ramificacoes);
     }
 
     updateQuestionTitle(div);
