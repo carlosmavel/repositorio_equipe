@@ -29,7 +29,7 @@
             </select>
           {% elif campo.tipo == 'option' %}
             {% if campo.usarMenuSuspenso %}
-              <select class="form-select" {% if campo.permiteMultiplaEscolha %}multiple{% endif %} {% if campo.obrigatoria %}required{% endif %}>
+              <select class="form-select" {% if campo.permiteMultiplaEscolha %}multiple{% endif %} {% if campo.obrigatoria %}required{% endif %} {% if campo.temOpcaoOutra %}data-outra-select{% endif %}>
                 {% for opcao in campo.opcoes %}
                   <option value="{{ opcao }}">{{ opcao }}</option>
                 {% endfor %}
@@ -37,7 +37,7 @@
                   <option value="outra">Outra</option>
                 {% endif %}
               </select>
-              {% if campo.temOpcaoOutra %}<input type="text" class="form-control mt-2" placeholder="Especifique">{% endif %}
+              {% if campo.temOpcaoOutra %}<input type="text" class="form-control mt-2 d-none outra-especifique" placeholder="Especifique">{% endif %}
             {% else %}
               {% set input_type = 'checkbox' if campo.permiteMultiplaEscolha else 'radio' %}
               {% for opcao in campo.opcoes %}
@@ -48,10 +48,10 @@
               {% endfor %}
               {% if campo.temOpcaoOutra %}
                 <div class="form-check mt-2">
-                  <input class="form-check-input" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="outra">
+                  <input class="form-check-input outra-option" type="{{ input_type }}" name="campo{{ idx }}{% if campo.permiteMultiplaEscolha %}[]{% endif %}" value="outra">
                   <label class="form-check-label">Outra</label>
                 </div>
-                <input type="text" class="form-control mt-2" placeholder="Especifique">
+                <input type="text" class="form-control mt-2 d-none outra-especifique" placeholder="Especifique">
               {% endif %}
             {% endif %}
           {% elif campo.tipo == 'rating' %}
