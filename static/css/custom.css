@@ -178,6 +178,18 @@ body > .container {
   float: right;
 }
 
+/* Section container styling */
+#fieldsContainer .section-card {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  padding: 15px;
+  margin-bottom: 1.5rem;
+}
+#fieldsContainer .section-card .section-questions {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 3px solid #dee2e6;
+}
+
 /* Ordenação de perguntas no construtor */
 #fieldsContainer.sorting .field .card-body {
   display: none;

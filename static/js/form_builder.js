@@ -28,12 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateNumbers() {
     let pergunta = 0;
     let secao = 0;
-    fieldsContainer.querySelectorAll('.field').forEach(el => {
+    fieldsContainer.querySelectorAll(':scope > .field').forEach(el => {
       const numero = el.querySelector('.question-number');
       const tipoEl = el.querySelector('.field-tipo');
       if (tipoEl && tipoEl.value === 'section') {
         secao += 1;
         if (numero) numero.textContent = `Seção ${secao}`;
+        el.querySelectorAll('.section-questions > .field').forEach(qEl => {
+          pergunta += 1;
+          const qNum = qEl.querySelector('.question-number');
+          if (qNum) qNum.textContent = `Pergunta ${pergunta}`;
+        });
       } else {
         pergunta += 1;
         if (numero) numero.textContent = `Pergunta ${pergunta}`;
@@ -53,102 +58,140 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function buildFieldData(fieldEl, idx, secaoId = null) {
+    const tipo = fieldEl.querySelector('.field-tipo').value;
+    const label = fieldEl.querySelector('.field-label').value.trim();
+    const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
+    const imagem = fieldEl.querySelector('.field-midia')?.value.trim() || '';
+    const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
+    const obrigatoria = fieldEl.querySelector('.field-obrigatoria')?.checked || false;
+    const fieldData = {
+      id: fieldEl.dataset.id,
+      tipo,
+      label,
+      subtitulo,
+      midia_url: imagem,
+      video_url: video,
+      obrigatoria,
+      ordem: idx,
+      secao_id: secaoId,
+    };
+
+    if (tipo === 'likert') {
+      const linhas = fieldEl
+        .querySelector('.field-likert-linhas')
+        .value.split(',')
+        .map(o => o.trim())
+        .filter(o => o);
+      const colunas = fieldEl
+        .querySelector('.field-likert-colunas')
+        .value.split(',')
+        .map(o => o.trim())
+        .filter(o => o);
+      fieldData.linhas = linhas;
+      fieldData.colunas = colunas;
+    } else if (tipo === 'table') {
+      const linhas = parseInt(fieldEl.querySelector('.field-table-rows').value, 10) || 0;
+      const colunas = fieldEl
+        .querySelector('.field-table-cabecalhos')
+        .value.split(',')
+        .map(o => o.trim())
+        .filter(o => o);
+      fieldData.linhas = linhas;
+      fieldData.opcoes = colunas;
+    } else if (tipo === 'option') {
+      const opcoes = fieldEl
+        .querySelector('.field-opcoes')
+        .value.split(',')
+        .map(o => o.trim())
+        .filter(o => o);
+      fieldData.opcoes = opcoes;
+      fieldData.temOpcaoOutra = fieldEl.querySelector('.field-outra').checked;
+      fieldData.permiteMultiplaEscolha = fieldEl.querySelector('.field-multipla').checked;
+      fieldData.usarMenuSuspenso = fieldEl.querySelector('.field-menu-suspenso').checked;
+      fieldData.embaralharOpcoes = fieldEl.querySelector('.field-embaralhar').checked;
+      let ramificacoes = [];
+      const ramText = fieldEl.querySelector('.field-ramificacoes').value.trim();
+      if (ramText) {
+        try {
+          ramificacoes = JSON.parse(ramText);
+        } catch (e) {
+          console.warn('Ramificações inválidas para a pergunta', e);
+        }
+      }
+      fieldData.ramificacoes = ramificacoes;
+    } else {
+      const opcoes = fieldEl
+        .querySelector('.field-opcoes')
+        .value.split(',')
+        .map(o => o.trim())
+        .filter(o => o);
+      fieldData.opcoes = opcoes;
+    }
+    return fieldData;
+  }
+
   function updateJSON() {
     const fields = [];
-    let currentSection = null;
-    fieldsContainer.querySelectorAll('.field').forEach((fieldEl, idx) => {
+    let ordem = 0;
+    fieldsContainer.querySelectorAll(':scope > .field').forEach(fieldEl => {
       const tipo = fieldEl.querySelector('.field-tipo').value;
-      const id = fieldEl.dataset.id;
-
       if (tipo === 'section') {
         const titulo = fieldEl.querySelector('.field-label').value.trim();
         const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
         const imagem = fieldEl.querySelector('.field-midia')?.value.trim() || '';
         const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
-        currentSection = { id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem: idx, campos: [] };
-        fields.push(currentSection);
-        return;
-      }
-
-      const label = fieldEl.querySelector('.field-label').value.trim();
-      const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
-      const imagem = fieldEl.querySelector('.field-midia')?.value.trim() || '';
-      const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
-      const obrigatoria = fieldEl.querySelector('.field-obrigatoria').checked;
-      const fieldData = {
-        id,
-        tipo,
-        label,
-        subtitulo,
-        midia_url: imagem,
-        video_url: video,
-        obrigatoria,
-        ordem: idx,
-        secao_id: currentSection ? currentSection.id : null,
-      };
-
-      if (tipo === 'likert') {
-        const linhas = fieldEl
-          .querySelector('.field-likert-linhas')
-          .value.split(',')
-          .map(o => o.trim())
-          .filter(o => o);
-        const colunas = fieldEl
-          .querySelector('.field-likert-colunas')
-          .value.split(',')
-          .map(o => o.trim())
-          .filter(o => o);
-        fieldData.linhas = linhas;
-        fieldData.colunas = colunas;
-      } else if (tipo === 'table') {
-        const linhas = parseInt(fieldEl.querySelector('.field-table-rows').value, 10) || 0;
-        const colunas = fieldEl
-          .querySelector('.field-table-cabecalhos')
-          .value.split(',')
-          .map(o => o.trim())
-          .filter(o => o);
-        fieldData.linhas = linhas;
-        fieldData.opcoes = colunas;
-      } else if (tipo === 'option') {
-        const opcoes = fieldEl
-          .querySelector('.field-opcoes')
-          .value.split(',')
-          .map(o => o.trim())
-          .filter(o => o);
-        fieldData.opcoes = opcoes;
-        fieldData.temOpcaoOutra = fieldEl.querySelector('.field-outra').checked;
-        fieldData.permiteMultiplaEscolha = fieldEl.querySelector('.field-multipla').checked;
-        fieldData.usarMenuSuspenso = fieldEl.querySelector('.field-menu-suspenso').checked;
-        fieldData.embaralharOpcoes = fieldEl.querySelector('.field-embaralhar').checked;
-        let ramificacoes = [];
-        const ramText = fieldEl.querySelector('.field-ramificacoes').value.trim();
-        if (ramText) {
-          try {
-            ramificacoes = JSON.parse(ramText);
-          } catch (e) {
-            console.warn('Ramificações inválidas para a pergunta', e);
-          }
-        }
-        fieldData.ramificacoes = ramificacoes;
+        const sectionData = { id: fieldEl.dataset.id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem, campos: [] };
+        const qContainer = fieldEl.querySelector('.section-questions');
+        qContainer.querySelectorAll(':scope > .field').forEach((qEl, qIdx) => {
+          sectionData.campos.push(buildFieldData(qEl, qIdx, sectionData.id));
+        });
+        fields.push(sectionData);
       } else {
-        const opcoes = fieldEl
-          .querySelector('.field-opcoes')
-          .value.split(',')
-          .map(o => o.trim())
-          .filter(o => o);
-        fieldData.opcoes = opcoes;
+        fields.push(buildFieldData(fieldEl, ordem, null));
       }
-
-      if (currentSection) {
-        currentSection.campos.push(fieldData);
-      } else {
-        fields.push(fieldData);
-      }
+      ordem += 1;
     });
     estruturaInput.value = JSON.stringify(fields);
   }
 
-  function addField(tipo, data = {}) {
+  function initQuestionsSortable(container) {
+    return new Sortable(container, {
+      handle: '.drag-handle',
+      animation: 150,
+      group: {
+        name: 'questions',
+        pull: true,
+        put: function (to, from, dragEl) {
+          return !dragEl.classList.contains('section-card');
+        }
+      },
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onStart: () => {
+        if (container === fieldsContainer) fieldsContainer.classList.add('sorting');
+      },
+      onEnd: () => {
+        if (container === fieldsContainer) fieldsContainer.classList.remove('sorting');
+        updateNumbers();
+        updateJSON();
+        const ids = Array.from(fieldsContainer.querySelectorAll('.field'))
+          .map(el => el.dataset.id)
+          .filter(id => !!id);
+        if (ids.length) {
+          fetch('/formulario/reordenar_perguntas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids })
+          }).then(r => {
+            if (r.ok) showToast('Ordem atualizada!');
+          });
+        }
+      }
+    });
+  }
+
+  function addField(tipo, data = {}, container = fieldsContainer) {
     const div = document.createElement('div');
     div.className = 'field card mb-3';
     div.dataset.id = data.id || Date.now();
@@ -157,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card-header d-flex align-items-center">
         <button type="button" class="btn btn-light btn-sm drag-handle me-2"><i class="bi bi-grip-vertical"></i></button>
         <span class="question-number me-2"></span>
-        <span class="question-title flex-grow-1">${data.label || ''}</span>
+        <span class="question-title flex-grow-1">${data.label || data.titulo || ''}</span>
         <div class="btn-group ms-auto">
           <button type="button" class="btn btn-light btn-sm add-image" title="Adicionar imagem">🖼️</button>
           <button type="button" class="btn btn-light btn-sm add-video" title="Adicionar vídeo">🎥</button>
@@ -276,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>`;
 
-    fieldsContainer.appendChild(div);
+    container.appendChild(div);
 
     const tipoSelect = div.querySelector('.field-tipo');
     const opcoesWrapper = div.querySelector('.field-opcoes-wrapper');
@@ -367,6 +410,32 @@ document.addEventListener('DOMContentLoaded', () => {
         subtituloWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Insira o seu título aqui';
+        if (!div.querySelector('.section-questions')) {
+          const qContainer = document.createElement('div');
+          qContainer.className = 'section-questions mt-3';
+          div.appendChild(qContainer);
+          const dropdown = document.createElement('div');
+          dropdown.className = 'dropdown mt-2 add-question-dropdown';
+          dropdown.innerHTML = `
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">+ Inserir nova pergunta</button>
+            <ul class="dropdown-menu">
+              <li><button class="dropdown-item" type="button" data-type="text">Texto</button></li>
+              <li><button class="dropdown-item" type="button" data-type="textarea">Parágrafo</button></li>
+              <li><button class="dropdown-item" type="button" data-type="select">Escolha</button></li>
+              <li><button class="dropdown-item" type="button" data-type="option">Opção</button></li>
+              <li><button class="dropdown-item" type="button" data-type="rating">Classificação</button></li>
+              <li><button class="dropdown-item" type="button" data-type="date">Data</button></li>
+              <li><button class="dropdown-item" type="button" data-type="likert">Likert</button></li>
+              <li><button class="dropdown-item" type="button" data-type="file">Carregar Arquivo</button></li>
+              <li><button class="dropdown-item" type="button" data-type="nps">Net Promoter Score®</button></li>
+              <li><button class="dropdown-item" type="button" data-type="table">Tabelas</button></li>
+            </ul>`;
+          div.appendChild(dropdown);
+          dropdown.querySelectorAll('.dropdown-item').forEach(btn => {
+            btn.addEventListener('click', () => addField(btn.dataset.type, {}, qContainer));
+          });
+          initQuestionsSortable(qContainer);
+        }
       } else {
         opcoesWrapper.classList.add('d-none');
         outraWrapper.classList.add('d-none');
@@ -380,6 +449,10 @@ document.addEventListener('DOMContentLoaded', () => {
         subtituloWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
+        const qContainer = div.querySelector('.section-questions');
+        const dropdown = div.querySelector('.add-question-dropdown');
+        if (qContainer) qContainer.remove();
+        if (dropdown) dropdown.remove();
       }
       if (tipoVal === 'section') {
         div.classList.add('section-card');
@@ -400,15 +473,32 @@ document.addEventListener('DOMContentLoaded', () => {
     div.querySelector('.duplicate-field').addEventListener('click', () => {
       updateJSON();
       const parsed = JSON.parse(estruturaInput.value || '[]');
-      const idx = Array.from(fieldsContainer.children).indexOf(div);
-      const dataClone = parsed[idx];
-      addField(dataClone.tipo, dataClone);
+      function findById(arr, id) {
+        for (const item of arr) {
+          if (item.id == id) return item;
+          if (item.campos) {
+            const found = findById(item.campos, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+      const dataClone = findById(parsed, div.dataset.id);
+      if (dataClone) {
+        if (dataClone.tipo === 'section') {
+          const sec = addField('section', dataClone, fieldsContainer);
+          (dataClone.campos || []).forEach(c => addField(c.tipo, c, sec.querySelector('.section-questions')));
+        } else {
+          addField(dataClone.tipo, dataClone, div.parentElement);
+        }
+      }
     });
 
     div.querySelector('.move-up-field').addEventListener('click', () => {
       const prev = div.previousElementSibling;
+      const parent = div.parentElement;
       if (prev) {
-        fieldsContainer.insertBefore(div, prev);
+        parent.insertBefore(div, prev);
         updateNumbers();
         updateJSON();
       }
@@ -416,8 +506,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     div.querySelector('.move-down-field').addEventListener('click', () => {
       const next = div.nextElementSibling;
+      const parent = div.parentElement;
       if (next) {
-        fieldsContainer.insertBefore(next, div);
+        parent.insertBefore(next, div);
         updateNumbers();
         updateJSON();
       }
@@ -525,41 +616,42 @@ document.addEventListener('DOMContentLoaded', () => {
       labelInput.placeholder = 'Insira o seu título aqui';
       div.querySelector('.field-subtitulo').value = data.subtitulo || '';
       div.classList.add('section-card');
+      if (!div.querySelector('.section-questions')) {
+        const qContainer = document.createElement('div');
+        qContainer.className = 'section-questions mt-3';
+        div.appendChild(qContainer);
+        const dropdown = document.createElement('div');
+        dropdown.className = 'dropdown mt-2 add-question-dropdown';
+        dropdown.innerHTML = `
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">+ Inserir nova pergunta</button>
+          <ul class="dropdown-menu">
+            <li><button class="dropdown-item" type="button" data-type="text">Texto</button></li>
+            <li><button class="dropdown-item" type="button" data-type="textarea">Parágrafo</button></li>
+            <li><button class="dropdown-item" type="button" data-type="select">Escolha</button></li>
+            <li><button class="dropdown-item" type="button" data-type="option">Opção</button></li>
+            <li><button class="dropdown-item" type="button" data-type="rating">Classificação</button></li>
+            <li><button class="dropdown-item" type="button" data-type="date">Data</button></li>
+            <li><button class="dropdown-item" type="button" data-type="likert">Likert</button></li>
+            <li><button class="dropdown-item" type="button" data-type="file">Carregar Arquivo</button></li>
+            <li><button class="dropdown-item" type="button" data-type="nps">Net Promoter Score®</button></li>
+            <li><button class="dropdown-item" type="button" data-type="table">Tabelas</button></li>
+          </ul>`;
+        div.appendChild(dropdown);
+        dropdown.querySelectorAll('.dropdown-item').forEach(btn => {
+          btn.addEventListener('click', () => addField(btn.dataset.type, {}, qContainer));
+        });
+        initQuestionsSortable(qContainer);
+      }
     }
 
     updateQuestionTitle(div);
     updateNumbers();
     updateJSON();
+    return div;
   }
 
   window.addField = addField;
-
-  new Sortable(fieldsContainer, {
-    handle: '.drag-handle',
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    onStart: () => {
-      fieldsContainer.classList.add('sorting');
-    },
-    onEnd: () => {
-      fieldsContainer.classList.remove('sorting');
-      updateNumbers();
-      updateJSON();
-      const ids = Array.from(fieldsContainer.querySelectorAll('.field'))
-        .map(el => el.dataset.id)
-        .filter(id => !!id);
-      if (ids.length) {
-        fetch('/formulario/reordenar_perguntas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids })
-        }).then(r => {
-          if (r.ok) showToast('Ordem atualizada!');
-        });
-      }
-    }
-  });
+  initQuestionsSortable(fieldsContainer);
 
   // Load existing structure if present
   if (estruturaInput.value) {
@@ -569,10 +661,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (f.tipo === 'section') {
           const secData = { ...f };
           delete secData.campos;
-          addField('section', secData);
-          (f.campos || []).forEach(c => addField(c.tipo, c));
+          const secEl = addField('section', secData, fieldsContainer);
+          const qContainer = secEl.querySelector('.section-questions');
+          (f.campos || []).forEach(c => addField(c.tipo, c, qContainer));
         } else {
-          addField(f.tipo, f);
+          addField(f.tipo, f, fieldsContainer);
         }
       });
     } catch (e) {
