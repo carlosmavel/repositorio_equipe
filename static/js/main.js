@@ -415,4 +415,30 @@ document.addEventListener("DOMContentLoaded", function () {
   // Expose helper for inline scripts
   window.setCargoFuncoesDisabled = setCargoFuncoesDisabled;
 
+  // Mostra o campo de especificar apenas quando a opção "Outra" estiver selecionada
+  document.querySelectorAll('select[data-outra-select]').forEach((select) => {
+    const especificar = select.parentElement.querySelector('.outra-especifique');
+    if (!especificar) return;
+    const toggle = () => {
+      especificar.classList.toggle('d-none', select.value !== 'outra');
+    };
+    toggle();
+    select.addEventListener('change', toggle);
+  });
+
+  document.querySelectorAll('.outra-option').forEach((outra) => {
+    const container = outra.closest('.mb-3');
+    if (!container || container.dataset.outraBound) return;
+    container.dataset.outraBound = 'true';
+    const inputs = container.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+    const especificar = container.querySelector('.outra-especifique');
+    if (!especificar) return;
+    const toggle = () => {
+      const show = Array.from(inputs).some((inp) => inp.value === 'outra' && inp.checked);
+      especificar.classList.toggle('d-none', !show);
+    };
+    toggle();
+    inputs.forEach((inp) => inp.addEventListener('change', toggle));
+  });
+
 });
