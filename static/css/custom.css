@@ -192,3 +192,23 @@ body > .container {
   border: 2px dashed #0d6efd;
   background: #f8f9fa;
 }
+
+/* Form viewer container */
+.form-container {
+  padding: 20px;
+  margin-bottom: 80px;
+}
+
+/* Section highlight */
+.section-block {
+  border: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+/* Section highlight in builder */
+#fieldsContainer .section-card {
+  border: 2px dashed #dee2e6;
+  background-color: #f8f9fa;
+}

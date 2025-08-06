@@ -8,17 +8,27 @@
       {% if can_edit %}
         <a href="{{ url_for('formularios_bp.editar_formulario', id=formulario.id) }}" class="btn btn-secondary mb-3">Editar</a>
       {% endif %}
-      <form>
+      <div class="form-container">
+        <form>
         {% macro render_campo(campo, idx) %}
         <div class="mb-3">
-          <label class="form-label">{{ campo.label }}{% if campo.obrigatoria %} *{% endif %}</label>
-          {% if campo.subtitulo %}<div class="form-text mb-2">{{ campo.subtitulo }}</div>{% endif %}
-          {% if campo.midia_url %}
-            <div class="mb-2"><img src="{{ campo.midia_url }}" class="img-fluid" alt=""></div>
-          {% endif %}
-          {% if campo.video_url %}
-            <div class="ratio ratio-16x9 mb-2"><iframe src="{{ campo.video_url }}" allowfullscreen></iframe></div>
-          {% endif %}
+          <div class="d-flex justify-content-between">
+            <div class="flex-grow-1 me-3">
+              <label class="form-label">{{ campo.label }}{% if campo.obrigatoria %} *{% endif %}</label>
+              {% if campo.subtitulo %}<div class="form-text mb-2">{{ campo.subtitulo }}</div>{% endif %}
+            </div>
+            <div class="text-end">
+              {% if campo.midia_url %}
+                <img src="{{ campo.midia_url }}" class="img-fluid mb-2" style="max-width: 200px;" alt="">
+              {% endif %}
+              {% if campo.video_url %}
+                <div class="video-holder">
+                  <iframe width="250" height="140" src="{{ campo.video_url }}" allowfullscreen></iframe>
+                  <button type="button" class="btn btn-link p-0 mt-1 expand-video" data-video="{{ campo.video_url }}">Expandir</button>
+                </div>
+              {% endif %}
+            </div>
+          </div>
           {% if campo.tipo == 'textarea' %}
             <textarea class="form-control" {% if campo.obrigatoria %}required{% endif %}></textarea>
           {% elif campo.tipo == 'select' %}
@@ -139,11 +149,17 @@
         {% set q_idx = namespace(value=0) %}
         {% for bloco in estrutura %}
           {% if bloco.tipo == 'section' %}
-            <div class="mb-4 pb-2 border-bottom">
-              <h4 class="mb-1">{{ bloco.titulo }}</h4>
-              {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
-              {% if bloco.imagem_url %}<img src="{{ bloco.imagem_url }}" class="img-fluid mb-2" style="max-width: 200px;" alt="">{% endif %}
-              {% if bloco.video_url %}<div class="ratio ratio-16x9 mb-2"><iframe src="{{ bloco.video_url }}" allowfullscreen></iframe></div>{% endif %}
+            <div class="section-block mb-4">
+              <div class="d-flex justify-content-between">
+                <div class="flex-grow-1 me-3">
+                  <h4 class="mb-1">{{ bloco.titulo }}</h4>
+                  {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
+                </div>
+                <div class="text-end">
+                  {% if bloco.imagem_url %}<img src="{{ bloco.imagem_url }}" class="img-fluid mb-2" style="max-width: 200px;" alt="">{% endif %}
+                  {% if bloco.video_url %}<div class="video-holder"><iframe width="250" height="140" src="{{ bloco.video_url }}" allowfullscreen></iframe><button type="button" class="btn btn-link p-0 mt-1 expand-video" data-video="{{ bloco.video_url }}">Expandir</button></div>{% endif %}
+                </div>
+              </div>
               {% for campo in bloco.campos %}
                 {{ render_campo(campo, q_idx.value) }}
                 {% set q_idx.value = q_idx.value + 1 %}
@@ -156,7 +172,34 @@
         {% endfor %}
         <button type="submit" class="btn btn-primary">Enviar</button>
       </form>
+      </div>
+      <div class="modal fade" id="videoExpandModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-body p-0">
+              <iframe width="100%" height="400" src="" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+{{ super() }}
+<script>
+document.querySelectorAll('.expand-video').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const url = btn.dataset.video;
+    const iframe = document.querySelector('#videoExpandModal iframe');
+    iframe.src = url;
+    const modal = new bootstrap.Modal(document.getElementById('videoExpandModal'));
+    modal.show();
+  });
+});
+document.getElementById('videoExpandModal').addEventListener('hidden.bs.modal', () => {
+  document.querySelector('#videoExpandModal iframe').src = '';
+});
+</script>
 {% endblock %}
