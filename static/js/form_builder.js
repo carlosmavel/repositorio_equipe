@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tipo === 'section') {
         const titulo = fieldEl.querySelector('.field-label').value.trim();
         const subtitulo = fieldEl.querySelector('.field-subtitulo')?.value.trim() || '';
-        const imagem = fieldEl.querySelector('.field-imagem')?.value.trim() || '';
-        const video = fieldEl.querySelector('.field-section-video')?.value.trim() || '';
+        const imagem = fieldEl.querySelector('.field-midia')?.value.trim() || '';
+        const video = fieldEl.querySelector('.field-video')?.value.trim() || '';
         currentSection = { id, tipo, titulo, subtitulo, imagem_url: imagem, video_url: video, ordem: idx, campos: [] };
         fields.push(currentSection);
         return;
@@ -159,6 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="question-number me-2"></span>
         <span class="question-title flex-grow-1">${data.label || ''}</span>
         <div class="btn-group ms-auto">
+          <button type="button" class="btn btn-light btn-sm add-image" title="Adicionar imagem">🖼️</button>
+          <button type="button" class="btn btn-light btn-sm add-video" title="Adicionar vídeo">🎥</button>
           <button type="button" class="btn btn-light btn-sm duplicate-field" title="Duplicar"><i class="bi bi-files"></i></button>
           <button type="button" class="btn btn-light btn-sm move-up-field" title="Mover para cima"><i class="bi bi-arrow-up"></i></button>
           <button type="button" class="btn btn-light btn-sm move-down-field" title="Mover para baixo"><i class="bi bi-arrow-down"></i></button>
@@ -190,25 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="form-label">Subtítulo</label>
           <input type="text" class="form-control field-subtitulo" placeholder="Subtítulo da Pergunta">
         </div>
-        <div class="mb-2 field-media-wrapper">
-          <label class="form-label">Imagem</label>
-          <input type="file" class="form-control field-midia-file">
-          <input type="hidden" class="field-midia">
-          <div class="field-image-preview mt-2"></div>
-          <label class="form-label mt-2">Vídeo (YouTube)</label>
-          <input type="text" class="form-control field-video" placeholder="URL do vídeo">
+        <input type="hidden" class="field-midia">
+        <input type="hidden" class="field-video">
+        <div class="media-preview text-end mb-2">
+          <div class="image-holder"></div>
+          <div class="video-holder mt-2"></div>
         </div>
         <div class="mb-2 field-section-subtitulo-wrapper d-none">
           <label class="form-label">Subtítulo</label>
           <input type="text" class="form-control field-subtitulo" placeholder="Insira um subtítulo">
-        </div>
-        <div class="mb-2 field-section-media-wrapper d-none">
-          <label class="form-label">Imagem</label>
-          <input type="file" class="form-control field-imagem-file">
-          <input type="hidden" class="field-imagem">
-          <div class="field-section-image-preview mt-2"></div>
-          <label class="form-label mt-2">Vídeo (YouTube)</label>
-          <input type="text" class="form-control field-section-video" placeholder="URL do vídeo">
         </div>
         <div class="mb-2 field-opcoes-wrapper d-none">
           <label class="form-label">Opções (separadas por vírgula)</label>
@@ -250,6 +242,38 @@ document.addEventListener('DOMContentLoaded', () => {
           <input class="form-check-input field-obrigatoria" type="checkbox" id="field-obrig-${unique}">
           <label class="form-check-label" for="field-obrig-${unique}">Obrigatória</label>
         </div>
+      </div>
+      <div class="modal fade" id="imageModal-${unique}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Adicionar imagem</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input type="file" class="form-control image-input">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary save-image">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="videoModal-${unique}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Adicionar vídeo</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input type="text" class="form-control video-url" placeholder="URL do vídeo">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary save-video">Salvar</button>
+            </div>
+          </div>
+        </div>
       </div>`;
 
     fieldsContainer.appendChild(div);
@@ -260,23 +284,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableWrapper = div.querySelector('.field-table-wrapper');
     const obrigatoriaWrapper = div.querySelector('.field-obrigatoria-wrapper');
     const sectionSubtitleWrapper = div.querySelector('.field-section-subtitulo-wrapper');
-    const sectionMediaWrapper = div.querySelector('.field-section-media-wrapper');
     const subtituloWrapper = div.querySelector('.field-subtitulo-wrapper');
-    const midiaWrapper = div.querySelector('.field-media-wrapper');
+    const midiaHidden = div.querySelector('.field-midia');
+    const videoHidden = div.querySelector('.field-video');
+    const imageHolder = div.querySelector('.media-preview .image-holder');
+    const videoHolder = div.querySelector('.media-preview .video-holder');
     const outraWrapper = div.querySelector('.field-outra-wrapper');
     const multiplaWrapper = div.querySelector('.field-multipla-wrapper');
     const menuSuspensoWrapper = div.querySelector('.field-menu-suspenso-wrapper');
     const embaralharWrapper = div.querySelector('.field-embaralhar-wrapper');
     const ramificacoesWrapper = div.querySelector('.field-ramificacoes-wrapper');
     const labelInput = div.querySelector('.field-label');
-    const midiaFile = div.querySelector('.field-midia-file');
-    const midiaHidden = div.querySelector('.field-midia');
-    const midiaPreview = div.querySelector('.field-image-preview');
-    const videoInput = div.querySelector('.field-media-wrapper .field-video');
-    const imagemFile = div.querySelector('.field-imagem-file');
-    const imagemHidden = div.querySelector('.field-imagem');
-    const sectionImagePreview = div.querySelector('.field-section-image-preview');
-    const sectionVideoInput = div.querySelector('.field-section-video');
+    const imgBtn = div.querySelector('.add-image');
+    const vidBtn = div.querySelector('.add-video');
+    const imageModalEl = div.querySelector(`#imageModal-${unique}`);
+    const videoModalEl = div.querySelector(`#videoModal-${unique}`);
 
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
@@ -290,9 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
-        sectionMediaWrapper.classList.add('d-none');
         subtituloWrapper.classList.remove('d-none');
-        midiaWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoVal === 'select') {
@@ -305,9 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
-        sectionMediaWrapper.classList.add('d-none');
         subtituloWrapper.classList.remove('d-none');
-        midiaWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoVal === 'likert') {
@@ -320,9 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         likertWrapper.classList.remove('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
-        sectionMediaWrapper.classList.add('d-none');
         subtituloWrapper.classList.remove('d-none');
-        midiaWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoVal === 'table') {
@@ -335,9 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.remove('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
-        sectionMediaWrapper.classList.add('d-none');
         subtituloWrapper.classList.remove('d-none');
-        midiaWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
       } else if (tipoVal === 'section') {
@@ -351,9 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableWrapper.classList.add('d-none');
         obrigatoriaWrapper.classList.add('d-none');
         subtituloWrapper.classList.add('d-none');
-        midiaWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.remove('d-none');
-        sectionMediaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Insira o seu título aqui';
       } else {
         opcoesWrapper.classList.add('d-none');
@@ -365,11 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
-        sectionMediaWrapper.classList.add('d-none');
         subtituloWrapper.classList.remove('d-none');
-        midiaWrapper.classList.remove('d-none');
         obrigatoriaWrapper.classList.remove('d-none');
         labelInput.placeholder = 'Título da Pergunta';
+      }
+      if (tipoVal === 'section') {
+        div.classList.add('section-card');
+      } else {
+        div.classList.remove('section-card');
       }
       updateNumbers();
       updateQuestionTitle(div);
@@ -408,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    div.querySelectorAll('input, select, textarea').forEach(el => {
+    div.querySelectorAll('input:not(.image-input):not(.video-url), select, textarea').forEach(el => {
       el.addEventListener('input', () => {
         updateQuestionTitle(div);
         updateJSON();
@@ -416,42 +431,44 @@ document.addEventListener('DOMContentLoaded', () => {
       el.addEventListener('change', updateJSON);
     });
 
-    if (midiaFile) {
-      midiaFile.addEventListener('change', async () => {
-        if (midiaFile.files[0]) {
-          const url = await uploadImage(midiaFile.files[0]);
+    if (imgBtn) {
+      const imageModal = new bootstrap.Modal(imageModalEl);
+      const imageInput = imageModalEl.querySelector('.image-input');
+      imageModalEl.querySelector('.save-image').addEventListener('click', async () => {
+        if (imageInput.files[0]) {
+          const url = await uploadImage(imageInput.files[0]);
           midiaHidden.value = url;
-          midiaPreview.innerHTML = url ? `<img src="${url}" class="img-fluid">` : '';
+          imageHolder.innerHTML = url ? `<img src="${url}" class="img-fluid" style="max-width:200px;">` : '';
           updateJSON();
         }
+        imageModal.hide();
       });
+      imgBtn.addEventListener('click', () => imageModal.show());
     }
 
-    if (imagemFile) {
-      imagemFile.addEventListener('change', async () => {
-        if (imagemFile.files[0]) {
-          const url = await uploadImage(imagemFile.files[0]);
-          imagemHidden.value = url;
-          sectionImagePreview.innerHTML = url ? `<img src="${url}" class="img-fluid">` : '';
-          updateJSON();
-        }
-      });
-    }
-
-    if (videoInput) {
-      videoInput.addEventListener('change', () => {
+    if (vidBtn) {
+      const videoModal = new bootstrap.Modal(videoModalEl);
+      const videoInput = videoModalEl.querySelector('.video-url');
+      videoModalEl.querySelector('.save-video').addEventListener('click', () => {
         const embed = parseYouTube(videoInput.value.trim());
-        if (embed) videoInput.value = embed;
-        updateJSON();
+        if (embed) {
+          videoHidden.value = embed;
+          videoHolder.innerHTML = `<div class="position-relative"><iframe width="250" height="140" src="${embed}" allowfullscreen></iframe><button type="button" class="btn btn-link p-0 mt-1 expand-video">Expandir</button></div>`;
+          updateJSON();
+          const expandBtn = videoHolder.querySelector('.expand-video');
+          expandBtn.addEventListener('click', () => {
+            const expandModalEl = document.createElement('div');
+            expandModalEl.className = 'modal fade';
+            expandModalEl.innerHTML = `<div class=\"modal-dialog modal-lg\"><div class=\"modal-content\"><div class=\"modal-body p-0\"><iframe width=\"100%\" height=\"400\" src=\"${embed}\" allowfullscreen></iframe></div></div></div>`;
+            document.body.appendChild(expandModalEl);
+            const expandModal = new bootstrap.Modal(expandModalEl);
+            expandModal.show();
+            expandModalEl.addEventListener('hidden.bs.modal', () => expandModalEl.remove());
+          });
+        }
+        videoModal.hide();
       });
-    }
-
-    if (sectionVideoInput) {
-      sectionVideoInput.addEventListener('change', () => {
-        const embed = parseYouTube(sectionVideoInput.value.trim());
-        if (embed) sectionVideoInput.value = embed;
-        updateJSON();
-      });
+      vidBtn.addEventListener('click', () => videoModal.show());
     }
 
     // Prefill data if editing existing structure
@@ -459,11 +476,24 @@ document.addEventListener('DOMContentLoaded', () => {
     labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatoria').checked = data.obrigatoria || data.obrigatorio || false;
     div.querySelector('.field-subtitulo').value = data.subtitulo || '';
-    div.querySelector('.field-midia').value = data.midia_url || '';
+    midiaHidden.value = data.midia_url || '';
     if (data.midia_url) {
-      midiaPreview.innerHTML = `<img src="${data.midia_url}" class="img-fluid">`;
+      imageHolder.innerHTML = `<img src="${data.midia_url}" class="img-fluid" style="max-width:200px;">`;
     }
-    div.querySelector('.field-video').value = data.video_url || '';
+    videoHidden.value = data.video_url || '';
+    if (data.video_url) {
+      videoHolder.innerHTML = `<div class="position-relative"><iframe width="250" height="140" src="${data.video_url}" allowfullscreen></iframe><button type="button" class="btn btn-link p-0 mt-1 expand-video">Expandir</button></div>`;
+      const expandBtn = videoHolder.querySelector('.expand-video');
+      expandBtn.addEventListener('click', () => {
+        const expandModalEl = document.createElement('div');
+        expandModalEl.className = 'modal fade';
+        expandModalEl.innerHTML = `<div class=\"modal-dialog modal-lg\"><div class=\"modal-content\"><div class=\"modal-body p-0\"><iframe width=\"100%\" height=\"400\" src=\"${data.video_url}\" allowfullscreen></iframe></div></div></div>`;
+        document.body.appendChild(expandModalEl);
+        const expandModal = new bootstrap.Modal(expandModalEl);
+        expandModal.show();
+        expandModalEl.addEventListener('hidden.bs.modal', () => expandModalEl.remove());
+      });
+    }
     div.querySelector('.field-outra').checked = data.temOpcaoOutra || false;
     div.querySelector('.field-multipla').checked = data.permiteMultiplaEscolha || false;
     div.querySelector('.field-menu-suspenso').checked = data.usarMenuSuspenso || false;
@@ -491,16 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (tipoSelect.value === 'section') {
       obrigatoriaWrapper.classList.add('d-none');
       subtituloWrapper.classList.add('d-none');
-      midiaWrapper.classList.add('d-none');
       sectionSubtitleWrapper.classList.remove('d-none');
-      sectionMediaWrapper.classList.remove('d-none');
       labelInput.placeholder = 'Insira o seu título aqui';
       div.querySelector('.field-subtitulo').value = data.subtitulo || '';
-      div.querySelector('.field-imagem').value = data.imagem_url || '';
-      if (data.imagem_url) {
-        sectionImagePreview.innerHTML = `<img src="${data.imagem_url}" class="img-fluid">`;
-      }
-      div.querySelector('.field-section-video').value = data.video_url || '';
+      div.classList.add('section-card');
     }
 
     updateQuestionTitle(div);
