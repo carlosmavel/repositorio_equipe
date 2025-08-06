@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="btn btn-light btn-sm duplicate-field" title="Duplicar"><i class="bi bi-files"></i></button>
           <button type="button" class="btn btn-light btn-sm move-up-field" title="Mover para cima"><i class="bi bi-arrow-up"></i></button>
           <button type="button" class="btn btn-light btn-sm move-down-field" title="Mover para baixo"><i class="bi bi-arrow-down"></i></button>
+          <button type="button" class="btn btn-light btn-sm branch-field" title="Ramificação"><i class="bi bi-diagram-3"></i></button>
           <button type="button" class="btn btn-light btn-sm remove-field" title="Excluir"><i class="bi bi-trash"></i></button>
         </div>
       </div>
@@ -266,8 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="form-check-label" for="field-embaralhar-${unique}">Ordenar aleatoriamente</label>
         </div>
         <div class="mb-2 field-ramificacoes-wrapper d-none">
-          <label class="form-label">Ramificações (JSON)</label>
-          <input type="text" class="form-control field-ramificacoes" placeholder='{"Opção": "Destino"}'>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>Ramificação</strong>
+            <button type="button" class="btn btn-sm btn-link text-danger remove-branching">Desativar</button>
+          </div>
+          <div class="branch-rules"></div>
+          <input type="hidden" class="field-ramificacoes">
         </div>
         <div class="mb-2 field-likert-wrapper d-none">
           <label class="form-label">Linhas (separadas por vírgula)</label>
@@ -337,11 +342,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuSuspensoWrapper = div.querySelector('.field-menu-suspenso-wrapper');
     const embaralharWrapper = div.querySelector('.field-embaralhar-wrapper');
     const ramificacoesWrapper = div.querySelector('.field-ramificacoes-wrapper');
+    const branchBtn = div.querySelector('.branch-field');
+    const branchRulesDiv = ramificacoesWrapper.querySelector('.branch-rules');
+    const removeBranchBtn = ramificacoesWrapper.querySelector('.remove-branching');
     const labelInput = div.querySelector('.field-label');
     const imgBtn = div.querySelector('.add-image');
     const vidBtn = div.querySelector('.add-video');
     const imageModalEl = div.querySelector(`#imageModal-${unique}`);
     const videoModalEl = div.querySelector(`#videoModal-${unique}`);
+
+    function buildBranchSelectOptions() {
+      let html = '<option value="next">Avançar</option><option value="end">Fim do formulário</option>';
+      const allQuestions = Array.from(fieldsContainer.querySelectorAll('.field:not(.section-card)'));
+      const currentIdx = allQuestions.indexOf(div);
+      const currentSection = div.closest('.section-card');
+      const sameSection = [];
+      const otherSections = [];
+      for (let i = currentIdx + 1; i < allQuestions.length; i++) {
+        const q = allQuestions[i];
+        const sec = q.closest('.section-card');
+        if (sec === currentSection) {
+          const qTitle = q.querySelector('.question-title').textContent || 'Pergunta';
+          sameSection.push({ id: q.dataset.id, label: qTitle });
+        } else if (sec) {
+          const first = sec.querySelector('.section-questions .field');
+          if (first) {
+            const title = sec.querySelector('.question-title').textContent || 'Seção';
+            if (!otherSections.find(o => o.id === first.dataset.id)) {
+              otherSections.push({ id: first.dataset.id, label: title });
+            }
+          }
+        }
+      }
+      if (sameSection.length) {
+        html += '<optgroup label="Perguntas na seção atual">';
+        sameSection.forEach(o => {
+          html += `<option value="${o.id}">${o.label}</option>`;
+        });
+        html += '</optgroup>';
+      }
+      if (otherSections.length) {
+        html += '<optgroup label="Outras Seções">';
+        otherSections.forEach(o => {
+          html += `<option value="${o.id}">${o.label}</option>`;
+        });
+        html += '</optgroup>';
+      }
+      return html;
+    }
+
+    function updateRamificacoesField() {
+      const data = [];
+      branchRulesDiv.querySelectorAll('.input-group').forEach(group => {
+        const opt = group.querySelector('.input-group-text').textContent;
+        const dest = group.querySelector('select').value;
+        data.push({ opcao: opt, destino: dest });
+      });
+      ramificacoesWrapper.querySelector('.field-ramificacoes').value = data.length ? JSON.stringify(data) : '';
+    }
+
+    function renderBranchingPanel() {
+      const opcoes = div.querySelector('.field-opcoes').value.split(',').map(o => o.trim()).filter(o => o);
+      branchRulesDiv.innerHTML = '';
+      const existentes = JSON.parse(ramificacoesWrapper.querySelector('.field-ramificacoes').value || '[]');
+      opcoes.forEach(opt => {
+        const group = document.createElement('div');
+        group.className = 'input-group mb-1';
+        group.innerHTML = `<span class="input-group-text">${opt}</span><select class="form-select branch-select">${buildBranchSelectOptions()}</select>`;
+        const select = group.querySelector('select');
+        const existing = existentes.find(r => r.opcao === opt);
+        if (existing) select.value = existing.destino;
+        select.addEventListener('change', updateRamificacoesField);
+        branchRulesDiv.appendChild(group);
+      });
+      updateRamificacoesField();
+    }
+
+    branchBtn.addEventListener('click', () => {
+      if (ramificacoesWrapper.classList.contains('d-none')) {
+        renderBranchingPanel();
+        ramificacoesWrapper.classList.remove('d-none');
+      } else {
+        ramificacoesWrapper.classList.add('d-none');
+      }
+    });
+
+    removeBranchBtn.addEventListener('click', () => {
+      branchRulesDiv.innerHTML = '';
+      ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+      ramificacoesWrapper.classList.add('d-none');
+    });
+
+    div.querySelector('.field-opcoes').addEventListener('input', () => {
+      if (!ramificacoesWrapper.classList.contains('d-none')) {
+        renderBranchingPanel();
+      }
+    });
+
+    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
 
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
@@ -351,7 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.remove('d-none');
         menuSuspensoWrapper.classList.remove('d-none');
         embaralharWrapper.classList.remove('d-none');
-        ramificacoesWrapper.classList.remove('d-none');
+        ramificacoesWrapper.classList.add('d-none');
+        branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -365,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         ramificacoesWrapper.classList.add('d-none');
+        branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -378,6 +478,9 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         ramificacoesWrapper.classList.add('d-none');
+        branchRulesDiv.innerHTML = '';
+        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        branchBtn.disabled = true;
         likertWrapper.classList.remove('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -391,6 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         ramificacoesWrapper.classList.add('d-none');
+        branchRulesDiv.innerHTML = '';
+        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.remove('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -404,6 +510,9 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         ramificacoesWrapper.classList.add('d-none');
+        branchRulesDiv.innerHTML = '';
+        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         obrigatoriaWrapper.classList.add('d-none');
@@ -443,6 +552,9 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         ramificacoesWrapper.classList.add('d-none');
+        branchRulesDiv.innerHTML = '';
+        ramificacoesWrapper.querySelector('.field-ramificacoes').value = '';
+        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -598,7 +710,6 @@ document.addEventListener('DOMContentLoaded', () => {
         multiplaWrapper.classList.remove('d-none');
         menuSuspensoWrapper.classList.remove('d-none');
         embaralharWrapper.classList.remove('d-none');
-        ramificacoesWrapper.classList.remove('d-none');
       }
     }
     if (tipoSelect.value === 'likert') {
@@ -642,6 +753,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         initQuestionsSortable(qContainer);
       }
+    }
+
+    if (data.ramificacoes && data.ramificacoes.length && ['option', 'select'].includes(tipoSelect.value)) {
+      ramificacoesWrapper.classList.remove('d-none');
+      renderBranchingPanel();
     }
 
     updateQuestionTitle(div);
