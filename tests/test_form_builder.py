@@ -125,3 +125,18 @@ def test_toggle_and_filter_formulario(client):
     assert b'FormAtivo' not in resp.data
     resp = client.get('/ordem-servico/formularios/?status=todos')
     assert b'FormAtivo' in resp.data and b'FormInativo' in resp.data
+
+
+def test_filter_and_search_visible_with_no_active_forms(client):
+    with app.app_context():
+        user_allowed_id = create_user('noactive', True)
+    login(client, user_allowed_id)
+    client.post('/ordem-servico/formularios/', data={'nome': 'FormX', 'estrutura': '{}'}, follow_redirects=True)
+    with app.app_context():
+        form = Formulario.query.filter_by(nome='FormX').first()
+        form_id = form.id
+    client.post(f'/ordem-servico/formularios/{form_id}/toggle-ativo', follow_redirects=True)
+    resp = client.get('/ordem-servico/formularios/?status=ativos')
+    assert b'id="formSearch"' in resp.data
+    assert b'name="status"' in resp.data
+    assert b'Nenhum formul' in resp.data
