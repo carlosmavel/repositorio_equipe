@@ -11,7 +11,7 @@
       <div class="form-container">
         <form>
         {% macro render_campo(campo, idx) %}
-        <div class="mb-3">
+        <div class="mb-3 question-block" data-id="{{ campo.id }}" data-ramificacoes='{{ (campo.ramificacoes or [])|tojson }}'>
           <div class="d-flex justify-content-between">
             <div class="flex-grow-1 me-3">
               <label class="form-label">{{ campo.label }}{% if campo.obrigatoria %} *{% endif %}</label>
@@ -200,6 +200,45 @@ document.querySelectorAll('.expand-video').forEach(btn => {
 });
 document.getElementById('videoExpandModal').addEventListener('hidden.bs.modal', () => {
   document.querySelector('#videoExpandModal iframe').src = '';
+});
+
+// Ramificação no preenchimento
+document.addEventListener('DOMContentLoaded', () => {
+  const questions = Array.from(document.querySelectorAll('.question-block'));
+
+  function updateSectionsVisibility() {
+    document.querySelectorAll('.section-block').forEach(sec => {
+      const visible = Array.from(sec.querySelectorAll('.question-block'))
+        .some(q => q.style.display !== 'none');
+      sec.style.display = visible ? '' : 'none';
+    });
+  }
+
+  questions.forEach((q, idx) => {
+    const ram = JSON.parse(q.dataset.ramificacoes || '[]');
+    if (!ram.length) return;
+    const inputs = q.querySelectorAll('select, input[type=radio]');
+    inputs.forEach(inp => {
+      inp.addEventListener('change', () => {
+        const val = inp.value;
+        const rule = ram.find(r => r.opcao === val);
+        for (let i = idx + 1; i < questions.length; i++) {
+          questions[i].style.display = '';
+        }
+        if (rule) {
+          if (rule.destino === 'end') {
+            for (let i = idx + 1; i < questions.length; i++) questions[i].style.display = 'none';
+          } else if (rule.destino !== 'next') {
+            const destIdx = questions.findIndex(el => el.dataset.id === rule.destino);
+            if (destIdx > idx) {
+              for (let i = idx + 1; i < destIdx; i++) questions[i].style.display = 'none';
+            }
+          }
+        }
+        updateSectionsVisibility();
+      });
+    });
+  });
 });
 </script>
 {% endblock %}
