@@ -481,8 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
-
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
       if (tipoVal === 'option') {
@@ -718,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Prefill data if editing existing structure
     tipoSelect.value = data.tipo || tipo || 'text';
+    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
     labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatoria').checked = data.obrigatoria || data.obrigatorio || false;
     div.querySelector('.field-subtitulo').value = data.subtitulo || '';
