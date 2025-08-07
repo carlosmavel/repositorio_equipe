@@ -2,7 +2,7 @@ import pytest
 
 
 from app import app, db
-from models import Instituicao, Estabelecimento, Setor, Celula, User, Article, ArticleVisibility
+from core.models import Instituicao, Estabelecimento, Setor, Celula, User, Article, ArticleVisibility
 
 @pytest.fixture
 def client(app_ctx):
@@ -50,7 +50,7 @@ def test_article_visibility_fields(client):
 
 
 def test_user_can_view_by_celula(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         est = user1.celula.estabelecimento
@@ -82,7 +82,7 @@ def test_user_can_view_by_celula(client):
 
 
 def test_user_can_view_by_estabelecimento(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         est = user1.celula.estabelecimento
@@ -114,7 +114,7 @@ def test_user_can_view_by_estabelecimento(client):
 
 
 def test_user_can_view_by_setor(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         est = user1.celula.estabelecimento
@@ -145,7 +145,7 @@ def test_user_can_view_by_setor(client):
 
 
 def test_user_can_view_by_instituicao(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         inst = user1.celula.estabelecimento.instituicao
@@ -179,7 +179,7 @@ def test_user_can_view_by_instituicao(client):
 
 
 def test_user_cannot_view_wrong_estabelecimento(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         est1 = user1.celula.estabelecimento
@@ -214,7 +214,7 @@ def test_user_cannot_view_wrong_estabelecimento(client):
 
 
 def test_user_cannot_view_wrong_setor(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         est = user1.celula.estabelecimento
@@ -247,7 +247,7 @@ def test_user_cannot_view_wrong_setor(client):
 
 
 def test_user_cannot_view_wrong_instituicao(client):
-    from utils import user_can_view_article
+    from core.utils import user_can_view_article
     with app.app_context():
         user1 = User.query.first()
         inst1 = user1.celula.estabelecimento.instituicao

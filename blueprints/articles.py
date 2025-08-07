@@ -2,22 +2,22 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from sqlalchemy import or_, func
 
 try:
-    from ..database import db
+    from ..core.database import db
 except ImportError:
-    from database import db
+    from core.database import db
 
 try:
-    from ..models import Article, Attachment, Comment, Notification, User, RevisionRequest
+    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest
 except ImportError:
-    from models import Article, Attachment, Comment, Notification, User, RevisionRequest
+    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest
 
 try:
-    from ..enums import ArticleStatus, ArticleVisibility, Permissao
+    from ..core.enums import ArticleStatus, ArticleVisibility, Permissao
 except ImportError:
-    from enums import ArticleStatus, ArticleVisibility, Permissao
+    from core.enums import ArticleStatus, ArticleVisibility, Permissao
 
 try:
-    from ..utils import (
+    from ..core.utils import (
         sanitize_html,
         extract_text,
         eligible_review_notification_users,
@@ -27,7 +27,7 @@ try:
         user_can_review_article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from utils import (
+    from core.utils import (
         sanitize_html,
         extract_text,
         eligible_review_notification_users,

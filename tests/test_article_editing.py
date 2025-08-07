@@ -2,7 +2,7 @@ import pytest
 
 
 from app import app, db
-from models import (
+from core.models import (
     Instituicao,
     Estabelecimento,
     Setor,
@@ -12,8 +12,8 @@ from models import (
     Funcao,
     ArticleVisibility,
 )
-from enums import Permissao
-from utils import user_can_edit_article, user_can_view_article
+from core.enums import Permissao
+from core.utils import user_can_edit_article, user_can_view_article
 
 @pytest.fixture
 def base_setup(app_ctx):

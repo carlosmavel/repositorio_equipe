@@ -1,18 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app, send_from_directory
 try:
-    from ..database import db
+    from ..core.database import db
 except ImportError:
-    from database import db
+    from core.database import db
 
 try:
-    from ..models import User
+    from ..core.models import User
 except ImportError:
-    from models import User
+    from core.models import User
 
 try:
-    from ..utils import generate_token, confirm_token, send_email, password_meets_requirements
+    from ..core.utils import generate_token, confirm_token, send_email, password_meets_requirements
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from utils import generate_token, confirm_token, send_email, password_meets_requirements
+    from core.utils import generate_token, confirm_token, send_email, password_meets_requirements
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -56,7 +56,7 @@ def login():
         if not username or not password:
             flash("Nome de usuário e senha são obrigatórios.", "danger")
             # Re-renderiza o formulário com users_data_for_preview para manter o preview de fotos
-            return render_template("login.html", users_json=users_data_for_preview)
+            return render_template("auth/login.html", users_json=users_data_for_preview)
 
         user = User.query.filter_by(username=username).first()
 
@@ -76,10 +76,10 @@ def login():
             # Credenciais inválidas
             flash("Usuário ou senha inválidos!", "danger")
             # Re-renderiza o formulário com users_data_for_preview para manter o preview de fotos
-            return render_template("login.html", users_json=users_data_for_preview)
+            return render_template("auth/login.html", users_json=users_data_for_preview)
     
     # Para requisições GET (primeiro acesso à página de login)
-    return render_template("login.html", users_json=users_data_for_preview)
+    return render_template("auth/login.html", users_json=users_data_for_preview)
 
 
 @auth_bp.route('/esqueci-senha', methods=['GET', 'POST'], endpoint='forgot_password')
@@ -92,7 +92,7 @@ def forgot_password():
                 send_password_email(user, 'reset')
         flash('Se o e-mail estiver cadastrado, você receberá instruções para redefinir a senha.', 'info')
         return redirect(url_for('login'))
-    return render_template('reset_password_request.html')
+    return render_template('auth/reset_password_request.html')
 
 
 @auth_bp.route('/reset-senha/<token>', methods=['GET', 'POST'], endpoint='reset_password_token')
@@ -115,7 +115,7 @@ def reset_password_token(token):
             db.session.commit()
             flash('Senha redefinida com sucesso. Faça login.', 'success')
             return redirect(url_for('login'))
-    return render_template('password_update.html', title='Redefinir Senha')
+    return render_template('auth/password_update.html', title='Redefinir Senha')
 
 
 @auth_bp.route('/criar-senha/<token>', methods=['GET', 'POST'], endpoint='set_password_token')
@@ -138,7 +138,7 @@ def set_password_token(token):
             db.session.commit()
             flash('Senha definida com sucesso. Você já pode fazer login.', 'success')
             return redirect(url_for('login'))
-    return render_template('password_update.html', title='Criar Senha')
+    return render_template('auth/password_update.html', title='Criar Senha')
 
 @auth_bp.route('/inicio', endpoint='pagina_inicial')
 def pagina_inicial():
@@ -274,7 +274,7 @@ def perfil():
                     password_error = "Erro ao salvar a nova senha. Tente novamente."
 
             if password_error: # Se alguma validação de senha falhou
-                 return render_template('perfil.html', user=user, 
+                 return render_template('usuarios/perfil.html', user=user,
                                        password_error=password_error, 
                                        open_password_collapse=open_password_collapse)
         
@@ -282,7 +282,7 @@ def perfil():
         return redirect(url_for('perfil'))
 
     # Para o método GET
-    return render_template('perfil.html', user=user, 
+    return render_template('usuarios/perfil.html', user=user,
                            password_error=password_error, 
                            open_password_collapse=open_password_collapse)
 

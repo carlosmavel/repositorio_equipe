@@ -220,7 +220,7 @@ import os
 try:
     from .enums import Permissao  # type: ignore  # pragma: no cover
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from enums import Permissao
+    from core.enums import Permissao
 
 def generate_token(user_id: int, action: str, expires_sec: int = 3600) -> str:
     """Gera um token seguro para ações como reset ou criação de senha."""
@@ -256,7 +256,7 @@ def user_can_edit_article(user, article):
     try:
         from .models import Article  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from models import Article
+        from core.models import Article
 
     if not isinstance(article, Article):
         return False
@@ -297,7 +297,7 @@ def user_can_approve_article(user, article):
     try:
         from .models import Article  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from models import Article
+        from core.models import Article
 
     if not isinstance(article, Article):
         return False
@@ -335,7 +335,7 @@ def user_can_review_article(user, article):
     try:
         from .models import Article  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from models import Article
+        from core.models import Article
 
     if not isinstance(article, Article):
         return False
@@ -372,11 +372,11 @@ def user_can_view_article(user, article):
     try:
         from .models import Article  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from models import Article
+        from core.models import Article
     try:
         from .enums import ArticleVisibility
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from enums import ArticleVisibility
+        from core.enums import ArticleVisibility
 
     if not isinstance(article, Article):
         return False
@@ -462,7 +462,7 @@ def eligible_review_notification_users(article):
     try:
         from .models import User  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from models import User
+        from core.models import User
 
     return [
         u for u in User.query.all()

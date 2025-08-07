@@ -3,11 +3,11 @@ from flask import session, redirect, url_for, flash, request
 try:
     from .models import User
 except ImportError:  # pragma: no cover
-    from models import User
+    from core.models import User
 try:
     from .utils import user_can_access_form_builder
 except ImportError:  # pragma: no cover
-    from utils import user_can_access_form_builder
+    from core.utils import user_can_access_form_builder
 
 
 def admin_required(f):

@@ -4,7 +4,7 @@ from alembic import op
 import sqlalchemy as sa
 
 try:
-    from enums import Permissao
+    from core.enums import Permissao
 except ImportError:  # pragma: no cover - fallback when PYTHONPATH isn't set
     import sys
     from pathlib import Path
@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover - fallback when PYTHONPATH isn't set
     ROOT = Path(__file__).resolve().parents[2]
     if str(ROOT) not in sys.path:
         sys.path.append(str(ROOT))
-    from enums import Permissao
+    from core.enums import Permissao
 
 revision = 'bb1d9e24176f'
 down_revision = 'fa23b0c1c9d0'

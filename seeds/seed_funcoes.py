@@ -1,16 +1,16 @@
 try:
-    from .database import db  # pragma: no cover
+    from .core.database import db  # pragma: no cover
 except ImportError:
-    from database import db
+    from core.database import db
 try:
-    from .models import Funcao
+    from .core.models import Funcao
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from models import Funcao
+    from core.models import Funcao
 from app import app
 try:
-    from .enums import Permissao  # pragma: no cover
+    from .core.enums import Permissao  # pragma: no cover
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from enums import Permissao
+    from core.enums import Permissao
 
 # Permissões que não fazem parte do Enum Permissao
 EXTRA_FUNCOES = [

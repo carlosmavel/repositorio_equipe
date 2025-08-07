@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 # Set environment variables required by send_email
 
-from utils import send_email
+from core.utils import send_email
 
 
 def test_send_email_constructs_and_sends_message(monkeypatch):
@@ -22,8 +22,8 @@ def test_send_email_constructs_and_sends_message(monkeypatch):
                 captured['html_content'] = html_content
 
         mock_client = MagicMock()
-        monkeypatch.setattr('utils.Mail', DummyMail)
-        monkeypatch.setattr('utils.SendGridAPIClient', lambda key: mock_client)
+        monkeypatch.setattr('core.utils.Mail', DummyMail)
+        monkeypatch.setattr('core.utils.SendGridAPIClient', lambda key: mock_client)
 
         send_email('to@example.com', 'Subject', '<p>Body</p>')
 

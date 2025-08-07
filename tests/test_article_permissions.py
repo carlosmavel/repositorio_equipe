@@ -2,8 +2,8 @@ import pytest
 
 
 from app import app, db
-from models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, ArticleStatus
-from enums import Permissao
+from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, ArticleStatus
+from core.enums import Permissao
 
 @pytest.fixture
 def client(app_ctx):

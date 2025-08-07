@@ -3,7 +3,7 @@ import pytest
 # Configure environment variables before importing the app
 
 from app import app, db
-from models import Estabelecimento, Instituicao, Setor, Celula, User, Funcao
+from core.models import Estabelecimento, Instituicao, Setor, Celula, User, Funcao
 
 @pytest.fixture
 def client(app_ctx):

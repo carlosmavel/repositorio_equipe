@@ -1,6 +1,6 @@
 import pytest
 from app import app, db
-from models import Processo, EtapaProcesso, CampoEtapa, RespostaEtapaOS, User, Instituicao, Estabelecimento, Setor, Celula
+from core.models import Processo, EtapaProcesso, CampoEtapa, RespostaEtapaOS, User, Instituicao, Estabelecimento, Setor, Celula
 
 @pytest.fixture
 def base_app(app_ctx):

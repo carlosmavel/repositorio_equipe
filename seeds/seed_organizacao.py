@@ -1,11 +1,11 @@
 try:
-    from .database import db  # pragma: no cover
+    from .core.database import db  # pragma: no cover
 except ImportError:
-    from database import db
+    from core.database import db
 try:
-    from .models import Instituicao, Estabelecimento, Setor, Celula
+    from .core.models import Instituicao, Estabelecimento, Setor, Celula
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from models import Instituicao, Estabelecimento, Setor, Celula
+    from core.models import Instituicao, Estabelecimento, Setor, Celula
 from app import app
 
 

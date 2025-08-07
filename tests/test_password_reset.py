@@ -2,8 +2,8 @@ import pytest
 
 
 from app import app, db
-from models import User, Instituicao, Estabelecimento, Setor, Celula
-from utils import generate_token
+from core.models import User, Instituicao, Estabelecimento, Setor, Celula
+from core.utils import generate_token
 
 @pytest.fixture
 def client(app_ctx):

@@ -1,12 +1,12 @@
 try:
-    from .database import db
+    from .core.database import db
 except ImportError:
-    from database import db
+    from core.database import db
 
 try:
-    from .models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
+    from .core.models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
 except ImportError:
-    from models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
+    from core.models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
 
 from app import app
 
