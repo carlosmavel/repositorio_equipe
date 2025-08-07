@@ -3,7 +3,7 @@
     <div class="col-md-10 mt-4">
       <h3 class="mb-3">{{ 'Editar' if formulario else 'Novo' }} Formulário</h3>
       <div class="form-container">
-      <form method="POST" id="formBuilderForm" action="{{ action_url }}">
+      <form method="POST" id="formBuilderForm" action="{{ action_url }}" data-form-id="{{ formulario.id if formulario else '' }}">
         <div class="card shadow-sm mb-3">
           <div class="card-body">
             <div class="mb-3">

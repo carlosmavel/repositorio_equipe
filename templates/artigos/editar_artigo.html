@@ -138,6 +138,34 @@
   const visChecks = document.querySelectorAll('.vis-check');
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
+  const STORAGE_KEY = 'draft_editar_artigo_{{ artigo.id }}';
+  function saveDraft() {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        titulo: document.querySelector('input[name="titulo"]').value,
+        texto: quill.root.innerHTML,
+        visibility: visInput.value
+      })
+    );
+  }
+  function loadDraft() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.titulo) document.querySelector('input[name="titulo"]').value = data.titulo;
+      if (data.texto) quill.root.innerHTML = data.texto;
+      if (data.visibility) {
+        visInput.value = data.visibility;
+        const parts = data.visibility.split(',');
+        visChecks.forEach(cb => cb.checked = parts.includes(cb.value));
+        updateVisibility();
+      }
+    } catch (e) {
+      console.warn('Falha ao carregar rascunho do artigo', e);
+    }
+  }
   function updateVisibility() {
     const opts = Array.from(visChecks).filter(c => c.checked);
     visInput.value = opts.map(o => o.value).join(',');
@@ -145,6 +173,10 @@
   }
   visChecks.forEach(cb => cb.addEventListener('change', updateVisibility));
   updateVisibility();
+  loadDraft();
+  document.querySelector('input[name="titulo"]').addEventListener('input', saveDraft);
+  quill.on('text-change', saveDraft);
+  visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
@@ -154,6 +186,7 @@
       if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
       }
+      localStorage.removeItem(STORAGE_KEY);
     });
   }
 
