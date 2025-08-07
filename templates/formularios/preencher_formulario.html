@@ -146,10 +146,16 @@
           {% endif %}
         </div>
         {% endmacro %}
+        <div class="mb-3">
+          <h5 id="sectionTitle" class="mb-2"></h5>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+          </div>
+        </div>
         {% set q_idx = namespace(value=0) %}
         {% for bloco in estrutura %}
           {% if bloco.tipo == 'section' %}
-            <div class="section-block mb-4">
+            <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
               <div class="d-flex justify-content-between">
                 <div class="flex-grow-1 me-3">
                   <h4 class="mb-1">{{ bloco.titulo }}</h4>
@@ -166,11 +172,17 @@
               {% endfor %}
             </div>
           {% else %}
-            {{ render_campo(bloco, q_idx.value) }}
-            {% set q_idx.value = q_idx.value + 1 %}
+            <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
+              {{ render_campo(bloco, q_idx.value) }}
+              {% set q_idx.value = q_idx.value + 1 %}
+            </div>
           {% endif %}
         {% endfor %}
-        <button type="submit" class="btn btn-primary">Enviar</button>
+        <div class="d-flex justify-content-between mt-3" id="navButtons">
+          <button type="button" class="btn btn-secondary" id="backBtn">Voltar</button>
+          <button type="button" class="btn btn-primary" id="nextBtn">Próximo</button>
+        </div>
+        <button type="submit" class="btn btn-primary d-none" id="submitBtn">Enviar</button>
       </form>
       </div>
       <div class="modal fade" id="videoExpandModal" tabindex="-1">
@@ -204,10 +216,33 @@ document.getElementById('videoExpandModal').addEventListener('hidden.bs.modal', 
 
 // Ramificação no preenchimento
 document.addEventListener('DOMContentLoaded', () => {
+  const sections = Array.from(document.querySelectorAll('.section-block'));
   const questions = Array.from(document.querySelectorAll('.question-block'));
+  const questionToSection = new Map();
+  sections.forEach((sec, sIdx) => {
+    sec.querySelectorAll('.question-block').forEach(q => questionToSection.set(q, sIdx));
+  });
+
+  function showSection(idx) {
+    sections.forEach((sec, i) => {
+      sec.style.display = i === idx ? '' : 'none';
+    });
+    const title = sections[idx].querySelector('h4')?.textContent || `Seção ${idx + 1}`;
+    document.getElementById('sectionTitle').textContent = title;
+    const pct = ((idx + 1) / sections.length) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('backBtn').style.display = history.length > 1 ? '' : 'none';
+    if (idx === sections.length - 1) {
+      document.getElementById('nextBtn').classList.add('d-none');
+      document.getElementById('submitBtn').classList.remove('d-none');
+    } else {
+      document.getElementById('nextBtn').classList.remove('d-none');
+      document.getElementById('submitBtn').classList.add('d-none');
+    }
+  }
 
   function updateSectionsVisibility() {
-    document.querySelectorAll('.section-block').forEach(sec => {
+    sections.forEach(sec => {
       const visible = Array.from(sec.querySelectorAll('.question-block'))
         .some(q => q.style.display !== 'none');
       sec.style.display = visible ? '' : 'none';
@@ -235,10 +270,79 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         }
+        const secIdx = questionToSection.get(q);
+        const pos = history.indexOf(secIdx);
+        history = pos === -1 ? [secIdx] : history.slice(0, pos + 1);
         updateSectionsVisibility();
+        showSection(secIdx);
       });
     });
   });
+
+  function findSectionByQuestionId(id) {
+    return sections.findIndex(sec => Array.from(sec.querySelectorAll('.question-block'))
+      .some(q => q.dataset.id === id));
+  }
+
+  function determineNext(idx) {
+    const qs = Array.from(sections[idx].querySelectorAll('.question-block'));
+    for (const q of qs) {
+      const ram = JSON.parse(q.dataset.ramificacoes || '[]');
+      if (!ram.length) continue;
+      let val = null;
+      const sel = q.querySelector('select');
+      if (sel) {
+        val = sel.value;
+      } else {
+        const checked = q.querySelector('input[type=radio]:checked');
+        if (checked) val = checked.value;
+      }
+      if (val) {
+        const rule = ram.find(r => r.opcao === val);
+        if (rule) {
+          if (rule.destino === 'end') return -1;
+          if (rule.destino !== 'next') {
+            const destIdx = findSectionByQuestionId(rule.destino);
+            if (destIdx !== -1) return destIdx;
+          }
+        }
+      }
+    }
+    let nextIdx = idx + 1;
+    while (nextIdx < sections.length) {
+      const hasVisible = Array.from(sections[nextIdx].querySelectorAll('.question-block'))
+        .some(q => q.style.display !== 'none');
+      if (hasVisible) break;
+      nextIdx++;
+    }
+    return nextIdx < sections.length ? nextIdx : -1;
+  }
+
+  const nextBtn = document.getElementById('nextBtn');
+  const backBtn = document.getElementById('backBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  let history = [0];
+
+  nextBtn.addEventListener('click', () => {
+    const target = determineNext(history[history.length - 1]);
+    if (target === -1) {
+      submitBtn.click();
+      return;
+    }
+    history.push(target);
+    showSection(target);
+  });
+
+  backBtn.addEventListener('click', () => {
+    if (history.length > 1) {
+      history.pop();
+      showSection(history[history.length - 1]);
+    }
+  });
+
+  sections.forEach((sec, i) => { if (i !== 0) sec.style.display = 'none'; });
+  backBtn.style.display = 'none';
+  showSection(0);
 });
 </script>
 {% endblock %}
