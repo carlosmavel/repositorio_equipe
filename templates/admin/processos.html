@@ -44,7 +44,7 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-end">
-                                                    <a href="{{ url_for('processos_bp.admin_etapas', processo_id=proc.id) }}" class="btn btn-sm btn-outline-secondary me-1" title="Etapas"><i class="bi bi-diagram-3-fill"></i></a>
+                                                    <a href="{{ url_for('processos_bp.admin_etapas', processo_id=proc.id) }}" class="btn btn-sm btn-outline-secondary me-1" title="Etapas"><i class="bi bi-bezier2"></i></a>
                                                     <a href="{{ url_for('processos_bp.admin_processos', edit_id=proc.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
                                                     {% set confirm_text = 'DESATIVAR' if proc.ativo else 'ATIVAR' %}
                                                     <form action="{{ url_for('processos_bp.admin_toggle_ativo_processo', processo_id=proc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_text }} o processo ' + {{ proc.nome | tojson }} + '?');">
