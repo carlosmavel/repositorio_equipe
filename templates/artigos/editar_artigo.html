@@ -2,7 +2,7 @@
 {% block title %}Editar Artigo{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.quilljs.com/2.0.3/quill.snow.css" rel="stylesheet">
+<link href="https://cdn.quilljs.com/2.0.3/quill.bubble.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -25,7 +25,7 @@
           <div class="mb-3">
             <label class="form-label">Texto</label>
             <!-- Quill Editor -->
-            <div id="quill-editor" class="bg-white border rounded" style="height:300px; overflow:auto;"></div>
+            <div id="quill-editor" class="border rounded bg-body" style="height:300px; overflow:auto;"></div>
           <input type="hidden" name="texto" id="hidden-texto">
         </div>
 
@@ -107,13 +107,12 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="https://cdn.quilljs.com/2.0.3/quill.min.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     // Inicializa Quill editor e carrega conteúdo existente
     const editorDiv = document.getElementById('quill-editor');
     const quill = new Quill(editorDiv, {
-      theme: 'snow',
+      theme: 'bubble',
       modules: {
         toolbar: [ // Verifique se não há vírgulas sobrando no final de cada array aqui
           [{ header: [1, 2, 3, false] }],

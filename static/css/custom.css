@@ -315,3 +315,24 @@ body > .container {
     min-width: 150px;
   }
 }
+
+/* Dark theme helpers */
+.invert-on-dark {
+  filter: none;
+}
+
+[data-bs-theme="dark"] .invert-on-dark {
+  filter: invert(1);
+}
+
+/* Quill editor dark adjustments */
+[data-bs-theme="dark"] .ql-container,
+[data-bs-theme="dark"] .ql-editor {
+  background-color: var(--bg-default);
+  color: var(--text-default);
+  border-color: var(--border-default);
+}
+
+[data-bs-theme="dark"] .ql-bubble .ql-editor.ql-blank::before {
+  color: var(--text-default);
+}
