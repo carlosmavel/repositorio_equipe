@@ -5,6 +5,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const fieldsContainer = document.getElementById('fieldsContainer');
   const estruturaInput = document.getElementById('estrutura');
   const form = document.getElementById('formBuilderForm');
+  const nomeInput = document.getElementById('nome');
+  const descInput = document.getElementById('descricao');
+  const STORAGE_KEY = 'formBuilderDraft_' + (form?.dataset.formId || 'novo');
+
+  function saveDraft() {
+    if (!nomeInput || !descInput) return;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        nome: nomeInput.value,
+        descricao: descInput.value,
+        estrutura: estruturaInput.value
+      })
+    );
+  }
+
+  function loadDraft() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.nome && nomeInput) nomeInput.value = data.nome;
+      if (data.descricao && descInput) descInput.value = data.descricao;
+      if (data.estrutura) estruturaInput.value = data.estrutura;
+    } catch (e) {
+      console.warn('Falha ao carregar rascunho do formulário', e);
+    }
+  }
+
+  loadDraft();
+  if (nomeInput) nomeInput.addEventListener('input', saveDraft);
+  if (descInput) descInput.addEventListener('input', saveDraft);
+  form?.addEventListener('submit', () => localStorage.removeItem(STORAGE_KEY));
 
   async function uploadImage(file) {
     const fd = new FormData();
@@ -153,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ordem += 1;
     });
     estruturaInput.value = JSON.stringify(fields);
+    saveDraft();
   }
 
   function initQuestionsSortable(container) {

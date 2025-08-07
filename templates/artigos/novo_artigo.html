@@ -97,6 +97,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const visChecks = document.querySelectorAll('.vis-check');
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
+  const STORAGE_KEY = 'draft_novo_artigo';
+  function saveDraft() {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        titulo: document.getElementById('titulo').value,
+        texto: quill.root.innerHTML,
+        visibility: visInput.value
+      })
+    );
+  }
+  function loadDraft() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.titulo) document.getElementById('titulo').value = data.titulo;
+      if (data.texto) quill.root.innerHTML = data.texto;
+      if (data.visibility) {
+        visInput.value = data.visibility;
+        const parts = data.visibility.split(',');
+        visChecks.forEach(cb => cb.checked = parts.includes(cb.value));
+        updateVisibility();
+      }
+    } catch (e) {
+      console.warn('Falha ao carregar rascunho do artigo', e);
+    }
+  }
   function updateVisibility() {
     const opts = Array.from(visChecks).filter(c => c.checked);
     visInput.value = opts.map(o => o.value).join(',');
@@ -104,12 +132,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   visChecks.forEach(cb => cb.addEventListener('change', updateVisibility));
   updateVisibility();
+  loadDraft();
+  document.getElementById('titulo').addEventListener('input', saveDraft);
+  quill.on('text-change', saveDraft);
+  visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 
   // Sincroniza conteúdo Quill no campo hidden antes de submeter
   const form = document.querySelector('form');
   form.addEventListener('submit', () => {
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
     overlay.style.display = 'flex';
+    localStorage.removeItem(STORAGE_KEY);
   });
 
   // Preview de anexos

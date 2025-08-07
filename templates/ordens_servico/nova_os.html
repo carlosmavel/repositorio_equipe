@@ -29,7 +29,34 @@
           </form>
         </div>
       </div>
-    </div>
-  </div>
 </div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const inputs = form.querySelectorAll('input, textarea, select');
+  const STORAGE_KEY = 'draft_nova_os';
+  function save() {
+    const data = {};
+    inputs.forEach(i => data[i.id] = i.value);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+  function load() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      inputs.forEach(i => { if (data[i.id]) i.value = data[i.id]; });
+    } catch (e) {
+      console.warn('Falha ao carregar rascunho da OS', e);
+    }
+  }
+  load();
+  inputs.forEach(i => i.addEventListener('input', save));
+  form.addEventListener('submit', () => localStorage.removeItem(STORAGE_KEY));
+});
+</script>
 {% endblock %}
