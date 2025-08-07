@@ -146,6 +146,69 @@ entre as etapas conforme as permissões do usuário.
 Os processos se integram aos módulos de OS, Artigos e permissões por meio das
 notificações e da atribuição de cargos responsáveis.
 
+## Tema, Modo Escuro e Acessibilidade
+
+### Variáveis de cor
+
+As cores do projeto são controladas por variáveis CSS declaradas em
+`static/css/custom.css`. O bloco `:root` define as cores para o tema claro e o
+seletor `[data-bs-theme="dark"]` sobrescreve os valores quando o modo escuro é
+ativo. Utilize essas variáveis em novos componentes para herdar automaticamente
+os estilos de ambos os temas:
+
+```html
+<div class="p-3" style="background-color: var(--bg-default); color: var(--text-default);">
+  Exemplo com variáveis de cor
+</div>
+```
+
+Caso precise de novas cores, adicione variáveis correspondentes nos dois blocos
+para garantir contraste adequado em todos os temas.
+
+### Adicionando novos elementos
+
+Evite usar valores hexadecimais fixos como `#fff` ou `#000`. Prefira sempre as
+variáveis existentes (`var(--bg-default)`, `var(--text-default)` etc.). Se um
+componente exigir uma cor específica, crie uma nova variável e forneça a versão
+para o modo escuro em `[data-bs-theme="dark"]`.
+
+### Toggle de tema
+
+O modo escuro é alternado por um script simples que persiste a preferência no
+`localStorage`:
+
+```javascript
+const THEME_KEY = "theme";
+
+function applyTheme(theme) {
+  if (theme === "dark") {
+    document.documentElement.setAttribute("data-bs-theme", "dark");
+  } else {
+    document.documentElement.removeAttribute("data-bs-theme");
+  }
+}
+
+function toggleTheme() {
+  const newTheme = localStorage.getItem(THEME_KEY) === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, newTheme);
+  applyTheme(newTheme);
+}
+
+document.getElementById("themeToggle")?.addEventListener("click", function (e) {
+  e.preventDefault();
+  toggleTheme();
+});
+```
+
+### Dicas de acessibilidade
+
+* Mantenha contraste mínimo de **4.5:1** entre texto e fundo, conforme as
+  recomendações da [WCAG](https://www.w3.org/TR/WCAG21/).
+* Não dependa apenas de cores para transmitir informação; utilize também ícones
+  ou texto.
+* Verifique o contraste com ferramentas como o WebAIM Contrast Checker ou o
+  Lighthouse.
+
 ## Integração Contínua
 
 O repositório conta com um workflow do **GitHub Actions** localizado em
