@@ -178,11 +178,13 @@
             </div>
           {% endif %}
         {% endfor %}
-        <div class="d-flex justify-content-between mt-3" id="navButtons">
+        <div class="d-flex mt-3 align-items-center flex-wrap gap-2" id="navButtons">
           <button type="button" class="btn btn-secondary" id="backBtn">Voltar</button>
-          <button type="button" class="btn btn-primary" id="nextBtn">Próximo</button>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-primary" id="nextBtn">Próximo</button>
+            <button type="submit" class="btn btn-primary d-none" id="submitBtn">Enviar</button>
+          </div>
         </div>
-        <button type="submit" class="btn btn-primary d-none" id="submitBtn">Enviar</button>
       </form>
       </div>
       <div class="modal fade" id="videoExpandModal" tabindex="-1">
@@ -218,27 +220,37 @@ document.getElementById('videoExpandModal').addEventListener('hidden.bs.modal', 
 document.addEventListener('DOMContentLoaded', () => {
   const sections = Array.from(document.querySelectorAll('.section-block'));
   const questions = Array.from(document.querySelectorAll('.question-block'));
+  const questionById = new Map(questions.map(q => [q.dataset.id, q]));
   const questionToSection = new Map();
   sections.forEach((sec, sIdx) => {
     sec.querySelectorAll('.question-block').forEach(q => questionToSection.set(q, sIdx));
   });
+  let history = [0];
 
-  function showSection(idx) {
-    sections.forEach((sec, i) => {
-      sec.style.display = i === idx ? '' : 'none';
+  // Oculta todas as perguntas que são destino de ramificações
+  const branchDestinations = new Set();
+  questions.forEach(q => {
+    const ram = JSON.parse(q.dataset.ramificacoes || '[]');
+    ram.forEach(r => {
+      if (r.destino && r.destino !== 'next' && r.destino !== 'end') {
+        branchDestinations.add(r.destino);
+      }
     });
-    const title = sections[idx].querySelector('h4')?.textContent || `Seção ${idx + 1}`;
-    document.getElementById('sectionTitle').textContent = title;
-    const pct = ((idx + 1) / sections.length) * 100;
-    document.getElementById('progressBar').style.width = pct + '%';
-    document.getElementById('backBtn').style.display = history.length > 1 ? '' : 'none';
-    if (idx === sections.length - 1) {
-      document.getElementById('nextBtn').classList.add('d-none');
-      document.getElementById('submitBtn').classList.remove('d-none');
-    } else {
-      document.getElementById('nextBtn').classList.remove('d-none');
-      document.getElementById('submitBtn').classList.add('d-none');
-    }
+  });
+  branchDestinations.forEach(id => {
+    const el = questionById.get(id);
+    if (el) el.style.display = 'none';
+  });
+
+  function hideQuestionAndDescendants(qEl) {
+    qEl.style.display = 'none';
+    const ram = JSON.parse(qEl.dataset.ramificacoes || '[]');
+    ram.forEach(r => {
+      if (r.destino && r.destino !== 'next' && r.destino !== 'end') {
+        const destEl = questionById.get(r.destino);
+        if (destEl) hideQuestionAndDescendants(destEl);
+      }
+    });
   }
 
   function updateSectionsVisibility() {
@@ -249,51 +261,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  questions.forEach((q, idx) => {
-    const ram = JSON.parse(q.dataset.ramificacoes || '[]');
-    if (!ram.length) return;
-    const inputs = q.querySelectorAll('select, input[type=radio]');
-    inputs.forEach(inp => {
-      inp.addEventListener('change', () => {
-        const val = inp.value;
-        const rule = ram.find(r => r.opcao === val);
-        for (let i = idx + 1; i < questions.length; i++) {
-          questions[i].style.display = '';
-        }
-        if (rule) {
-          if (rule.destino === 'end') {
-            for (let i = idx + 1; i < questions.length; i++) questions[i].style.display = 'none';
-          } else if (rule.destino !== 'next') {
-            const destIdx = questions.findIndex(el => el.dataset.id === rule.destino);
-            if (destIdx > idx) {
-              for (let i = idx + 1; i < destIdx; i++) questions[i].style.display = 'none';
-            }
-          }
-        }
-        const secIdx = questionToSection.get(q);
-        const pos = history.indexOf(secIdx);
-        history = pos === -1 ? [secIdx] : history.slice(0, pos + 1);
-        updateSectionsVisibility();
-        showSection(secIdx);
-      });
-    });
-  });
-
   function findSectionByQuestionId(id) {
     return sections.findIndex(sec => Array.from(sec.querySelectorAll('.question-block'))
       .some(q => q.dataset.id === id));
   }
 
   function determineNext(idx) {
-    const qs = Array.from(sections[idx].querySelectorAll('.question-block'));
+    const qs = Array.from(sections[idx].querySelectorAll('.question-block'))
+      .filter(q => q.style.display !== 'none');
     for (const q of qs) {
       const ram = JSON.parse(q.dataset.ramificacoes || '[]');
       if (!ram.length) continue;
       let val = null;
       const sel = q.querySelector('select');
-      if (sel) {
-        val = sel.value;
-      } else {
+      if (sel) val = sel.value;
+      else {
         const checked = q.querySelector('input[type=radio]:checked');
         if (checked) val = checked.value;
       }
@@ -318,10 +300,86 @@ document.addEventListener('DOMContentLoaded', () => {
     return nextIdx < sections.length ? nextIdx : -1;
   }
 
+  function showSection(idx) {
+    sections.forEach((sec, i) => { sec.style.display = i === idx ? '' : 'none'; });
+    const title = sections[idx].querySelector('h4')?.textContent || `Seção ${idx + 1}`;
+    document.getElementById('sectionTitle').textContent = title;
+    const pct = ((idx + 1) / sections.length) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('backBtn').style.display = history.length > 1 ? '' : 'none';
+    if (determineNext(idx) === -1) {
+      document.getElementById('nextBtn').classList.add('d-none');
+      document.getElementById('submitBtn').classList.remove('d-none');
+    } else {
+      document.getElementById('nextBtn').classList.remove('d-none');
+      document.getElementById('submitBtn').classList.add('d-none');
+    }
+  }
+
+  function handleBranchChange(q, idx) {
+    const ram = JSON.parse(q.dataset.ramificacoes || '[]');
+    let val = null;
+    const sel = q.querySelector('select');
+    if (sel) val = sel.value; else {
+      const checked = q.querySelector('input[type=radio]:checked');
+      if (checked) val = checked.value;
+    }
+
+    // oculta todos os destinos possíveis antes de aplicar nova regra
+    ram.forEach(r => {
+      if (r.destino && r.destino !== 'next' && r.destino !== 'end') {
+        const destEl = questionById.get(r.destino);
+        if (destEl) hideQuestionAndDescendants(destEl);
+      }
+    });
+
+    const currentSecIdx = questionToSection.get(q);
+    const pos = history.indexOf(currentSecIdx);
+    history = pos === -1 ? [currentSecIdx] : history.slice(0, pos + 1);
+
+    if (val) {
+      const rule = ram.find(r => r.opcao === val);
+      if (rule) {
+        if (rule.destino === 'end') {
+          for (let i = idx + 1; i < questions.length; i++) {
+            hideQuestionAndDescendants(questions[i]);
+          }
+          updateSectionsVisibility();
+          showSection(currentSecIdx);
+          return;
+        }
+        if (rule.destino !== 'next') {
+          const destEl = questionById.get(rule.destino);
+          if (destEl) {
+            destEl.style.display = '';
+            const destSecIdx = questionToSection.get(destEl);
+            sections[destSecIdx].style.display = '';
+            updateSectionsVisibility();
+            if (destSecIdx !== currentSecIdx) {
+              history.push(destSecIdx);
+              showSection(destSecIdx);
+              return;
+            }
+          }
+        }
+      }
+    }
+    updateSectionsVisibility();
+    showSection(currentSecIdx);
+  }
+
+  questions.forEach((q, idx) => {
+    const ram = JSON.parse(q.dataset.ramificacoes || '[]');
+    if (!ram.length) return;
+    const inputs = q.querySelectorAll('select, input[type=radio]');
+    inputs.forEach(inp => {
+      inp.addEventListener('change', () => handleBranchChange(q, idx));
+    });
+  });
+
   const nextBtn = document.getElementById('nextBtn');
   const backBtn = document.getElementById('backBtn');
   const submitBtn = document.getElementById('submitBtn');
-  let history = [0];
 
   nextBtn.addEventListener('click', () => {
     const target = determineNext(history[history.length - 1]);
@@ -340,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  updateSectionsVisibility();
   sections.forEach((sec, i) => { if (i !== 0) sec.style.display = 'none'; });
   backBtn.style.display = 'none';
   showSection(0);

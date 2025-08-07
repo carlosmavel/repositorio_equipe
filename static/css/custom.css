@@ -119,6 +119,11 @@ body > .container {
   text-align: center;
 }
 
+/* espaçamento e responsividade dos botões de navegação do formulário */
+#navButtons {
+  gap: 0.5rem;
+}
+
 /* Logo da página de login */
 .login-logo {
   max-width: 120px;
