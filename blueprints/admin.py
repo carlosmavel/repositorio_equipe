@@ -2,12 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from sqlalchemy import func
 
 try:
-    from ..database import db
+    from ..core.database import db
 except ImportError:  # pragma: no cover
-    from database import db
+    from core.database import db
 
 try:
-    from ..models import (
+    from ..core.models import (
         User,
         Article,
         RevisionRequest,
@@ -22,7 +22,7 @@ try:
         Funcao,
     )
 except ImportError:  # pragma: no cover
-    from models import (
+    from core.models import (
         User,
         Article,
         RevisionRequest,
@@ -38,16 +38,16 @@ except ImportError:  # pragma: no cover
     )
 
 try:
-    from ..enums import ArticleStatus
+    from ..core.enums import ArticleStatus
 except ImportError:
-    from enums import ArticleStatus
+    from core.enums import ArticleStatus
 
 try:
-    from ..decorators import admin_required
+    from ..core.decorators import admin_required
 except ImportError:  # pragma: no cover
-    from decorators import admin_required
+    from core.decorators import admin_required
 try:
-    from ..utils import (
+    from ..core.utils import (
         DEFAULT_NEW_USER_PASSWORD,
         send_email,
         generate_token,
@@ -58,7 +58,7 @@ try:
         user_can_review_article,
     )
 except ImportError:  # pragma: no cover
-    from utils import (
+    from core.utils import (
         DEFAULT_NEW_USER_PASSWORD,
         send_email,
         generate_token,

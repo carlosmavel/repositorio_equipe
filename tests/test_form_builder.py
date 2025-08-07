@@ -1,7 +1,7 @@
 import pytest
 from app import app, db
-from models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User, Formulario, Secao, CampoFormulario
-from utils import user_can_access_form_builder
+from core.models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User, Formulario, Secao, CampoFormulario
+from core.utils import user_can_access_form_builder
 
 def setup_org(prefix):
     inst = Instituicao(nome=f'Inst_{prefix}')

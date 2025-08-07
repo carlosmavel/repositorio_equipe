@@ -14,15 +14,15 @@ from werkzeug.utils import secure_filename
 # aplicativo era carregado como parte do pacote ``repositorio_equipe``.
 # Utilizando ``..`` garantimos que o Python procure os módulos no pacote pai.
 try:
-    from ..models import Formulario, User
-    from ..database import db
-    from ..decorators import form_builder_required
-    from ..utils import user_can_access_form_builder
+    from ..core.models import Formulario, User
+    from ..core.database import db
+    from ..core.decorators import form_builder_required
+    from ..core.utils import user_can_access_form_builder
 except ImportError:  # pragma: no cover - fallback para execução direta
-    from models import Formulario, User
-    from database import db
-    from decorators import form_builder_required
-    from utils import user_can_access_form_builder
+    from core.models import Formulario, User
+    from core.database import db
+    from core.decorators import form_builder_required
+    from core.utils import user_can_access_form_builder
 
 formularios_bp = Blueprint('formularios_bp', __name__, url_prefix='/ordem-servico/formularios')
 

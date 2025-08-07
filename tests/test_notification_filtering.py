@@ -3,7 +3,7 @@ from io import BytesIO
 
 
 from app import app, db
-from models import (
+from core.models import (
     Instituicao,
     Estabelecimento,
     Setor,
@@ -12,7 +12,7 @@ from models import (
     Funcao,
     Notification,
 )
-from enums import Permissao
+from core.enums import Permissao
 
 
 def add_perm(user, code):

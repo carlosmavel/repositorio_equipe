@@ -2,7 +2,7 @@ import pytest
 
 
 from app import app, db
-from models import Instituicao, Setor, Estabelecimento, Celula, User, Funcao
+from core.models import Instituicao, Setor, Estabelecimento, Celula, User, Funcao
 
 @pytest.fixture
 def client(app_ctx):

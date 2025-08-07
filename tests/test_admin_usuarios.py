@@ -1,8 +1,8 @@
 import pytest
 
 from app import app, db
-from models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
-from utils import DEFAULT_NEW_USER_PASSWORD
+from core.models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
+from core.utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
 def client(app_ctx):

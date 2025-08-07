@@ -1,10 +1,10 @@
 try:
-    from .database import db
+    from .core.database import db
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from database import db
+    from core.database import db
 
 try:
-    from .models import (
+    from .core.models import (
         Instituicao,
         Estabelecimento,
         Setor,
@@ -15,7 +15,7 @@ try:
         Article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from models import (
+    from core.models import (
         Instituicao,
         Estabelecimento,
         Setor,
@@ -27,14 +27,14 @@ except ImportError:  # pragma: no cover - fallback for direct execution
     )
 
 try:
-    from .enums import Permissao, ArticleVisibility, ArticleStatus
+    from .core.enums import Permissao, ArticleVisibility, ArticleStatus
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from enums import Permissao, ArticleVisibility, ArticleStatus
+    from core.enums import Permissao, ArticleVisibility, ArticleStatus
 
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
 from app import app
-import seed_funcoes
+from . import seed_funcoes
 
 
 def get_or_create(model, defaults=None, **kwargs):

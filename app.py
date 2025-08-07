@@ -22,16 +22,16 @@ from sqlalchemy import or_, func
 #from models import user_funcoes
 
 try:
-    from .database import db
+    from .core.database import db
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from database import db
+    from core.database import db
 try:
-    from .enums import ArticleStatus, ArticleVisibility, Permissao
+    from .core.enums import ArticleStatus, ArticleVisibility, Permissao
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from enums import ArticleStatus, ArticleVisibility, Permissao
+    from core.enums import ArticleStatus, ArticleVisibility, Permissao
 
 try:
-    from .models import (
+    from .core.models import (
         User,
         Article,
         RevisionRequest,
@@ -51,7 +51,7 @@ try:
         CampoFormulario,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from models import (
+    from core.models import (
         User,
         Article,
         RevisionRequest,
@@ -72,7 +72,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
     )
 
 try:
-    from .utils import (
+    from .core.utils import (
         sanitize_html,
         extract_text,
         DEFAULT_NEW_USER_PASSWORD,
@@ -88,7 +88,7 @@ try:
         user_can_access_form_builder,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from utils import (
+    from core.utils import (
         sanitize_html,
         extract_text,
         DEFAULT_NEW_USER_PASSWORD,
@@ -104,9 +104,9 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_access_form_builder,
     )
 try:
-    from .decorators import form_builder_required
+    from .core.decorators import form_builder_required
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from decorators import form_builder_required
+    from core.decorators import form_builder_required
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -303,9 +303,9 @@ def api_notification_mark_read(notif_id):
 # DECORADORES
 # -------------------------------------------------------------------------
 try:
-    from .decorators import admin_required
+    from .core.decorators import admin_required
 except ImportError:  # pragma: no cover
-    from decorators import admin_required
+    from core.decorators import admin_required
 
 # -------------------------------------------------------------------------
 # Context Processors

@@ -2,7 +2,7 @@ import pytest
 
 
 from app import app, db
-from models import (
+from core.models import (
     Instituicao,
     Estabelecimento,
     Setor,
@@ -12,8 +12,8 @@ from models import (
     Funcao,
     ArticleVisibility,
 )
-from enums import Permissao
-from utils import (
+from core.enums import Permissao
+from core.utils import (
     user_can_approve_article,
     user_can_review_article,
 )

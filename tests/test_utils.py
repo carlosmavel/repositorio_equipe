@@ -1,7 +1,7 @@
 import pytest
 
-from utils import sanitize_html, extract_text
 import types
+from core.utils import sanitize_html, extract_text
 
 
 def test_sanitize_html_removes_disallowed_tags():
@@ -26,7 +26,7 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     img1 = Image.new("RGB", (10, 10), color="white")
     img2 = Image.new("RGB", (10, 10), color="black")
-    monkeypatch.setattr("utils.convert_from_path", lambda p, dpi=300: [img1, img2])
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: [img1, img2])
 
     calls = []
 
@@ -34,8 +34,8 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
         calls.append(img)
         return "Texto1" if len(calls) == 1 else "Texto2"
 
-    monkeypatch.setattr("utils.pytesseract", types.SimpleNamespace(image_to_string=dummy_image_to_string))
-    monkeypatch.setattr("utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setattr("core.utils.pytesseract", types.SimpleNamespace(image_to_string=dummy_image_to_string))
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
 
     text = extract_text(str(pdf_file))
 

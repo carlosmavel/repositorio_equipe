@@ -1,6 +1,6 @@
 import pytest
 from app import app, db
-from models import Notification, User, Instituicao, Estabelecimento, Setor, Celula
+from core.models import Notification, User, Instituicao, Estabelecimento, Setor, Celula
 
 @pytest.fixture
 def client_with_notifications(app_ctx):

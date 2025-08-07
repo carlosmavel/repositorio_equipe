@@ -1,7 +1,7 @@
 import pytest
 
 from app import app, db
-from models import OrdemServico, Processo, Instituicao, Estabelecimento, Setor, Celula, User, Funcao
+from core.models import OrdemServico, Processo, Instituicao, Estabelecimento, Setor, Celula, User, Funcao
 
 
 @pytest.fixture

@@ -1,19 +1,19 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 try:
-    from ..database import db
+    from ..core.database import db
 except ImportError:  # pragma: no cover
-    from database import db
+    from core.database import db
 
 try:
-    from ..models import OrdemServico, Processo
+    from ..core.models import OrdemServico, Processo
 except ImportError:  # pragma: no cover
-    from models import OrdemServico, Processo
+    from core.models import OrdemServico, Processo
 
 try:
-    from ..decorators import admin_required
+    from ..core.decorators import admin_required
 except ImportError:  # pragma: no cover
-    from decorators import admin_required
+    from core.decorators import admin_required
 
 ordens_servico_bp = Blueprint('ordens_servico_bp', __name__)
 
