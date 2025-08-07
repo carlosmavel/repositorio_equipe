@@ -37,7 +37,18 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDraft();
   if (nomeInput) nomeInput.addEventListener('input', saveDraft);
   if (descInput) descInput.addEventListener('input', saveDraft);
-  form?.addEventListener('submit', () => localStorage.removeItem(STORAGE_KEY));
+  if (form) {
+    form.addEventListener('submit', e => {
+      updateJSON();
+      const [ok, msg] = validarFluxoEstrutura();
+      if (!ok) {
+        e.preventDefault();
+        alert(msg);
+        return;
+      }
+      localStorage.removeItem(STORAGE_KEY);
+    });
+  }
 
   async function uploadImage(file) {
     const fd = new FormData();
@@ -187,6 +198,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     estruturaInput.value = JSON.stringify(fields);
     saveDraft();
+  }
+
+  function validarFluxoEstrutura() {
+    let data;
+    try {
+      data = JSON.parse(estruturaInput.value || '[]');
+    } catch (e) {
+      return [false, 'Estrutura do formulário inválida.'];
+    }
+    const perguntas = [];
+    function coletar(arr) {
+      arr.forEach(item => {
+        if (item.tipo === 'section') {
+          coletar(item.campos || []);
+        } else {
+          perguntas.push(item);
+        }
+      });
+    }
+    coletar(data);
+    const idIndice = new Map();
+    perguntas.forEach((p, i) => idIndice.set(String(p.id), i));
+    for (let i = 0; i < perguntas.length; i++) {
+      const rams = perguntas[i].ramificacoes || [];
+      for (const r of rams) {
+        const dest = r.destino;
+        if (!dest || dest === 'next' || dest === 'end') continue;
+        if (!idIndice.has(dest)) {
+          return [false, `Não é possível criar uma ramificação para a pergunta ${dest}, pois ela está inativa ou não existe.`];
+        }
+        const destIdx = idIndice.get(dest);
+        if (destIdx <= i) {
+          return [false, `Não é possível criar uma ramificação que retorna à Pergunta ${destIdx + 1}, pois isso geraria um ciclo no formulário.`];
+        }
+      }
+    }
+    return [true, ''];
   }
 
   function initQuestionsSortable(container) {
@@ -398,42 +446,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoModalEl = div.querySelector(`#videoModal-${unique}`);
 
     function buildBranchSelectOptions() {
-      let html = '<option value="next">Avançar</option><option value="end">Fim do formulário</option>';
+      const used = new Set();
+      fieldsContainer.querySelectorAll('.field-ramificacoes').forEach(inp => {
+        if (inp === ramificacoesHidden) return;
+        try {
+          JSON.parse(inp.value || '[]').forEach(r => {
+            if (r.destino && !['next', 'end'].includes(r.destino)) used.add(r.destino);
+          });
+        } catch (e) {}
+      });
+
       const allQuestions = Array.from(fieldsContainer.querySelectorAll('.field:not(.section-card)'));
       const currentIdx = allQuestions.indexOf(div);
-      const currentSection = div.closest('.section-card');
-      const sameSection = [];
-      const otherSections = [];
+      const grupos = new Map();
       for (let i = currentIdx + 1; i < allQuestions.length; i++) {
         const q = allQuestions[i];
         const sec = q.closest('.section-card');
-        if (sec === currentSection) {
-          const qTitle = q.querySelector('.question-title').textContent || 'Pergunta';
-          sameSection.push({ id: q.dataset.id, label: qTitle });
-        } else if (sec) {
-          const first = sec.querySelector('.section-questions .field');
-          if (first) {
-            const title = sec.querySelector('.question-title').textContent || 'Seção';
-            if (!otherSections.find(o => o.id === first.dataset.id)) {
-              otherSections.push({ id: first.dataset.id, label: title });
-            }
-          }
+        let labelGrupo;
+        if (sec) {
+          const secNum = sec.querySelector('.question-number')?.textContent || 'Seção';
+          const secTitle = sec.querySelector('.question-title')?.textContent || 'Seção';
+          labelGrupo = `${secNum}: ${secTitle}`;
+        } else {
+          labelGrupo = 'Perguntas sem seção';
         }
+        if (!grupos.has(labelGrupo)) grupos.set(labelGrupo, []);
+        const qNum = q.querySelector('.question-number')?.textContent || 'Pergunta';
+        const qTitle = q.querySelector('.question-title')?.textContent || 'Pergunta';
+        grupos.get(labelGrupo).push({ id: q.dataset.id, label: `${qNum}: ${qTitle}` });
       }
-      if (sameSection.length) {
-        html += '<optgroup label="Perguntas na seção atual">';
-        sameSection.forEach(o => {
-          html += `<option value="${o.id}">${o.label}</option>`;
+
+      let html = '<option value="next">Avançar</option><option value="end">Fim do formulário</option>';
+      grupos.forEach((qs, secTitle) => {
+        html += `<optgroup label="${secTitle}">`;
+        qs.forEach(o => {
+          const marcado = used.has(o.id) ? ' data-used="1"' : '';
+          const prefixo = used.has(o.id) ? '★ ' : '';
+          html += `<option value="${o.id}"${marcado}>${prefixo}${o.label}</option>`;
         });
         html += '</optgroup>';
-      }
-      if (otherSections.length) {
-        html += '<optgroup label="Outras Seções">';
-        otherSections.forEach(o => {
-          html += `<option value="${o.id}">${o.label}</option>`;
-        });
-        html += '</optgroup>';
-      }
+      });
       return html;
     }
 

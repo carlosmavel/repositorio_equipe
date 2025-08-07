@@ -17,12 +17,12 @@ try:
     from ..core.models import Formulario, User
     from ..core.database import db
     from ..core.decorators import form_builder_required
-    from ..core.utils import user_can_access_form_builder
+    from ..core.utils import user_can_access_form_builder, validar_fluxo_ramificacoes
 except ImportError:  # pragma: no cover - fallback para execução direta
     from core.models import Formulario, User
     from core.database import db
     from core.decorators import form_builder_required
-    from core.utils import user_can_access_form_builder
+    from core.utils import user_can_access_form_builder, validar_fluxo_ramificacoes
 
 formularios_bp = Blueprint('formularios_bp', __name__, url_prefix='/ordem-servico/formularios')
 
@@ -39,11 +39,16 @@ def formularios():
             flash('Nome é obrigatório.', 'danger')
             aba_ativa = 'cadastro'
         else:
-            f = Formulario(nome=nome, descricao=descricao, estrutura=estrutura)
-            db.session.add(f)
-            db.session.commit()
-            flash('Formulário criado com sucesso!', 'success')
-            return redirect(url_for('formularios_bp.formularios'))
+            valido, msg = validar_fluxo_ramificacoes(estrutura)
+            if not valido:
+                flash(msg, 'danger')
+                aba_ativa = 'cadastro'
+            else:
+                f = Formulario(nome=nome, descricao=descricao, estrutura=estrutura)
+                db.session.add(f)
+                db.session.commit()
+                flash('Formulário criado com sucesso!', 'success')
+                return redirect(url_for('formularios_bp.formularios'))
     status = request.args.get('status', 'ativos')
     query = Formulario.query
     if status == 'ativos':
@@ -65,12 +70,16 @@ def editar_formulario(id):
         if not nome:
             flash('Nome é obrigatório.', 'danger')
         else:
-            formulario.nome = nome
-            formulario.descricao = descricao
-            formulario.estrutura = estrutura
-            db.session.commit()
-            flash('Formulário atualizado!', 'success')
-            return redirect(url_for('formularios_bp.formularios'))
+            valido, msg = validar_fluxo_ramificacoes(estrutura)
+            if not valido:
+                flash(msg, 'danger')
+            else:
+                formulario.nome = nome
+                formulario.descricao = descricao
+                formulario.estrutura = estrutura
+                db.session.commit()
+                flash('Formulário atualizado!', 'success')
+                return redirect(url_for('formularios_bp.formularios'))
     return render_template('formularios/editar_formulario.html', formulario=formulario)
 
 

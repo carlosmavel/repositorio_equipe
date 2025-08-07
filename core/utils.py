@@ -5,6 +5,7 @@ from bleach.css_sanitizer import CSSSanitizer
 import re
 
 import os
+import json
 from docx import Document
 import openpyxl
 import xlrd
@@ -473,3 +474,50 @@ def eligible_review_notification_users(article):
 def user_can_access_form_builder(user):
     """Verifica se o usuário tem acesso ao criador de formulários."""
     return bool(user and getattr(user, 'atende_ordem_servico', False))
+
+
+def validar_fluxo_ramificacoes(estrutura):
+    """Valida ramificações de formulários para evitar ciclos e destinos inválidos.
+
+    Estrutura pode ser uma string JSON ou uma lista de blocos. Retorna
+    ``(True, '')`` se estiver tudo correto ou ``(False, mensagem)`` em caso de
+    conflito.
+    """
+    if isinstance(estrutura, str):
+        try:
+            data = json.loads(estrutura)
+        except ValueError:
+            return False, "Estrutura do formulário inválida."
+    else:
+        data = estrutura
+
+    perguntas = []
+
+    def coletar(itens):
+        for item in itens:
+            if item.get('tipo') == 'section':
+                coletar(item.get('campos', []))
+            else:
+                perguntas.append(item)
+
+    coletar(data)
+    id_para_indice = {str(p['id']): idx for idx, p in enumerate(perguntas)}
+
+    for idx, pergunta in enumerate(perguntas):
+        for regra in pergunta.get('ramificacoes') or []:
+            destino = regra.get('destino')
+            if not destino or destino in ('next', 'end'):
+                continue
+            if destino not in id_para_indice:
+                return False, (
+                    f"Não é possível criar uma ramificação para a pergunta {destino}, "
+                    "pois ela está inativa ou não existe."
+                )
+            dest_idx = id_para_indice[destino]
+            if dest_idx <= idx:
+                return False, (
+                    f"Não é possível criar uma ramificação que retorna à Pergunta {dest_idx + 1}, "
+                    "pois isso geraria um ciclo no formulário."
+                )
+
+    return True, ''
