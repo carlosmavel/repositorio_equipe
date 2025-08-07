@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="btn btn-light btn-sm duplicate-field" title="Duplicar"><i class="bi bi-files"></i></button>
           <button type="button" class="btn btn-light btn-sm move-up-field" title="Mover para cima"><i class="bi bi-arrow-up"></i></button>
           <button type="button" class="btn btn-light btn-sm move-down-field" title="Mover para baixo"><i class="bi bi-arrow-down"></i></button>
-          <button type="button" class="btn btn-light btn-sm branch-field" title="Configurar ramificações" aria-label="Configurar ramificações"><i class="bi bi-diagram-3"></i></button>
+          <button type="button" class="btn btn-light btn-sm branch-field d-none" data-bs-toggle="tooltip" title="Criar regra de ramificação com base na resposta desta pergunta" aria-label="Criar regra de ramificação"><i class="bi bi-bezier2"></i></button>
           <button type="button" class="btn btn-light btn-sm remove-field" title="Excluir"><i class="bi bi-trash"></i></button>
         </div>
       </div>
@@ -434,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuSuspensoWrapper = div.querySelector('.field-menu-suspenso-wrapper');
     const embaralharWrapper = div.querySelector('.field-embaralhar-wrapper');
     const branchBtn = div.querySelector('.branch-field');
+    new bootstrap.Tooltip(branchBtn);
     const ramificacoesHidden = div.querySelector('.field-ramificacoes');
     const branchModalEl = div.querySelector(`#branchModal-${unique}`);
     const branchModal = new bootstrap.Modal(branchModalEl);
@@ -535,6 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
+      const isSection = tipoVal === 'section';
+      branchBtn.disabled = isSection;
+      branchBtn.classList.toggle('d-none', isSection);
       if (tipoVal === 'option') {
         opcoesWrapper.classList.remove('d-none');
         outraWrapper.classList.remove('d-none');
@@ -542,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.remove('d-none');
         embaralharWrapper.classList.remove('d-none');
         branchModal.hide();
-        branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -556,7 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSuspensoWrapper.classList.add('d-none');
         embaralharWrapper.classList.add('d-none');
         branchModal.hide();
-        branchBtn.disabled = false;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -572,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
         branchModal.hide();
         branchRulesDiv.innerHTML = '';
         ramificacoesHidden.value = '';
-        branchBtn.disabled = true;
         likertWrapper.classList.remove('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -588,7 +589,6 @@ document.addEventListener('DOMContentLoaded', () => {
         branchModal.hide();
         branchRulesDiv.innerHTML = '';
         ramificacoesHidden.value = '';
-        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.remove('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -604,7 +604,6 @@ document.addEventListener('DOMContentLoaded', () => {
         branchModal.hide();
         branchRulesDiv.innerHTML = '';
         ramificacoesHidden.value = '';
-        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         obrigatoriaWrapper.classList.add('d-none');
@@ -646,7 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
         branchModal.hide();
         branchRulesDiv.innerHTML = '';
         ramificacoesHidden.value = '';
-        branchBtn.disabled = true;
         likertWrapper.classList.add('d-none');
         tableWrapper.classList.add('d-none');
         sectionSubtitleWrapper.classList.add('d-none');
@@ -768,7 +766,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Prefill data if editing existing structure
     tipoSelect.value = data.tipo || tipo || 'text';
-    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
+    const initialIsSection = tipoSelect.value === 'section';
+    branchBtn.disabled = initialIsSection;
+    branchBtn.classList.toggle('d-none', initialIsSection);
     labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatoria').checked = data.obrigatoria || data.obrigatorio || false;
     div.querySelector('.field-subtitulo').value = data.subtitulo || '';
