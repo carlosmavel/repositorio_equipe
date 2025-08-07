@@ -8,6 +8,30 @@ document.addEventListener("DOMContentLoaded", function () {
   const READ_KEY = `readNotifications_${currentUser}`;
   /* ------------------------------------------------------------------ */
 
+  const THEME_KEY = "theme";
+
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.documentElement.setAttribute("data-bs-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-bs-theme");
+    }
+  }
+
+  function toggleTheme() {
+    const newTheme = localStorage.getItem(THEME_KEY) === "dark" ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, newTheme);
+    applyTheme(newTheme);
+  }
+
+  document.getElementById("themeToggle")?.addEventListener("click", function (e) {
+    e.preventDefault();
+    toggleTheme();
+  });
+
+  window.toggleTheme = toggleTheme;
+  applyTheme(localStorage.getItem(THEME_KEY));
+
   // 1) Inicializa apenas os tooltips marcados, com offset para centralizar
   Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach((el) =>
     new bootstrap.Tooltip(el, {
