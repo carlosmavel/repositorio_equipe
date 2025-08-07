@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="btn btn-light btn-sm duplicate-field" title="Duplicar"><i class="bi bi-files"></i></button>
           <button type="button" class="btn btn-light btn-sm move-up-field" title="Mover para cima"><i class="bi bi-arrow-up"></i></button>
           <button type="button" class="btn btn-light btn-sm move-down-field" title="Mover para baixo"><i class="bi bi-arrow-down"></i></button>
-          <button type="button" class="btn btn-light btn-sm branch-field" title="Ramificação"><i class="bi bi-bezier2"></i></button>
+          <button type="button" class="btn btn-light btn-sm branch-field" title="Configurar ramificações" aria-label="Configurar ramificações"><i class="bi bi-diagram-3"></i></button>
           <button type="button" class="btn btn-light btn-sm remove-field" title="Excluir"><i class="bi bi-trash"></i></button>
         </div>
       </div>
@@ -481,8 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
-
     tipoSelect.addEventListener('change', () => {
       const tipoVal = tipoSelect.value;
       if (tipoVal === 'option') {
@@ -718,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Prefill data if editing existing structure
     tipoSelect.value = data.tipo || tipo || 'text';
+    branchBtn.disabled = !['option', 'select'].includes(tipoSelect.value);
     labelInput.value = data.label || data.titulo || '';
     div.querySelector('.field-obrigatoria').checked = data.obrigatoria || data.obrigatorio || false;
     div.querySelector('.field-subtitulo').value = data.subtitulo || '';
