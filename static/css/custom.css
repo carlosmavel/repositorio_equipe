@@ -1,3 +1,44 @@
+/* CSS Variables */
+:root {
+  --bg-default: #fff;
+  --bg-muted: #f8f9fa;
+  --bg-hover: rgba(0,0,0,0.03);
+  --bg-hover-subtle: rgba(0,0,0,0.02);
+  --text-default: #495057;
+  --primary: #0d6efd;
+  --primary-hover-bg: rgba(13,110,253,0.1);
+  --border-default: #dee2e6;
+  --border-light: #e1e4e8;
+  --border-lighter: #f1f3f5;
+  --border-darker: #d0d7de;
+  --highlight-color: #ffe69c;
+  --section-header-bg: #eef1f6;
+  --overlay-light: rgba(255, 255, 255, 0.7);
+  --shadow-soft: rgba(0,0,0,0.05);
+  --shadow-muted: rgba(0,0,0,0.04);
+  --shadow-strong: rgba(0,0,0,0.2);
+}
+
+[data-bs-theme="dark"] {
+  --bg-default: #1e1e1e;
+  --bg-muted: #2c2c2c;
+  --bg-hover: rgba(255,255,255,0.05);
+  --bg-hover-subtle: rgba(255,255,255,0.04);
+  --text-default: #e1e1e1;
+  --primary: #0d6efd;
+  --primary-hover-bg: rgba(13,110,253,0.25);
+  --border-default: #444;
+  --border-light: #555;
+  --border-lighter: #666;
+  --border-darker: #333;
+  --highlight-color: #665c00;
+  --section-header-bg: #3b3b3b;
+  --overlay-light: rgba(0,0,0,0.7);
+  --shadow-soft: rgba(0,0,0,0.5);
+  --shadow-muted: rgba(0,0,0,0.6);
+  --shadow-strong: rgba(0,0,0,0.8);
+}
+
 /* 1. Lista de Aprovação — estilo “card” + hover suave */
 .aprovacao-list .list-group-item {
   display: flex;
@@ -7,12 +48,12 @@
   border-radius: 0.5rem;
   margin-bottom: 0.75rem;
   padding: 1rem;
-  background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  background-color: var(--bg-default);
+  box-shadow: 0 1px 3px var(--shadow-soft);
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 .aprovacao-list .list-group-item:hover {
-  background-color: rgba(0,0,0,0.03);
+  background-color: var(--bg-hover);
   transform: translateY(-2px);
 }
 
@@ -26,8 +67,8 @@
    Abas com fundo claro e borda suave
    —————————————————————————————————————————————————————— */
 .nav-tabs {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--bg-muted);
+  border: 1px solid var(--border-default);
   border-bottom: none;
   border-radius: .25rem .25rem 0 0;
   margin-bottom: 0;
@@ -39,20 +80,20 @@
   border: 1px solid transparent;
   border-bottom: none;
   background-color: transparent;
-  color: #495057;
+  color: var(--text-default);
   transition: background-color .2s, color .2s;
   margin-right: .25rem;
   border-radius: .25rem .25rem 0 0;
 }
 .nav-tabs .nav-link:hover {
-  background-color: rgba(13,110,253,0.1);
-  color: #0d6efd;
+  background-color: var(--primary-hover-bg);
+  color: var(--primary);
 }
 .nav-tabs .nav-link.active {
-  background-color: #fff;
-  border-color: #dee2e6;
-  border-bottom-color: #fff;
-  color: #0d6efd;
+  background-color: var(--bg-default);
+  border-color: var(--border-default);
+  border-bottom-color: var(--bg-default);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -63,11 +104,11 @@
   transition: background-color .2s;
 }
 .aprovacao-list .list-group-item:hover {
-  background-color: rgba(0,0,0,0.03);
+  background-color: var(--bg-hover);
 }
 
 .aprovacao-list .list-group-item {
-  border: 1px solid #dee2e6;    /* mesma cor que o Bootstrap usa */
+  border: 1px solid var(--border-default);    /* mesma cor que o Bootstrap usa */
   border-radius: 0.25rem;       /* cantos arredondados */
   margin-bottom: 0.75rem;       /* espaçamento entre os itens */
   transition: background-color .2s, transform .2s;
@@ -83,7 +124,7 @@
 
 /* Destaca perguntas já utilizadas como destino em ramificações */
 .branch-select option[data-used="1"] {
-  color: #0d6efd;
+  color: var(--primary);
   font-weight: 600;
 }
 .novo-artigo-preview .card-img-top {
@@ -107,7 +148,7 @@ body > .container {
   cursor: pointer;
 }
 .clickable-row:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--bg-hover-subtle);
 }
 
 /* ou, se quiser empurrar só o card do artigo */
@@ -141,7 +182,7 @@ body > .container {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--overlay-light);
   display: none;
   align-items: center;
   justify-content: center;
@@ -167,26 +208,26 @@ body > .container {
 }
 .celula-container {
   margin-left: 2rem;
-  border-left: 1px solid #dee2e6;
+  border-left: 1px solid var(--border-default);
   padding-left: 1rem;
 }
 .cargo-item {
   margin-left: 3rem;
-  border-left: 1px solid #f1f3f5;
+  border-left: 1px solid var(--border-lighter);
   padding-left: 1rem;
 }
 
 .search-highlight {
-  background-color: #ffe69c;
+  background-color: var(--highlight-color);
   padding: 0 2px;
   border-radius: 3px;
 }
 /* Form builder styles */
 #fieldsContainer .field.card {
-  border: 1px solid #e1e4e8;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 1px 2px var(--shadow-muted);
   margin-bottom: 1rem;
-  background-color: #fff;
+  background-color: var(--bg-default);
 }
 #fieldsContainer .field .remove-field {
   float: right;
@@ -194,14 +235,14 @@ body > .container {
 
 /* Section container styling */
 #fieldsContainer .section-card {
-  background-color: #f8f9fa;
-  border: 1px solid #d0d7de;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background-color: var(--bg-muted);
+  border: 1px solid var(--border-darker);
+  box-shadow: 0 2px 4px var(--shadow-soft);
   padding: 1rem;
   margin-bottom: 1.5rem;
 }
 #fieldsContainer .section-card .card-header {
-  background-color: #eef1f6;
+  background-color: var(--section-header-bg);
   font-weight: 600;
 }
 #fieldsContainer .section-card .section-questions {
@@ -209,7 +250,7 @@ body > .container {
 }
 #fieldsContainer .section-card .section-questions .field.card {
   margin-top: 0.75rem;
-  border: 1px solid #e1e4e8;
+  border: 1px solid var(--border-light);
   box-shadow: none;
 }
 
@@ -228,11 +269,11 @@ body > .container {
   opacity: 0.5;
 }
 .sortable-chosen {
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px var(--shadow-strong);
 }
 .sortable-ghost {
-  border: 2px dashed #0d6efd;
-  background: #f8f9fa;
+  border: 2px dashed var(--primary);
+  background: var(--bg-muted);
 }
 
 /* Form viewer container */
@@ -243,8 +284,8 @@ body > .container {
 
 /* Section highlight */
 .section-block {
-  border: 1px solid #dee2e6;
-  background-color: #f8f9fa;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-muted);
   padding: 1rem;
   border-radius: 0.25rem;
 }
