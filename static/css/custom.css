@@ -209,6 +209,13 @@ body > .container {
 #fieldsContainer .drag-handle {
   cursor: grab;
 }
+#fieldsContainer .branch-field:not(:disabled) {
+  cursor: pointer;
+}
+#fieldsContainer .branch-field:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .sortable-chosen {
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
