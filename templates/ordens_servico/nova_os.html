@@ -17,20 +17,37 @@
               <textarea class="form-control" id="descricao" name="descricao" rows="4"></textarea>
             </div>
             <div class="mb-3">
-              <label for="processo_id" class="form-label">Processo</label>
-              <select class="form-select" id="processo_id" name="processo_id">
+              <label for="tipo_os_id" class="form-label">Tipo</label>
+              <select class="form-select" id="tipo_os_id" name="tipo_os_id">
                 <option value="">--</option>
                 {% for proc in processos %}
                 <option value="{{ proc.id }}">{{ proc.nome }}</option>
                 {% endfor %}
               </select>
             </div>
+            <div class="mb-3">
+              <label for="prioridade" class="form-label">Prioridade</label>
+              <select class="form-select" id="prioridade" name="prioridade">
+                <option value="">--</option>
+                {% for p in prioridades %}
+                <option value="{{ p.value }}">{{ p.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="origem" class="form-label">Origem</label>
+              <input type="text" class="form-control" id="origem" name="origem">
+            </div>
+            <div class="mb-3">
+              <label for="observacoes" class="form-label">Observações</label>
+              <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
+            </div>
             <button type="submit" class="btn btn-primary">Salvar</button>
           </form>
         </div>
       </div>
-</div>
-</div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 {% block extra_js %}

@@ -143,8 +143,9 @@ seed. Cada etapa pode estar vinculada a um cargo e setor para controle de
 responsáveis. Uma Ordem de Serviço pode selecionar um `processo_id` e avançar
 entre as etapas conforme as permissões do usuário.
 
-Os processos se integram aos módulos de OS, Artigos e permissões por meio das
-notificações e da atribuição de cargos responsáveis.
+Os processos se integram ao módulo de Ordem de Serviço, que está em constante
+construção, além de Artigos e permissões por meio das notificações e da
+atribuição de cargos responsáveis.
 
 ## Tema, Modo Escuro e Acessibilidade
 

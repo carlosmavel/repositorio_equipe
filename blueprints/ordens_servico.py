@@ -6,9 +6,19 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import OrdemServico, Processo
+    from ..core.models import OrdemServico, Processo, OrdemServicoLog
 except ImportError:  # pragma: no cover
-    from core.models import OrdemServico, Processo
+    from core.models import OrdemServico, Processo, OrdemServicoLog
+
+try:
+    from ..core.enums import OSStatus, OSPrioridade
+except ImportError:  # pragma: no cover
+    from core.enums import OSStatus, OSPrioridade
+
+try:
+    from ..core.utils import send_email
+except ImportError:  # pragma: no cover
+    from core.utils import send_email
 
 try:
     from ..core.decorators import admin_required
@@ -30,29 +40,60 @@ def admin_ordens_servico():
         id_para_atualizar = request.form.get('id_para_atualizar')
         titulo = request.form.get('titulo', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        processo_id = request.form.get('processo_id') or None
-        status = request.form.get('status', 'aberta').strip() or 'aberta'
+        tipo_os_id = request.form.get('tipo_os_id') or None
+        status = request.form.get('status', OSStatus.RASCUNHO.value)
+        prioridade = request.form.get('prioridade') or None
+        origem = request.form.get('origem') or None
+        observacoes = request.form.get('observacoes') or None
+        atribuido_para_id = request.form.get('atribuido_para_id') or None
         if not titulo:
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
         else:
             if id_para_atualizar:
                 ordem = OrdemServico.query.get_or_404(id_para_atualizar)
+                origem_status = ordem.status
                 ordem.titulo = titulo
                 ordem.descricao = descricao
-                ordem.processo_id = processo_id
+                ordem.tipo_os_id = tipo_os_id
                 ordem.status = status
+                ordem.prioridade = prioridade
+                ordem.origem = origem
+                ordem.observacoes = observacoes
+                ordem.atribuido_para_id = atribuido_para_id
                 action_msg = 'atualizada'
             else:
                 ordem = OrdemServico(
                     titulo=titulo,
                     descricao=descricao,
-                    processo_id=processo_id,
+                    tipo_os_id=tipo_os_id,
                     status=status,
+                    prioridade=prioridade,
+                    origem=origem,
+                    observacoes=observacoes,
+                    atribuido_para_id=atribuido_para_id,
+                    criado_por_id=session.get('user_id'),
                 )
                 db.session.add(ordem)
+                origem_status = None
                 action_msg = 'criada'
             try:
+                if status == OSStatus.AGUARDANDO.value and not ordem.pode_mudar_para_aguardando():
+                    raise ValueError('Formulário obrigatório não preenchido')
                 db.session.commit()
+                log = OrdemServicoLog(
+                    os_id=ordem.id,
+                    usuario_id=session.get('user_id'),
+                    acao='status_alterado' if origem_status and origem_status != status else 'criada',
+                    origem_status=origem_status,
+                    destino_status=ordem.status,
+                )
+                db.session.add(log)
+                db.session.commit()
+                if origem_status != ordem.status:
+                    try:
+                        send_email(ordem.criado_por.email, 'Status da OS atualizado', f'Sua OS agora está em {ordem.status}')
+                    except Exception:
+                        pass
                 flash(f'Ordem de Serviço {action_msg} com sucesso!', 'success')
                 return redirect(url_for('ordens_servico_bp.admin_ordens_servico'))
             except Exception as e:
@@ -60,13 +101,15 @@ def admin_ordens_servico():
                 flash(f'Erro ao salvar ordem de serviço: {str(e)}', 'danger')
         if id_para_atualizar:
             ordem_editar = OrdemServico.query.get(id_para_atualizar)
-    ordens = OrdemServico.query.order_by(OrdemServico.created_at.desc()).all()
+    ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
     processos = Processo.query.order_by(Processo.nome).all()
     return render_template(
         'admin/ordens_servico.html',
         ordens=ordens,
         ordem_editar=ordem_editar,
         processos=processos,
+        prioridades=OSPrioridade,
+        status_choices=OSStatus,
     )
 
 
@@ -91,14 +134,21 @@ def os_nova():
     if request.method == 'POST':
         titulo = request.form.get('titulo', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        processo_id = request.form.get('processo_id') or None
+        tipo_os_id = request.form.get('tipo_os_id') or None
+        prioridade = request.form.get('prioridade') or None
+        origem = request.form.get('origem') or None
+        observacoes = request.form.get('observacoes') or None
         if not titulo:
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
         else:
             ordem = OrdemServico(
                 titulo=titulo,
                 descricao=descricao,
-                processo_id=processo_id,
+                tipo_os_id=tipo_os_id,
+                prioridade=prioridade,
+                origem=origem,
+                observacoes=observacoes,
+                criado_por_id=session.get('user_id'),
             )
             try:
                 db.session.add(ordem)
@@ -109,14 +159,14 @@ def os_nova():
                 db.session.rollback()
                 flash(f'Erro ao salvar ordem de serviço: {str(e)}', 'danger')
     processos = Processo.query.order_by(Processo.nome).all()
-    return render_template('ordens_servico/nova_os.html', processos=processos)
+    return render_template('ordens_servico/nova_os.html', processos=processos, prioridades=OSPrioridade)
 
 
 @ordens_servico_bp.route('/os', endpoint='os_listar')
 def os_listar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordens = OrdemServico.query.order_by(OrdemServico.created_at.desc()).all()
+    ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
     return render_template('ordens_servico/listar_os.html', ordens=ordens)
 
 
@@ -132,6 +182,6 @@ def os_detalhar(ordem_id):
 def os_minhas():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordens = OrdemServico.query.order_by(OrdemServico.created_at.desc()).all()
+    ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
     return render_template('ordens_servico/minhas_os.html', ordens=ordens)
 
