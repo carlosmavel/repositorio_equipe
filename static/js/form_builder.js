@@ -881,9 +881,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  form.addEventListener('submit', () => {
-    updateJSON();
-  });
+  // 'submit' event is already handled above, where we update the JSON
+  // structure, validate the form, and clear any saved draft. Adding another
+  // listener here would trigger another `updateJSON()` call which in turn
+  // saves the draft again, re-populating localStorage right after it was
+  // cleared. Therefore, we avoid attaching a duplicate submit handler that
+  // would interfere with the autosave reset logic.
 
   function showToast(message) {
     const container = document.createElement('div');
