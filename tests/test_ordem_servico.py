@@ -1,7 +1,7 @@
 import pytest
 
 from app import app, db
-from core.models import OrdemServico, Processo, Instituicao, Estabelecimento, Setor, Celula, User, Funcao
+from core.models import OrdemServico, Processo, Subprocesso, TipoOS, Instituicao, Estabelecimento, Setor, Celula, User, Funcao
 
 
 @pytest.fixture
@@ -31,10 +31,13 @@ def login_admin(client):
 def test_crud_ordem_servico(client):
     login_admin(client)
     with app.app_context():
-        proc = Processo(nome='Proc', descricao='d')
-        db.session.add(proc)
+        proc = Processo(nome='Proc')
+        sub = Subprocesso(nome='Sub', processo=proc)
+        cel = Celula.query.first()
+        tipo = TipoOS(nome='Tipo', descricao='d', subprocesso=sub, equipe_responsavel_id=cel.id)
+        db.session.add_all([proc, sub, tipo])
         db.session.commit()
-        proc_id = proc.id
+        proc_id = tipo.id
     # create
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS1',

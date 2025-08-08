@@ -7,9 +7,9 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import OrdemServico, Processo, OrdemServicoLog, OrdemServicoComentario, User
+    from ..core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User
 except ImportError:  # pragma: no cover
-    from core.models import OrdemServico, Processo, OrdemServicoLog, OrdemServicoComentario, User
+    from core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User
 
 try:
     from ..core.enums import OSStatus, OSPrioridade
@@ -55,6 +55,7 @@ def admin_ordens_servico():
         titulo = request.form.get('titulo', '').strip()
         descricao = request.form.get('descricao', '').strip()
         tipo_os_id = request.form.get('tipo_os_id') or None
+        tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         status = request.form.get('status', OSStatus.RASCUNHO.value)
         prioridade = request.form.get('prioridade') or None
         origem = request.form.get('origem') or None
@@ -69,6 +70,7 @@ def admin_ordens_servico():
                 ordem.titulo = titulo
                 ordem.descricao = descricao
                 ordem.tipo_os_id = tipo_os_id
+                ordem.equipe_responsavel_id = tipo_obj.equipe_responsavel_id if tipo_obj else None
                 ordem.status = status
                 ordem.prioridade = prioridade
                 ordem.origem = origem
@@ -80,6 +82,7 @@ def admin_ordens_servico():
                     titulo=titulo,
                     descricao=descricao,
                     tipo_os_id=tipo_os_id,
+                    equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                     status=status,
                     prioridade=prioridade,
                     origem=origem,
@@ -116,12 +119,12 @@ def admin_ordens_servico():
         if id_para_atualizar:
             ordem_editar = OrdemServico.query.get(id_para_atualizar)
     ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
-    processos = Processo.query.order_by(Processo.nome).all()
+    tipos_os = TipoOS.query.order_by(TipoOS.nome).all()
     return render_template(
         'admin/ordens_servico.html',
         ordens=ordens,
         ordem_editar=ordem_editar,
-        processos=processos,
+        tipos_os=tipos_os,
         prioridades=OSPrioridade,
         status_choices=OSStatus,
     )
@@ -149,6 +152,7 @@ def os_nova():
         titulo = request.form.get('titulo', '').strip()
         descricao = request.form.get('descricao', '').strip()
         tipo_os_id = request.form.get('tipo_os_id') or None
+        tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         prioridade = request.form.get('prioridade') or None
         origem = request.form.get('origem') or None
         observacoes = request.form.get('observacoes') or None
@@ -163,6 +167,7 @@ def os_nova():
                 origem=origem,
                 observacoes=observacoes,
                 criado_por_id=session.get('user_id'),
+                equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
             )
             try:
                 db.session.add(ordem)
@@ -172,8 +177,13 @@ def os_nova():
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao salvar ordem de serviço: {str(e)}', 'danger')
-    processos = Processo.query.order_by(Processo.nome).all()
-    return render_template('ordens_servico/nova_os.html', processos=processos, prioridades=OSPrioridade)
+    usuario = User.query.get(session['user_id'])
+    tipos_os = []
+    if usuario and usuario.cargo_id:
+        sub_ids = [cp.subprocesso_id for cp in CargoProcesso.query.filter_by(cargo_id=usuario.cargo_id).all()]
+        if sub_ids:
+            tipos_os = TipoOS.query.filter(TipoOS.subprocesso_id.in_(sub_ids)).order_by(TipoOS.nome).all()
+    return render_template('ordens_servico/nova_os.html', tipos_os=tipos_os, prioridades=OSPrioridade)
 
 
 @ordens_servico_bp.route('/os', endpoint='os_listar')
@@ -218,11 +228,11 @@ def os_atendimento():
     if busca:
         query = query.filter(OrdemServico.titulo.ilike(f'%{busca}%'))
     ordens = query.order_by(OrdemServico.data_criacao.desc()).all()
-    processos = Processo.query.order_by(Processo.nome).all()
+    tipos_os = TipoOS.query.order_by(TipoOS.nome).all()
     return render_template(
         'ordens_servico/atendimento_list.html',
         ordens=ordens,
-        processos=processos,
+        tipos_os=tipos_os,
         status_choices=OSStatus,
     )
 

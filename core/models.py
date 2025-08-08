@@ -200,6 +200,9 @@ class Cargo(db.Model):
     permissoes = db.relationship(
         'Funcao', secondary=cargo_funcoes, lazy='dynamic')
 
+    processos = db.relationship(
+        'CargoProcesso', back_populates='cargo', lazy='dynamic', cascade='all, delete-orphan')
+
     def __repr__(self):
         return f"<Cargo {self.nome}>"
 
@@ -425,44 +428,97 @@ class Processo(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
-    etapas = db.relationship('EtapaProcesso', back_populates='processo', lazy='dynamic')
+    subprocessos = db.relationship('Subprocesso', back_populates='processo', lazy='dynamic', cascade='all, delete-orphan')
+    etapas = db.relationship('ProcessoEtapa', back_populates='processo', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"<Processo {self.nome}>"
 
 
-class EtapaProcesso(db.Model):
-    __tablename__ = 'etapa_processo'
+class Subprocesso(db.Model):
+    __tablename__ = 'subprocesso'
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), nullable=False)
+    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
+
+    processo = db.relationship('Processo', back_populates='subprocessos')
+    cargos = db.relationship('CargoProcesso', back_populates='subprocesso', lazy='dynamic', cascade='all, delete-orphan')
+    tipos_os = db.relationship('TipoOS', back_populates='subprocesso', lazy='dynamic')
+
+    def __repr__(self):
+        return f"<Subprocesso {self.nome}>"
+
+
+class CargoProcesso(db.Model):
+    __tablename__ = 'cargo_processo'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=False)
+    subprocesso_id = db.Column(db.Integer, db.ForeignKey('subprocesso.id'), nullable=False)
+
+    cargo = db.relationship('Cargo', back_populates='processos')
+    subprocesso = db.relationship('Subprocesso', back_populates='cargos')
+
+    def __repr__(self):
+        return f"<CargoProcesso cargo={self.cargo_id} subprocesso={self.subprocesso_id}>"
+
+
+class TipoOS(db.Model):
+    __tablename__ = 'tipo_os'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    subprocesso_id = db.Column(db.Integer, db.ForeignKey('subprocesso.id'), nullable=False)
+    equipe_responsavel_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    formulario_vinculado_id = db.Column(db.Integer, nullable=True)
+    obrigatorio_preenchimento = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+
+    subprocesso = db.relationship('Subprocesso', back_populates='tipos_os')
+    equipe_responsavel = db.relationship('Celula')
+
+    def __repr__(self):
+        return f"<TipoOS {self.nome}>"
+
+
+class ProcessoEtapa(db.Model):
+    __tablename__ = 'processo_etapa'
+
+    id = db.Column(db.Integer, primary_key=True)
+    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
     nome = db.Column(db.String(255), nullable=False)
     ordem = db.Column(db.Integer, nullable=False)
-    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
-    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=True)
-    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
-    obrigatoria = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    setor_responsavel_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
+    celula_responsavel_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    descricao = db.Column(db.Text, nullable=True)
+    instrucoes = db.Column(db.Text, nullable=True)
 
     processo = db.relationship('Processo', back_populates='etapas')
-    cargo = db.relationship('Cargo')
-    setor = db.relationship('Setor')
+    setor_responsavel = db.relationship('Setor')
+    celula_responsavel = db.relationship('Celula')
     campos = db.relationship('CampoEtapa', back_populates='etapa', lazy='dynamic')
 
     def __repr__(self):
-        return f"<EtapaProcesso {self.nome} ({self.ordem})>"
+        return f"<ProcessoEtapa {self.nome} ({self.ordem})>"
+
+
+# Alias para compatibilidade com nome antigo
+EtapaProcesso = ProcessoEtapa
 
 
 class CampoEtapa(db.Model):
     __tablename__ = 'campo_etapa'
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    etapa_id = db.Column(db.String(36), db.ForeignKey('etapa_processo.id'), nullable=False)
+    etapa_id = db.Column(db.Integer, db.ForeignKey('processo_etapa.id'), nullable=False)
     nome = db.Column(db.String(255), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
     obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     opcoes = db.Column(db.JSON, nullable=True)
     dica = db.Column(db.String(255), nullable=True)
 
-    etapa = db.relationship('EtapaProcesso', back_populates='campos')
+    etapa = db.relationship('ProcessoEtapa', back_populates='campos')
 
     def __repr__(self):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
@@ -481,7 +537,7 @@ class OrdemServico(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     titulo = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
-    tipo_os_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
+    tipo_os_id = db.Column(db.Integer, db.ForeignKey('tipo_os.id'), nullable=False)
     status = db.Column(db.String(20), nullable=False, default=OSStatus.RASCUNHO.value, server_default=OSStatus.RASCUNHO.value)
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     atribuido_para_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -496,14 +552,16 @@ class OrdemServico(db.Model):
     criado_por = db.relationship('User', foreign_keys=[criado_por_id])
     atribuido_para = db.relationship('User', foreign_keys=[atribuido_para_id])
     participantes = db.relationship('User', secondary=ordem_servico_participante, backref='participando_os')
-    tipo_os = db.relationship('Processo')
+    tipo_os = db.relationship('TipoOS')
 
     def __repr__(self):
         return f"<OrdemServico {self.titulo} ({self.status})>"
 
     def pode_mudar_para_aguardando(self) -> bool:
         """Valida se a OS pode sair de rascunho para aguardando."""
-        return self.formulario_respostas_id is not None
+        if self.tipo_os and self.tipo_os.obrigatorio_preenchimento:
+            return self.formulario_respostas_id is not None
+        return True
 
 
 class OrdemServicoLog(db.Model):
