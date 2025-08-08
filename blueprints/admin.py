@@ -753,7 +753,7 @@ def admin_cargos():
         descricao = request.form.get('descricao', '').strip()
         nivel_hierarquico = request.form.get('nivel_hierarquico', type=int)
         ativo = request.form.get('ativo_check') == 'on'
-        atende_os = request.form.get('atende_ordem_servico') == 'on'
+        atende_os = request.form.get('pode_atender_os') == 'on'
         setor_ids = list({int(s) for s in request.form.getlist('setor_ids') if s})
         celula_ids = list({int(c) for c in request.form.getlist('celula_ids') if c})
         funcao_ids = list({int(f) for f in request.form.getlist('funcao_ids') if f})
@@ -775,7 +775,7 @@ def admin_cargos():
                     cargo.descricao = descricao
                     cargo.nivel_hierarquico = nivel_hierarquico
                     cargo.ativo = ativo
-                    cargo.atende_ordem_servico = atende_os
+                    cargo.pode_atender_os = atende_os
                     action_msg = 'atualizado'
                 else:
                     cargo = Cargo(
@@ -783,7 +783,7 @@ def admin_cargos():
                         descricao=descricao,
                         nivel_hierarquico=nivel_hierarquico,
                         ativo=ativo,
-                        atende_ordem_servico=atende_os,
+                        pode_atender_os=atende_os,
                     )
                     db.session.add(cargo)
                     action_msg = 'criado'

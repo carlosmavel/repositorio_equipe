@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, abort, current_app
 
 try:
     from ..core.database import db
@@ -6,9 +7,9 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import OrdemServico, Processo, OrdemServicoLog
+    from ..core.models import OrdemServico, Processo, OrdemServicoLog, OrdemServicoComentario, User
 except ImportError:  # pragma: no cover
-    from core.models import OrdemServico, Processo, OrdemServicoLog
+    from core.models import OrdemServico, Processo, OrdemServicoLog, OrdemServicoComentario, User
 
 try:
     from ..core.enums import OSStatus, OSPrioridade
@@ -26,6 +27,19 @@ except ImportError:  # pragma: no cover
     from core.decorators import admin_required
 
 ordens_servico_bp = Blueprint('ordens_servico_bp', __name__)
+
+
+def _usuario_pode_acessar_os(usuario, os_obj):
+    """Verifica se o usuário tem permissão para acessar a OS."""
+    if not usuario or not os_obj:
+        return False
+    if os_obj.criado_por_id == usuario.id:
+        return True
+    if usuario in os_obj.participantes:
+        return True
+    if os_obj.equipe_responsavel_id == getattr(usuario, 'celula_id', None) and usuario.pode_atender_os:
+        return True
+    return False
 
 
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
@@ -184,4 +198,131 @@ def os_minhas():
         return redirect(url_for('login'))
     ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
     return render_template('ordens_servico/minhas_os.html', ordens=ordens)
+
+
+@ordens_servico_bp.route('/os/atendimento', methods=['GET'], endpoint='os_atendimento')
+def os_atendimento():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    if not usuario or not usuario.pode_atender_os:
+        abort(403)
+    query = OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id)
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+    tipo = request.args.get('tipo')
+    if tipo:
+        query = query.filter_by(tipo_os_id=tipo)
+    busca = request.args.get('busca', '').strip()
+    if busca:
+        query = query.filter(OrdemServico.titulo.ilike(f'%{busca}%'))
+    ordens = query.order_by(OrdemServico.data_criacao.desc()).all()
+    processos = Processo.query.order_by(Processo.nome).all()
+    return render_template(
+        'ordens_servico/atendimento_list.html',
+        ordens=ordens,
+        processos=processos,
+        status_choices=OSStatus,
+    )
+
+
+@ordens_servico_bp.route('/os/atendimento/<ordem_id>', methods=['GET'], endpoint='os_atendimento_detalhar')
+def os_atendimento_detalhar(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
+    return render_template(
+        'ordens_servico/atendimento_detalhe.html',
+        ordem=ordem,
+        comentarios=comentarios,
+        status_choices=OSStatus,
+    )
+
+
+@ordens_servico_bp.post('/os/<ordem_id>/status', endpoint='os_mudar_status')
+def os_mudar_status(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    novo_status = request.form.get('status')
+    if novo_status not in [s.value for s in OSStatus]:
+        abort(400)
+    origem = ordem.status
+    ordem.status = novo_status
+    log = OrdemServicoLog(
+        os_id=ordem.id,
+        usuario_id=usuario.id,
+        acao='status_alterado',
+        origem_status=origem,
+        destino_status=novo_status,
+    )
+    db.session.add(log)
+    db.session.commit()
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+
+
+@ordens_servico_bp.post('/os/<ordem_id>/comentario', endpoint='os_comentar')
+def os_comentar(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    mensagem = request.form.get('mensagem', '').strip()
+    if mensagem:
+        comentario = OrdemServicoComentario(os_id=ordem.id, usuario_id=usuario.id, mensagem=mensagem)
+        db.session.add(comentario)
+        db.session.commit()
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+
+
+@ordens_servico_bp.post('/os/<ordem_id>/anexo', endpoint='os_anexo')
+def os_anexo(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    arquivo = request.files.get('anexo')
+    if arquivo and arquivo.filename:
+        filename = arquivo.filename
+        upload_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        path = os.path.join(upload_dir, filename)
+        arquivo.save(path)
+        comentario = OrdemServicoComentario(os_id=ordem.id, usuario_id=usuario.id, mensagem='', anexo=filename)
+        db.session.add(comentario)
+        db.session.commit()
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+
+
+@ordens_servico_bp.route('/os/<ordem_id>/historico', methods=['GET'], endpoint='os_historico')
+def os_historico(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    ordem = OrdemServico.query.get_or_404(ordem_id)
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    logs = OrdemServicoLog.query.filter_by(os_id=ordem.id).order_by(OrdemServicoLog.data_hora.asc()).all()
+    historico = [
+        {
+            'acao': l.acao,
+            'origem_status': l.origem_status,
+            'destino_status': l.destino_status,
+            'data_hora': l.data_hora.isoformat(),
+        }
+        for l in logs
+    ]
+    return jsonify(historico)
 

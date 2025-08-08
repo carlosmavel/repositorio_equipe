@@ -21,7 +21,7 @@ def setup_org(prefix):
 
 def create_user(username, atende=False):
     est_id, setor_id, cel_id = setup_org(username)
-    cargo = Cargo(nome=f'Cargo_{username}', atende_ordem_servico=atende)
+    cargo = Cargo(nome=f'Cargo_{username}', pode_atender_os=atende)
     db.session.add(cargo)
     db.session.flush()
     user = User(username=username, email=f'{username}@test', estabelecimento_id=est_id, setor_id=setor_id, celula_id=cel_id, cargo_id=cargo.id)
@@ -48,8 +48,8 @@ def test_permission_function(app_ctx):
         user_denied_id = create_user('u2', False)
         user_allowed = User.query.get(user_allowed_id)
         user_denied = User.query.get(user_denied_id)
-        assert user_allowed.atende_ordem_servico is True
-        assert user_denied.atende_ordem_servico is False
+        assert user_allowed.pode_atender_os is True
+        assert user_denied.pode_atender_os is False
         assert user_can_access_form_builder(user_allowed) is True
         assert user_can_access_form_builder(user_denied) is False
 
