@@ -1,7 +1,7 @@
 # models.py
 from sqlalchemy.sql import func
 from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey, Date, Boolean, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
 import uuid
 
@@ -186,7 +186,9 @@ class Cargo(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     nivel_hierarquico = db.Column(db.Integer, nullable=True) # Para lógica de hierarquia (ex: 1=Alto, 10=Baixo)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
-    atende_ordem_servico = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    pode_atender_os = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    # Compatibilidade com nome antigo
+    atende_ordem_servico = synonym('pode_atender_os')
 
     # Relacionamentos: Um Cargo pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='cargo', lazy='dynamic')
@@ -272,9 +274,12 @@ class User(db.Model):
         return any(f.codigo == codigo for f in self.get_permissoes())
 
     @property
-    def atende_ordem_servico(self) -> bool:
+    def pode_atender_os(self) -> bool:
         """Indica se o usuário pode atender ordens de serviço."""
-        return bool(self.cargo and getattr(self.cargo, 'atende_ordem_servico', False))
+        return bool(self.cargo and getattr(self.cargo, 'pode_atender_os', False))
+
+    # Compatibilidade com nome antigo
+    atende_ordem_servico = pode_atender_os
 
     def __repr__(self):
         return f"<User {self.username}>"

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Atendimento de OS{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <h3>Atendimento de OS</h3>
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-3">
+      <select class="form-select form-select-sm" name="status">
+        <option value="">Todos os Status</option>
+        {% for st in status_choices %}
+          <option value="{{ st.value }}" {% if request.args.get('status') == st.value %}selected{% endif %}>{{ st.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select class="form-select form-select-sm" name="tipo">
+        <option value="">Todos os Tipos</option>
+        {% for p in processos %}
+          <option value="{{ p.id }}" {% if request.args.get('tipo') == p.id|string %}selected{% endif %}>{{ p.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <input type="text" class="form-control form-control-sm" name="busca" placeholder="Buscar por título" value="{{ request.args.get('busca','') }}">
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-sm btn-primary w-100" type="submit">Filtrar</button>
+    </div>
+  </form>
+  {% if ordens %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Tipo</th>
+          <th>Prioridade</th>
+          <th>Status</th>
+          <th>Criado por</th>
+          <th>Data de criação</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for os in ordens %}
+        <tr>
+          <td>{{ os.id }}</td>
+          <td>{{ os.titulo }}</td>
+          <td>{{ os.tipo_os.nome if os.tipo_os else '' }}</td>
+          <td>{{ os.prioridade or '' }}</td>
+          <td>{{ os.status }}</td>
+          <td>{{ os.criado_por.nome_completo or os.criado_por.username }}</td>
+          <td>{{ os.data_criacao.strftime('%d/%m/%Y') if os.data_criacao else '' }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.id) }}" title="Visualizar"><i class="bi bi-eye"></i></a>
+            {% if os.status != 'em_atendimento' %}
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+              <input type="hidden" name="status" value="em_atendimento">
+              <button class="btn btn-sm btn-outline-primary" title="Iniciar atendimento"><i class="bi bi-play-circle"></i></button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+              <input type="hidden" name="status" value="pendente">
+              <button class="btn btn-sm btn-outline-warning" title="Mover para pendente"><i class="bi bi-hourglass-split"></i></button>
+            </form>
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+              <input type="hidden" name="status" value="concluida">
+              <button class="btn btn-sm btn-outline-success" title="Concluir"><i class="bi bi-check2-circle"></i></button>
+            </form>
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+              <input type="hidden" name="status" value="cancelada">
+              <button class="btn btn-sm btn-outline-danger" title="Cancelar"><i class="bi bi-x-circle"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted">Nenhuma OS para atendimento.</p>
+  {% endif %}
+</div>
+{% endblock %}

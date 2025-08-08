@@ -57,7 +57,7 @@
                                                                             <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
                                                                                 <span>
                                                                                     <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
-                                                                                    {% if cargo.permiteAtenderOrdemServico or cargo.atende_ordem_servico %}
+                                                                                    {% if cargo.pode_atender_os %}
                                                                                         <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                     {% endif %}
                                                                                 </span>
@@ -92,7 +92,7 @@
                                                                                         <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
                                                                                             <span>
                                                                                                 <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
-                                                                                                {% if cargo.permiteAtenderOrdemServico or cargo.atende_ordem_servico %}
+                                                                                                {% if cargo.pode_atender_os %}
                                                                                                     <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                                 {% endif %}
                                                                                             </span>
@@ -199,8 +199,8 @@
                         <div class="card-header"><h6 class="mb-0">Permissões Ordem de Serviço</h6></div>
                         <div class="card-body">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="atende_ordem_servico" name="atende_ordem_servico" {% if request.form.get('atende_ordem_servico') == 'on' %}checked{% endif %}>
-                                <label class="form-check-label" for="atende_ordem_servico">Pode atender OS?</label>
+                                <input class="form-check-input" type="checkbox" role="switch" id="pode_atender_os" name="pode_atender_os" {% if request.form.get('pode_atender_os') == 'on' %}checked{% endif %}>
+                                <label class="form-check-label" for="pode_atender_os">Pode atender OS?</label>
                             </div>
                         </div>
                     </div>
@@ -358,8 +358,8 @@
                         <div class="card-header"><h6 class="mb-0">Permissões Ordem de Serviço</h6></div>
                         <div class="card-body">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" id="edit_atende_ordem_servico" name="atende_ordem_servico" {% if (request.form.get('atende_ordem_servico') == 'on') or (not request.form.get('atende_ordem_servico') and cargo_editar.atende_ordem_servico) %}checked{% endif %}>
-                                <label class="form-check-label" for="edit_atende_ordem_servico">Pode atender OS?</label>
+                                <input class="form-check-input" type="checkbox" role="switch" id="edit_pode_atender_os" name="pode_atender_os" {% if (request.form.get('pode_atender_os') == 'on') or (not request.form.get('pode_atender_os') and cargo_editar.pode_atender_os) %}checked{% endif %}>
+                                <label class="form-check-label" for="edit_pode_atender_os">Pode atender OS?</label>
                             </div>
                         </div>
                     </div>
