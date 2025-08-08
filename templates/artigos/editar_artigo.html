@@ -2,7 +2,7 @@
 {% block title %}Editar Artigo{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.quilljs.com/2.0.3/quill.bubble.css" rel="stylesheet">
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -112,7 +112,7 @@
     // Inicializa Quill editor e carrega conteúdo existente
     const editorDiv = document.getElementById('quill-editor');
     const quill = new Quill(editorDiv, {
-      theme: 'bubble',
+      theme: 'snow',
       modules: {
         toolbar: [ // Verifique se não há vírgulas sobrando no final de cada array aqui
           [{ header: [1, 2, 3, false] }],
