@@ -30,7 +30,7 @@
             </div>
           </div>
           {% if campo.tipo == 'textarea' %}
-            <textarea class="form-control" {% if campo.obrigatoria %}required{% endif %}></textarea>
+            <textarea class="form-control no-quill" {% if campo.obrigatoria %}required{% endif %}></textarea>
           {% elif campo.tipo == 'select' %}
             <select class="form-select" {% if campo.obrigatoria %}required{% endif %}>
               {% for opcao in campo.opcoes %}
