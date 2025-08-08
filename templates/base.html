@@ -356,6 +356,24 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="https://cdn.quilljs.com/2.0.3/quill.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('textarea:not(.no-quill)').forEach(function (textarea) {
+          var container = document.createElement('div');
+          container.innerHTML = textarea.value;
+          container.style.minHeight = (textarea.getAttribute('rows') ? textarea.getAttribute('rows') * 24 : 100) + 'px';
+          textarea.style.display = 'none';
+          textarea.parentNode.insertBefore(container, textarea);
+          var quill = new Quill(container, { theme: 'bubble' });
+          var form = textarea.closest('form');
+          if (form) {
+            form.addEventListener('submit', function () {
+              textarea.value = quill.root.innerHTML;
+            });
+          }
+        });
+      });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
