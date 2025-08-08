@@ -15,7 +15,7 @@
         /* === ESTILOS GLOBAIS PARA LAYOUT COM NAVBAR FIXA E SIDEBAR FIXA/OFFCANVAS === */
         body {
             margin: 0;
-            background-color: #f0f2f5; /* Um cinza de fundo bem suave */
+            background-color: var(--page-bg); /* Ajuste conforme tema */
         }
 
         /* Classe aplicada ao HTML ou BODY para layout com navbar e sidebar */
@@ -105,7 +105,8 @@
         }
         .main-page-content {
             padding: 1.5rem; /* Espaçamento interno do conteúdo */
-            background-color: #ffffff; 
+            background-color: var(--content-bg);
+            color: var(--text-default);
             /* Para garantir que o conteúdo não seja muito baixo em páginas curtas */
             min-height: calc(100vh - 56px - 3rem); /* Altura da viewport - navbar - (padding-top+bottom do .main-page-content) */
         }
