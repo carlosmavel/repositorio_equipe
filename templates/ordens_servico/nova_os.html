@@ -42,6 +42,7 @@
               <label for="observacoes" class="form-label">Observações</label>
               <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
             </div>
+            <div class="mb-3" id="formulario-vinculado"></div>
             <button type="submit" class="btn btn-primary">Salvar</button>
           </form>
         </div>
@@ -54,7 +55,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
-  const inputs = form.querySelectorAll('input, textarea, select');
+  let inputs = form.querySelectorAll('input, textarea, select');
   const STORAGE_KEY = 'draft_nova_os';
   function save() {
     const data = {};
@@ -73,7 +74,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   load();
   inputs.forEach(i => i.addEventListener('input', save));
-  form.addEventListener('submit', () => localStorage.removeItem(STORAGE_KEY));
+  const tipoSelect = document.getElementById('tipo_os_id');
+  const formContainer = document.getElementById('formulario-vinculado');
+  let formularioObrigatorio = false;
+
+  tipoSelect.addEventListener('change', () => {
+    const tipoId = tipoSelect.value;
+    if (!tipoId) {
+      formContainer.innerHTML = '';
+      formularioObrigatorio = false;
+      inputs = form.querySelectorAll('input, textarea, select');
+      inputs.forEach(i => i.addEventListener('input', save));
+      return;
+    }
+    fetch(`/os/tipo/${tipoId}/formulario`)
+      .then(r => r.json())
+      .then(data => {
+        formContainer.innerHTML = data.html || '';
+        formularioObrigatorio = data.obrigatorio;
+        inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(i => i.addEventListener('input', save));
+      })
+      .catch(() => {
+        formContainer.innerHTML = '';
+        formularioObrigatorio = false;
+      });
+  });
+
+  form.addEventListener('submit', (e) => {
+    if (formularioObrigatorio) {
+      const campos = formContainer.querySelectorAll('input, textarea, select');
+      const algumPreenchido = Array.from(campos).some(c => {
+        if (c.type === 'checkbox' || c.type === 'radio') return c.checked;
+        return c.value && c.value.trim() !== '';
+      });
+      if (!algumPreenchido) {
+        e.preventDefault();
+        alert('Preenchimento do formulário vinculado é obrigatório.');
+        return;
+      }
+    }
+    localStorage.removeItem(STORAGE_KEY);
+  });
 });
 </script>
 {% endblock %}

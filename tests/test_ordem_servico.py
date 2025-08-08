@@ -1,7 +1,19 @@
 import pytest
 
 from app import app, db
-from core.models import OrdemServico, Processo, Subprocesso, TipoOS, Instituicao, Estabelecimento, Setor, Celula, User, Funcao
+from core.models import (
+    OrdemServico,
+    Processo,
+    Subprocesso,
+    TipoOS,
+    Instituicao,
+    Estabelecimento,
+    Setor,
+    Celula,
+    User,
+    Funcao,
+    Formulario,
+)
 
 
 @pytest.fixture
@@ -106,4 +118,32 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
     assert 'Formulário obrigatório não preenchido' in resp.get_data(as_text=True)
     with app.app_context():
         assert OrdemServico.query.get(os_id).status == 'rascunho'
+
+
+def test_get_formulario_vinculado(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcF')
+        sub = Subprocesso(nome='SubF', processo=proc)
+        cel = Celula.query.first()
+        form = Formulario(nome='Form', estrutura='[{"tipo":"text","label":"Pergunta","obrigatoria":true}]')
+        db.session.add_all([proc, sub, form])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoF',
+            descricao='d',
+            subprocesso=sub,
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+            obrigatorio_preenchimento=True,
+        )
+        db.session.add(tipo)
+        db.session.commit()
+        tipo_id = tipo.id
+    resp = client.get(f'/os/tipo/{tipo_id}/formulario')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['obrigatorio'] is True
+    assert 'Pergunta' in data['html']
+    assert 'required' in data['html']
 
