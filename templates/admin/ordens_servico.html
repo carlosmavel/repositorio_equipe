@@ -19,17 +19,42 @@
           <textarea class="form-control" id="descricao" name="descricao" rows="3">{{ request.form.get('descricao', ordem_editar.descricao if ordem_editar else '') }}</textarea>
         </div>
         <div class="mb-3">
-          <label for="processo_id" class="form-label">Processo</label>
-          <select class="form-select" id="processo_id" name="processo_id">
+          <label for="tipo_os_id" class="form-label">Tipo</label>
+          <select class="form-select" id="tipo_os_id" name="tipo_os_id" required>
             <option value="">--</option>
             {% for proc in processos %}
-            <option value="{{ proc.id }}" {% if ordem_editar and ordem_editar.processo_id==proc.id %}selected{% endif %}>{{ proc.nome }}</option>
+            <option value="{{ proc.id }}" {% if ordem_editar and ordem_editar.tipo_os_id==proc.id %}selected{% endif %}>{{ proc.nome }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="mb-3">
+          <label for="atribuido_para_id" class="form-label">Atribuído para</label>
+          <input type="text" class="form-control" id="atribuido_para_id" name="atribuido_para_id" value="{{ request.form.get('atribuido_para_id', ordem_editar.atribuido_para_id if ordem_editar else '') }}">
+        </div>
+        <div class="mb-3">
+          <label for="prioridade" class="form-label">Prioridade</label>
+          <select class="form-select" id="prioridade" name="prioridade">
+            <option value="">--</option>
+            {% for p in prioridades %}
+            <option value="{{ p.value }}" {% if ordem_editar and ordem_editar.prioridade==p.value %}selected{% endif %}>{{ p.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="origem" class="form-label">Origem</label>
+          <input type="text" class="form-control" id="origem" name="origem" value="{{ request.form.get('origem', ordem_editar.origem if ordem_editar else '') }}">
+        </div>
+        <div class="mb-3">
+          <label for="observacoes" class="form-label">Observações</label>
+          <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ request.form.get('observacoes', ordem_editar.observacoes if ordem_editar else '') }}</textarea>
+        </div>
+        <div class="mb-3">
           <label for="status" class="form-label">Status</label>
-          <input type="text" class="form-control" id="status" name="status" value="{{ request.form.get('status', ordem_editar.status if ordem_editar else 'aberta') }}">
+          <select class="form-select" id="status" name="status">
+            {% for st in status_choices %}
+            <option value="{{ st.value }}" {% if ordem_editar and ordem_editar.status==st.value %}selected{% elif not ordem_editar and st.value=='rascunho' %}selected{% endif %}>{{ st.label }}</option>
+            {% endfor %}
+          </select>
         </div>
         <button type="submit" class="btn btn-primary">Salvar</button>
       </form>

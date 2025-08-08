@@ -10,9 +10,9 @@ try:
 except ImportError:
     from core.database import db  # type: ignore
 try:
-    from .enums import ArticleStatus, ArticleVisibility
+    from .enums import ArticleStatus, ArticleVisibility, OSStatus
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from core.enums import ArticleStatus, ArticleVisibility
+    from core.enums import ArticleStatus, ArticleVisibility, OSStatus
 
 # --- association tables for article visibility ---
 article_extra_celulas = db.Table(
@@ -463,21 +463,72 @@ class CampoEtapa(db.Model):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
 
 
+ordem_servico_participante = db.Table(
+    'ordem_servico_participante',
+    db.Column('ordem_servico_id', db.String(36), db.ForeignKey('ordem_servico.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+)
+
+
 class OrdemServico(db.Model):
     __tablename__ = 'ordem_servico'
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     titulo = db.Column(db.String(255), nullable=False)
-    descricao = db.Column(db.Text, nullable=True)
-    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=True)
-    status = db.Column(db.String(20), nullable=False, default='aberta', server_default='aberta')
-    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    tipo_os_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default=OSStatus.RASCUNHO.value, server_default=OSStatus.RASCUNHO.value)
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    atribuido_para_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    equipe_responsavel_id = db.Column(db.Integer, nullable=True)
+    data_criacao = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    data_conclusao = db.Column(db.DateTime(timezone=True), nullable=True)
+    formulario_respostas_id = db.Column(db.Integer, nullable=True)
+    prioridade = db.Column(db.String(10), nullable=True)
+    origem = db.Column(db.String(255), nullable=True)
+    observacoes = db.Column(db.Text, nullable=True)
 
-    processo = db.relationship('Processo')
+    criado_por = db.relationship('User', foreign_keys=[criado_por_id])
+    atribuido_para = db.relationship('User', foreign_keys=[atribuido_para_id])
+    participantes = db.relationship('User', secondary=ordem_servico_participante, backref='participando_os')
+    tipo_os = db.relationship('Processo')
 
     def __repr__(self):
         return f"<OrdemServico {self.titulo} ({self.status})>"
+
+    def pode_mudar_para_aguardando(self) -> bool:
+        """Valida se a OS pode sair de rascunho para aguardando."""
+        return self.formulario_respostas_id is not None
+
+
+class OrdemServicoLog(db.Model):
+    __tablename__ = 'ordem_servico_log'
+
+    id = db.Column(db.Integer, primary_key=True)
+    os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
+    data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    acao = db.Column(db.String(255), nullable=False)
+    origem_status = db.Column(db.String(20), nullable=True)
+    destino_status = db.Column(db.String(20), nullable=True)
+    observacao = db.Column(db.Text, nullable=True)
+
+    os = db.relationship('OrdemServico')
+    usuario = db.relationship('User')
+
+
+class OrdemServicoComentario(db.Model):
+    __tablename__ = 'ordem_servico_comentario'
+
+    id = db.Column(db.Integer, primary_key=True)
+    os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+    mensagem = db.Column(db.Text, nullable=False)
+    anexo = db.Column(db.String(255), nullable=True)
+
+    os = db.relationship('OrdemServico')
+    usuario = db.relationship('User')
 
 
 class RespostaEtapaOS(db.Model):

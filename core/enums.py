@@ -61,3 +61,35 @@ class Permissao(Enum):
     ARTIGO_ASSUMIR_REVISAO_ESTABELECIMENTO = "artigo_assumir_revisao_estabelecimento"
     ARTIGO_ASSUMIR_REVISAO_INSTITUICAO = "artigo_assumir_revisao_instituicao"
     ARTIGO_ASSUMIR_REVISAO_TODAS = "artigo_assumir_revisao_todas"
+
+
+class OSStatus(Enum):
+    """Status possíveis de uma Ordem de Serviço."""
+
+    def __new__(cls, value: str, label: str):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.label = label
+        return obj
+
+    RASCUNHO = ("rascunho", "Rascunho")
+    AGUARDANDO = ("aguardando", "Aguardando")
+    EM_ATENDIMENTO = ("em_atendimento", "Em Atendimento")
+    PENDENTE = ("pendente", "Pendente")
+    CONCLUIDA = ("concluida", "Concluída")
+    CANCELADA = ("cancelada", "Cancelada")
+
+
+class OSPrioridade(Enum):
+    """Prioridade de atendimento para a Ordem de Serviço."""
+
+    def __new__(cls, value: str, label: str):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.label = label
+        return obj
+
+    BAIXA = ("baixa", "Baixa")
+    MEDIA = ("media", "Média")
+    ALTA = ("alta", "Alta")
+
