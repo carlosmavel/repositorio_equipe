@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Vínculos Cargo/Subprocesso{% endblock %}
+{% block content %}
+<div class="container mt-3">
+  <h1>Vínculos Cargo ↔ Subprocesso</h1>
+  <table class="table table-sm">
+    <thead>
+      <tr><th>Cargo</th><th>Subprocesso</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for v in vinculos %}
+      <tr>
+        <td>{{ v.cargo.nome }}</td>
+        <td>{{ v.subprocesso.nome }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos_delete', id=v.id) }}" class="d-inline" onsubmit="return confirm('Remover vínculo?');">
+            <button class="btn btn-sm btn-outline-danger">Remover</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-center text-muted">Nenhum vínculo cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr>
+  <h2 class="h5">Novo Vínculo</h2>
+  <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos') }}" class="compact-form">
+    <div class="mb-3">
+      <label for="cargo_id" class="form-label">Cargo <span class="text-danger">*</span></label>
+      <select class="form-select form-select-sm" id="cargo_id" name="cargo_id" required>
+        <option value="">--</option>
+        {% for c in cargos %}
+        <option value="{{ c.id }}">{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
+      <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
+        <option value="">--</option>
+        {% for sp in subprocessos %}
+        <option value="{{ sp.id }}">{{ sp.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
+  </form>
+</div>
+{% endblock %}

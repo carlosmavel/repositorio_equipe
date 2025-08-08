@@ -308,6 +308,8 @@
 
                     {# Link para Processos #}
                     <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_processos' in request.endpoint or 'admin_etapas' in request.endpoint or 'admin_campos' in request.endpoint else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-bezier2 me-2"></i> Processos</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_subprocessos' in request.endpoint else '' }}" href="{{ url_for('processos_bp.admin_subprocessos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Subprocessos</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos_subprocessos' in request.endpoint else '' }}" href="{{ url_for('processos_bp.admin_cargos_subprocessos') }}"><i class="bi bi-link-45deg me-2"></i> Cargos ↔ Subprocessos</a></li>
 
                     <hr class="my-2">
 
@@ -324,6 +326,9 @@
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'os_nova' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'os_minhas' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
+                                {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_tipos_os' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
+                                {% endif %}
                                 {% if current_user and current_user.pode_atender_os %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'os_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
                                 {% endif %}
