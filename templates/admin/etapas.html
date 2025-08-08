@@ -30,9 +30,8 @@
                                             <tr>
                                                 <th>Ordem</th>
                                                 <th>Nome</th>
-                                                <th>Cargo</th>
-                                                <th>Setor</th>
-                                                <th>Obrigatória</th>
+                                                <th>Setor Responsável</th>
+                                                <th>Célula Responsável</th>
                                                 <th style="width: 220px;" class="text-end">Ações</th>
                                             </tr>
                                         </thead>
@@ -41,9 +40,8 @@
                                             <tr class="clickable-row" data-href="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id, edit_id=etapa.id) }}">
                                                 <td>{{ etapa.ordem }}</td>
                                                 <td>{{ etapa.nome }}</td>
-                                                <td>{{ etapa.cargo.nome if etapa.cargo else '-' }}</td>
-                                                <td>{{ etapa.setor.nome if etapa.setor else '-' }}</td>
-                                                <td>{% if etapa.obrigatoria %}<span class="badge bg-success">Sim</span>{% else %}<span class="badge bg-secondary">Não</span>{% endif %}</td>
+                                                <td>{{ etapa.setor_responsavel.nome if etapa.setor_responsavel else '-' }}</td>
+                                                <td>{{ etapa.celula_responsavel.nome if etapa.celula_responsavel else '-' }}</td>
                                                 <td class="text-end">
                                                     <a href="{{ url_for('processos_bp.admin_campos', etapa_id=etapa.id) }}" class="btn btn-sm btn-outline-secondary me-1" title="Campos"><i class="bi bi-ui-checks-grid"></i></a>
                                                     <a href="{{ url_for('processos_bp.admin_etapas', processo_id=processo.id, edit_id=etapa.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar"><i class="bi bi-pencil-fill"></i></a>
@@ -77,27 +75,33 @@
                         </div>
                         <div class="row mb-1">
                             <div class="col-md-6">
-                                <label for="cargo_id" class="form-label">Cargo</label>
-                                <select class="form-select form-select-sm" id="cargo_id" name="cargo_id">
+                                <label for="setor_responsavel_id" class="form-label">Setor Responsável</label>
+                                <select class="form-select form-select-sm" id="setor_responsavel_id" name="setor_responsavel_id">
                                     <option value="">-- Nenhum --</option>
-                                    {% for c in cargos %}
-                                        <option value="{{ c.id }}" {% if request.form.get('cargo_id') == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                                    {% for s in setores %}
+                                        <option value="{{ s.id }}" {% if request.form.get('setor_responsavel_id') == s.id|string %}selected{% endif %}>{{ s.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="setor_id" class="form-label">Setor</label>
-                                <select class="form-select form-select-sm" id="setor_id" name="setor_id">
-                                    <option value="">-- Nenhum --</option>
-                                    {% for s in setores %}
-                                        <option value="{{ s.id }}" {% if request.form.get('setor_id') == s.id|string %}selected{% endif %}>{{ s.nome }}</option>
+                                <label for="celula_responsavel_id" class="form-label">Célula Responsável</label>
+                                <select class="form-select form-select-sm" id="celula_responsavel_id" name="celula_responsavel_id">
+                                    <option value="">-- Nenhuma --</option>
+                                    {% for c in celulas %}
+                                        <option value="{{ c.id }}" {% if request.form.get('celula_responsavel_id') == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
-                        <div class="form-check form-switch mb-1">
-                            <input class="form-check-input" type="checkbox" id="obrigatoria_check" name="obrigatoria_check" checked>
-                            <label class="form-check-label" for="obrigatoria_check">Obrigatória</label>
+                        <div class="row mb-1">
+                            <div class="col-md-6">
+                                <label for="descricao" class="form-label">Descrição</label>
+                                <textarea class="form-control form-control-sm" id="descricao" name="descricao">{{ request.form.get('descricao', '') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="instrucoes" class="form-label">Instruções</label>
+                                <textarea class="form-control form-control-sm" id="instrucoes" name="instrucoes">{{ request.form.get('instrucoes', '') }}</textarea>
+                            </div>
                         </div>
                         <div class="d-flex pt-2 border-top">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar Etapa</button>
@@ -130,27 +134,33 @@
                         </div>
                         <div class="row mb-1">
                             <div class="col-md-6">
-                                <label for="edit_cargo_id" class="form-label">Cargo</label>
-                                <select class="form-select form-select-sm" id="edit_cargo_id" name="cargo_id">
+                                <label for="edit_setor_responsavel_id" class="form-label">Setor Responsável</label>
+                                <select class="form-select form-select-sm" id="edit_setor_responsavel_id" name="setor_responsavel_id">
                                     <option value="">-- Nenhum --</option>
-                                    {% for c in cargos %}
-                                        <option value="{{ c.id }}" {% if (request.form.get('cargo_id', etapa_editar.cargo_id|string) == c.id|string) %}selected{% endif %}>{{ c.nome }}</option>
+                                    {% for s in setores %}
+                                        <option value="{{ s.id }}" {% if (request.form.get('setor_responsavel_id', etapa_editar.setor_responsavel_id|string) == s.id|string) %}selected{% endif %}>{{ s.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="edit_setor_id" class="form-label">Setor</label>
-                                <select class="form-select form-select-sm" id="edit_setor_id" name="setor_id">
-                                    <option value="">-- Nenhum --</option>
-                                    {% for s in setores %}
-                                        <option value="{{ s.id }}" {% if (request.form.get('setor_id', etapa_editar.setor_id|string) == s.id|string) %}selected{% endif %}>{{ s.nome }}</option>
+                                <label for="edit_celula_responsavel_id" class="form-label">Célula Responsável</label>
+                                <select class="form-select form-select-sm" id="edit_celula_responsavel_id" name="celula_responsavel_id">
+                                    <option value="">-- Nenhuma --</option>
+                                    {% for c in celulas %}
+                                        <option value="{{ c.id }}" {% if (request.form.get('celula_responsavel_id', etapa_editar.celula_responsavel_id|string) == c.id|string) %}selected{% endif %}>{{ c.nome }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
-                        <div class="form-check form-switch mb-1">
-                            <input class="form-check-input" type="checkbox" id="edit_obrigatoria_check" name="obrigatoria_check" {% if etapa_editar.obrigatoria %}checked{% endif %}>
-                            <label class="form-check-label" for="edit_obrigatoria_check">Obrigatória</label>
+                        <div class="row mb-1">
+                            <div class="col-md-6">
+                                <label for="edit_descricao" class="form-label">Descrição</label>
+                                <textarea class="form-control form-control-sm" id="edit_descricao" name="descricao">{{ request.form.get('descricao', etapa_editar.descricao) }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_instrucoes" class="form-label">Instruções</label>
+                                <textarea class="form-control form-control-sm" id="edit_instrucoes" name="instrucoes">{{ request.form.get('instrucoes', etapa_editar.instrucoes) }}</textarea>
+                            </div>
                         </div>
                         <div class="d-flex pt-2 border-top">
                             <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>

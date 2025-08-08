@@ -6,9 +6,9 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
+    from ..core.models import Processo, EtapaProcesso, CampoEtapa, Setor, Celula
 except ImportError:  # pragma: no cover
-    from core.models import Processo, EtapaProcesso, CampoEtapa, Cargo, Setor
+    from core.models import Processo, EtapaProcesso, CampoEtapa, Setor, Celula
 
 try:
     from ..core.decorators import admin_required
@@ -91,9 +91,10 @@ def admin_etapas(processo_id):
         id_para_atualizar = request.form.get('id_para_atualizar')
         nome = request.form.get('nome', '').strip()
         ordem = request.form.get('ordem', type=int)
-        cargo_id = request.form.get('cargo_id', type=int)
-        setor_id = request.form.get('setor_id', type=int)
-        obrigatoria = request.form.get('obrigatoria_check') == 'on'
+        setor_responsavel_id = request.form.get('setor_responsavel_id', type=int)
+        celula_responsavel_id = request.form.get('celula_responsavel_id', type=int)
+        descricao = request.form.get('descricao', '').strip()
+        instrucoes = request.form.get('instrucoes', '').strip()
         if not nome or ordem is None:
             flash('Nome e ordem são obrigatórios.', 'danger')
         else:
@@ -101,18 +102,20 @@ def admin_etapas(processo_id):
                 etapa = EtapaProcesso.query.get_or_404(id_para_atualizar)
                 etapa.nome = nome
                 etapa.ordem = ordem
-                etapa.cargo_id = cargo_id
-                etapa.setor_id = setor_id
-                etapa.obrigatoria = obrigatoria
+                etapa.setor_responsavel_id = setor_responsavel_id
+                etapa.celula_responsavel_id = celula_responsavel_id
+                etapa.descricao = descricao
+                etapa.instrucoes = instrucoes
                 action_msg = 'atualizada'
             else:
                 etapa = EtapaProcesso(
                     nome=nome,
                     ordem=ordem,
                     processo_id=proc.id,
-                    cargo_id=cargo_id,
-                    setor_id=setor_id,
-                    obrigatoria=obrigatoria,
+                    setor_responsavel_id=setor_responsavel_id,
+                    celula_responsavel_id=celula_responsavel_id,
+                    descricao=descricao,
+                    instrucoes=instrucoes,
                 )
                 db.session.add(etapa)
                 action_msg = 'criada'
@@ -127,9 +130,9 @@ def admin_etapas(processo_id):
             etapa_para_editar = EtapaProcesso.query.get(id_para_atualizar)
 
     etapas = proc.etapas.order_by(EtapaProcesso.ordem).all()
-    cargos = Cargo.query.order_by(Cargo.nome).all()
     setores = Setor.query.order_by(Setor.nome).all()
-    return render_template('admin/etapas.html', processo=proc, etapas=etapas, etapa_editar=etapa_para_editar, cargos=cargos, setores=setores)
+    celulas = Celula.query.order_by(Celula.nome).all()
+    return render_template('admin/etapas.html', processo=proc, etapas=etapas, etapa_editar=etapa_para_editar, setores=setores, celulas=celulas)
 
 @processos_bp.route('/admin/etapas/delete/<etapa_id>', methods=['POST'])
 @admin_required
