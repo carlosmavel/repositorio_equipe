@@ -16,6 +16,14 @@ def upgrade():
     op.rename_table('etapa_processo', 'processo_etapa')
     op.create_foreign_key('campo_etapa_etapa_id_fkey', 'campo_etapa', 'processo_etapa', ['etapa_id'], ['id'])
 
+    # Create subprocesso table
+    op.create_table(
+        'subprocesso',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('nome', sa.String(length=255), nullable=False),
+        sa.Column('processo_id', sa.String(length=36), sa.ForeignKey('processo.id'), nullable=False),
+    )
+
     # Create cargo_processo table
     op.create_table(
         'cargo_processo',
@@ -41,6 +49,7 @@ def downgrade():
     # Drop newly created tables
     op.drop_table('tipo_os')
     op.drop_table('cargo_processo')
+    op.drop_table('subprocesso')
 
     # Rename processo_etapa back to etapa_processo and restore FK
     op.drop_constraint('campo_etapa_etapa_id_fkey', 'campo_etapa', type_='foreignkey')
