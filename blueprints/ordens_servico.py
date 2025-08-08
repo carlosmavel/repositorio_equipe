@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, abort, current_app
 
 try:
@@ -7,9 +8,9 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User
+    from ..core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User, Formulario
 except ImportError:  # pragma: no cover
-    from core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User
+    from core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User, Formulario
 
 try:
     from ..core.enums import OSStatus, OSPrioridade
@@ -184,6 +185,23 @@ def os_nova():
         if sub_ids:
             tipos_os = TipoOS.query.filter(TipoOS.subprocesso_id.in_(sub_ids)).order_by(TipoOS.nome).all()
     return render_template('ordens_servico/nova_os.html', tipos_os=tipos_os, prioridades=OSPrioridade)
+
+
+@ordens_servico_bp.get('/os/tipo/<int:tipo_id>/formulario', endpoint='os_formulario_vinculado')
+def os_formulario_vinculado(tipo_id):
+    if 'user_id' not in session:
+        return jsonify({'html': '', 'obrigatorio': False})
+    tipo = TipoOS.query.get_or_404(tipo_id)
+    html = ''
+    if tipo.formulario_vinculado_id:
+        formulario = Formulario.query.get(tipo.formulario_vinculado_id)
+        if formulario and formulario.estrutura:
+            try:
+                estrutura = json.loads(formulario.estrutura)
+            except ValueError:
+                estrutura = []
+            html = render_template('ordens_servico/_formulario_vinculado.html', estrutura=estrutura)
+    return jsonify({'html': html, 'obrigatorio': tipo.obrigatorio_preenchimento})
 
 
 @ordens_servico_bp.route('/os', endpoint='os_listar')
