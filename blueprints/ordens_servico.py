@@ -265,6 +265,9 @@ def os_mudar_status(ordem_id):
     novo_status = request.form.get('status')
     if novo_status not in [s.value for s in OSStatus]:
         abort(400)
+    if novo_status == OSStatus.AGUARDANDO.value and not ordem.pode_mudar_para_aguardando():
+        flash('Formulário obrigatório não preenchido', 'danger')
+        return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
     origem = ordem.status
     ordem.status = novo_status
     log = OrdemServicoLog(

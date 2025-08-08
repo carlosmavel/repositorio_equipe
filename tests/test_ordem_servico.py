@@ -72,3 +72,38 @@ def test_crud_ordem_servico(client):
     with app.app_context():
         assert OrdemServico.query.get(os_id) is None
 
+
+def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='Proc2')
+        sub = Subprocesso(nome='Sub2', processo=proc)
+        cel = Celula.query.first()
+        tipo = TipoOS(
+            nome='Tipo2',
+            descricao='d',
+            subprocesso=sub,
+            equipe_responsavel_id=cel.id,
+            obrigatorio_preenchimento=True,
+        )
+        user = User.query.filter_by(username='admin').first()
+        os_obj = OrdemServico(
+            titulo='OS2',
+            descricao='desc',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=user.id,
+        )
+        db.session.add_all([proc, sub, tipo, os_obj])
+        db.session.commit()
+        os_id = os_obj.id
+    resp = client.post(
+        f'/os/{os_id}/status',
+        data={'status': 'aguardando'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert 'Formulário obrigatório não preenchido' in resp.get_data(as_text=True)
+    with app.app_context():
+        assert OrdemServico.query.get(os_id).status == 'rascunho'
+
