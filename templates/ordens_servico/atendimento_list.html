@@ -15,8 +15,8 @@
     <div class="col-md-3">
       <select class="form-select form-select-sm" name="tipo">
         <option value="">Todos os Tipos</option>
-        {% for p in processos %}
-          <option value="{{ p.id }}" {% if request.args.get('tipo') == p.id|string %}selected{% endif %}>{{ p.nome }}</option>
+        {% for t in tipos_os %}
+          <option value="{{ t.id }}" {% if request.args.get('tipo') == t.id|string %}selected{% endif %}>{{ t.nome }}</option>
         {% endfor %}
       </select>
     </div>

@@ -22,8 +22,8 @@
           <label for="tipo_os_id" class="form-label">Tipo</label>
           <select class="form-select" id="tipo_os_id" name="tipo_os_id" required>
             <option value="">--</option>
-            {% for proc in processos %}
-            <option value="{{ proc.id }}" {% if ordem_editar and ordem_editar.tipo_os_id==proc.id %}selected{% endif %}>{{ proc.nome }}</option>
+            {% for t in tipos_os %}
+            <option value="{{ t.id }}" {% if ordem_editar and ordem_editar.tipo_os_id==t.id %}selected{% endif %}>{{ t.nome }}</option>
             {% endfor %}
           </select>
         </div>
