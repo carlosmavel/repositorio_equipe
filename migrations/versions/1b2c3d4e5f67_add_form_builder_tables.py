@@ -16,7 +16,7 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('cargo', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('atende_ordem_servico', sa.Boolean(), nullable=False, server_default='false'))
+        batch_op.add_column(sa.Column('pode_atender_os', sa.Boolean(), nullable=False, server_default='false'))
 
     op.create_table(
         'formulario',
@@ -44,4 +44,4 @@ def downgrade():
     op.drop_table('campo_formulario')
     op.drop_table('formulario')
     with op.batch_alter_table('cargo', schema=None) as batch_op:
-        batch_op.drop_column('atende_ordem_servico')
+        batch_op.drop_column('pode_atender_os')
