@@ -1,78 +1,114 @@
 {% extends "base.html" %}
 {% block title %}Tipos de OS{% endblock %}
 {% block content %}
-<div class="container mt-3">
-  <h1>Tipos de OS</h1>
-  <table class="table table-sm">
-    <thead>
-      <tr><th>Nome</th><th>Subprocesso</th><th>Equipe</th><th>Formulário</th><th>Obrigatório</th><th>Ações</th></tr>
-    </thead>
-    <tbody>
-      {% for t in tipos %}
-      <tr>
-        <td>{{ t.nome }}</td>
-        <td>{{ t.subprocesso.nome }}</td>
-        <td>{{ t.equipe_responsavel.nome if t.equipe_responsavel else '-' }}</td>
-        <td>{{ formularios_dict.get(t.formulario_vinculado_id).nome if t.formulario_vinculado_id else '-' }}</td>
-        <td>{{ 'Sim' if t.obrigatorio_preenchimento else 'Não' }}</td>
-        <td>
-          <a href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}" class="btn btn-sm btn-outline-primary me-1">Editar</a>
-          <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os_delete', id=t.id) }}" class="d-inline" onsubmit="return confirm('Excluir tipo de OS?');">
-            <button class="btn btn-sm btn-outline-danger">Excluir</button>
+<div class="container-fluid px-5 mt-3">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+    <h1 class="h2">Tipos de OS</h1>
+  </div>
+  <ul class="nav nav-tabs" id="tabTipoOS" role="tablist">
+    <li class="nav-item"><button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button></li>
+    <li class="nav-item"><button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button></li>
+  </ul>
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="tab-content" id="tabTipoOSContent">
+        <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header">
+              <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Tipos de OS Cadastrados ({{ tipos|length }})</h5>
+            </div>
+            <div class="card-body">
+              {% if tipos %}
+              <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                  <thead>
+                    <tr><th>Nome</th><th>Subprocesso</th><th>Equipe</th><th>Formulário</th><th>Obrigatório</th><th style="width: 120px;" class="text-end">Ações</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for t in tipos %}
+                    <tr class="clickable-row" data-href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}">
+                      <td>{{ t.nome }}</td>
+                      <td>{{ t.subprocesso.nome }}</td>
+                      <td>{{ t.equipe_responsavel.nome if t.equipe_responsavel else '-' }}</td>
+                      <td>{{ formularios_dict.get(t.formulario_vinculado_id).nome if t.formulario_vinculado_id else '-' }}</td>
+                      <td>{{ 'Sim' if t.obrigatorio_preenchimento else 'Não' }}</td>
+                      <td class="text-end">
+                        <a href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                        <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os_delete', id=t.id) }}" class="d-inline" onsubmit="return confirm('Excluir tipo de OS?');">
+                          <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash-fill"></i></button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <p class="text-muted">Nenhum tipo de OS cadastrado.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
+          <h5 class="mb-3"><i class="bi bi-plus-circle-fill me-2"></i>{{ 'Editar Tipo de OS' if tipo_editar else 'Adicionar Tipo de OS' }}</h5>
+          <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os') }}" class="compact-form" novalidate>
+            {% if tipo_editar %}
+            <input type="hidden" name="id_para_atualizar" value="{{ tipo_editar.id }}">
+            {% endif %}
+            <div class="mb-1">
+              <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="nome" name="nome" required value="{{ request.form.get('nome', tipo_editar.nome if tipo_editar else '') }}">
+            </div>
+            <div class="mb-1">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="2">{{ request.form.get('descricao', tipo_editar.descricao if tipo_editar else '') }}</textarea>
+            </div>
+            <div class="mb-1">
+              <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
+                <option value="">--</option>
+                {% for sp in subprocessos %}
+                <option value="{{ sp.id }}" {% if (request.form.get('subprocesso_id', tipo_editar.subprocesso_id|string if tipo_editar else '') == sp.id|string) %}selected{% endif %}>{{ sp.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-1">
+              <label for="equipe_responsavel_id" class="form-label">Equipe Responsável</label>
+              <select class="form-select form-select-sm" id="equipe_responsavel_id" name="equipe_responsavel_id">
+                <option value="">--</option>
+                {% for cel in celulas %}
+                <option value="{{ cel.id }}" {% if (request.form.get('equipe_responsavel_id', tipo_editar.equipe_responsavel_id|string if tipo_editar else '') == cel.id|string) %}selected{% endif %}>{{ cel.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-1">
+              <label for="formulario_vinculado_id" class="form-label">Formulário Vinculado</label>
+              <select class="form-select form-select-sm" id="formulario_vinculado_id" name="formulario_vinculado_id">
+                <option value="">--</option>
+                {% for f in formularios %}
+                <option value="{{ f.id }}" {% if (request.form.get('formulario_vinculado_id', tipo_editar.formulario_vinculado_id|string if tipo_editar else '') == f.id|string) %}selected{% endif %}>{{ f.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-1 form-check">
+              <input class="form-check-input" type="checkbox" id="obrigatorio_preenchimento" name="obrigatorio_preenchimento" {% if request.form.get('obrigatorio_preenchimento', tipo_editar.obrigatorio_preenchimento if tipo_editar else False) %}checked{% endif %}>
+              <label class="form-check-label" for="obrigatorio_preenchimento">Formulário obrigatório?</label>
+            </div>
+            <div class="d-flex pt-2 border-top">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar</button>
+            </div>
           </form>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="6" class="text-center text-muted">Nenhum tipo de OS cadastrado.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <hr>
-  <h2 class="h5">{{ 'Editar Tipo de OS' if tipo_editar else 'Novo Tipo de OS' }}</h2>
-  <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os') }}" class="compact-form">
-    {% if tipo_editar %}
-    <input type="hidden" name="id_para_atualizar" value="{{ tipo_editar.id }}">
-    {% endif %}
-    <div class="mb-3">
-      <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
-      <input type="text" class="form-control form-control-sm" id="nome" name="nome" required value="{{ request.form.get('nome', tipo_editar.nome if tipo_editar else '') }}">
+        </div>
+      </div>
     </div>
-    <div class="mb-3">
-      <label for="descricao" class="form-label">Descrição</label>
-      <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="2">{{ request.form.get('descricao', tipo_editar.descricao if tipo_editar else '') }}</textarea>
-    </div>
-    <div class="mb-3">
-      <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
-      <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
-        <option value="">--</option>
-        {% for sp in subprocessos %}
-        <option value="{{ sp.id }}" {% if (request.form.get('subprocesso_id', tipo_editar.subprocesso_id|string if tipo_editar else '') == sp.id|string) %}selected{% endif %}>{{ sp.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="mb-3">
-      <label for="equipe_responsavel_id" class="form-label">Equipe Responsável</label>
-      <select class="form-select form-select-sm" id="equipe_responsavel_id" name="equipe_responsavel_id">
-        <option value="">--</option>
-        {% for cel in celulas %}
-        <option value="{{ cel.id }}" {% if (request.form.get('equipe_responsavel_id', tipo_editar.equipe_responsavel_id|string if tipo_editar else '') == cel.id|string) %}selected{% endif %}>{{ cel.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="mb-3">
-      <label for="formulario_vinculado_id" class="form-label">Formulário Vinculado</label>
-      <select class="form-select form-select-sm" id="formulario_vinculado_id" name="formulario_vinculado_id">
-        <option value="">--</option>
-        {% for f in formularios %}
-        <option value="{{ f.id }}" {% if (request.form.get('formulario_vinculado_id', tipo_editar.formulario_vinculado_id|string if tipo_editar else '') == f.id|string) %}selected{% endif %}>{{ f.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="mb-3 form-check">
-      <input class="form-check-input" type="checkbox" id="obrigatorio_preenchimento" name="obrigatorio_preenchimento" {% if request.form.get('obrigatorio_preenchimento', tipo_editar.obrigatorio_preenchimento if tipo_editar else False) %}checked{% endif %}>
-      <label class="form-check-label" for="obrigatorio_preenchimento">Formulário obrigatório?</label>
-    </div>
-    <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
-  </form>
+  </div>
 </div>
+{% if tipo_editar %}
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var tab = new bootstrap.Tab(document.getElementById('cadastro-tab'));
+    tab.show();
+  });
+</script>
+{% endif %}
 {% endblock %}

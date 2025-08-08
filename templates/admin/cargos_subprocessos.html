@@ -1,50 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Vínculos Cargo/Subprocesso{% endblock %}
 {% block content %}
-<div class="container mt-3">
-  <h1>Vínculos Cargo ↔ Subprocesso</h1>
-  <table class="table table-sm">
-    <thead>
-      <tr><th>Cargo</th><th>Subprocesso</th><th>Ações</th></tr>
-    </thead>
-    <tbody>
-      {% for v in vinculos %}
-      <tr>
-        <td>{{ v.cargo.nome }}</td>
-        <td>{{ v.subprocesso.nome }}</td>
-        <td>
-          <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos_delete', id=v.id) }}" class="d-inline" onsubmit="return confirm('Remover vínculo?');">
-            <button class="btn btn-sm btn-outline-danger">Remover</button>
-          </form>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="3" class="text-center text-muted">Nenhum vínculo cadastrado.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <hr>
-  <h2 class="h5">Novo Vínculo</h2>
-  <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos') }}" class="compact-form">
-    <div class="mb-3">
-      <label for="cargo_id" class="form-label">Cargo <span class="text-danger">*</span></label>
-      <select class="form-select form-select-sm" id="cargo_id" name="cargo_id" required>
-        <option value="">--</option>
-        {% for c in cargos %}
-        <option value="{{ c.id }}">{{ c.nome }}</option>
-        {% endfor %}
-      </select>
+<div class="container-fluid px-5 mt-3">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+    <h1 class="h2">Vínculos Cargo ↔ Subprocesso</h1>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Vínculos Cadastrados ({{ vinculos|length }})</h5>
+        </div>
+        <div class="card-body">
+          {% if vinculos %}
+          <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+              <thead>
+                <tr><th>Cargo</th><th>Subprocesso</th><th style="width: 120px;" class="text-end">Ações</th></tr>
+              </thead>
+              <tbody>
+                {% for v in vinculos %}
+                <tr>
+                  <td>{{ v.cargo.nome }}</td>
+                  <td>{{ v.subprocesso.nome }}</td>
+                  <td class="text-end">
+                    <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos_delete', id=v.id) }}" class="d-inline" onsubmit="return confirm('Remover vínculo?');">
+                      <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash-fill"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted">Nenhum vínculo cadastrado.</p>
+          {% endif %}
+        </div>
+      </div>
+      <h5 class="mb-3"><i class="bi bi-plus-circle-fill me-2"></i>Novo Vínculo</h5>
+      <form method="POST" action="{{ url_for('processos_bp.admin_cargos_subprocessos') }}" class="compact-form">
+        <div class="mb-1">
+          <label for="cargo_id" class="form-label">Cargo <span class="text-danger">*</span></label>
+          <select class="form-select form-select-sm" id="cargo_id" name="cargo_id" required>
+            <option value="">--</option>
+            {% for c in cargos %}
+            <option value="{{ c.id }}">{{ c.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-1">
+          <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
+          <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
+            <option value="">--</option>
+            {% for sp in subprocessos %}
+            <option value="{{ sp.id }}">{{ sp.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="d-flex pt-2 border-top">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar</button>
+        </div>
+      </form>
     </div>
-    <div class="mb-3">
-      <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
-      <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
-        <option value="">--</option>
-        {% for sp in subprocessos %}
-        <option value="{{ sp.id }}">{{ sp.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
-  </form>
+  </div>
 </div>
 {% endblock %}
