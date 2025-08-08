@@ -8,9 +8,29 @@ except ImportError:  # pragma: no cover
     from core.database import db
 
 try:
-    from ..core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User, Formulario
+    from ..core.models import (
+        OrdemServico,
+        TipoOS,
+        CargoProcesso,
+        OrdemServicoLog,
+        OrdemServicoComentario,
+        User,
+        Formulario,
+        Subprocesso,
+        Celula,
+    )
 except ImportError:  # pragma: no cover
-    from core.models import OrdemServico, TipoOS, CargoProcesso, OrdemServicoLog, OrdemServicoComentario, User, Formulario
+    from core.models import (
+        OrdemServico,
+        TipoOS,
+        CargoProcesso,
+        OrdemServicoLog,
+        OrdemServicoComentario,
+        User,
+        Formulario,
+        Subprocesso,
+        Celula,
+    )
 
 try:
     from ..core.enums import OSStatus, OSPrioridade
@@ -143,6 +163,84 @@ def admin_delete_ordem(ordem_id):
         db.session.rollback()
         flash(f'Erro ao remover ordem de serviço: {str(e)}', 'danger')
     return redirect(url_for('ordens_servico_bp.admin_ordens_servico'))
+
+
+@ordens_servico_bp.route('/admin/tipos_os', methods=['GET', 'POST'], endpoint='admin_tipos_os')
+@admin_required
+def admin_tipos_os():
+    tipo_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            tipo_editar = TipoOS.query.get_or_404(edit_id)
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar', type=int)
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        subprocesso_id = request.form.get('subprocesso_id', type=int)
+        equipe_responsavel_id = request.form.get('equipe_responsavel_id', type=int)
+        formulario_vinculado_id = request.form.get('formulario_vinculado_id', type=int)
+        obrigatorio_preenchimento = request.form.get('obrigatorio_preenchimento') == 'on'
+        if not nome or not subprocesso_id:
+            flash('Nome e Subprocesso são obrigatórios.', 'danger')
+        else:
+            if id_para_atualizar:
+                tipo = TipoOS.query.get_or_404(id_para_atualizar)
+                tipo.nome = nome
+                tipo.descricao = descricao
+                tipo.subprocesso_id = subprocesso_id
+                tipo.equipe_responsavel_id = equipe_responsavel_id
+                tipo.formulario_vinculado_id = formulario_vinculado_id
+                tipo.obrigatorio_preenchimento = obrigatorio_preenchimento
+                action_msg = 'atualizado'
+            else:
+                tipo = TipoOS(
+                    nome=nome,
+                    descricao=descricao,
+                    subprocesso_id=subprocesso_id,
+                    equipe_responsavel_id=equipe_responsavel_id,
+                    formulario_vinculado_id=formulario_vinculado_id,
+                    obrigatorio_preenchimento=obrigatorio_preenchimento,
+                )
+                db.session.add(tipo)
+                action_msg = 'criado'
+            try:
+                db.session.commit()
+                flash(f'Tipo de OS {action_msg} com sucesso!', 'success')
+                return redirect(url_for('ordens_servico_bp.admin_tipos_os'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao salvar tipo de OS: {str(e)}', 'danger')
+        if id_para_atualizar:
+            tipo_editar = TipoOS.query.get(id_para_atualizar)
+    tipos = TipoOS.query.order_by(TipoOS.nome).all()
+    subprocessos = Subprocesso.query.order_by(Subprocesso.nome).all()
+    celulas = Celula.query.order_by(Celula.nome).all()
+    formularios_list = Formulario.query.order_by(Formulario.nome).all()
+    formularios_dict = {f.id: f for f in formularios_list}
+    return render_template(
+        'admin/tipos_os.html',
+        tipos=tipos,
+        tipo_editar=tipo_editar,
+        subprocessos=subprocessos,
+        celulas=celulas,
+        formularios=formularios_list,
+        formularios_dict=formularios_dict,
+    )
+
+
+@ordens_servico_bp.route('/admin/tipos_os/delete/<int:id>', methods=['POST'], endpoint='admin_tipos_os_delete')
+@admin_required
+def admin_tipos_os_delete(id):
+    tipo = TipoOS.query.get_or_404(id)
+    try:
+        db.session.delete(tipo)
+        db.session.commit()
+        flash('Tipo de OS removido com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao remover Tipo de OS: {str(e)}', 'danger')
+    return redirect(url_for('ordens_servico_bp.admin_tipos_os'))
 
 
 @ordens_servico_bp.route('/os/nova', methods=['GET', 'POST'], endpoint='os_nova')

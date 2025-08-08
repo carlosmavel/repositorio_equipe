@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Subprocessos{% endblock %}
+{% block content %}
+<div class="container mt-3">
+  <h1>Subprocessos</h1>
+  <table class="table table-sm">
+    <thead>
+      <tr><th>Nome</th><th>Processo</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+      {% for sp in subprocessos %}
+      <tr>
+        <td>{{ sp.nome }}</td>
+        <td>{{ sp.processo.nome }}</td>
+        <td>
+          <a href="{{ url_for('processos_bp.admin_subprocessos', edit_id=sp.id) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-center text-muted">Nenhum subprocesso cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr>
+  <h2 class="h5">{{ 'Editar Subprocesso' if subprocesso_editar else 'Novo Subprocesso' }}</h2>
+  <form method="POST" action="{{ url_for('processos_bp.admin_subprocessos') }}" class="compact-form">
+    {% if subprocesso_editar %}
+    <input type="hidden" name="id_para_atualizar" value="{{ subprocesso_editar.id }}">
+    {% endif %}
+    <div class="mb-3">
+      <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+      <input type="text" class="form-control form-control-sm" id="nome" name="nome" required value="{{ request.form.get('nome', subprocesso_editar.nome if subprocesso_editar else '') }}">
+    </div>
+    <div class="mb-3">
+      <label for="processo_id" class="form-label">Processo <span class="text-danger">*</span></label>
+      <select class="form-select form-select-sm" id="processo_id" name="processo_id" required>
+        <option value="">--</option>
+        {% for proc in processos %}
+        <option value="{{ proc.id }}" {% if (request.form.get('processo_id', subprocesso_editar.processo_id|string if subprocesso_editar else '') == proc.id|string) %}selected{% endif %}>{{ proc.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+  </form>
+</div>
+{% endblock %}
