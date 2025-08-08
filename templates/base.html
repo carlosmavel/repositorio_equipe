@@ -194,9 +194,12 @@
             </div>
             <div class="offcanvas-body">
                 <ul class="nav flex-column nav-pills">
+                    {% set endpoint_base = request.endpoint.split('.')[-1] %}
+                    {% set cadastros_base = ['admin_instituicoes', 'admin_estabelecimentos', 'admin_setores', 'admin_celulas', 'admin_cargos'] %}
+                    {% set processos_group = ['admin_processos', 'admin_subprocessos', 'admin_cargos_subprocessos', 'admin_etapas', 'admin_campos'] %}
 
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'pagina_inicial' else '' }}" 
+                        <a class="nav-link {{ 'active' if request.endpoint == 'pagina_inicial' else '' }}"
                         href="{{ url_for('pagina_inicial') }}">
                             <i class="bi bi-house-fill me-2"></i> Página Inicial
                         </a>
@@ -217,36 +220,36 @@
                             <div class="collapse {{ 'show' if 'admin_' in request.endpoint }}" id="collapseAdministracao">
                                 <ul class="nav flex-column ps-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else '' }} {{ 'collapsed' if not ('admin_instituicoes' in request.endpoint or 'admin_estabelecimentos' in request.endpoint or 'admin_setores' in request.endpoint or 'admin_celulas' in request.endpoint or 'admin_cargos' in request.endpoint) }}"
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if endpoint_base in cadastros_base else '' }} {{ 'collapsed' if endpoint_base not in cadastros_base }}"
                                         data-bs-toggle="collapse" href="#collapseCadastrosOrgSub" role="button"
-                                        aria-expanded="{{ 'true' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else 'false' }}"
+                                        aria-expanded="{{ 'true' if endpoint_base in cadastros_base else 'false' }}"
                                         aria-controls="collapseCadastrosOrgSub">
                                             <i class="bi bi-buildings-fill me-2"></i> Cadastros Base
                                             <i class="bi bi-chevron-down small ms-auto"></i>
                                         </a>
-                                        <div class="collapse {{ 'show' if ('admin_instituicoes' in request.endpoint) or ('admin_estabelecimentos' in request.endpoint) or ('admin_setores' in request.endpoint) or ('admin_celulas' in request.endpoint) or ('admin_cargos' in request.endpoint) else '' }}" id="collapseCadastrosOrgSub">
+                                        <div class="collapse {{ 'show' if endpoint_base in cadastros_base else '' }}" id="collapseCadastrosOrgSub">
                                             <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_estabelecimentos' in request.endpoint else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_instituicoes' in request.endpoint else '' }}" href="{{ url_for('admin_instituicoes') }}"><i class="bi bi-bank me-2"></i> Instituições</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_setores') }}"><i class="bi bi-tags-fill me-2"></i> Setores</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_cargos' else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_celulas' else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_estabelecimentos' else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_instituicoes' else '' }}" href="{{ url_for('admin_instituicoes') }}"><i class="bi bi-bank me-2"></i> Instituições</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_setores' else '' }}" href="{{ url_for('admin_setores') }}"><i class="bi bi-tags-fill me-2"></i> Setores</a></li>
                                             </ul>
                                         </div>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if ('admin_processos' in request.endpoint) or ('admin_subprocessos' in request.endpoint) or ('admin_cargos_subprocessos' in request.endpoint) or ('admin_etapas' in request.endpoint) or ('admin_campos' in request.endpoint) else '' }} {{ 'collapsed' if not ('admin_processos' in request.endpoint or 'admin_subprocessos' in request.endpoint or 'admin_cargos_subprocessos' in request.endpoint or 'admin_etapas' in request.endpoint or 'admin_campos' in request.endpoint) }}"
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if endpoint_base in processos_group else '' }} {{ 'collapsed' if endpoint_base not in processos_group }}"
                                         data-bs-toggle="collapse" href="#collapseProcessosSub" role="button"
-                                        aria-expanded="{{ 'true' if ('admin_processos' in request.endpoint) or ('admin_subprocessos' in request.endpoint) or ('admin_cargos_subprocessos' in request.endpoint) or ('admin_etapas' in request.endpoint) or ('admin_campos' in request.endpoint) else 'false' }}"
+                                        aria-expanded="{{ 'true' if endpoint_base in processos_group else 'false' }}"
                                         aria-controls="collapseProcessosSub">
                                             <i class="bi bi-diagram-3-fill me-2"></i> Processos
                                             <i class="bi bi-chevron-down small ms-auto"></i>
                                         </a>
-                                        <div class="collapse {{ 'show' if ('admin_processos' in request.endpoint) or ('admin_subprocessos' in request.endpoint) or ('admin_cargos_subprocessos' in request.endpoint) or ('admin_etapas' in request.endpoint) or ('admin_campos' in request.endpoint) else '' }}" id="collapseProcessosSub">
+                                        <div class="collapse {{ 'show' if endpoint_base in processos_group else '' }}" id="collapseProcessosSub">
                                             <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_processos' in request.endpoint or 'admin_etapas' in request.endpoint or 'admin_campos' in request.endpoint else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-bezier2 me-2"></i> Processos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_subprocessos' in request.endpoint else '' }}" href="{{ url_for('admin_subprocessos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Subprocessos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos_subprocessos' in request.endpoint else '' }}" href="{{ url_for('admin_cargos_subprocessos') }}"><i class="bi bi-link-45deg me-2"></i> Cargos ↔ Subprocessos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base in ['admin_processos', 'admin_etapas', 'admin_campos'] else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-bezier2 me-2"></i> Processos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_subprocessos' else '' }}" href="{{ url_for('admin_subprocessos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Subprocessos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_cargos_subprocessos' else '' }}" href="{{ url_for('admin_cargos_subprocessos') }}"><i class="bi bi-link-45deg me-2"></i> Cargos ↔ Subprocessos</a></li>
                                             </ul>
                                         </div>
                                     </li>
