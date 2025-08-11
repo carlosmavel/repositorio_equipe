@@ -381,7 +381,8 @@
           container.innerHTML = textarea.value;
           container.classList.add('editor-container');
           container.style.display = 'block';
-          container.style.minHeight = '160px';
+          // altura reduzida para evitar sobreposição do layout
+          container.style.minHeight = '100px';
           container.style.maxHeight = '320px';
           container.style.overflowY = 'auto';
           textarea.style.display = 'none';

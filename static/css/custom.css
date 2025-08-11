@@ -219,7 +219,8 @@ body > .container {
 /* Editor wrapper common rules */
 .editor-container {
   display: block;
-  min-height: 160px;
+  /* Ajustado para evitar que o editor invada o layout do formulário */
+  min-height: 100px;
   max-height: 320px;
   overflow-y: auto;
 }
