@@ -30,45 +30,35 @@ def upgrade():
     if not _has_table('processo_etapa_tipo_os'):
         op.create_table(
             'processo_etapa_tipo_os',
-
             sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
-
             sa.Column('tipo_os_id', sa.Integer(), sa.ForeignKey('tipo_os.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_cargo_abre'):
         op.create_table(
             'processo_etapa_cargo_abre',
-
             sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
-
             sa.Column('cargo_id', sa.Integer(), sa.ForeignKey('cargo.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_cargo_atende'):
         op.create_table(
             'processo_etapa_cargo_atende',
-
             sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
-
             sa.Column('cargo_id', sa.Integer(), sa.ForeignKey('cargo.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_article'):
         op.create_table(
             'processo_etapa_article',
-
             sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
-
             sa.Column('article_id', sa.Integer(), sa.ForeignKey('article.id'), primary_key=True)
         )
-
-    if _has_table('cargo_processo'):
-        op.drop_table('cargo_processo')
-    if _has_table('subprocesso'):
-        op.drop_table('subprocesso')
 
     if _has_column('tipo_os', 'subprocesso_id'):
         op.drop_constraint('tipo_os_subprocesso_id_fkey', 'tipo_os', type_='foreignkey')
         op.drop_column('tipo_os', 'subprocesso_id')
-
+    if _has_table('cargo_processo'):
+        op.drop_table('cargo_processo')
+    if _has_table('subprocesso'):
+        op.drop_table('subprocesso')
 
 def downgrade():
     if not _has_table('subprocesso'):

@@ -71,31 +71,24 @@ processo_etapa_tipo_os = db.Table(
     'processo_etapa_tipo_os',
 
     db.Column('etapa_id', db.String(36), db.ForeignKey('processo_etapa.id'), primary_key=True),
-
     db.Column('tipo_os_id', db.Integer, db.ForeignKey('tipo_os.id'), primary_key=True),
 )
 
 processo_etapa_cargo_abre = db.Table(
     'processo_etapa_cargo_abre',
-
     db.Column('etapa_id', db.String(36), db.ForeignKey('processo_etapa.id'), primary_key=True),
-
     db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
 )
 
 processo_etapa_cargo_atende = db.Table(
     'processo_etapa_cargo_atende',
-
     db.Column('etapa_id', db.String(36), db.ForeignKey('processo_etapa.id'), primary_key=True),
-
     db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
 )
 
 processo_etapa_article = db.Table(
     'processo_etapa_article',
-
     db.Column('etapa_id', db.String(36), db.ForeignKey('processo_etapa.id'), primary_key=True),
-
     db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
 )
 
