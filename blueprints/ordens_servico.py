@@ -11,25 +11,25 @@ try:
     from ..core.models import (
         OrdemServico,
         TipoOS,
-        CargoProcesso,
         OrdemServicoLog,
         OrdemServicoComentario,
         User,
         Formulario,
-        Subprocesso,
         Celula,
+        ProcessoEtapa,
+        processo_etapa_cargo_abre,
     )
 except ImportError:  # pragma: no cover
     from core.models import (
         OrdemServico,
         TipoOS,
-        CargoProcesso,
         OrdemServicoLog,
         OrdemServicoComentario,
         User,
         Formulario,
-        Subprocesso,
         Celula,
+        ProcessoEtapa,
+        processo_etapa_cargo_abre,
     )
 
 try:
@@ -177,31 +177,33 @@ def admin_tipos_os():
         id_para_atualizar = request.form.get('id_para_atualizar', type=int)
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        subprocesso_id = request.form.get('subprocesso_id', type=int)
+        etapa_id = request.form.get('etapa_id')
         equipe_responsavel_id = request.form.get('equipe_responsavel_id', type=int)
         formulario_vinculado_id = request.form.get('formulario_vinculado_id', type=int)
         obrigatorio_preenchimento = request.form.get('obrigatorio_preenchimento') == 'on'
-        if not nome or not subprocesso_id:
-            flash('Nome e Subprocesso são obrigatórios.', 'danger')
+        if not nome or not etapa_id:
+            flash('Nome e Etapa são obrigatórios.', 'danger')
         else:
+            etapa = ProcessoEtapa.query.get(etapa_id)
             if id_para_atualizar:
                 tipo = TipoOS.query.get_or_404(id_para_atualizar)
                 tipo.nome = nome
                 tipo.descricao = descricao
-                tipo.subprocesso_id = subprocesso_id
                 tipo.equipe_responsavel_id = equipe_responsavel_id
                 tipo.formulario_vinculado_id = formulario_vinculado_id
                 tipo.obrigatorio_preenchimento = obrigatorio_preenchimento
+                tipo.etapas = [etapa] if etapa else []
                 action_msg = 'atualizado'
             else:
                 tipo = TipoOS(
                     nome=nome,
                     descricao=descricao,
-                    subprocesso_id=subprocesso_id,
                     equipe_responsavel_id=equipe_responsavel_id,
                     formulario_vinculado_id=formulario_vinculado_id,
                     obrigatorio_preenchimento=obrigatorio_preenchimento,
                 )
+                if etapa:
+                    tipo.etapas.append(etapa)
                 db.session.add(tipo)
                 action_msg = 'criado'
             try:
@@ -214,7 +216,7 @@ def admin_tipos_os():
         if id_para_atualizar:
             tipo_editar = TipoOS.query.get(id_para_atualizar)
     tipos = TipoOS.query.order_by(TipoOS.nome).all()
-    subprocessos = Subprocesso.query.order_by(Subprocesso.nome).all()
+    etapas = ProcessoEtapa.query.order_by(ProcessoEtapa.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
     formularios_list = Formulario.query.order_by(Formulario.nome).all()
     formularios_dict = {f.id: f for f in formularios_list}
@@ -222,7 +224,7 @@ def admin_tipos_os():
         'admin/tipos_os.html',
         tipos=tipos,
         tipo_editar=tipo_editar,
-        subprocessos=subprocessos,
+        etapas=etapas,
         celulas=celulas,
         formularios=formularios_list,
         formularios_dict=formularios_dict,
@@ -279,9 +281,14 @@ def os_nova():
     usuario = User.query.get(session['user_id'])
     tipos_os = []
     if usuario and usuario.cargo_id:
-        sub_ids = [cp.subprocesso_id for cp in CargoProcesso.query.filter_by(cargo_id=usuario.cargo_id).all()]
-        if sub_ids:
-            tipos_os = TipoOS.query.filter(TipoOS.subprocesso_id.in_(sub_ids)).order_by(TipoOS.nome).all()
+        etapas = (
+            ProcessoEtapa.query.join(processo_etapa_cargo_abre)
+            .filter(processo_etapa_cargo_abre.c.cargo_id == usuario.cargo_id)
+            .all()
+        )
+        tipo_ids = {tipo.id for etapa in etapas for tipo in etapa.tipos_os}
+        if tipo_ids:
+            tipos_os = TipoOS.query.filter(TipoOS.id.in_(tipo_ids)).order_by(TipoOS.nome).all()
     return render_template('ordens_servico/nova_os.html', tipos_os=tipos_os, prioridades=OSPrioridade)
 
 

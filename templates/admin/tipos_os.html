@@ -22,13 +22,13 @@
               <div class="table-responsive">
                 <table class="table table-hover table-sm align-middle">
                   <thead>
-                    <tr><th>Nome</th><th>Subprocesso</th><th>Equipe</th><th>Formulário</th><th>Obrigatório</th><th style="width: 120px;" class="text-end">Ações</th></tr>
+                    <tr><th>Nome</th><th>Etapa</th><th>Equipe</th><th>Formulário</th><th>Obrigatório</th><th style="width: 120px;" class="text-end">Ações</th></tr>
                   </thead>
                   <tbody>
                     {% for t in tipos %}
                     <tr class="clickable-row" data-href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}">
                       <td>{{ t.nome }}</td>
-                      <td>{{ t.subprocesso.nome }}</td>
+                      <td>{{ t.etapas[0].nome if t.etapas|length > 0 else '-' }}</td>
                       <td>{{ t.equipe_responsavel.nome if t.equipe_responsavel else '-' }}</td>
                       <td>{{ formularios_dict.get(t.formulario_vinculado_id).nome if t.formulario_vinculado_id else '-' }}</td>
                       <td>{{ 'Sim' if t.obrigatorio_preenchimento else 'Não' }}</td>
@@ -64,11 +64,11 @@
               <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="2">{{ request.form.get('descricao', tipo_editar.descricao if tipo_editar else '') }}</textarea>
             </div>
             <div class="mb-1">
-              <label for="subprocesso_id" class="form-label">Subprocesso <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" id="subprocesso_id" name="subprocesso_id" required>
+              <label for="etapa_id" class="form-label">Etapa <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="etapa_id" name="etapa_id" required>
                 <option value="">--</option>
-                {% for sp in subprocessos %}
-                <option value="{{ sp.id }}" {% if (request.form.get('subprocesso_id', tipo_editar.subprocesso_id|string if tipo_editar else '') == sp.id|string) %}selected{% endif %}>{{ sp.nome }}</option>
+                {% for et in etapas %}
+                <option value="{{ et.id }}" {% if (request.form.get('etapa_id', (tipo_editar.etapas[0].id|string) if (tipo_editar and tipo_editar.etapas|length > 0) else '') == et.id|string) %}selected{% endif %}>{{ et.nome }}</option>
                 {% endfor %}
               </select>
             </div>
