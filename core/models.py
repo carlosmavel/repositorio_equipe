@@ -66,6 +66,31 @@ user_funcoes = db.Table(
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
+# Association tables linking processo_etapa to other entities
+processo_etapa_tipo_os = db.Table(
+    'processo_etapa_tipo_os',
+    db.Column('etapa_id', db.Integer, db.ForeignKey('processo_etapa.id'), primary_key=True),
+    db.Column('tipo_os_id', db.Integer, db.ForeignKey('tipo_os.id'), primary_key=True),
+)
+
+processo_etapa_cargo_abre = db.Table(
+    'processo_etapa_cargo_abre',
+    db.Column('etapa_id', db.Integer, db.ForeignKey('processo_etapa.id'), primary_key=True),
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+)
+
+processo_etapa_cargo_atende = db.Table(
+    'processo_etapa_cargo_atende',
+    db.Column('etapa_id', db.Integer, db.ForeignKey('processo_etapa.id'), primary_key=True),
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+)
+
+processo_etapa_article = db.Table(
+    'processo_etapa_article',
+    db.Column('etapa_id', db.Integer, db.ForeignKey('processo_etapa.id'), primary_key=True),
+    db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
+)
+
 class Funcao(db.Model):
     __tablename__ = 'funcao'
 
@@ -200,8 +225,10 @@ class Cargo(db.Model):
     permissoes = db.relationship(
         'Funcao', secondary=cargo_funcoes, lazy='dynamic')
 
-    processos = db.relationship(
-        'CargoProcesso', back_populates='cargo', lazy='dynamic', cascade='all, delete-orphan')
+    etapas_que_abrem = db.relationship(
+        'ProcessoEtapa', secondary='processo_etapa_cargo_abre', back_populates='cargos_que_abrem', lazy='dynamic')
+    etapas_que_atendem = db.relationship(
+        'ProcessoEtapa', secondary='processo_etapa_cargo_atende', back_populates='cargos_que_atendem', lazy='dynamic')
 
     def __repr__(self):
         return f"<Cargo {self.nome}>"
@@ -428,40 +455,10 @@ class Processo(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
-    subprocessos = db.relationship('Subprocesso', back_populates='processo', lazy='dynamic', cascade='all, delete-orphan')
     etapas = db.relationship('ProcessoEtapa', back_populates='processo', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"<Processo {self.nome}>"
-
-
-class Subprocesso(db.Model):
-    __tablename__ = 'subprocesso'
-
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(255), nullable=False)
-    processo_id = db.Column(db.String(36), db.ForeignKey('processo.id'), nullable=False)
-
-    processo = db.relationship('Processo', back_populates='subprocessos')
-    cargos = db.relationship('CargoProcesso', back_populates='subprocesso', lazy='dynamic', cascade='all, delete-orphan')
-    tipos_os = db.relationship('TipoOS', back_populates='subprocesso', lazy='dynamic')
-
-    def __repr__(self):
-        return f"<Subprocesso {self.nome}>"
-
-
-class CargoProcesso(db.Model):
-    __tablename__ = 'cargo_processo'
-
-    id = db.Column(db.Integer, primary_key=True)
-    cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=False)
-    subprocesso_id = db.Column(db.Integer, db.ForeignKey('subprocesso.id'), nullable=False)
-
-    cargo = db.relationship('Cargo', back_populates='processos')
-    subprocesso = db.relationship('Subprocesso', back_populates='cargos')
-
-    def __repr__(self):
-        return f"<CargoProcesso cargo={self.cargo_id} subprocesso={self.subprocesso_id}>"
 
 
 class TipoOS(db.Model):
@@ -470,13 +467,13 @@ class TipoOS(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text, nullable=True)
-    subprocesso_id = db.Column(db.Integer, db.ForeignKey('subprocesso.id'), nullable=False)
     equipe_responsavel_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
     formulario_vinculado_id = db.Column(db.Integer, nullable=True)
     obrigatorio_preenchimento = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
-
-    subprocesso = db.relationship('Subprocesso', back_populates='tipos_os')
     equipe_responsavel = db.relationship('Celula')
+
+    etapas = db.relationship(
+        'ProcessoEtapa', secondary='processo_etapa_tipo_os', back_populates='tipos_os', lazy='dynamic')
 
     def __repr__(self):
         return f"<TipoOS {self.nome}>"
@@ -493,11 +490,22 @@ class ProcessoEtapa(db.Model):
     celula_responsavel_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
     descricao = db.Column(db.Text, nullable=True)
     instrucoes = db.Column(db.Text, nullable=True)
+    categoria = db.Column(db.String(255), nullable=True)
+    formulario_padrao_id = db.Column(db.Integer, db.ForeignKey('formulario.id'), nullable=True)
 
     processo = db.relationship('Processo', back_populates='etapas')
     setor_responsavel = db.relationship('Setor')
     celula_responsavel = db.relationship('Celula')
+    formulario_padrao = db.relationship('Formulario')
     campos = db.relationship('CampoEtapa', back_populates='etapa', lazy='dynamic')
+    tipos_os = db.relationship(
+        'TipoOS', secondary='processo_etapa_tipo_os', back_populates='etapas', lazy='dynamic')
+    cargos_que_abrem = db.relationship(
+        'Cargo', secondary='processo_etapa_cargo_abre', back_populates='etapas_que_abrem', lazy='dynamic')
+    cargos_que_atendem = db.relationship(
+        'Cargo', secondary='processo_etapa_cargo_atende', back_populates='etapas_que_atendem', lazy='dynamic')
+    artigos = db.relationship(
+        'Article', secondary='processo_etapa_article', lazy='dynamic')
 
     def __repr__(self):
         return f"<ProcessoEtapa {self.nome} ({self.ordem})>"

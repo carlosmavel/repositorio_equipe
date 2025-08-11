@@ -8,8 +8,6 @@ except ImportError:  # pragma: no cover
 try:
     from ..core.models import (
         Processo,
-        Subprocesso,
-        CargoProcesso,
         Cargo,
         EtapaProcesso,
         CampoEtapa,
@@ -19,8 +17,6 @@ try:
 except ImportError:  # pragma: no cover
     from core.models import (
         Processo,
-        Subprocesso,
-        CargoProcesso,
         Cargo,
         EtapaProcesso,
         CampoEtapa,
@@ -233,87 +229,3 @@ def admin_delete_campo(campo_id):
     return redirect(url_for('processos_bp.admin_campos', etapa_id=etapa_id))
 
 
-@processos_bp.route('/admin/subprocessos', methods=['GET', 'POST'])
-@admin_required
-def admin_subprocessos():
-    subprocesso_para_editar = None
-    if request.method == 'GET':
-        edit_id = request.args.get('edit_id', type=int)
-        if edit_id:
-            subprocesso_para_editar = Subprocesso.query.get_or_404(edit_id)
-    if request.method == 'POST':
-        id_para_atualizar = request.form.get('id_para_atualizar', type=int)
-        nome = request.form.get('nome', '').strip()
-        processo_id = request.form.get('processo_id')
-        if not nome or not processo_id:
-            flash('Nome e Processo são obrigatórios.', 'danger')
-        else:
-            if id_para_atualizar:
-                sp = Subprocesso.query.get_or_404(id_para_atualizar)
-                sp.nome = nome
-                sp.processo_id = processo_id
-                action_msg = 'atualizado'
-            else:
-                sp = Subprocesso(nome=nome, processo_id=processo_id)
-                db.session.add(sp)
-                action_msg = 'criado'
-            try:
-                db.session.commit()
-                flash(f'Subprocesso {action_msg} com sucesso!', 'success')
-                return redirect(url_for('processos_bp.admin_subprocessos'))
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Erro ao salvar subprocesso: {str(e)}', 'danger')
-        if id_para_atualizar:
-            subprocesso_para_editar = Subprocesso.query.get(id_para_atualizar)
-    subprocessos = Subprocesso.query.order_by(Subprocesso.nome).all()
-    processos = Processo.query.order_by(Processo.nome).all()
-    return render_template(
-        'admin/subprocessos.html',
-        subprocessos=subprocessos,
-        subprocesso_editar=subprocesso_para_editar,
-        processos=processos,
-    )
-
-
-@processos_bp.route('/admin/cargos_subprocessos', methods=['GET', 'POST'])
-@admin_required
-def admin_cargos_subprocessos():
-    if request.method == 'POST':
-        cargo_id = request.form.get('cargo_id', type=int)
-        subprocesso_id = request.form.get('subprocesso_id', type=int)
-        if cargo_id and subprocesso_id:
-            vinc = CargoProcesso(cargo_id=cargo_id, subprocesso_id=subprocesso_id)
-            db.session.add(vinc)
-            try:
-                db.session.commit()
-                flash('Vínculo criado com sucesso!', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash(f'Erro ao criar vínculo: {str(e)}', 'danger')
-        else:
-            flash('Cargo e Subprocesso são obrigatórios.', 'danger')
-        return redirect(url_for('processos_bp.admin_cargos_subprocessos'))
-    vinculos = CargoProcesso.query.all()
-    cargos = Cargo.query.order_by(Cargo.nome).all()
-    subprocessos = Subprocesso.query.order_by(Subprocesso.nome).all()
-    return render_template(
-        'admin/cargos_subprocessos.html',
-        vinculos=vinculos,
-        cargos=cargos,
-        subprocessos=subprocessos,
-    )
-
-
-@processos_bp.route('/admin/cargos_subprocessos/delete/<int:id>', methods=['POST'])
-@admin_required
-def admin_cargos_subprocessos_delete(id):
-    vinc = CargoProcesso.query.get_or_404(id)
-    try:
-        db.session.delete(vinc)
-        db.session.commit()
-        flash('Vínculo removido com sucesso!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao remover vínculo: {str(e)}', 'danger')
-    return redirect(url_for('processos_bp.admin_cargos_subprocessos'))
