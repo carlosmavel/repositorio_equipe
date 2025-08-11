@@ -18,8 +18,7 @@ try:
         Celula,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
-        ProcessoEtapa,
-        processo_etapa_cargo_abre,
+
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -30,6 +29,8 @@ except ImportError:  # pragma: no cover
         User,
         Formulario,
         Celula,
+        ProcessoEtapa,
+        processo_etapa_cargo_abre,
     )
 
 try:
@@ -177,7 +178,9 @@ def admin_tipos_os():
         id_para_atualizar = request.form.get('id_para_atualizar', type=int)
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        etapa_id = request.form.get('etapa_id', type=int)
+        etapa_id = request.form.get('etapa_id')
+
+
         equipe_responsavel_id = request.form.get('equipe_responsavel_id', type=int)
         formulario_vinculado_id = request.form.get('formulario_vinculado_id', type=int)
         obrigatorio_preenchimento = request.form.get('obrigatorio_preenchimento') == 'on'

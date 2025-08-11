@@ -30,25 +30,33 @@ def upgrade():
     if not _has_table('processo_etapa_tipo_os'):
         op.create_table(
             'processo_etapa_tipo_os',
-            sa.Column('etapa_id', sa.Integer(), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
+            sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
             sa.Column('tipo_os_id', sa.Integer(), sa.ForeignKey('tipo_os.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_cargo_abre'):
         op.create_table(
             'processo_etapa_cargo_abre',
-            sa.Column('etapa_id', sa.Integer(), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
+            sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
             sa.Column('cargo_id', sa.Integer(), sa.ForeignKey('cargo.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_cargo_atende'):
         op.create_table(
             'processo_etapa_cargo_atende',
-            sa.Column('etapa_id', sa.Integer(), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
+            sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
             sa.Column('cargo_id', sa.Integer(), sa.ForeignKey('cargo.id'), primary_key=True)
         )
     if not _has_table('processo_etapa_article'):
         op.create_table(
             'processo_etapa_article',
-            sa.Column('etapa_id', sa.Integer(), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
+            sa.Column('etapa_id', sa.String(36), sa.ForeignKey('processo_etapa.id'), primary_key=True),
+
             sa.Column('article_id', sa.Integer(), sa.ForeignKey('article.id'), primary_key=True)
         )
 
