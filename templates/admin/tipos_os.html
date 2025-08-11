@@ -26,9 +26,10 @@
                   </thead>
                   <tbody>
                     {% for t in tipos %}
+                    {% set primeira_etapa = t.etapas.first() %}
                     <tr class="clickable-row" data-href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}">
                       <td>{{ t.nome }}</td>
-                      <td>{{ t.etapas[0].nome if t.etapas|length > 0 else '-' }}</td>
+                      <td>{{ primeira_etapa.nome if primeira_etapa else '-' }}</td>
                       <td>{{ t.equipe_responsavel.nome if t.equipe_responsavel else '-' }}</td>
                       <td>{{ formularios_dict.get(t.formulario_vinculado_id).nome if t.formulario_vinculado_id else '-' }}</td>
                       <td>{{ 'Sim' if t.obrigatorio_preenchimento else 'Não' }}</td>
@@ -67,8 +68,9 @@
               <label for="etapa_id" class="form-label">Etapa <span class="text-danger">*</span></label>
               <select class="form-select form-select-sm" id="etapa_id" name="etapa_id" required>
                 <option value="">--</option>
+                {% set etapa_selecionada = request.form.get('etapa_id', tipo_editar.etapas.first().id|string if tipo_editar and tipo_editar.etapas.first() else '') %}
                 {% for et in etapas %}
-                <option value="{{ et.id }}" {% if (request.form.get('etapa_id', (tipo_editar.etapas[0].id|string) if (tipo_editar and tipo_editar.etapas|length > 0) else '') == et.id|string) %}selected{% endif %}>{{ et.nome }}</option>
+                <option value="{{ et.id }}" {% if etapa_selecionada == et.id|string %}selected{% endif %}>{{ et.nome }}</option>
                 {% endfor %}
               </select>
             </div>
