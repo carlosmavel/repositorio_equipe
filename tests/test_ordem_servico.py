@@ -4,7 +4,7 @@ from app import app, db
 from core.models import (
     OrdemServico,
     Processo,
-    Subprocesso,
+    ProcessoEtapa,
     TipoOS,
     Instituicao,
     Estabelecimento,
@@ -44,10 +44,11 @@ def test_crud_ordem_servico(client):
     login_admin(client)
     with app.app_context():
         proc = Processo(nome='Proc')
-        sub = Subprocesso(nome='Sub', processo=proc)
+        etapa = ProcessoEtapa(nome='Etapa', ordem=1, processo=proc)
         cel = Celula.query.first()
-        tipo = TipoOS(nome='Tipo', descricao='d', subprocesso=sub, equipe_responsavel_id=cel.id)
-        db.session.add_all([proc, sub, tipo])
+        tipo = TipoOS(nome='Tipo', descricao='d', equipe_responsavel_id=cel.id)
+        etapa.tipos_os.append(tipo)
+        db.session.add_all([proc, etapa, tipo])
         db.session.commit()
         proc_id = tipo.id
     # create
@@ -89,15 +90,15 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
     login_admin(client)
     with app.app_context():
         proc = Processo(nome='Proc2')
-        sub = Subprocesso(nome='Sub2', processo=proc)
+        etapa = ProcessoEtapa(nome='Etapa2', ordem=1, processo=proc)
         cel = Celula.query.first()
         tipo = TipoOS(
             nome='Tipo2',
             descricao='d',
-            subprocesso=sub,
             equipe_responsavel_id=cel.id,
             obrigatorio_preenchimento=True,
         )
+        etapa.tipos_os.append(tipo)
         user = User.query.filter_by(username='admin').first()
         os_obj = OrdemServico(
             titulo='OS2',
@@ -106,7 +107,7 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
             status='rascunho',
             criado_por_id=user.id,
         )
-        db.session.add_all([proc, sub, tipo, os_obj])
+        db.session.add_all([proc, etapa, tipo, os_obj])
         db.session.commit()
         os_id = os_obj.id
     resp = client.post(
@@ -124,19 +125,19 @@ def test_get_formulario_vinculado(client):
     login_admin(client)
     with app.app_context():
         proc = Processo(nome='ProcF')
-        sub = Subprocesso(nome='SubF', processo=proc)
+        etapa = ProcessoEtapa(nome='EtapaF', ordem=1, processo=proc)
         cel = Celula.query.first()
         form = Formulario(nome='Form', estrutura='[{"tipo":"text","label":"Pergunta","obrigatoria":true}]')
-        db.session.add_all([proc, sub, form])
+        db.session.add_all([proc, etapa, form])
         db.session.commit()
         tipo = TipoOS(
             nome='TipoF',
             descricao='d',
-            subprocesso=sub,
             equipe_responsavel_id=cel.id,
             formulario_vinculado_id=form.id,
             obrigatorio_preenchimento=True,
         )
+        etapa.tipos_os.append(tipo)
         db.session.add(tipo)
         db.session.commit()
         tipo_id = tipo.id

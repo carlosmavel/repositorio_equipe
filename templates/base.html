@@ -196,7 +196,7 @@
                 <ul class="nav flex-column nav-pills">
                     {% set endpoint_base = request.endpoint.split('.')[-1] %}
                     {% set cadastros_base = ['admin_instituicoes', 'admin_estabelecimentos', 'admin_setores', 'admin_celulas', 'admin_cargos'] %}
-                    {% set processos_group = ['admin_processos', 'admin_subprocessos', 'admin_cargos_subprocessos', 'admin_etapas', 'admin_campos'] %}
+                    {% set processos_group = ['admin_processos', 'admin_etapas', 'admin_campos'] %}
 
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'pagina_inicial' else '' }}"
@@ -248,8 +248,6 @@
                                         <div class="collapse {{ 'show' if endpoint_base in processos_group else '' }}" id="collapseProcessosSub">
                                             <ul class="nav flex-column ps-3">
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base in ['admin_processos', 'admin_etapas', 'admin_campos'] else '' }}" href="{{ url_for('admin_processos') }}"><i class="bi bi-bezier2 me-2"></i> Processos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_subprocessos' else '' }}" href="{{ url_for('admin_subprocessos') }}"><i class="bi bi-diagram-3-fill me-2"></i> Subprocessos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_cargos_subprocessos' else '' }}" href="{{ url_for('admin_cargos_subprocessos') }}"><i class="bi bi-link-45deg me-2"></i> Cargos ↔ Subprocessos</a></li>
                                             </ul>
                                         </div>
                                     </li>
