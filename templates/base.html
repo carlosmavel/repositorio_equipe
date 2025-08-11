@@ -379,7 +379,11 @@
         document.querySelectorAll('textarea:not(.no-quill)').forEach(function (textarea) {
           var container = document.createElement('div');
           container.innerHTML = textarea.value;
-          container.style.minHeight = (textarea.getAttribute('rows') ? textarea.getAttribute('rows') * 24 : 100) + 'px';
+          container.classList.add('editor-container');
+          container.style.display = 'block';
+          container.style.minHeight = '160px';
+          container.style.maxHeight = '320px';
+          container.style.overflowY = 'auto';
           textarea.style.display = 'none';
           textarea.parentNode.insertBefore(container, textarea);
           var quill = new Quill(container, { theme: 'snow' });
