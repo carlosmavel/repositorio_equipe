@@ -69,6 +69,7 @@ user_funcoes = db.Table(
 # Association tables linking processo_etapa to other entities
 processo_etapa_tipo_os = db.Table(
     'processo_etapa_tipo_os',
+
     db.Column('etapa_id', db.String(36), db.ForeignKey('processo_etapa.id'), primary_key=True),
     db.Column('tipo_os_id', db.Integer, db.ForeignKey('tipo_os.id'), primary_key=True),
 )

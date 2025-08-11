@@ -55,12 +55,10 @@ def upgrade():
     if _has_column('tipo_os', 'subprocesso_id'):
         op.drop_constraint('tipo_os_subprocesso_id_fkey', 'tipo_os', type_='foreignkey')
         op.drop_column('tipo_os', 'subprocesso_id')
-
     if _has_table('cargo_processo'):
         op.drop_table('cargo_processo')
     if _has_table('subprocesso'):
         op.drop_table('subprocesso')
-
 
 def downgrade():
     if not _has_table('subprocesso'):
