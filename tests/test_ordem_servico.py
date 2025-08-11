@@ -148,3 +148,18 @@ def test_get_formulario_vinculado(client):
     assert 'Pergunta' in data['html']
     assert 'required' in data['html']
 
+
+def test_os_nova_lista_tipos_para_usuario_sem_cargo(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcN')
+        etapa = ProcessoEtapa(nome='EtapaN', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        tipo = TipoOS(nome='TipoN', descricao='d', equipe_responsavel_id=cel.id)
+        etapa.tipos_os.append(tipo)
+        db.session.add_all([proc, etapa, tipo])
+        db.session.commit()
+    resp = client.get('/os/nova')
+    assert resp.status_code == 200
+    assert 'TipoN' in resp.get_data(as_text=True)
+
