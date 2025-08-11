@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <h3>{{ title }}</h3>
+  <div class="row">
+    {% for key in order %}
+      {% if show_draft or key != 'rascunho' %}
+      <div class="col-md-2">
+        <h5>{{ labels[key] }}</h5>
+        {% if columns[key] %}
+          {% for os in columns[key] %}
+          <div class="card mb-2">
+            <div class="card-body p-2">
+              <div class="fw-bold">{{ os.titulo }}</div>
+              <small>ID {{ os.id }}{% if os.prioridade %} - {{ os.prioridade }}{% endif %}</small>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted small">Sem OS</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
