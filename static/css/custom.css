@@ -221,7 +221,7 @@ body > .container {
   display: block;
   /* Ajustado para evitar que o editor invada o layout do formulário */
   min-height: 100px;
-  max-height: 320px;
+  max-height: 100px;
   overflow-y: auto;
 }
 
