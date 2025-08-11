@@ -68,7 +68,7 @@
         {% for os in ordens %}
         <tr>
           <td>{{ os.titulo }}</td>
-          <td>{{ os.status }}</td>
+          <td>{{ status_choices(os.status).label }}</td>
           <td>
             <a class="btn btn-sm btn-outline-primary" href="{{ url_for('ordens_servico_bp.admin_ordens_servico', edit_id=os.id) }}">Editar</a>
             <form action="{{ url_for('ordens_servico_bp.admin_delete_ordem', ordem_id=os.id) }}" method="POST" style="display:inline;">

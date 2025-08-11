@@ -7,7 +7,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h3>{{ ordem.titulo }}</h3>
-          <p class="text-muted">Status: {{ ordem.status }}</p>
+          <p class="text-muted">Status: {{ status_enum(ordem.status).label }}</p>
           {% if ordem.processo %}
           <p class="text-muted">Processo: {{ ordem.processo.nome }}</p>
           {% endif %}

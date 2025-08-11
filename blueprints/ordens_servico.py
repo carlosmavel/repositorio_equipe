@@ -54,6 +54,8 @@ def _usuario_pode_acessar_os(usuario, os_obj):
     """Verifica se o usuário tem permissão para acessar a OS."""
     if not usuario or not os_obj:
         return False
+    if os_obj.status == OSStatus.RASCUNHO.value:
+        return os_obj.criado_por_id == usuario.id
     if os_obj.criado_por_id == usuario.id:
         return True
     if usuario in os_obj.participantes:
@@ -115,7 +117,7 @@ def admin_ordens_servico():
                 origem_status = None
                 action_msg = 'criada'
             try:
-                if status == OSStatus.AGUARDANDO.value and not ordem.pode_mudar_para_aguardando():
+                if status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
                     raise ValueError('Formulário obrigatório não preenchido')
                 db.session.commit()
                 log = OrdemServicoLog(
@@ -257,6 +259,12 @@ def os_nova():
         prioridade = request.form.get('prioridade') or None
         origem = request.form.get('origem') or None
         observacoes = request.form.get('observacoes') or None
+        acao = request.form.get('action')
+        status = (
+            OSStatus.AGUARDANDO_ATENDIMENTO.value
+            if acao == 'enviar'
+            else OSStatus.RASCUNHO.value
+        )
         if not titulo:
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
         else:
@@ -269,11 +277,17 @@ def os_nova():
                 observacoes=observacoes,
                 criado_por_id=session.get('user_id'),
                 equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
+                status=status,
             )
             try:
+                if status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
+                    raise ValueError('Formulário obrigatório não preenchido')
                 db.session.add(ordem)
                 db.session.commit()
-                flash('Ordem de Serviço criada com sucesso!', 'success')
+                if status == OSStatus.RASCUNHO.value:
+                    flash('Rascunho salvo com sucesso!', 'success')
+                    return redirect(url_for('ordens_servico_bp.os_minhas'))
+                flash('Ordem de Serviço enviada com sucesso!', 'success')
                 return redirect(url_for('ordens_servico_bp.os_listar'))
             except Exception as e:
                 db.session.rollback()
@@ -317,8 +331,12 @@ def os_formulario_vinculado(tipo_id):
 def os_listar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
-    return render_template('ordens_servico/listar_os.html', ordens=ordens)
+    ordens = (
+        OrdemServico.query.filter(OrdemServico.status != OSStatus.RASCUNHO.value)
+        .order_by(OrdemServico.data_criacao.desc())
+        .all()
+    )
+    return render_template('ordens_servico/listar_os.html', ordens=ordens, status_enum=OSStatus)
 
 
 @ordens_servico_bp.route('/os/<ordem_id>', endpoint='os_detalhar')
@@ -326,15 +344,21 @@ def os_detalhar(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     ordem = OrdemServico.query.get_or_404(ordem_id)
-    return render_template('ordens_servico/detalhe_os.html', ordem=ordem)
+    return render_template('ordens_servico/detalhe_os.html', ordem=ordem, status_enum=OSStatus)
 
 
 @ordens_servico_bp.route('/os/minhas', endpoint='os_minhas')
 def os_minhas():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
-    return render_template('ordens_servico/minhas_os.html', ordens=ordens)
+    ordens = (
+        OrdemServico.query.filter_by(criado_por_id=session['user_id'])
+        .order_by(OrdemServico.data_criacao.desc())
+        .all()
+    )
+    rascunhos = [o for o in ordens if o.status == OSStatus.RASCUNHO.value]
+    ordens = [o for o in ordens if o.status != OSStatus.RASCUNHO.value]
+    return render_template('ordens_servico/minhas_os.html', ordens=ordens, rascunhos=rascunhos, status_enum=OSStatus)
 
 
 @ordens_servico_bp.route('/os/atendimento', methods=['GET'], endpoint='os_atendimento')
@@ -344,7 +368,9 @@ def os_atendimento():
     usuario = User.query.get(session['user_id'])
     if not usuario or not usuario.pode_atender_os:
         abort(403)
-    query = OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id)
+    query = OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id).filter(
+        OrdemServico.status != OSStatus.RASCUNHO.value
+    )
     status = request.args.get('status')
     if status:
         query = query.filter_by(status=status)
@@ -392,7 +418,7 @@ def os_mudar_status(ordem_id):
     novo_status = request.form.get('status')
     if novo_status not in [s.value for s in OSStatus]:
         abort(400)
-    if novo_status == OSStatus.AGUARDANDO.value and not ordem.pode_mudar_para_aguardando():
+    if novo_status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
         flash('Formulário obrigatório não preenchido', 'danger')
         return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
     origem = ordem.status
