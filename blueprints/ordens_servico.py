@@ -18,6 +18,7 @@ try:
         Celula,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
+
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -178,6 +179,8 @@ def admin_tipos_os():
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
         etapa_id = request.form.get('etapa_id')
+
+
         equipe_responsavel_id = request.form.get('equipe_responsavel_id', type=int)
         formulario_vinculado_id = request.form.get('formulario_vinculado_id', type=int)
         obrigatorio_preenchimento = request.form.get('obrigatorio_preenchimento') == 'on'
