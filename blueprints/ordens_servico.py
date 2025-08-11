@@ -1,5 +1,6 @@
 import os
 import json
+from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, abort, current_app
 
 try:
@@ -359,6 +360,111 @@ def os_minhas():
     rascunhos = [o for o in ordens if o.status == OSStatus.RASCUNHO.value]
     ordens = [o for o in ordens if o.status != OSStatus.RASCUNHO.value]
     return render_template('ordens_servico/minhas_os.html', ordens=ordens, rascunhos=rascunhos, status_enum=OSStatus)
+
+
+@ordens_servico_bp.route('/os/kanban', endpoint='os_kanban')
+def os_kanban():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    ordens = (
+        OrdemServico.query.filter_by(criado_por_id=session['user_id'])
+        .order_by(OrdemServico.data_criacao.desc())
+        .all()
+    )
+    columns = defaultdict(list)
+    for os_obj in ordens:
+        st = os_obj.status
+        if st == OSStatus.RASCUNHO.value:
+            columns['rascunho'].append(os_obj)
+        elif st in [
+            OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            OSStatus.AGUARDANDO_INFORMACOES_SOLICITANTE.value,
+            OSStatus.AGUARDANDO_INTERACAO_TERCEIRO.value,
+        ]:
+            columns['aguardando'].append(os_obj)
+        elif st == OSStatus.EM_ATENDIMENTO.value:
+            columns['em_atendimento'].append(os_obj)
+        elif st in [
+            OSStatus.ENCAMINHADA_PARA_OUTRA_EQUIPE.value,
+            OSStatus.PAUSADA.value,
+        ]:
+            columns['pendente'].append(os_obj)
+        elif st == OSStatus.CONCLUIDA.value:
+            columns['concluida'].append(os_obj)
+        elif st in [OSStatus.CANCELADA.value, OSStatus.REJEITADA.value]:
+            columns['cancelada'].append(os_obj)
+        else:
+            columns['pendente'].append(os_obj)
+    labels = {
+        'rascunho': 'Rascunho',
+        'aguardando': 'Aguardando',
+        'em_atendimento': 'Em Atendimento',
+        'pendente': 'Pendente',
+        'concluida': 'Concluída',
+        'cancelada': 'Cancelada',
+    }
+    order = ['rascunho', 'aguardando', 'em_atendimento', 'pendente', 'concluida', 'cancelada']
+    return render_template(
+        'ordens_servico/kanban.html',
+        columns=columns,
+        labels=labels,
+        order=order,
+        show_draft=True,
+        title='Acompanhar OS (Kanban)',
+    )
+
+
+@ordens_servico_bp.route('/os/atendimento/kanban', endpoint='os_kanban_atendimento')
+def os_kanban_atendimento():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    if not usuario or not usuario.pode_atender_os:
+        abort(403)
+    ordens = (
+        OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id)
+        .filter(OrdemServico.status != OSStatus.RASCUNHO.value)
+        .order_by(OrdemServico.data_criacao.desc())
+        .all()
+    )
+    columns = defaultdict(list)
+    for os_obj in ordens:
+        st = os_obj.status
+        if st in [
+            OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            OSStatus.AGUARDANDO_INFORMACOES_SOLICITANTE.value,
+            OSStatus.AGUARDANDO_INTERACAO_TERCEIRO.value,
+        ]:
+            columns['aguardando'].append(os_obj)
+        elif st == OSStatus.EM_ATENDIMENTO.value:
+            columns['em_atendimento'].append(os_obj)
+        elif st in [
+            OSStatus.ENCAMINHADA_PARA_OUTRA_EQUIPE.value,
+            OSStatus.PAUSADA.value,
+        ]:
+            columns['pendente'].append(os_obj)
+        elif st == OSStatus.CONCLUIDA.value:
+            columns['concluida'].append(os_obj)
+        elif st in [OSStatus.CANCELADA.value, OSStatus.REJEITADA.value]:
+            columns['cancelada'].append(os_obj)
+        else:
+            columns['pendente'].append(os_obj)
+    labels = {
+        'aguardando': 'Aguardando',
+        'em_atendimento': 'Em Atendimento',
+        'pendente': 'Pendente',
+        'concluida': 'Concluída',
+        'cancelada': 'Cancelada',
+    }
+    order = ['aguardando', 'em_atendimento', 'pendente', 'concluida', 'cancelada']
+    return render_template(
+        'ordens_servico/kanban.html',
+        columns=columns,
+        labels=labels,
+        order=order,
+        show_draft=False,
+        title='Kanban de OS (Atendimento)',
+    )
 
 
 @ordens_servico_bp.route('/os/atendimento', methods=['GET'], endpoint='os_atendimento')
