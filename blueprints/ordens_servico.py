@@ -279,16 +279,20 @@ def os_nova():
                 db.session.rollback()
                 flash(f'Erro ao salvar ordem de serviço: {str(e)}', 'danger')
     usuario = User.query.get(session['user_id'])
-    tipos_os = []
+    query = TipoOS.query
     if usuario and usuario.cargo_id:
-        etapas = (
-            ProcessoEtapa.query.join(processo_etapa_cargo_abre)
-            .filter(processo_etapa_cargo_abre.c.cargo_id == usuario.cargo_id)
-            .all()
+        query = (
+            query.join(TipoOS.etapas)
+            .outerjoin(
+                processo_etapa_cargo_abre,
+                ProcessoEtapa.id == processo_etapa_cargo_abre.c.etapa_id,
+            )
+            .filter(
+                (processo_etapa_cargo_abre.c.cargo_id == usuario.cargo_id)
+                | (processo_etapa_cargo_abre.c.cargo_id.is_(None))
+            )
         )
-        tipo_ids = {tipo.id for etapa in etapas for tipo in etapa.tipos_os}
-        if tipo_ids:
-            tipos_os = TipoOS.query.filter(TipoOS.id.in_(tipo_ids)).order_by(TipoOS.nome).all()
+    tipos_os = query.order_by(TipoOS.nome).distinct().all()
     return render_template('ordens_servico/nova_os.html', tipos_os=tipos_os, prioridades=OSPrioridade)
 
 
