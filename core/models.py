@@ -567,7 +567,7 @@ class OrdemServico(db.Model):
         return f"<OrdemServico {self.titulo} ({self.status})>"
 
     def pode_mudar_para_aguardando(self) -> bool:
-        """Valida se a OS pode sair de rascunho para aguardando."""
+        """Valida se a OS pode sair de rascunho para aguardando atendimento."""
         if self.tipo_os and self.tipo_os.obrigatorio_preenchimento:
             return self.formulario_respostas_id is not None
         return True

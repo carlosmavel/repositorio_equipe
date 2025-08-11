@@ -112,7 +112,7 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
         os_id = os_obj.id
     resp = client.post(
         f'/os/{os_id}/status',
-        data={'status': 'aguardando'},
+        data={'status': 'aguardando_atendimento'},
         follow_redirects=True,
     )
     assert resp.status_code == 200

@@ -73,11 +73,15 @@ class OSStatus(Enum):
         return obj
 
     RASCUNHO = ("rascunho", "Rascunho")
-    AGUARDANDO = ("aguardando", "Aguardando")
+    AGUARDANDO_ATENDIMENTO = ("aguardando_atendimento", "Aguardando Atendimento")
     EM_ATENDIMENTO = ("em_atendimento", "Em Atendimento")
-    PENDENTE = ("pendente", "Pendente")
+    AGUARDANDO_INFORMACOES_SOLICITANTE = ("aguardando_info_solicitante", "Aguardando Informações do Solicitante")
+    AGUARDANDO_INTERACAO_TERCEIRO = ("aguardando_terceiro", "Aguardando Interação com Terceiro")
+    ENCAMINHADA_PARA_OUTRA_EQUIPE = ("encaminhada_outra_equipe", "Encaminhada para Outra Equipe")
+    PAUSADA = ("pausada", "Pausada")
     CONCLUIDA = ("concluida", "Concluída")
     CANCELADA = ("cancelada", "Cancelada")
+    REJEITADA = ("rejeitada", "Rejeitada")
 
 
 class OSPrioridade(Enum):

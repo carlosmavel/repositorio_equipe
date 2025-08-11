@@ -7,7 +7,7 @@
       <h3>{{ ordem.titulo }}</h3>
       <p class="text-muted mb-1">Tipo: {{ ordem.tipo_os.nome if ordem.tipo_os else '' }}</p>
       <p class="text-muted mb-1">Prioridade: {{ ordem.prioridade or 'N/A' }}</p>
-      <p class="text-muted">Status atual: {{ ordem.status }}</p>
+      <p class="text-muted">Status atual: {{ status_choices(ordem.status).label }}</p>
       <p>{{ ordem.descricao }}</p>
     </div>
   </div>
@@ -15,7 +15,7 @@
     <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=ordem.id) }}" class="d-flex">
       <select class="form-select form-select-sm" name="status">
         {% for st in status_choices %}
-          <option value="{{ st.value }}" {% if ordem.status==st.value %}selected{% endif %}>{{ st.name }}</option>
+          <option value="{{ st.value }}" {% if ordem.status==st.value %}selected{% endif %}>{{ st.label }}</option>
         {% endfor %}
       </select>
       <button class="btn btn-sm btn-primary ms-2">Alterar</button>

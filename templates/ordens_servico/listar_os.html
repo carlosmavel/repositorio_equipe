@@ -19,7 +19,7 @@
           {% for os in ordens %}
             <tr>
               <td>{{ os.titulo }}</td>
-              <td>{{ os.status }}</td>
+              <td>{{ status_enum(os.status).label }}</td>
               <td class="text-end">
                 <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.id) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
               </td>
