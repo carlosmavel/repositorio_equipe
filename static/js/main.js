@@ -164,6 +164,12 @@ document.addEventListener("DOMContentLoaded", function () {
           a.className = "dropdown-item notification-link fw-bold";
           a.dataset.id = n.id;
           li.appendChild(a);
+          li.classList.add("is-new");
+          li.addEventListener(
+            "animationend",
+            () => li.classList.remove("is-new"),
+            { once: true }
+          );
           menu.appendChild(li);
         }
         refreshLinks();
@@ -320,6 +326,12 @@ document.addEventListener("DOMContentLoaded", function () {
           a.className = "dropdown-item os-notification-link fw-bold";
           a.dataset.id = n.id;
           li.appendChild(a);
+          li.classList.add("is-new");
+          li.addEventListener(
+            "animationend",
+            () => li.classList.remove("is-new"),
+            { once: true }
+          );
           menu.appendChild(li);
         }
         refreshOsLinks();
