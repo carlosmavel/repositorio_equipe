@@ -57,27 +57,34 @@
                                                                             <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
                                                                                 <span>
                                                                                     <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
-                                                                                    {% if cargo.pode_atender_os %}
-                                                                                        <span class="badge bg-info text-dark ms-2">Atende OS</span>
+                                                                                {% if cargo.pode_atender_os %}
+                                                                                    <span class="badge bg-info text-dark ms-2">Atende OS</span>
+                                                                                {% endif %}
+                                                                            </span>
+                                                                            <div class="d-flex align-items-center">
+                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm btn-outline-primary me-1" title="Editar Cargo">
+                                                                                    <i class="bi bi-pencil-fill"></i>
+                                                                                </a>
+                                                                                {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                    {% if cargo.ativo %}
+                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Desativar Cargo">
+                                                                                            <i class="bi bi-archive-fill"></i>
+                                                                                        </button>
+                                                                                    {% else %}
+                                                                                        <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Ativar Cargo">
+                                                                                            <i class="bi bi-archive-restore-fill"></i>
+                                                                                        </button>
                                                                                     {% endif %}
-                                                                                </span>
-                                                                                <div class="dropdown">
-                                                                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
-                                                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                                                        <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">Editar Cargo</a></li>
-                                                                                        <li>
-                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                <button type="submit" class="dropdown-item">Excluir Cargo</button>
-                                                                                            </form>
-                                                                                        </li>
-                                                                                        <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes">Gerenciar Permissões</a></li>
-                                                                                    </ul>
-                                                                                </div>
-                                                                            </li>
-                                                                            {% endfor %}
-                                                                        </ul>
+                                                                                </form>
+                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes" class="btn btn-sm btn-outline-secondary" title="Gerenciar Permissões">
+                                                                                    <i class="bi bi-shield-lock-fill"></i>
+                                                                                </a>
+                                                                            </div>
+                                                                        </li>
+                                                                        {% endfor %}
+                                                                    </ul>
                                                                     {% endif %}
                                                                     {% for cel in setor.celulas %}
                                                                         <div class="celula-container ps-3 mb-2">
@@ -96,19 +103,26 @@
                                                                                                     <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                                 {% endif %}
                                                                                             </span>
-                                                                                            <div class="dropdown">
-                                                                                                <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
-                                                                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                                                                    <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">Editar Cargo</a></li>
-                                                                                                    <li>
-                                                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                            <button type="submit" class="dropdown-item">Excluir Cargo</button>
-                                                                                                        </form>
-                                                                                                    </li>
-                                                                                                    <li><a class="dropdown-item" href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes">Gerenciar Permissões</a></li>
-                                                                                                </ul>
+                                                                                            <div class="d-flex align-items-center">
+                                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm btn-outline-primary me-1" title="Editar Cargo">
+                                                                                                    <i class="bi bi-pencil-fill"></i>
+                                                                                                </a>
+                                                                                                {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                                {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                    {% if cargo.ativo %}
+                                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Desativar Cargo">
+                                                                                                            <i class="bi bi-archive-fill"></i>
+                                                                                                        </button>
+                                                                                                    {% else %}
+                                                                                                        <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Ativar Cargo">
+                                                                                                            <i class="bi bi-archive-restore-fill"></i>
+                                                                                                        </button>
+                                                                                                    {% endif %}
+                                                                                                </form>
+                                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes" class="btn btn-sm btn-outline-secondary" title="Gerenciar Permissões">
+                                                                                                    <i class="bi bi-shield-lock-fill"></i>
+                                                                                                </a>
                                                                                             </div>
                                                                                         </li>
                                                                                         {% endfor %}
