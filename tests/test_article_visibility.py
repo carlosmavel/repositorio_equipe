@@ -9,7 +9,7 @@ def client(app_ctx):
     
     with app.app_context():
         
-        inst = Instituicao(nome='Inst 1')
+        inst = Instituicao(codigo='INST001', nome='Inst 1')
         est = Estabelecimento(codigo='EST1', nome_fantasia='Est', instituicao=inst)
         setor = Setor(nome='Setor 1', estabelecimento=est)
         cel = Celula(nome='Celula 1', estabelecimento=est, setor=setor)
@@ -251,7 +251,7 @@ def test_user_cannot_view_wrong_instituicao(client):
     with app.app_context():
         user1 = User.query.first()
         inst1 = user1.celula.estabelecimento.instituicao
-        inst2 = Instituicao(nome='Inst 2')
+        inst2 = Instituicao(codigo='INST002', nome='Inst 2')
         db.session.add(inst2)
         est2 = Estabelecimento(codigo='E4', nome_fantasia='Est 4', instituicao=inst2)
         db.session.add(est2)

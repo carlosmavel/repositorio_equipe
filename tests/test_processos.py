@@ -5,7 +5,7 @@ from core.models import Processo, EtapaProcesso, CampoEtapa, RespostaEtapaOS, Us
 @pytest.fixture
 def base_app(app_ctx):
     with app.app_context():
-        inst = Instituicao(nome='Inst')
+        inst = Instituicao(codigo='INST001', nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
         setor = Setor(nome='S1', estabelecimento=est)
         cel = Celula(nome='C1', estabelecimento=est, setor=setor)

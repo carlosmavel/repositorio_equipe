@@ -10,7 +10,7 @@ def client(app_ctx):
     
     with app.app_context():
         
-        inst = Instituicao(nome='Inst')
+        inst = Instituicao(codigo='INST001', nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao=inst)
         setor = Setor(nome='Setor1', estabelecimento=est)
         cel = Celula(nome='Cel1', estabelecimento=est, setor=setor)

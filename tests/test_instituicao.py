@@ -11,7 +11,7 @@ def client(app_ctx):
 
 def login_admin(client):
     with app.app_context():
-        inst = Instituicao.query.first() or Instituicao(nome='Base')
+        inst = Instituicao.query.first() or Instituicao(codigo='BASE001', nome='Base')
         if inst.id is None:
             db.session.add(inst)
             db.session.commit()
@@ -33,6 +33,7 @@ def login_admin(client):
 def test_create_instituicao(client):
     login_admin(client)
     response = client.post('/admin/instituicoes', data={
+        'codigo': 'INST001',
         'nome': 'Inst 1',
         'descricao': 'Descricao',
         'ativo_check': 'on'
@@ -47,13 +48,14 @@ def test_create_instituicao(client):
 
 def test_update_instituicao(client):
     with app.app_context():
-        inst = Instituicao(nome='Inst A', descricao='Old')
+        inst = Instituicao(codigo='INSTA', nome='Inst A', descricao='Old')
         db.session.add(inst)
         db.session.commit()
         inst_id = inst.id
     login_admin(client)
     response = client.post('/admin/instituicoes', data={
         'id_para_atualizar': inst_id,
+        'codigo': 'INSTB',
         'nome': 'Inst B',
         'descricao': 'Nova',
         'ativo_check': 'on'
@@ -68,7 +70,7 @@ def test_update_instituicao(client):
 
 def test_toggle_instituicao_active(client):
     with app.app_context():
-        inst = Instituicao(nome='Ativa')
+        inst = Instituicao(codigo='ATV001', nome='Ativa')
         db.session.add(inst)
         db.session.commit()
         inst_id = inst.id

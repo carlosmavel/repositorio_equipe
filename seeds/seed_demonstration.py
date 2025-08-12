@@ -104,8 +104,8 @@ def run():
     with app.app_context():
         print("Populando dados de exemplo...")
 
-        inst1 = get_or_create(Instituicao, nome="Instituição 1", descricao="Inst 1")
-        inst2 = get_or_create(Instituicao, nome="Instituição 2", descricao="Inst 2")
+        inst1 = get_or_create(Instituicao, codigo="INST001", nome="Instituição 1", descricao="Inst 1")
+        inst2 = get_or_create(Instituicao, codigo="INST002", nome="Instituição 2", descricao="Inst 2")
 
         est1 = get_or_create(Estabelecimento, codigo="EST1", nome_fantasia="Estabelecimento 1", instituicao=inst1)
         est2 = get_or_create(Estabelecimento, codigo="EST2", nome_fantasia="Estabelecimento 2", instituicao=inst2)

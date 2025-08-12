@@ -7,7 +7,7 @@ from core.utils import DEFAULT_NEW_USER_PASSWORD
 @pytest.fixture
 def client(app_ctx):
     with app.app_context():
-        inst = Instituicao(nome='Inst')
+        inst = Instituicao(codigo='INST001', nome='Inst')
         db.session.add(inst)
         db.session.flush()
         est = Estabelecimento(codigo='E1', nome_fantasia='Estab', instituicao_id=inst.id)
