@@ -44,6 +44,17 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 Consulte o passo a passo de instalação dessas dependências e a configuração do
 `PATH` em nosso [Guia de Instalação](./GUIA_DE_INSTALACAO.md#6-instalacao-do-poppler-e-do-tesseract-dependencias-de-ocr).
 
+### Ajuste de DPI para OCR
+
+Ao extrair texto de PDFs baseados em imagem, cada página é convertida em imagem
+antes de passar pelo Tesseract. O DPI (*dots per inch*) utilizado nessa etapa
+impacta diretamente o resultado: valores maiores tendem a gerar reconhecimento
+mais preciso, porém aumentam o tempo de processamento e o consumo de memória.
+
+O sistema utiliza por padrão **300 DPI**, mas é possível ajustar esse valor por
+meio da variável de ambiente `PDF_OCR_DPI` ou passando o parâmetro `pdf_dpi` para
+as funções utilitárias de extração de texto.
+
 ## Como Rodar o Projeto (Desenvolvimento)
 
 1.  **Clone o repositório:**

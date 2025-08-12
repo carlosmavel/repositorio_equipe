@@ -94,11 +94,19 @@ def sanitize_html(text: str) -> str:
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(path: str) -> str:
+def extract_text(path: str, pdf_dpi: int = 300) -> str:
     """
     Extrai texto de vários formatos de arquivo:
     - .txt, .docx, .xlsx, .xls, .ods, .pdf
     Retorna todo o texto concatenado como string.
+
+    Parameters
+    ----------
+    path: str
+        Caminho do arquivo a ser processado.
+    pdf_dpi: int, opcional
+        DPI utilizado quando ``path`` aponta para um PDF. O valor pode ser
+        redefinido pela variável de ambiente ``PDF_OCR_DPI``. Padrão: 300.
     """
     ext = os.path.splitext(path)[1].lower()
     text_parts = []
@@ -146,7 +154,7 @@ def extract_text(path: str) -> str:
 
     # PDF (texto ou imagem)
     if ext == '.pdf':
-        return extract_text_from_pdf(path)
+        return extract_text_from_pdf(path, dpi=pdf_dpi)
 
     # outros formatos não suportados
     return ''
@@ -180,13 +188,27 @@ def extract_text_from_image(image, lang="por") -> str:
     return pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 6")
 
 
-def extract_text_from_pdf(path: str) -> str:
+def extract_text_from_pdf(path: str, dpi: int = 300) -> str:
     """Extrai texto de PDFs.
 
     Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
     esse texto ou a biblioteca não estiver disponível, recorre ao OCR usando
     ``pdf2image`` + ``pytesseract``.
+
+    Parameters
+    ----------
+    path: str
+        Caminho para o arquivo PDF.
+    dpi: int, opcional
+        Resolução em *dots per inch* utilizada ao converter o PDF em imagens.
+        Valores mais altos tendem a melhorar a acurácia do OCR, mas aumentam o
+        tempo de processamento e o consumo de memória. Valor padrão: 300. Pode
+        ser sobrescrito pela variável de ambiente ``PDF_OCR_DPI`` quando o
+        parâmetro não for informado.
     """
+    env_dpi = os.getenv("PDF_OCR_DPI")
+    if env_dpi and dpi == 300:
+        dpi = int(env_dpi)
     text_parts: list[str] = []
 
     # 1) Tenta extrair texto nativo do PDF -------------------------------
@@ -208,7 +230,7 @@ def extract_text_from_pdf(path: str) -> str:
         return ""
 
     try:
-        images = convert_from_path(path, dpi=300)
+        images = convert_from_path(path, dpi=dpi)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
         return ""
