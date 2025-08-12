@@ -410,7 +410,7 @@ def os_kanban():
         labels=labels,
         order=order,
         show_draft=True,
-        title='Acompanhar OS (Kanban)',
+        title='Acompanhar OS',
     )
 
 
@@ -463,7 +463,7 @@ def os_kanban_atendimento():
         labels=labels,
         order=order,
         show_draft=False,
-        title='Kanban de OS (Atendimento)',
+        title='Kanban de OS',
     )
 
 
