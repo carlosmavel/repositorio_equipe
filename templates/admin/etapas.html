@@ -97,17 +97,14 @@
                             <div class="col-md-6 d-flex flex-column">
                                 <label for="descricao" class="form-label">Descrição</label>
                                 <textarea class="form-control form-control-sm flex-grow-1" id="descricao" name="descricao">{{ request.form.get('descricao', '') }}</textarea>
-                                <div class="text-end border-top pt-2 mt-3">
-                                    <button type="button" class="btn btn-primary invisible" aria-hidden="true"><i class="bi bi-check-lg me-1"></i> Adicionar Etapa</button>
-                                </div>
                             </div>
                             <div class="col-md-6 d-flex flex-column">
                                 <label for="instrucoes" class="form-label">Instruções</label>
                                 <textarea class="form-control form-control-sm flex-grow-1" id="instrucoes" name="instrucoes">{{ request.form.get('instrucoes', '') }}</textarea>
-                                <div class="text-end border-top pt-2 mt-3">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar Etapa</button>
-                                </div>
                             </div>
+                        </div>
+                        <div class="d-flex justify-content-end border-top pt-2 mt-3">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Adicionar Etapa</button>
                         </div>
                     </form>
                 </div>
@@ -159,18 +156,15 @@
                             <div class="col-md-6 d-flex flex-column">
                                 <label for="edit_descricao" class="form-label">Descrição</label>
                                 <textarea class="form-control form-control-sm flex-grow-1" id="edit_descricao" name="descricao">{{ request.form.get('descricao', etapa_editar.descricao) }}</textarea>
-                                <div class="text-end border-top pt-2 mt-3">
-                                    <button type="button" class="btn btn-primary invisible" aria-hidden="true"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>
-                                </div>
-                            </div>
+                      </div>
                             <div class="col-md-6 d-flex flex-column">
                                 <label for="edit_instrucoes" class="form-label">Instruções</label>
                                 <textarea class="form-control form-control-sm flex-grow-1" id="edit_instrucoes" name="instrucoes">{{ request.form.get('instrucoes', etapa_editar.instrucoes) }}</textarea>
-                                <div class="text-end border-top pt-2 mt-3">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>
-                                    <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Cancelar</button>
-                                </div>
                             </div>
+                        </div>
+                        <div class="d-flex justify-content-end border-top pt-2 mt-3">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar Alterações</button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Cancelar</button>
                         </div>
                     </form>
                 </div>
