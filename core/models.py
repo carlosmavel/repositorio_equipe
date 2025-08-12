@@ -542,10 +542,12 @@ class Equipamento(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(255), nullable=False)
-    patrimonio = db.Column(db.String(100), nullable=True)
+    patrimonio = db.Column(db.String(100), unique=True, nullable=True)
     serial = db.Column(db.String(100), nullable=True)
     localizacao = db.Column(db.String(255), nullable=True)
-    status = db.Column(db.String(50), nullable=True)
+    status = db.Column(
+        db.String(50), nullable=False, default='Operacional', server_default='Operacional'
+    )
     observacoes = db.Column(db.Text, nullable=True)
 
     def __repr__(self):  # pragma: no cover - representação simples
@@ -560,6 +562,7 @@ class Sistema(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     responsavel = db.Column(db.String(255), nullable=True)
     observacoes = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(50), nullable=False, default='Ativo', server_default='Ativo')
 
     def __repr__(self):  # pragma: no cover
         return f"<Sistema {self.nome}>"
