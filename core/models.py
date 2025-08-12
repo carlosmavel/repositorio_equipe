@@ -545,6 +545,7 @@ class OrdemServico(db.Model):
     __tablename__ = 'ordem_servico'
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    codigo = db.Column(db.String(7), unique=True, nullable=False)
     titulo = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
     tipo_os_id = db.Column(db.Integer, db.ForeignKey('tipo_os.id'), nullable=False)

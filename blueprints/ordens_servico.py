@@ -39,9 +39,9 @@ except ImportError:  # pragma: no cover
     from core.enums import OSStatus, OSPrioridade
 
 try:
-    from ..core.utils import send_email
+    from ..core.utils import send_email, gerar_codigo_os
 except ImportError:  # pragma: no cover
-    from core.utils import send_email
+    from core.utils import send_email, gerar_codigo_os
 
 try:
     from ..core.decorators import admin_required
@@ -103,6 +103,7 @@ def admin_ordens_servico():
                 action_msg = 'atualizada'
             else:
                 ordem = OrdemServico(
+                    codigo=gerar_codigo_os(),
                     titulo=titulo,
                     descricao=descricao,
                     tipo_os_id=tipo_os_id,
@@ -270,6 +271,7 @@ def os_nova():
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
         else:
             ordem = OrdemServico(
+                codigo=gerar_codigo_os(),
                 titulo=titulo,
                 descricao=descricao,
                 tipo_os_id=tipo_os_id,
