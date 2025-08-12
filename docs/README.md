@@ -79,6 +79,41 @@ texto = extract_text_from_pdf(
 )
 ```
 
+### Configuração avançada de OCR
+
+O fluxo de OCR pode ser ajustado dinamicamente por meio do arquivo
+`ocr_config.json` localizado na raiz do projeto. Esse arquivo permite controlar
+parâmetros do Tesseract (idioma, `psm`, `oem`, _whitelist_/ _blacklist_ de
+caracteres) e diversas etapas de pré-processamento das imagens:
+
+* conversão para tons de cinza;
+* ajuste de brilho e contraste;
+* aumento de contraste e remoção de ruído (``gaussian`` ou ``median``);
+* binarização adaptativa;
+* correção automática de rotação e perspectiva;
+* divisão da página em múltiplas regiões de texto;
+* múltiplas tentativas de OCR com combinações diferentes de parâmetros.
+
+Um exemplo simplificado do arquivo:
+
+```json
+{
+  "lang": "por",
+  "oem": 3,
+  "psm": 6,
+  "multiple_passes": [{"psm": "6"}, {"psm": "11"}],
+  "preprocess": {
+    "adaptive_threshold": true,
+    "denoise": "gaussian",
+    "deskew": true,
+    "perspective": true
+  }
+}
+```
+
+A variável de ambiente `OCR_CONFIG_PATH` pode ser usada para apontar para um
+arquivo de configuração alternativo.
+
 
 ## Como Rodar o Projeto (Desenvolvimento)
 
