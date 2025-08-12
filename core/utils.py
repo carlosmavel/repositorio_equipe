@@ -495,22 +495,74 @@ def extract_text_from_pdf(
         apply_threshold = pre_cfg.get("apply_threshold", True)
 
     text_parts: list[str] = []
+    ocr_available = bool(convert_from_path and Image and pytesseract)
 
-    # 1) Tenta extrair texto nativo do PDF -------------------------------
+    # 1) Percorre cada pagina com PdfReader ------------------------------
     if PdfReader is not None:
         try:
             reader = PdfReader(path)
-            for page in getattr(reader, 'pages', []):
+            debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
+            os.makedirs(debug_dir, exist_ok=True)
+            for page_number, page in enumerate(getattr(reader, "pages", []), start=1):
                 text = page.extract_text() or ""
                 if text.strip():
                     text_parts.append(text)
+                elif ocr_available:
+                    try:
+                        img = convert_from_path(
+                            path,
+                            dpi=dpi,
+                            first_page=page_number,
+                            last_page=page_number,
+                        )[0]
+                        pre = preprocess_image(
+                            img,
+                            debug_dir=debug_dir,
+                            page_idx=page_number,
+                            apply_sharpen=apply_sharpen,
+                            apply_threshold=apply_threshold,
+                            brightness=pre_cfg.get("brightness", 0),
+                            contrast=pre_cfg.get("contrast", 1.0),
+                            denoise=pre_cfg.get("denoise"),
+                            denoise_ksize=pre_cfg.get("denoise_ksize", 3),
+                            adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
+                            block_size=pre_cfg.get("block_size", 25),
+                            c=pre_cfg.get("C", 10),
+                            deskew=pre_cfg.get("deskew", True),
+                            perspective=pre_cfg.get("perspective", True),
+                        )
+                        text_ocr = extract_text_from_image(
+                            pre,
+                            lang=lang,
+                            oem=oem,
+                            psm=psm,
+                            whitelist=cfg.get("whitelist"),
+                            blacklist=cfg.get("blacklist"),
+                            split_regions=cfg.get("split_regions"),
+                            multiple_passes=cfg.get("multiple_passes"),
+                            config=cfg,
+                        )
+                        text_parts.append(text_ocr)
+                        logger.info("Pagina %s processada via OCR", page_number)
+                    except Exception as e:  # pragma: no cover
+                        logger.error(
+                            "Erro no OCR da pagina %s do PDF %s: %s",
+                            page_number,
+                            path,
+                            e,
+                        )
+                else:
+                    logger.warning(
+                        "Dependencias de OCR indisponiveis para a pagina %s de %s",
+                        page_number,
+                        path,
+                    )
+            return "\n".join(text_parts)
         except Exception as e:  # pragma: no cover - falha no parse
             logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
-    if text_parts:
-        return "\n".join(text_parts)
 
-    # 2) Fallback para OCR -----------------------------------------------
-    if not (convert_from_path and Image and pytesseract):
+    # 2) Fallback para OCR completo -------------------------------------
+    if not ocr_available:
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
 
@@ -553,7 +605,7 @@ def extract_text_from_pdf(
                 config=cfg,
             )
             text_parts.append(text)
-            logger.info("Pagina %s processada com sucesso", i)
+            logger.info("Pagina %s processada via OCR", i)
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
 
