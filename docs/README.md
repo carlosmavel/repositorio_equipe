@@ -55,6 +55,30 @@ O sistema utiliza por padrão **300 DPI**, mas é possível ajustar esse valor p
 meio da variável de ambiente `PDF_OCR_DPI` ou passando o parâmetro `pdf_dpi` para
 as funções utilitárias de extração de texto.
 
+### Opções de pré-processamento para OCR
+
+Além do DPI, é possível controlar etapas de pré-processamento das páginas antes
+de enviá-las ao Tesseract. As funções `preprocess_image` e
+`extract_text_from_pdf` possuem os parâmetros `apply_sharpen` e
+`apply_threshold` que podem ser combinados conforme o tipo de documento:
+
+* `apply_sharpen=True` e `apply_threshold=True` *(padrão)* – indicado para
+  digitalizações comuns com texto pouco nítido.
+* `apply_sharpen=False` e `apply_threshold=True` – útil quando o documento já é
+  nítido, mas a binarização ajuda a remover ruídos.
+* `apply_sharpen=False` e `apply_threshold=False` – preserva cores e detalhes de
+  imagens ou recibos onde a binarização poderia eliminar informações.
+
+Exemplo de uso:
+
+```python
+from core.utils import extract_text_from_pdf
+
+texto = extract_text_from_pdf(
+    "documento.pdf", apply_sharpen=False, apply_threshold=False
+)
+```
+
 
 ## Como Rodar o Projeto (Desenvolvimento)
 

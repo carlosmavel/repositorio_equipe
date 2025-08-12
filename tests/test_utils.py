@@ -94,3 +94,33 @@ def test_extract_text_env_dpi(monkeypatch, tmp_path):
     extract_text(str(pdf_file))
 
     assert captured["dpi"] == 250
+
+
+def test_extract_text_pdf_preprocess_options(monkeypatch, tmp_path):
+    pdf_file = tmp_path / "dummy.pdf"
+    pdf_file.write_bytes(b"%PDF-1.4")
+
+    from PIL import Image
+
+    monkeypatch.setattr(
+        "core.utils.convert_from_path", lambda p, dpi=300: [Image.new("RGB", (10, 10))]
+    )
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=lambda *a, **k: "texto"),
+    )
+
+    captured = {}
+
+    def dummy_preprocess(img, **kwargs):
+        captured.update(kwargs)
+        return img
+
+    monkeypatch.setattr("core.utils.preprocess_image", dummy_preprocess)
+
+    extract_text_from_pdf(
+        str(pdf_file), apply_sharpen=False, apply_threshold=False, lang="por"
+    )
+
+    assert captured["apply_sharpen"] is False
+    assert captured["apply_threshold"] is False
