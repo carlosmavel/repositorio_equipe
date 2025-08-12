@@ -343,7 +343,7 @@
                                     <div class="collapse" id="collapseOSAtender">
                                         <ul class="nav flex-column ps-3">
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atendimento" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
-                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atender_consultar" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atender_consultar" href="{{ url_for('ordens_servico_bp.os_listar', modo='atender') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atender_kanban" href="{{ url_for('ordens_servico_bp.os_kanban_atendimento') }}"><i class="bi bi-kanban me-2"></i> Kanban de OS</a></li>
                                         </ul>
                                     </div>
