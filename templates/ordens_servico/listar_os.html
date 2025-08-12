@@ -86,7 +86,10 @@
               {% for os in ordens %}
               <div class="list-group-item list-group-item-action">
               <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ os.titulo|striptags }} <small class="text-muted">#{{ os.codigo }}</small></h5>
+                <div>
+                  <div><strong>Código OS:</strong> {{ os.codigo }}</div>
+                  <div><strong>Título:</strong> {{ os.titulo|striptags }}</div>
+                </div>
                 <div>
                   {% set st = status_enum(os.status) %}
                   <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>

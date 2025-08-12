@@ -71,8 +71,12 @@
               {% for os in rascunhos %}
               <div class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
-                  <div class="fw-bold">{{ os.titulo|striptags }} <small class="text-muted">#{{ os.codigo }}</small></div>
-                  <span class="badge bg-warning text-dark">Rascunho</span>
+                  <div>
+                    <div><strong>Código OS:</strong> {{ os.codigo }}</div>
+                    <div><strong>Título:</strong> {{ os.titulo|striptags }}</div>
+                  </div>
+                  {% set st = status_enum(os.status) %}
+                  <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
                 </div>
                 <div class="mt-2">
                   <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
@@ -92,7 +96,10 @@
               {% for os in ordens %}
               <div class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
-                  <div class="fw-bold">{{ os.titulo|striptags }} <small class="text-muted">#{{ os.codigo }}</small></div>
+                  <div>
+                    <div><strong>Código OS:</strong> {{ os.codigo }}</div>
+                    <div><strong>Título:</strong> {{ os.titulo|striptags }}</div>
+                  </div>
                   {% set st = status_enum(os.status) %}
                   <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
                 </div>

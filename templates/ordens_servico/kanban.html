@@ -12,8 +12,9 @@
           {% for os in columns[key] %}
           <div class="card mb-2 os-card" data-os="{{ os.codigo }}" style="cursor:pointer;">
             <div class="card-body p-2">
-              <div class="fw-bold">{{ os.titulo }}</div>
-              <small>Código {{ os.codigo }}{% if os.prioridade %} - {{ os.prioridade }}{% endif %}</small>
+              <div><strong>Código OS:</strong> {{ os.codigo }}</div>
+              <div class="fw-bold"><strong>Título:</strong> {{ os.titulo }}</div>
+              {% if os.prioridade %}<small class="text-muted">Prioridade: {{ os.prioridade }}</small>{% endif %}
             </div>
           </div>
           {% endfor %}
