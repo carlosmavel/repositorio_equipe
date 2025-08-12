@@ -11,6 +11,8 @@ from core.models import (
     Article,
     Funcao,
     ArticleVisibility,
+    ArticleStatus,
+    Comment,
 )
 from core.enums import Permissao
 from core.utils import (
@@ -196,3 +198,46 @@ def test_review_levels(base_setup):
         db.session.commit()
         add_perm(user, perm)
         assert user_can_review_article(user, art) is True
+
+
+def test_aprovacao_requer_comentario(app_ctx, client):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+        setor = Setor(nome='S', estabelecimento=est)
+        cel = Celula(nome='C', estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, cel])
+        db.session.flush()
+
+        autor = User(username='autor', email='a@test', password_hash='x',
+                     estabelecimento=est, setor=setor, celula=cel)
+        revisor = User(username='rev', email='r@test', password_hash='x',
+                       estabelecimento=est, setor=setor, celula=cel)
+        db.session.add_all([autor, revisor])
+        db.session.flush()
+
+        art = Article(titulo='T', texto='C', status=ArticleStatus.PENDENTE,
+                      user_id=autor.id, celula_id=cel.id,
+                      estabelecimento_id=est.id, setor_id=setor.id,
+                      instituicao_id=inst.id, visibility=ArticleVisibility.CELULA)
+        db.session.add(art)
+        db.session.flush()
+
+        f = Funcao(codigo=Permissao.ARTIGO_APROVAR_CELULA.value, nome='ap')
+        db.session.add(f)
+        db.session.flush()
+        revisor.permissoes_personalizadas.append(f)
+        db.session.commit()
+
+        revisor_id = revisor.id
+        art_id = art.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = revisor_id
+
+    client.post(f'/aprovacao/{art_id}', data={'acao': 'aprovar', 'comentario': ''})
+
+    with app.app_context():
+        art_db = Article.query.get(art_id)
+        assert art_db.status == ArticleStatus.PENDENTE
+        assert Comment.query.count() == 0

@@ -459,6 +459,11 @@ def aprovacao_detail(artigo_id):
         acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
         comentario = request.form.get('comentario','').strip()
 
+        # Comentário obrigatório
+        if not comentario:
+            flash('Comentário é obrigatório.', 'warning')
+            return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
+
         # 1) Atualiza o status -------------------------------------------------
         if acao == 'aprovar':
             if not user_can_approve_article(user, artigo):
@@ -486,7 +491,7 @@ def aprovacao_detail(artigo_id):
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
-            texto     = comentario or f"(Mudança de status para {acao})"
+            texto     = comentario
         )
         db.session.add(novo_comment)
         db.session.commit()

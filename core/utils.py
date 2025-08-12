@@ -30,6 +30,13 @@ try:
     from PIL import Image
 except Exception:  # pragma: no cover
     Image = None
+try:
+    from pypdf import PdfReader
+except Exception:  # pragma: no cover
+    try:
+        from PyPDF2 import PdfReader  # type: ignore
+    except Exception:  # pragma: no cover
+        PdfReader = None
 
 try:
     from .database import db  # type: ignore  # pragma: no cover
@@ -174,9 +181,28 @@ def extract_text_from_image(image, lang="por") -> str:
 
 
 def extract_text_from_pdf(path: str) -> str:
-    """Extrai texto de PDFs usando pdf2image, OpenCV e pytesseract."""
-    text_parts = []
+    """Extrai texto de PDFs.
 
+    Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
+    esse texto ou a biblioteca não estiver disponível, recorre ao OCR usando
+    ``pdf2image`` + ``pytesseract``.
+    """
+    text_parts: list[str] = []
+
+    # 1) Tenta extrair texto nativo do PDF -------------------------------
+    if PdfReader is not None:
+        try:
+            reader = PdfReader(path)
+            for page in getattr(reader, 'pages', []):
+                text = page.extract_text() or ""
+                if text.strip():
+                    text_parts.append(text)
+        except Exception as e:  # pragma: no cover - falha no parse
+            logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
+    if text_parts:
+        return "\n".join(text_parts)
+
+    # 2) Fallback para OCR -----------------------------------------------
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
