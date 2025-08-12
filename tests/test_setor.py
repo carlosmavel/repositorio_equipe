@@ -9,7 +9,7 @@ def client(app_ctx):
     
     with app.app_context():
         
-        inst = Instituicao(nome='Inst')
+        inst = Instituicao(codigo='INST001', nome='Inst')
         db.session.add(inst)
         db.session.flush()
         est = Estabelecimento(codigo='EST1', nome_fantasia='Estab 1', instituicao_id=inst.id)

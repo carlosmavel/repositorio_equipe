@@ -31,6 +31,7 @@
                                     <table class="table table-hover table-sm align-middle">
                                         <thead>
                                             <tr>
+                                                <th>Código</th>
                                                 <th>Nome</th>
                                                 <th>Status</th>
                                                 <th style="width: 200px;" class="text-end">Ações</th>
@@ -39,6 +40,7 @@
                                         <tbody>
                                             {% for inst in instituicoes %}
                                             <tr class="{{ 'table-light text-muted' if not inst.ativo else '' }} clickable-row" data-href="{{ url_for('admin_instituicoes', edit_id=inst.id) }}">
+                                                <td>{{ inst.codigo }}</td>
                                                 <td>{{ inst.nome }}</td>
                                                 <td>
                                                     {% if inst.ativo %}
@@ -83,7 +85,11 @@
 
                     <form method="POST" action="{{ url_for('admin_instituicoes') }}" novalidate class="compact-form">
                         <div class="row">
-                            <div class="col-md-8 mb-1">
+                            <div class="col-md-4 mb-1">
+                                <label for="codigo" class="form-label">Código <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" id="codigo" name="codigo" value="{{ request.form.get('codigo', '') }}" required maxlength="7">
+                            </div>
+                            <div class="col-md-4 mb-1">
                                 <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" required maxlength="200">
                             </div>
@@ -120,6 +126,10 @@
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('admin_instituicoes') }}" novalidate class="compact-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ inst_editar.id }}">
+                    <div class="mb-1">
+                        <label for="edit_codigo" class="form-label">Código <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="edit_codigo" name="codigo" value="{{ request.form.get('codigo', inst_editar.codigo) }}" required maxlength="7">
+                    </div>
                     <div class="mb-1">
                         <label for="edit_nome" class="form-label">Nome <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm" id="edit_nome" name="nome" value="{{ request.form.get('nome', inst_editar.nome) }}" required maxlength="200">

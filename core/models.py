@@ -108,6 +108,7 @@ class Instituicao(db.Model):
     __tablename__ = 'instituicao'
 
     id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(7), unique=True, nullable=False)
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')

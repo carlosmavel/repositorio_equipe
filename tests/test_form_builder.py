@@ -4,7 +4,7 @@ from core.models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User
 from core.utils import user_can_access_form_builder
 
 def setup_org(prefix):
-    inst = Instituicao(nome=f'Inst_{prefix}')
+    inst = Instituicao(codigo=f'I{str(prefix)[:6]}', nome=f'Inst_{prefix}')
     db.session.add(inst)
     db.session.flush()
     est = Estabelecimento(codigo=f'E_{prefix}', nome_fantasia='Est', instituicao_id=inst.id)

@@ -10,7 +10,7 @@ def client(app_ctx):
     
     with app.app_context():
         
-        inst = Instituicao(nome='Inst 1')
+        inst = Instituicao(codigo='INST001', nome='Inst 1')
         db.session.add(inst)
         db.session.commit()
         with app_ctx.test_client() as client:

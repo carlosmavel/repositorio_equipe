@@ -6,7 +6,7 @@ from core.models import Instituicao, Estabelecimento, Setor, Celula, User, Artic
 @pytest.fixture
 def client(app_ctx):
     with app.app_context():
-        inst = Instituicao(nome='Inst')
+        inst = Instituicao(codigo='INST001', nome='Inst')
         est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
         setor = Setor(nome='S', estabelecimento=est)
         cel = Celula(nome='C', estabelecimento=est, setor=setor)

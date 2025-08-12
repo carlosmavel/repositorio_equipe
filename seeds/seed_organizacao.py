@@ -15,7 +15,7 @@ def run():
 
         inst = Instituicao.query.filter_by(nome="Instituição Exemplo").first()
         if not inst:
-            inst = Instituicao(nome="Instituição Exemplo", descricao="Instituição para testes")
+            inst = Instituicao(codigo="INST001", nome="Instituição Exemplo", descricao="Instituição para testes")
             db.session.add(inst)
             print("Instituição criada.")
         else:

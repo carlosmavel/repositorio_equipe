@@ -124,29 +124,36 @@ def admin_instituicoes():
 
     if request.method == 'POST':
         id_para_atualizar = request.form.get('id_para_atualizar')
+        codigo = request.form.get('codigo', '').strip().upper()
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
         ativo = request.form.get('ativo_check') == 'on'
 
-        if not nome:
-            flash('Nome da instituição é obrigatório.', 'danger')
+        if not codigo or not nome:
+            flash('Código e nome da instituição são obrigatórios.', 'danger')
         else:
+            query_codigo_existente = Instituicao.query.filter_by(codigo=codigo)
             query_nome_existente = Instituicao.query.filter_by(nome=nome)
             if id_para_atualizar:
+                query_codigo_existente = query_codigo_existente.filter(Instituicao.id != int(id_para_atualizar))
                 query_nome_existente = query_nome_existente.filter(Instituicao.id != int(id_para_atualizar))
+            codigo_ja_existe = query_codigo_existente.first()
             nome_ja_existe = query_nome_existente.first()
 
-            if nome_ja_existe:
+            if codigo_ja_existe:
+                flash(f'O código "{codigo}" já está em uso.', 'danger')
+            elif nome_ja_existe:
                 flash(f'O nome "{nome}" já está em uso.', 'danger')
             else:
                 if id_para_atualizar:
                     inst = Instituicao.query.get_or_404(id_para_atualizar)
+                    inst.codigo = codigo
                     inst.nome = nome
                     inst.descricao = descricao
                     inst.ativo = ativo
                     action_msg = 'atualizada'
                 else:
-                    inst = Instituicao(nome=nome, descricao=descricao, ativo=ativo)
+                    inst = Instituicao(codigo=codigo, nome=nome, descricao=descricao, ativo=ativo)
                     db.session.add(inst)
                     action_msg = 'criada'
 
