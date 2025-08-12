@@ -15,6 +15,7 @@ from core.models import (
     Funcao,
     Formulario,
     Equipamento,
+    Sistema,
     Cargo,
 )
 from core.utils import gerar_codigo_os
@@ -134,6 +135,55 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
     assert 'Formulário obrigatório não preenchido' in resp.get_data(as_text=True)
     with app.app_context():
         assert OrdemServico.query.filter_by(codigo=os_codigo).first().status == 'rascunho'
+
+
+def test_validacao_condicional_campos(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcV')
+        etapa = ProcessoEtapa(nome='EtapaV', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        tipo_sis = TipoOS(nome='Suporte ao Sistema', descricao='d', equipe_responsavel_id=cel.id)
+        tipo_eq = TipoOS(nome='Manutenção de Equipamento', descricao='d', equipe_responsavel_id=cel.id)
+        etapa.tipos_os.extend([tipo_sis, tipo_eq])
+        equip = Equipamento(nome='EqX')
+        sist = Sistema(nome='SisX')
+        db.session.add_all([proc, etapa, tipo_sis, tipo_eq, equip, sist])
+        db.session.commit()
+        tipo_sis_id = tipo_sis.id
+        tipo_eq_id = tipo_eq.id
+        equip_id = equip.id
+        sist_id = sist.id
+    resp = client.post('/admin/ordens_servico', data={
+        'titulo': 'OS S',
+        'descricao': 'd',
+        'tipo_os_id': tipo_sis_id,
+        'status': 'rascunho'
+    }, follow_redirects=True)
+    assert "O campo Sistema é obrigatório" in resp.get_data(as_text=True)
+    resp = client.post('/admin/ordens_servico', data={
+        'titulo': 'OS E',
+        'descricao': 'd',
+        'tipo_os_id': tipo_eq_id,
+        'status': 'rascunho'
+    }, follow_redirects=True)
+    assert "O campo Equipamento é obrigatório" in resp.get_data(as_text=True)
+    resp = client.post('/admin/ordens_servico', data={
+        'titulo': 'OS S ok',
+        'descricao': 'd',
+        'tipo_os_id': tipo_sis_id,
+        'sistema_id': sist_id,
+        'status': 'rascunho'
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    resp = client.post('/admin/ordens_servico', data={
+        'titulo': 'OS E ok',
+        'descricao': 'd',
+        'tipo_os_id': tipo_eq_id,
+        'equipamento_id': equip_id,
+        'status': 'rascunho'
+    }, follow_redirects=True)
+    assert resp.status_code == 200
 
 
 def test_codigo_os_formato_unicidade_incremento(client):

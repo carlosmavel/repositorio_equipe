@@ -118,10 +118,15 @@ def admin_ordens_servico():
         sistema_id = request.form.get('sistema_id', type=int)
         observacoes = request.form.get('observacoes') or None
         atribuido_para_id = request.form.get('atribuido_para_id') or None
+        error = None
         if not titulo:
-            flash('Título da Ordem de Serviço é obrigatório.', 'danger')
-        elif not (equipamento_id or sistema_id):
-            flash('Informe ao menos Equipamento ou Sistema.', 'danger')
+            error = 'Título da Ordem de Serviço é obrigatório.'
+        elif tipo_obj and tipo_obj.nome == 'Suporte ao Sistema' and not sistema_id:
+            error = "O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'."
+        elif tipo_obj and tipo_obj.nome == 'Manutenção de Equipamento' and not equipamento_id:
+            error = "O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'."
+        if error:
+            flash(error, 'danger')
         else:
             if id_para_atualizar:
                 ordem = OrdemServico.query.get_or_404(id_para_atualizar)
@@ -309,10 +314,15 @@ def os_nova():
             if acao == 'enviar'
             else OSStatus.RASCUNHO.value
         )
+        error = None
         if not titulo:
-            flash('Título da Ordem de Serviço é obrigatório.', 'danger')
-        elif not (equipamento_id or sistema_id):
-            flash('Informe ao menos Equipamento ou Sistema.', 'danger')
+            error = 'Título da Ordem de Serviço é obrigatório.'
+        elif tipo_obj and tipo_obj.nome == 'Suporte ao Sistema' and not sistema_id:
+            error = "O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'."
+        elif tipo_obj and tipo_obj.nome == 'Manutenção de Equipamento' and not equipamento_id:
+            error = "O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'."
+        if error:
+            flash(error, 'danger')
         else:
             ordem = OrdemServico(
                 codigo=gerar_codigo_os(),
