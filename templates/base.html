@@ -229,11 +229,11 @@
                                         </a>
                                         <div class="collapse {{ 'show' if endpoint_base in cadastros_base else '' }}" id="collapseCadastrosOrgSub">
                                             <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_cargos' else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_celulas' else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_estabelecimentos' else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_instituicoes' else '' }}" href="{{ url_for('admin_instituicoes') }}"><i class="bi bi-bank me-2"></i> Instituições</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_estabelecimentos' else '' }}" href="{{ url_for('admin_estabelecimentos') }}"><i class="bi bi-building me-2"></i> Estabelecimentos</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_setores' else '' }}" href="{{ url_for('admin_setores') }}"><i class="bi bi-tags-fill me-2"></i> Setores</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_celulas' else '' }}" href="{{ url_for('admin_celulas') }}"><i class="bi bi-diagram-2-fill me-2"></i> Células</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if endpoint_base == 'admin_cargos' else '' }}" href="{{ url_for('admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
                                             </ul>
                                         </div>
                                     </li>
@@ -377,7 +377,7 @@
                                     <div class="collapse" id="collapseOSCadastros">
                                         <ul class="nav flex-column ps-3">
                                             {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
-                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_tipos" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_tipos" href="{{ url_for('ordens_servico_bp.tipos_os_admin') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_sistemas" href="{{ url_for('ordens_servico_bp.sistemas_list') }}"><i class="bi bi-hdd-network me-2"></i> Sistemas</a></li>
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_equipamentos" href="{{ url_for('ordens_servico_bp.equipamentos_list') }}"><i class="bi bi-cpu me-2"></i> Equipamentos</a></li>
                                             {% endif %}

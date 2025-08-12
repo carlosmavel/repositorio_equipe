@@ -27,15 +27,15 @@
                   <tbody>
                     {% for t in tipos %}
                     {% set primeira_etapa = t.etapas.first() %}
-                    <tr class="clickable-row" data-href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}">
+                      <tr class="clickable-row" data-href="{{ url_for('ordens_servico_bp.tipos_os_admin', edit_id=t.id) }}">
                       <td>{{ t.nome }}</td>
                       <td>{{ primeira_etapa.nome if primeira_etapa else '-' }}</td>
                       <td>{{ t.equipe_responsavel.nome if t.equipe_responsavel else '-' }}</td>
                       <td>{{ formularios_dict.get(t.formulario_vinculado_id).nome if t.formulario_vinculado_id else '-' }}</td>
                       <td>{{ 'Sim' if t.obrigatorio_preenchimento else 'Não' }}</td>
                       <td class="text-end">
-                        <a href="{{ url_for('ordens_servico_bp.admin_tipos_os', edit_id=t.id) }}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
-                        <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os_delete', id=t.id) }}" class="d-inline" onsubmit="return confirm('Excluir tipo de OS?');">
+                          <a href="{{ url_for('ordens_servico_bp.tipos_os_admin', edit_id=t.id) }}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                          <form method="POST" action="{{ url_for('ordens_servico_bp.tipos_os_admin_delete', id=t.id) }}" class="d-inline" onsubmit="return confirm('Excluir tipo de OS?');">
                           <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash-fill"></i></button>
                         </form>
                       </td>
@@ -52,7 +52,7 @@
         </div>
         <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
           <h5 class="mb-3"><i class="bi bi-plus-circle-fill me-2"></i>{{ 'Editar Tipo de OS' if tipo_editar else 'Adicionar Tipo de OS' }}</h5>
-          <form method="POST" action="{{ url_for('ordens_servico_bp.admin_tipos_os') }}" class="compact-form" novalidate>
+            <form method="POST" action="{{ url_for('ordens_servico_bp.tipos_os_admin') }}" class="compact-form" novalidate>
             {% if tipo_editar %}
             <input type="hidden" name="id_para_atualizar" value="{{ tipo_editar.id }}">
             {% endif %}
