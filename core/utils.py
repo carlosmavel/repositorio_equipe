@@ -50,6 +50,28 @@ from sqlalchemy import select
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_OCR_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "ocr_config.json"
+)
+
+
+def load_ocr_config(path: str | None = None) -> dict:
+    """Carrega as configurações de OCR a partir de um arquivo JSON.
+
+    O caminho pode ser informado manualmente ou lido da variável de ambiente
+    ``OCR_CONFIG_PATH``. Quando o arquivo não é encontrado ou ocorre algum
+    erro de leitura, um dicionário vazio é retornado.
+    """
+
+    if path is None:
+        path = os.getenv("OCR_CONFIG_PATH", DEFAULT_OCR_CONFIG_PATH)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:  # pragma: no cover - arquivo inexistente ou invalido
+        return {}
+
+
 
 
 
@@ -170,6 +192,15 @@ def preprocess_image(
     *,
     apply_sharpen: bool = True,
     apply_threshold: bool = True,
+    brightness: int = 0,
+    contrast: float = 1.0,
+    denoise: str | None = None,
+    denoise_ksize: int = 3,
+    adaptive_threshold: bool = False,
+    block_size: int = 25,
+    c: int = 10,
+    deskew: bool = True,
+    perspective: bool = True,
 ):
     """Aplica etapas de pré-processamento utilizando OpenCV.
 
@@ -196,32 +227,142 @@ def preprocess_image(
 
     img_array = np.array(img)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    if debug_dir:
-        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_gray.png"), gray)
 
-    processed = gray
+    if deskew:
+        coords = np.column_stack(np.where(gray > 0))
+        if coords.size:
+            angle = cv2.minAreaRect(coords)[-1]
+            if angle < -45:
+                angle = -(90 + angle)
+            else:
+                angle = -angle
+            h, w = img_array.shape[:2]
+            M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+            img_array = cv2.warpAffine(
+                img_array,
+                M,
+                (w, h),
+                flags=cv2.INTER_CUBIC,
+                borderMode=cv2.BORDER_REPLICATE,
+            )
+            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+    if perspective:
+        try:
+            thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            contours, _ = cv2.findContours(
+                thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            if contours:
+                cnt = max(contours, key=cv2.contourArea)
+                peri = cv2.arcLength(cnt, True)
+                approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+                if len(approx) == 4:
+                    pts = approx.reshape(4, 2).astype("float32")
+                    s = pts.sum(axis=1)
+                    diff = np.diff(pts, axis=1)
+                    rect = np.zeros((4, 2), dtype="float32")
+                    rect[0] = pts[np.argmin(s)]
+                    rect[2] = pts[np.argmax(s)]
+                    rect[1] = pts[np.argmin(diff)]
+                    rect[3] = pts[np.argmax(diff)]
+                    (tl, tr, br, bl) = rect
+                    widthA = np.linalg.norm(br - bl)
+                    widthB = np.linalg.norm(tr - tl)
+                    maxWidth = int(max(widthA, widthB))
+                    heightA = np.linalg.norm(tr - br)
+                    heightB = np.linalg.norm(tl - bl)
+                    maxHeight = int(max(heightA, heightB))
+                    dst = np.array(
+                        [
+                            [0, 0],
+                            [maxWidth - 1, 0],
+                            [maxWidth - 1, maxHeight - 1],
+                            [0, maxHeight - 1],
+                        ],
+                        dtype="float32",
+                    )
+                    M = cv2.getPerspectiveTransform(rect, dst)
+                    img_array = cv2.warpPerspective(
+                        img_array, M, (maxWidth, maxHeight)
+                    )
+                    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        except Exception:
+            pass
+
+    processed = cv2.convertScaleAbs(gray, alpha=contrast, beta=brightness)
+
+    if denoise == "gaussian":
+        processed = cv2.GaussianBlur(
+            processed, (denoise_ksize, denoise_ksize), 0
+        )
+    elif denoise == "median":
+        processed = cv2.medianBlur(processed, denoise_ksize)
+
     if apply_sharpen:
         processed = cv2.addWeighted(
             processed, 1.5, cv2.GaussianBlur(processed, (0, 0), 1.0), -0.5, 0
         )
-        if debug_dir:
-            cv2.imwrite(
-                os.path.join(debug_dir, f"page_{page_idx}_sharp.png"), processed
-            )
 
     if apply_threshold:
-        _, processed = cv2.threshold(
-            processed, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-        )
-        if debug_dir:
-            cv2.imwrite(
-                os.path.join(debug_dir, f"page_{page_idx}_binary.png"), processed
+        if adaptive_threshold:
+            processed = cv2.adaptiveThreshold(
+                processed,
+                255,
+                cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY,
+                block_size,
+                c,
             )
+        else:
+            _, processed = cv2.threshold(
+                processed, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            )
+
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_pre.png"), processed)
 
     return Image.fromarray(processed)
 
 
-def extract_text_from_image(image, lang: str = "por", oem: str | None = None, psm: str | None = None) -> str:
+def split_image_into_regions(image):
+    """Divide a imagem em regiões distintas com base em contornos.
+
+    Utilizado para melhorar a acurácia do OCR em documentos que possuem
+    múltiplas áreas de texto. Caso o OpenCV não esteja disponível, retorna
+    apenas a imagem original.
+    """
+
+    if not (cv2 and np):  # pragma: no cover
+        yield image
+        return
+
+    img_array = np.array(image)
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    found = False
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        if w * h < 100:  # ignora ruídos
+            continue
+        found = True
+        yield image.crop((x, y, x + w, y + h))
+    if not found:
+        yield image
+
+def extract_text_from_image(
+    image,
+    lang: str = "por",
+    oem: str | None = None,
+    psm: str | None = None,
+    *,
+    whitelist: str | None = None,
+    blacklist: str | None = None,
+    split_regions: bool | None = None,
+    multiple_passes: list[dict] | None = None,
+    config: dict | None = None,
+) -> str:
     """Realiza OCR na imagem usando pytesseract.
 
     Parameters
@@ -234,34 +375,76 @@ def extract_text_from_image(image, lang: str = "por", oem: str | None = None, ps
         *OEM* (OCR Engine Mode) do Tesseract. Se ``None``, utiliza ``"3"``.
     psm: str | None, opcional
         *PSM* (Page Segmentation Mode). Se ``None``, utiliza ``"6"``.
+    whitelist: str | None, opcional
+        Lista de caracteres permitidos pelo Tesseract.
+    blacklist: str | None, opcional
+        Lista de caracteres proibidos pelo Tesseract.
+    split_regions: bool | None, opcional
+        Se ``True``, divide a imagem em múltiplas regiões de texto.
+    multiple_passes: list[dict] | None, opcional
+        Lista de tentativas adicionais de OCR com parâmetros diferenciados.
+    config: dict | None, opcional
+        Dicionário de configuração carregado de ``ocr_config.json``.
     """
+
     if not pytesseract:  # pragma: no cover - dependencias ausentes
         return ""
 
+    cfg = load_ocr_config() if config is None else config
+
     if oem is None:
-        oem = "3"
+        oem = str(cfg.get("oem", "3"))
     if psm is None:
-        psm = "6"
+        psm = str(cfg.get("psm", "6"))
+    if whitelist is None:
+        whitelist = cfg.get("whitelist")
+    if blacklist is None:
+        blacklist = cfg.get("blacklist")
+    if split_regions is None:
+        split_regions = cfg.get("split_regions", False)
+    if multiple_passes is None:
+        multiple_passes = cfg.get("multiple_passes")
 
-    config_parts: list[str] = []
-    if oem:
-        config_parts.append(f"--oem {oem}")
-    if psm:
-        config_parts.append(f"--psm {psm}")
-    config = " ".join(config_parts)
+    def _run(image, psm_value, oem_value, wl, bl):
+        parts: list[str] = []
+        if oem_value:
+            parts.append(f"--oem {oem_value}")
+        if psm_value:
+            parts.append(f"--psm {psm_value}")
+        if wl:
+            parts.append(f"-c tessedit_char_whitelist={wl}")
+        if bl:
+            parts.append(f"-c tessedit_char_blacklist={bl}")
+        cfg_str = " ".join(parts)
+        return pytesseract.image_to_string(image, lang=lang, config=cfg_str)
 
-    return pytesseract.image_to_string(image, lang=lang, config=config)
+    regions = list(split_image_into_regions(image)) if split_regions else [image]
+
+    results: list[str] = []
+    for region in regions:
+        if multiple_passes:
+            for attempt in multiple_passes:
+                psm_v = attempt.get("psm", psm)
+                oem_v = attempt.get("oem", oem)
+                wl = attempt.get("whitelist", whitelist)
+                bl = attempt.get("blacklist", blacklist)
+                results.append(_run(region, psm_v, oem_v, wl, bl))
+        else:
+            results.append(_run(region, psm, oem, whitelist, blacklist))
+
+    return "\n".join(filter(None, results))
 
 
 def extract_text_from_pdf(
     path: str,
     dpi: int | None = None,
     *,
-    apply_sharpen: bool = True,
-    apply_threshold: bool = True,
-    lang: str = "por",
+    apply_sharpen: bool | None = None,
+    apply_threshold: bool | None = None,
+    lang: str | None = None,
     oem: str | None = None,
     psm: str | None = None,
+    config: dict | None = None,
 ) -> str:
 
 
@@ -293,8 +476,23 @@ def extract_text_from_pdf(
         ``PSM`` do Tesseract. ``None`` utiliza ``"6"``.
     """
 
+    cfg = load_ocr_config() if config is None else config
+
     if dpi is None:
         dpi = int(os.getenv("PDF_OCR_DPI", "300"))
+
+    if lang is None:
+        lang = cfg.get("lang", "por")
+    if oem is None:
+        oem = str(cfg.get("oem", "3"))
+    if psm is None:
+        psm = str(cfg.get("psm", "6"))
+
+    pre_cfg = cfg.get("preprocess", {})
+    if apply_sharpen is None:
+        apply_sharpen = pre_cfg.get("apply_sharpen", True)
+    if apply_threshold is None:
+        apply_threshold = pre_cfg.get("apply_threshold", True)
 
     text_parts: list[str] = []
 
@@ -333,8 +531,27 @@ def extract_text_from_pdf(
                 page_idx=i,
                 apply_sharpen=apply_sharpen,
                 apply_threshold=apply_threshold,
+                brightness=pre_cfg.get("brightness", 0),
+                contrast=pre_cfg.get("contrast", 1.0),
+                denoise=pre_cfg.get("denoise"),
+                denoise_ksize=pre_cfg.get("denoise_ksize", 3),
+                adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
+                block_size=pre_cfg.get("block_size", 25),
+                c=pre_cfg.get("C", 10),
+                deskew=pre_cfg.get("deskew", True),
+                perspective=pre_cfg.get("perspective", True),
             )
-            text = extract_text_from_image(pre, lang=lang, oem=oem, psm=psm)
+            text = extract_text_from_image(
+                pre,
+                lang=lang,
+                oem=oem,
+                psm=psm,
+                whitelist=cfg.get("whitelist"),
+                blacklist=cfg.get("blacklist"),
+                split_regions=cfg.get("split_regions"),
+                multiple_passes=cfg.get("multiple_passes"),
+                config=cfg,
+            )
             text_parts.append(text)
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover

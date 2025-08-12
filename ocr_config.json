@@ -1,0 +1,23 @@
+{
+  "lang": "por",
+  "oem": 3,
+  "psm": 6,
+  "whitelist": "",
+  "blacklist": "",
+  "split_regions": false,
+  "multiple_passes": [
+    {"psm": "6"},
+    {"psm": "11"}
+  ],
+  "preprocess": {
+    "apply_sharpen": true,
+    "apply_threshold": true,
+    "adaptive_threshold": true,
+    "denoise": "gaussian",
+    "denoise_ksize": 3,
+    "brightness": 0,
+    "contrast": 1.0,
+    "deskew": true,
+    "perspective": true
+  }
+}

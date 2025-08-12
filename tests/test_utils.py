@@ -45,7 +45,7 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     assert "Texto1" in text
     assert "Texto2" in text
-    assert len(calls) == 2
+    assert len(calls) >= 2
 
 
 def test_extract_text_custom_dpi(monkeypatch, tmp_path):
@@ -124,3 +124,27 @@ def test_extract_text_pdf_preprocess_options(monkeypatch, tmp_path):
 
     assert captured["apply_sharpen"] is False
     assert captured["apply_threshold"] is False
+
+
+def test_extract_text_image_multiple_passes(monkeypatch):
+    from PIL import Image
+
+    calls: list[str] = []
+
+    def dummy_image_to_string(img, lang="por", config=""):
+        calls.append(config)
+        return "texto"
+
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=dummy_image_to_string),
+    )
+
+    img = Image.new("RGB", (10, 10), color="white")
+    cfg = {"multiple_passes": [{"psm": "6"}, {"psm": "11"}]}
+
+    extract_text_from_image(img, config=cfg)
+
+    assert len(calls) == 2
+    assert any("--psm 6" in c for c in calls)
+    assert any("--psm 11" in c for c in calls)
