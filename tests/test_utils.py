@@ -1,7 +1,11 @@
 import pytest
-
 import types
-from core.utils import sanitize_html, extract_text
+from core.utils import (
+    sanitize_html,
+    extract_text,
+    extract_text_from_image,
+    extract_text_from_pdf,
+)
 
 
 def test_sanitize_html_removes_disallowed_tags():
