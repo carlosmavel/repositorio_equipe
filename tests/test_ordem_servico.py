@@ -14,6 +14,7 @@ from core.models import (
     Funcao,
     Formulario,
 )
+from core.utils import gerar_codigo_os
 
 
 @pytest.fixture
@@ -101,6 +102,7 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
         etapa.tipos_os.append(tipo)
         user = User.query.filter_by(username='admin').first()
         os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
             titulo='OS2',
             descricao='desc',
             tipo_os=tipo,
