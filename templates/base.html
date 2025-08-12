@@ -333,19 +333,61 @@
                         </a>
                         <div class="collapse {{ 'show' if os_active }}" id="collapseOSGlobal">
                             <ul class="nav flex-column ps-3">
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_nova' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_minhas' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban') }}"><i class="bi bi-kanban me-2"></i> Acompanhar OS (Kanban)</a></li>
-                                {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_tipos_os' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
-                                {% endif %}
                                 {% if current_user and current_user.pode_atender_os %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban_atendimento') }}"><i class="bi bi-kanban me-2"></i> Kanban de OS (Atendimento)</a></li>
+                                {% set os_atender_active = 'os_atendimento' in request.endpoint or 'os_kanban_atendimento' in request.endpoint or 'os_listar' in request.endpoint %}
+                                <li class="nav-item">
+                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_atender_active else '' }} {{ 'collapsed' if not os_atender_active }}"
+                                    data-bs-toggle="collapse" href="#collapseOSAtender" role="button" aria-expanded="{{ 'true' if os_atender_active else 'false' }}" aria-controls="collapseOSAtender">
+                                        <span>Atender OS</span>
+                                        <i class="bi bi-chevron-down small"></i>
+                                    </a>
+                                    <div class="collapse {{ 'show' if os_atender_active }}" id="collapseOSAtender">
+                                        <ul class="nav flex-column ps-3">
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban_atendimento') }}"><i class="bi bi-kanban me-2"></i> Kanban de OS</a></li>
+                                        </ul>
+                                    </div>
+                                </li>
                                 {% endif %}
-                                {% if user_can_access_form_builder(current_user) %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
+
+                        {% set os_abrir_active = 'os_kanban' in request.endpoint or 'os_nova' in request.endpoint or 'os_listar' in request.endpoint or 'os_minhas' in request.endpoint %}
+                                <li class="nav-item">
+                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_abrir_active else '' }} {{ 'collapsed' if not os_abrir_active }}"
+                                    data-bs-toggle="collapse" href="#collapseOSAbrir" role="button" aria-expanded="{{ 'true' if os_abrir_active else 'false' }}" aria-controls="collapseOSAbrir">
+                                        <span>Abrir OS</span>
+                                        <i class="bi bi-chevron-down small"></i>
+                                    </a>
+                                    <div class="collapse {{ 'show' if os_abrir_active }}" id="collapseOSAbrir">
+                                        <ul class="nav flex-column ps-3">
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban') }}"><i class="bi bi-kanban me-2"></i> Acompanhar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_nova' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_minhas' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
+                                        </ul>
+                                    </div>
+                                </li>
+
+                                {% set show_cadastros = (current_user.is_authenticated and current_user.has_permissao('admin')) or user_can_access_form_builder(current_user) %}
+                                {% if show_cadastros %}
+                                {% set os_cadastros_active = 'admin_tipos_os' in request.endpoint or 'formularios' in request.endpoint %}
+                                <li class="nav-item">
+                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_cadastros_active else '' }} {{ 'collapsed' if not os_cadastros_active }}"
+                                    data-bs-toggle="collapse" href="#collapseOSCadastros" role="button" aria-expanded="{{ 'true' if os_cadastros_active else 'false' }}" aria-controls="collapseOSCadastros">
+                                        <span>Cadastros OS</span>
+                                        <i class="bi bi-chevron-down small"></i>
+                                    </a>
+                                    <div class="collapse {{ 'show' if os_cadastros_active }}" id="collapseOSCadastros">
+                                        <ul class="nav flex-column ps-3">
+                                            {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_tipos_os' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
+                                            {% endif %}
+                                            {% if user_can_access_form_builder(current_user) %}
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </li>
                                 {% endif %}
                             </ul>
                         </div>
