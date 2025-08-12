@@ -186,9 +186,9 @@ def admin_delete_ordem(ordem_id):
     return redirect(url_for('ordens_servico_bp.admin_ordens_servico'))
 
 
-@ordens_servico_bp.route('/admin/tipos_os', methods=['GET', 'POST'], endpoint='admin_tipos_os')
+@ordens_servico_bp.route('/admin/tipos_os', methods=['GET', 'POST'], endpoint='tipos_os_admin')
 @admin_required
-def admin_tipos_os():
+def tipos_os_admin():
     tipo_editar = None
     if request.method == 'GET':
         edit_id = request.args.get('edit_id', type=int)
@@ -230,7 +230,7 @@ def admin_tipos_os():
             try:
                 db.session.commit()
                 flash(f'Tipo de OS {action_msg} com sucesso!', 'success')
-                return redirect(url_for('ordens_servico_bp.admin_tipos_os'))
+                return redirect(url_for('ordens_servico_bp.tipos_os_admin'))
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao salvar tipo de OS: {str(e)}', 'danger')
@@ -252,9 +252,9 @@ def admin_tipos_os():
     )
 
 
-@ordens_servico_bp.route('/admin/tipos_os/delete/<int:id>', methods=['POST'], endpoint='admin_tipos_os_delete')
+@ordens_servico_bp.route('/admin/tipos_os/delete/<int:id>', methods=['POST'], endpoint='tipos_os_admin_delete')
 @admin_required
-def admin_tipos_os_delete(id):
+def tipos_os_admin_delete(id):
     tipo = TipoOS.query.get_or_404(id)
     try:
         db.session.delete(tipo)
@@ -263,7 +263,7 @@ def admin_tipos_os_delete(id):
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao remover Tipo de OS: {str(e)}', 'danger')
-    return redirect(url_for('ordens_servico_bp.admin_tipos_os'))
+    return redirect(url_for('ordens_servico_bp.tipos_os_admin'))
 
 
 @ordens_servico_bp.route('/os/nova', methods=['GET', 'POST'], endpoint='os_nova')
