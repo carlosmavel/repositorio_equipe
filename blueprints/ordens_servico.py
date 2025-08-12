@@ -1,6 +1,7 @@
 import os
 import json
 from collections import defaultdict
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, abort, current_app
 from sqlalchemy import or_
 
@@ -400,13 +401,78 @@ def os_listar():
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
     celulas_ids = get_celulas_visiveis(usuario)
-    ordens = (
-        OrdemServico.query.filter(OrdemServico.status != OSStatus.RASCUNHO.value)
-        .filter(OrdemServico.equipe_responsavel_id.in_(celulas_ids))
-        .order_by(OrdemServico.data_criacao.desc())
-        .all()
+    query = OrdemServico.query.filter(
+        OrdemServico.status != OSStatus.RASCUNHO.value
+    ).filter(OrdemServico.equipe_responsavel_id.in_(celulas_ids))
+
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+
+    prioridade = request.args.get('prioridade')
+    if prioridade:
+        query = query.filter_by(prioridade=prioridade)
+
+    tipo = request.args.get('tipo', type=int)
+    if tipo:
+        query = query.filter_by(tipo_os_id=tipo)
+
+    sistema_id = request.args.get('sistema', type=int)
+    if sistema_id:
+        query = query.filter_by(sistema_id=sistema_id)
+
+    equipamento_id = request.args.get('equipamento', type=int)
+    if equipamento_id:
+        query = query.filter_by(equipamento_id=equipamento_id)
+
+    responsavel_id = request.args.get('responsavel', type=int)
+    if responsavel_id:
+        query = query.filter_by(atribuido_para_id=responsavel_id)
+
+    solicitante_id = request.args.get('solicitante', type=int)
+    if solicitante_id:
+        query = query.filter_by(criado_por_id=solicitante_id)
+
+    busca = request.args.get('q', '').strip()
+    if busca:
+        like = f"%{busca}%"
+        query = query.filter(
+            or_(OrdemServico.titulo.ilike(like), OrdemServico.descricao.ilike(like))
+        )
+
+    data_de = request.args.get('data_de')
+    if data_de:
+        try:
+            dt = datetime.fromisoformat(data_de)
+            query = query.filter(OrdemServico.data_criacao >= dt)
+        except ValueError:
+            pass
+
+    data_ate = request.args.get('data_ate')
+    if data_ate:
+        try:
+            dt = datetime.fromisoformat(data_ate)
+            query = query.filter(OrdemServico.data_criacao <= dt)
+        except ValueError:
+            pass
+
+    ordens = query.order_by(OrdemServico.data_criacao.desc()).all()
+
+    tipos_os = TipoOS.query.order_by(TipoOS.nome).all()
+    sistemas = Sistema.query.order_by(Sistema.nome).all()
+    equipamentos = Equipamento.query.order_by(Equipamento.nome).all()
+    usuarios = User.query.order_by(User.username).all()
+
+    return render_template(
+        'ordens_servico/listar_os.html',
+        ordens=ordens,
+        status_enum=OSStatus,
+        prioridades=OSPrioridade,
+        tipos_os=tipos_os,
+        sistemas=sistemas,
+        equipamentos=equipamentos,
+        usuarios=usuarios,
     )
-    return render_template('ordens_servico/listar_os.html', ordens=ordens, status_enum=OSStatus)
 
 
 @ordens_servico_bp.route('/os/<ordem_id>', endpoint='os_detalhar')
@@ -417,21 +483,85 @@ def os_detalhar(ordem_id):
     usuario = User.query.get(session['user_id'])
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
-    return render_template('ordens_servico/detalhe_os.html', ordem=ordem, status_enum=OSStatus)
+    logs = OrdemServicoLog.query.filter_by(os_id=ordem.id).order_by(OrdemServicoLog.data_hora.asc()).all()
+    comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
+    return render_template(
+        'ordens_servico/detalhe_os.html',
+        ordem=ordem,
+        status_enum=OSStatus,
+        logs=logs,
+        comentarios=comentarios,
+        next=request.args.get('next'),
+    )
 
 
 @ordens_servico_bp.route('/os/minhas', endpoint='os_minhas')
 def os_minhas():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordens = (
-        OrdemServico.query.filter_by(criado_por_id=session['user_id'])
-        .order_by(OrdemServico.data_criacao.desc())
-        .all()
+    query = OrdemServico.query.filter_by(criado_por_id=session['user_id'])
+
+    status = request.args.get('status')
+    if status:
+        query = query.filter_by(status=status)
+
+    prioridade = request.args.get('prioridade')
+    if prioridade:
+        query = query.filter_by(prioridade=prioridade)
+
+    tipo = request.args.get('tipo', type=int)
+    if tipo:
+        query = query.filter_by(tipo_os_id=tipo)
+
+    sistema_id = request.args.get('sistema', type=int)
+    if sistema_id:
+        query = query.filter_by(sistema_id=sistema_id)
+
+    equipamento_id = request.args.get('equipamento', type=int)
+    if equipamento_id:
+        query = query.filter_by(equipamento_id=equipamento_id)
+
+    busca = request.args.get('q', '').strip()
+    if busca:
+        like = f"%{busca}%"
+        query = query.filter(
+            or_(OrdemServico.titulo.ilike(like), OrdemServico.descricao.ilike(like))
+        )
+
+    data_de = request.args.get('data_de')
+    if data_de:
+        try:
+            dt = datetime.fromisoformat(data_de)
+            query = query.filter(OrdemServico.data_criacao >= dt)
+        except ValueError:
+            pass
+
+    data_ate = request.args.get('data_ate')
+    if data_ate:
+        try:
+            dt = datetime.fromisoformat(data_ate)
+            query = query.filter(OrdemServico.data_criacao <= dt)
+        except ValueError:
+            pass
+
+    ordens_all = query.order_by(OrdemServico.data_criacao.desc()).all()
+    rascunhos = [o for o in ordens_all if o.status == OSStatus.RASCUNHO.value]
+    ordens = [o for o in ordens_all if o.status != OSStatus.RASCUNHO.value]
+
+    tipos_os = TipoOS.query.order_by(TipoOS.nome).all()
+    sistemas = Sistema.query.order_by(Sistema.nome).all()
+    equipamentos = Equipamento.query.order_by(Equipamento.nome).all()
+
+    return render_template(
+        'ordens_servico/minhas_os.html',
+        ordens=ordens,
+        rascunhos=rascunhos,
+        status_enum=OSStatus,
+        prioridades=OSPrioridade,
+        tipos_os=tipos_os,
+        sistemas=sistemas,
+        equipamentos=equipamentos,
     )
-    rascunhos = [o for o in ordens if o.status == OSStatus.RASCUNHO.value]
-    ordens = [o for o in ordens if o.status != OSStatus.RASCUNHO.value]
-    return render_template('ordens_servico/minhas_os.html', ordens=ordens, rascunhos=rascunhos, status_enum=OSStatus)
 
 
 @ordens_servico_bp.route('/os/kanban', endpoint='os_kanban')

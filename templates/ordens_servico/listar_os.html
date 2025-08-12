@@ -2,31 +2,115 @@
 {% block title %}Ordens de Serviço{% endblock %}
 {% block content %}
 <div class="container-fluid px-5 mt-3">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h3>Ordens de Serviço</h3>
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <input name="q" value="{{ request.args.get('q','') }}" class="form-control" placeholder="Buscar por título ou descrição" />
+            </div>
+            <div class="col-md-2">
+              <select name="status" class="form-select">
+                <option value="">Status</option>
+                {% for st in status_enum %}
+                <option value="{{ st.value }}" {% if request.args.get('status')==st.value %}selected{% endif %}>{{ st.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="prioridade" class="form-select">
+                <option value="">Prioridade</option>
+                {% for pr in prioridades %}
+                <option value="{{ pr.value }}" {% if request.args.get('prioridade')==pr.value %}selected{% endif %}>{{ pr.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="tipo" class="form-select">
+                <option value="">Tipo</option>
+                {% for t in tipos_os %}
+                <option value="{{ t.id }}" {% if request.args.get('tipo', type=int)==t.id %}selected{% endif %}>{{ t.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input type="date" name="data_de" value="{{ request.args.get('data_de','') }}" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <input type="date" name="data_ate" value="{{ request.args.get('data_ate','') }}" class="form-control" />
+            </div>
+            <div class="col-md-2">
+              <select name="sistema" class="form-select">
+                <option value="">Sistema</option>
+                {% for s in sistemas %}
+                <option value="{{ s.id }}" {% if request.args.get('sistema', type=int)==s.id %}selected{% endif %}>{{ s.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="equipamento" class="form-select">
+                <option value="">Equipamento</option>
+                {% for e in equipamentos %}
+                <option value="{{ e.id }}" {% if request.args.get('equipamento', type=int)==e.id %}selected{% endif %}>{{ e.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="responsavel" class="form-select">
+                <option value="">Responsável</option>
+                {% for u in usuarios %}
+                <option value="{{ u.id }}" {% if request.args.get('responsavel', type=int)==u.id %}selected{% endif %}>{{ u.nome_completo or u.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="solicitante" class="form-select">
+                <option value="">Solicitante</option>
+                {% for u in usuarios %}
+                <option value="{{ u.id }}" {% if request.args.get('solicitante', type=int)==u.id %}selected{% endif %}>{{ u.nome_completo or u.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-primary w-100">Filtrar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       {% if ordens %}
-      <div class="table-responsive">
-        <table class="table table-hover table-sm align-middle">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Status</th>
-              <th class="text-end">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for os in ordens %}
-            <tr>
-              <td>{{ os.titulo }}</td>
-              <td>{{ status_enum(os.status).label }}</td>
-              <td class="text-end">
-                <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
-              </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="list-group">
+            {% for os in ordens %}
+            <div class="list-group-item list-group-item-action">
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ os.titulo|striptags }} <small class="text-muted">#{{ os.codigo }}</small></h5>
+                <div>
+                  {% set st = status_enum(os.status) %}
+                  <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
+                  {% if os.prioridade %}
+                  <span class="badge bg-secondary">{{ os.prioridade }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <small class="text-muted">
+                {% if os.tipo_os %}<strong>Tipo:</strong> {{ os.tipo_os.nome }} |{% endif %}
+                {% if os.sistema %}<strong>Sistema:</strong> {{ os.sistema.nome }} |{% endif %}
+                {% if os.equipamento %}<strong>Equipamento:</strong> {{ os.equipamento.nome }} |{% endif %}
+                <strong>Solicitante:</strong> {{ os.criado_por.nome_completo or os.criado_por.username }} |
+                {% if os.atribuido_para %}<strong>Responsável:</strong> {{ os.atribuido_para.nome_completo or os.atribuido_para.username }} |{% endif %}
+                <strong>Aberta em:</strong> {{ os.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+              </small>
+              <div class="mt-2">
+                <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                <a href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.codigo) }}" class="btn btn-sm btn-outline-success">Atender</a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
       </div>
       {% else %}
       <p class="text-muted">Nenhuma Ordem de Serviço encontrada.</p>
