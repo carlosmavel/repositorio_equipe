@@ -17,6 +17,8 @@ try:
         User,
         Formulario,
         Celula,
+        Equipamento,
+        Sistema,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
     )
@@ -29,6 +31,8 @@ except ImportError:  # pragma: no cover
         User,
         Formulario,
         Celula,
+        Equipamento,
+        Sistema,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
     )
@@ -82,11 +86,14 @@ def admin_ordens_servico():
         tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         status = request.form.get('status', OSStatus.RASCUNHO.value)
         prioridade = request.form.get('prioridade') or None
-        origem = request.form.get('origem') or None
+        equipamento_id = request.form.get('equipamento_id', type=int)
+        sistema_id = request.form.get('sistema_id', type=int)
         observacoes = request.form.get('observacoes') or None
         atribuido_para_id = request.form.get('atribuido_para_id') or None
         if not titulo:
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
+        elif not (equipamento_id or sistema_id):
+            flash('Informe ao menos Equipamento ou Sistema.', 'danger')
         else:
             if id_para_atualizar:
                 ordem = OrdemServico.query.get_or_404(id_para_atualizar)
@@ -97,7 +104,8 @@ def admin_ordens_servico():
                 ordem.equipe_responsavel_id = tipo_obj.equipe_responsavel_id if tipo_obj else None
                 ordem.status = status
                 ordem.prioridade = prioridade
-                ordem.origem = origem
+                ordem.equipamento_id = equipamento_id
+                ordem.sistema_id = sistema_id
                 ordem.observacoes = observacoes
                 ordem.atribuido_para_id = atribuido_para_id
                 action_msg = 'atualizada'
@@ -110,7 +118,8 @@ def admin_ordens_servico():
                     equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                     status=status,
                     prioridade=prioridade,
-                    origem=origem,
+                    equipamento_id=equipamento_id,
+                    sistema_id=sistema_id,
                     observacoes=observacoes,
                     atribuido_para_id=atribuido_para_id,
                     criado_por_id=session.get('user_id'),
@@ -145,11 +154,15 @@ def admin_ordens_servico():
             ordem_editar = OrdemServico.query.get(id_para_atualizar)
     ordens = OrdemServico.query.order_by(OrdemServico.data_criacao.desc()).all()
     tipos_os = TipoOS.query.order_by(TipoOS.nome).all()
+    equipamentos = Equipamento.query.order_by(Equipamento.nome).all()
+    sistemas = Sistema.query.order_by(Sistema.nome).all()
     return render_template(
         'admin/ordens_servico.html',
         ordens=ordens,
         ordem_editar=ordem_editar,
         tipos_os=tipos_os,
+        equipamentos=equipamentos,
+        sistemas=sistemas,
         prioridades=OSPrioridade,
         status_choices=OSStatus,
     )
@@ -259,7 +272,8 @@ def os_nova():
         tipo_os_id = request.form.get('tipo_os_id') or None
         tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         prioridade = request.form.get('prioridade') or None
-        origem = request.form.get('origem') or None
+        equipamento_id = request.form.get('equipamento_id', type=int)
+        sistema_id = request.form.get('sistema_id', type=int)
         observacoes = request.form.get('observacoes') or None
         acao = request.form.get('action')
         status = (
@@ -269,6 +283,8 @@ def os_nova():
         )
         if not titulo:
             flash('Título da Ordem de Serviço é obrigatório.', 'danger')
+        elif not (equipamento_id or sistema_id):
+            flash('Informe ao menos Equipamento ou Sistema.', 'danger')
         else:
             ordem = OrdemServico(
                 codigo=gerar_codigo_os(),
@@ -276,7 +292,8 @@ def os_nova():
                 descricao=descricao,
                 tipo_os_id=tipo_os_id,
                 prioridade=prioridade,
-                origem=origem,
+                equipamento_id=equipamento_id,
+                sistema_id=sistema_id,
                 observacoes=observacoes,
                 criado_por_id=session.get('user_id'),
                 equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
@@ -310,7 +327,16 @@ def os_nova():
             )
         )
     tipos_os = query.order_by(TipoOS.nome).distinct().all()
-    return render_template('ordens_servico/nova_os.html', tipos_os=tipos_os, prioridades=OSPrioridade)
+    equipamentos = Equipamento.query.order_by(Equipamento.nome).all()
+    sistemas = Sistema.query.order_by(Sistema.nome).all()
+    return render_template(
+        'ordens_servico/nova_os.html',
+        tipos_os=tipos_os,
+        prioridades=OSPrioridade,
+        usuario=usuario,
+        equipamentos=equipamentos,
+        sistemas=sistemas,
+    )
 
 
 @ordens_servico_bp.get('/os/tipo/<int:tipo_id>/formulario', endpoint='os_formulario_vinculado')

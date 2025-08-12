@@ -14,6 +14,7 @@ from core.models import (
     User,
     Funcao,
     Formulario,
+    Equipamento,
 )
 from core.utils import gerar_codigo_os
 
@@ -50,14 +51,17 @@ def test_crud_ordem_servico(client):
         cel = Celula.query.first()
         tipo = TipoOS(nome='Tipo', descricao='d', equipe_responsavel_id=cel.id)
         etapa.tipos_os.append(tipo)
-        db.session.add_all([proc, etapa, tipo])
+        equip = Equipamento(nome='Eq1')
+        db.session.add_all([proc, etapa, tipo, equip])
         db.session.commit()
         proc_id = tipo.id
+        equip_id = equip.id
     # create
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS1',
         'descricao': 'desc',
         'tipo_os_id': proc_id,
+        'equipamento_id': equip_id,
         'status': 'rascunho',
         'prioridade': 'baixa'
     }, follow_redirects=True)
@@ -69,12 +73,14 @@ def test_crud_ordem_servico(client):
         os_codigo = os_obj.codigo
         assert re.match(r'^[A-Z]\d{6}$', os_codigo)
         assert os_obj.tipo_os_id == proc_id
+        assert os_obj.equipamento_id == equip_id
     # update
     resp = client.post('/admin/ordens_servico', data={
         'id_para_atualizar': os_id,
         'titulo': 'OS1 edit',
         'descricao': 'd2',
         'tipo_os_id': proc_id,
+        'equipamento_id': equip_id,
         'status': 'cancelada'
     }, follow_redirects=True)
     assert resp.status_code == 200

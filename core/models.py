@@ -534,6 +534,37 @@ class CampoEtapa(db.Model):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
 
 
+# --- Novos modelos para Equipamento e Sistema ---
+
+
+class Equipamento(db.Model):
+    __tablename__ = 'equipamento'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), nullable=False)
+    patrimonio = db.Column(db.String(100), nullable=True)
+    serial = db.Column(db.String(100), nullable=True)
+    localizacao = db.Column(db.String(255), nullable=True)
+    status = db.Column(db.String(50), nullable=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):  # pragma: no cover - representação simples
+        return f"<Equipamento {self.nome}>"
+
+
+class Sistema(db.Model):
+    __tablename__ = 'sistema'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), unique=True, nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    responsavel = db.Column(db.String(255), nullable=True)
+    observacoes = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):  # pragma: no cover
+        return f"<Sistema {self.nome}>"
+
+
 ordem_servico_participante = db.Table(
     'ordem_servico_participante',
     db.Column('ordem_servico_id', db.String(36), db.ForeignKey('ordem_servico.id'), primary_key=True),
@@ -562,13 +593,16 @@ class OrdemServico(db.Model):
     data_conclusao = db.Column(db.DateTime(timezone=True), nullable=True)
     formulario_respostas_id = db.Column(db.Integer, nullable=True)
     prioridade = db.Column(db.String(10), nullable=True)
-    origem = db.Column(db.String(255), nullable=True)
+    equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamento.id'), nullable=True)
+    sistema_id = db.Column(db.Integer, db.ForeignKey('sistema.id'), nullable=True)
     observacoes = db.Column(db.Text, nullable=True)
 
     criado_por = db.relationship('User', foreign_keys=[criado_por_id])
     atribuido_para = db.relationship('User', foreign_keys=[atribuido_para_id])
     participantes = db.relationship('User', secondary=ordem_servico_participante, backref='participando_os')
     tipo_os = db.relationship('TipoOS')
+    equipamento = db.relationship('Equipamento')
+    sistema = db.relationship('Sistema')
 
     def __repr__(self):
         return f"<OrdemServico {self.titulo} ({self.status})>"
