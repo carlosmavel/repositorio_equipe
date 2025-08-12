@@ -84,6 +84,18 @@ def _get_ordem_servico(identifier):
     return ordem
 
 
+def get_celulas_visiveis(usuario):
+    """Retorna os IDs de células que o usuário pode visualizar."""
+    if not usuario:
+        return []
+    celulas_ids = []
+    if getattr(usuario, "celula_id", None):
+        celulas_ids.append(usuario.celula_id)
+    if hasattr(usuario, "extra_celulas"):
+        celulas_ids.extend([c.id for c in usuario.extra_celulas])
+    return list(set(celulas_ids))
+
+
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
 @admin_required
 def admin_ordens_servico():
@@ -374,8 +386,11 @@ def os_formulario_vinculado(tipo_id):
 def os_listar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    usuario = User.query.get(session['user_id'])
+    celulas_ids = get_celulas_visiveis(usuario)
     ordens = (
         OrdemServico.query.filter(OrdemServico.status != OSStatus.RASCUNHO.value)
+        .filter(OrdemServico.equipe_responsavel_id.in_(celulas_ids))
         .order_by(OrdemServico.data_criacao.desc())
         .all()
     )
@@ -387,6 +402,9 @@ def os_detalhar(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     ordem = _get_ordem_servico(ordem_id)
+    usuario = User.query.get(session['user_id'])
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
     return render_template('ordens_servico/detalhe_os.html', ordem=ordem, status_enum=OSStatus)
 
 

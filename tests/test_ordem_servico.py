@@ -17,6 +17,7 @@ from core.models import (
     Equipamento,
 )
 from core.utils import gerar_codigo_os
+from core.enums import OSStatus
 
 
 @pytest.fixture
@@ -217,4 +218,89 @@ def test_os_nova_lista_tipos_para_usuario_sem_cargo(client):
     resp = client.get('/os/nova')
     assert resp.status_code == 200
     assert 'TipoN' in resp.get_data(as_text=True)
+
+
+def test_os_listar_filtra_por_celulas(client):
+    login_admin(client)
+    with app.app_context():
+        est = Estabelecimento.query.first()
+        setor = Setor.query.first()
+        cel1 = Celula.query.first()
+        cel2 = Celula(nome='C2', estabelecimento=est, setor=setor)
+        db.session.add(cel2)
+        admin = User.query.filter_by(username='admin').first()
+        tipo1 = TipoOS(nome='T1', descricao='d', equipe_responsavel_id=cel1.id)
+        tipo2 = TipoOS(nome='T2', descricao='d', equipe_responsavel_id=cel2.id)
+        db.session.add_all([tipo1, tipo2])
+        db.session.commit()
+        os1 = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS A',
+            descricao='d',
+            tipo_os=tipo1,
+            equipe_responsavel_id=cel1.id,
+            status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            criado_por_id=admin.id,
+        )
+        db.session.add(os1)
+        db.session.commit()
+        os2 = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS B',
+            descricao='d',
+            tipo_os=tipo2,
+            equipe_responsavel_id=cel2.id,
+            status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            criado_por_id=admin.id,
+        )
+        db.session.add(os2)
+        db.session.commit()
+    resp = client.get('/os')
+    data = resp.get_data(as_text=True)
+    assert 'OS A' in data
+    assert 'OS B' not in data
+
+
+def test_os_detalhar_respeita_permissoes(client):
+    login_admin(client)
+    with app.app_context():
+        est = Estabelecimento.query.first()
+        setor = Setor.query.first()
+        cel1 = Celula.query.first()
+        cel2 = Celula(nome='C3', estabelecimento=est, setor=setor)
+        user2 = User(username='u2', email='u2@test', estabelecimento=est, setor=setor, celula=cel2)
+        user2.set_password('x')
+        db.session.add_all([cel2, user2])
+        db.session.commit()
+        admin = User.query.filter_by(username='admin').first()
+        tipo1 = TipoOS(nome='T3', descricao='d', equipe_responsavel_id=cel1.id)
+        tipo2 = TipoOS(nome='T4', descricao='d', equipe_responsavel_id=cel2.id)
+        db.session.add_all([tipo1, tipo2])
+        db.session.commit()
+        os_permitida = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS OK',
+            descricao='d',
+            tipo_os=tipo1,
+            equipe_responsavel_id=cel1.id,
+            status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            criado_por_id=admin.id,
+        )
+        db.session.add(os_permitida)
+        db.session.commit()
+        os_negada = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS NO',
+            descricao='d',
+            tipo_os=tipo2,
+            equipe_responsavel_id=cel2.id,
+            status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            criado_por_id=user2.id,
+        )
+        db.session.add(os_negada)
+        db.session.commit()
+        permitida_id = os_permitida.id
+        negada_id = os_negada.id
+    assert client.get(f'/os/{permitida_id}').status_code == 200
+    assert client.get(f'/os/{negada_id}').status_code == 403
 
