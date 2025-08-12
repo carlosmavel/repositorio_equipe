@@ -184,14 +184,41 @@ def preprocess_image(img, debug_dir=None, page_idx=0):
     return Image.fromarray(binary)
 
 
-def extract_text_from_image(image, lang="por") -> str:
-    """Realiza OCR na imagem usando pytesseract."""
+def extract_text_from_image(image, lang: str = "por", oem: str | None = None, psm: str | None = None) -> str:
+    """Realiza OCR na imagem usando pytesseract.
+
+    Parameters
+    ----------
+    image: PIL.Image
+        Imagem já carregada na memória.
+    lang: str, opcional
+        Idioma para o OCR (padrão ``"por"``).
+    oem: str | None, opcional
+        *OEM* (OCR Engine Mode) do Tesseract. Se ``None``, utiliza ``"3"``.
+    psm: str | None, opcional
+        *PSM* (Page Segmentation Mode). Se ``None``, utiliza ``"6"``.
+    """
     if not pytesseract:  # pragma: no cover - dependencias ausentes
         return ""
-    return pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 6")
+
+    if oem is None:
+        oem = "3"
+    if psm is None:
+        psm = "6"
+
+    config_parts: list[str] = []
+    if oem:
+        config_parts.append(f"--oem {oem}")
+    if psm:
+        config_parts.append(f"--psm {psm}")
+    config = " ".join(config_parts)
+
+    return pytesseract.image_to_string(image, lang=lang, config=config)
 
 
 def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
+
+
     """Extrai texto de PDFs.
 
     Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
@@ -208,8 +235,10 @@ def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
         tempo de processamento e o consumo de memória. Quando ``None``, o valor
         é obtido da variável de ambiente ``PDF_OCR_DPI`` (padrão: 300).
     """
+
     if dpi is None:
         dpi = int(os.getenv("PDF_OCR_DPI", "300"))
+
     text_parts: list[str] = []
 
     # 1) Tenta extrair texto nativo do PDF -------------------------------
@@ -242,7 +271,7 @@ def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
-            text = extract_text_from_image(pre, lang="por")
+            text = extract_text_from_image(pre, lang=lang, oem=oem, psm=psm)
             text_parts.append(text)
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover

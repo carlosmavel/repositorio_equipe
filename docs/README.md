@@ -55,6 +55,7 @@ O sistema utiliza por padrão **300 DPI**, mas é possível ajustar esse valor p
 meio da variável de ambiente `PDF_OCR_DPI` ou passando o parâmetro `pdf_dpi` para
 as funções utilitárias de extração de texto.
 
+
 ## Como Rodar o Projeto (Desenvolvimento)
 
 1.  **Clone o repositório:**
