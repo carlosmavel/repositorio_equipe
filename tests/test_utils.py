@@ -48,46 +48,49 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     assert len(calls) == 2
 
 
-def test_extract_text_from_image_custom_config(monkeypatch):
-    from PIL import Image
-
-    img = Image.new("RGB", (10, 10), color="white")
-    captured = {}
-
-    def dummy_image_to_string(img, lang, config):
-        captured["config"] = config
-        return ""
-
-    monkeypatch.setattr(
-        "core.utils.pytesseract",
-        types.SimpleNamespace(image_to_string=dummy_image_to_string),
-    )
-
-    extract_text_from_image(img, oem="1", psm="4")
-    assert captured["config"] == "--oem 1 --psm 4"
-
-
-def test_extract_text_from_pdf_uses_env(monkeypatch, tmp_path):
+def test_extract_text_custom_dpi(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy.pdf"
     pdf_file.write_bytes(b"%PDF-1.4")
 
     from PIL import Image
 
-    img = Image.new("RGB", (10, 10), color="white")
-    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: [img])
+    captured = {}
+
+    def dummy_convert(p, dpi=0):
+        captured["dpi"] = dpi
+        return [Image.new("RGB", (10, 10))]
+
+    monkeypatch.setattr("core.utils.convert_from_path", dummy_convert)
+    monkeypatch.setattr(
+        "core.utils.pytesseract", types.SimpleNamespace(image_to_string=lambda *a, **k: "texto")
+    )
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+
+    extract_text(str(pdf_file), pdf_dpi=200)
+
+    assert captured["dpi"] == 200
+
+
+def test_extract_text_env_dpi(monkeypatch, tmp_path):
+
+    pdf_file = tmp_path / "dummy.pdf"
+    pdf_file.write_bytes(b"%PDF-1.4")
+
+    from PIL import Image
 
     captured = {}
 
-    def dummy_image_to_string(img, lang, config):
-        captured["config"] = config
-        return "texto"
+    def dummy_convert(p, dpi=0):
+        captured["dpi"] = dpi
+        return [Image.new("RGB", (10, 10))]
 
+    monkeypatch.setattr("core.utils.convert_from_path", dummy_convert)
     monkeypatch.setattr(
-        "core.utils.pytesseract",
-        types.SimpleNamespace(image_to_string=dummy_image_to_string),
+        "core.utils.pytesseract", types.SimpleNamespace(image_to_string=lambda *a, **k: "texto")
     )
-    monkeypatch.setenv("OCR_OEM", "1")
-    monkeypatch.setenv("OCR_PSM", "4")
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setenv("PDF_OCR_DPI", "250")
 
-    extract_text_from_pdf(str(pdf_file))
-    assert captured["config"] == "--oem 1 --psm 4"
+    extract_text(str(pdf_file))
+
+    assert captured["dpi"] == 250
