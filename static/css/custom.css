@@ -414,3 +414,12 @@ body > .container {
 [data-bs-theme="dark"] .progress-bar {
   background-color: #4d90fe;
 }
+
+/* Card layout for Ordens de Serviço */
+.os-card {
+  min-height: 180px;
+}
+
+.os-card .card-footer .btn {
+  min-width: 90px;
+}

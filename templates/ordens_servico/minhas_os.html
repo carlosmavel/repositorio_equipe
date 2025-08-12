@@ -64,22 +64,38 @@
       </div>
 
         {% if rascunhos %}
-        <div class="card shadow-sm mb-4 aprovacao-list">
+        <div class="card shadow-sm mb-4">
           <div class="card-body">
             <h5 class="mb-3">Rascunhos</h5>
-            <div class="list-group">
+            <div class="row row-cols-1 g-3">
               {% for os in rascunhos %}
-              <div class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                  <div>
-                    <div><strong>Código OS:</strong> {{ os.codigo }}</div>
-                    <div><strong>Título:</strong> {{ os.titulo|striptags }}</div>
+              <div class="col">
+                <div class="card os-card h-100 shadow-sm">
+                  <div class="card-header d-flex justify-content-between align-items-start">
+                    <strong>{{ os.codigo }}</strong>
+                    <div>
+                      {% set st = status_enum(os.status) %}
+                      <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
+                      {% if os.prioridade %}
+                      <span class="badge bg-secondary">{{ os.prioridade }}</span>
+                      {% endif %}
+                    </div>
                   </div>
-                  {% set st = status_enum(os.status) %}
-                  <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
-                </div>
-                <div class="mt-2">
-                  <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                  <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ os.titulo|striptags }}</h5>
+                    {% set line1 = [] %}
+                    {% if os.tipo_os %}{% set _ = line1.append(os.tipo_os.nome) %}{% endif %}
+                    {% if os.sistema %}{% set _ = line1.append(os.sistema.nome) %}{% endif %}
+                    {% if os.equipamento %}{% set _ = line1.append(os.equipamento.nome) %}{% endif %}
+                    {% if line1 %}<p class="card-text small text-muted mb-1">{{ line1|join(' | ') }}</p>{% endif %}
+                    {% set line2 = [] %}
+                    {% if os.criado_por %}{% set _ = line2.append('Solicitante: ' ~ (os.criado_por.nome_completo or os.criado_por.username)) %}{% endif %}
+                    {% set _ = line2.append('Aberta em: ' ~ os.data_criacao.strftime('%d/%m/%Y %H:%M')) %}
+                    <p class="card-text small text-muted">{{ line2|join(' | ') }}</p>
+                  </div>
+                  <div class="card-footer d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                  </div>
                 </div>
               </div>
               {% endfor %}
@@ -89,29 +105,38 @@
         {% endif %}
 
         {% if ordens %}
-        <div class="card shadow-sm mb-4 aprovacao-list">
+        <div class="card shadow-sm mb-4">
           <div class="card-body">
             <h5 class="mb-3">Em andamento</h5>
-            <div class="list-group">
+            <div class="row row-cols-1 g-3">
               {% for os in ordens %}
-              <div class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                  <div>
-                    <div><strong>Código OS:</strong> {{ os.codigo }}</div>
-                    <div><strong>Título:</strong> {{ os.titulo|striptags }}</div>
+              <div class="col">
+                <div class="card os-card h-100 shadow-sm">
+                  <div class="card-header d-flex justify-content-between align-items-start">
+                    <strong>{{ os.codigo }}</strong>
+                    <div>
+                      {% set st = status_enum(os.status) %}
+                      <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
+                      {% if os.prioridade %}
+                      <span class="badge bg-secondary">{{ os.prioridade }}</span>
+                      {% endif %}
+                    </div>
                   </div>
-                  {% set st = status_enum(os.status) %}
-                  <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
-                </div>
-                <small class="text-muted">
-                  {% if os.tipo_os %}<strong>Tipo:</strong> {{ os.tipo_os.nome }} |{% endif %}
-                  {% if os.sistema %}<strong>Sistema:</strong> {{ os.sistema.nome }} |{% endif %}
-                  {% if os.equipamento %}<strong>Equipamento:</strong> {{ os.equipamento.nome }} |{% endif %}
-                  {% if os.prioridade %}<strong>Prioridade:</strong> {{ os.prioridade }} |{% endif %}
-                  <strong>Aberta em:</strong> {{ os.data_criacao.strftime('%d/%m/%Y %H:%M') }}
-                </small>
-                <div class="mt-2">
-                  <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                  <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ os.titulo|striptags }}</h5>
+                    {% set line1 = [] %}
+                    {% if os.tipo_os %}{% set _ = line1.append(os.tipo_os.nome) %}{% endif %}
+                    {% if os.sistema %}{% set _ = line1.append(os.sistema.nome) %}{% endif %}
+                    {% if os.equipamento %}{% set _ = line1.append(os.equipamento.nome) %}{% endif %}
+                    {% if line1 %}<p class="card-text small text-muted mb-1">{{ line1|join(' | ') }}</p>{% endif %}
+                    {% set line2 = [] %}
+                    {% if os.prioridade %}{% set _ = line2.append('Prioridade: ' ~ os.prioridade) %}{% endif %}
+                    {% set _ = line2.append('Aberta em: ' ~ os.data_criacao.strftime('%d/%m/%Y %H:%M')) %}
+                    <p class="card-text small text-muted">{{ line2|join(' | ') }}</p>
+                  </div>
+                  <div class="card-footer d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                  </div>
                 </div>
               </div>
               {% endfor %}
