@@ -1,0 +1,22 @@
+<div class="modal-dialog modal-dialog-scrollable">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">{{ ordem.titulo }}</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+    </div>
+    <div class="modal-body small">
+      <p class="mb-1"><strong>Código:</strong> {{ ordem.codigo }}</p>
+      <p class="mb-1"><strong>Status:</strong> {{ status_enum(ordem.status).label }}</p>
+      {% if ordem.tipo_os %}<p class="mb-1"><strong>Tipo:</strong> {{ ordem.tipo_os.nome }}</p>{% endif %}
+      {% if ordem.prioridade %}<p class="mb-1"><strong>Prioridade:</strong> {{ ordem.prioridade }}</p>{% endif %}
+      {% if ordem.equipamento %}<p class="mb-1"><strong>Equipamento:</strong> {{ ordem.equipamento.nome }}</p>{% endif %}
+      {% if ordem.sistema %}<p class="mb-1"><strong>Sistema:</strong> {{ ordem.sistema.nome }}</p>{% endif %}
+      <p class="mt-2 mb-1"><strong>Descrição:</strong></p>
+      <p class="mb-1">{{ ordem.descricao }}</p>
+      {% if ordem.observacoes %}
+      <p class="mt-2 mb-1"><strong>Observações:</strong></p>
+      <p class="mb-0">{{ ordem.observacoes }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@
         <h5>{{ labels[key] }}</h5>
         {% if columns[key] %}
           {% for os in columns[key] %}
-          <div class="card mb-2">
+          <div class="card mb-2 os-card" data-os="{{ os.codigo }}" style="cursor:pointer;">
             <div class="card-body p-2">
               <div class="fw-bold">{{ os.titulo }}</div>
               <small>Código {{ os.codigo }}{% if os.prioridade %} - {{ os.prioridade }}{% endif %}</small>
@@ -25,4 +25,25 @@
     {% endfor %}
   </div>
 </div>
+<div class="modal fade" id="osModal" tabindex="-1" aria-hidden="true"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.os-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        const osId = this.dataset.os;
+        fetch(`/os/${osId}/modal`)
+          .then(resp => resp.text())
+          .then(html => {
+            const modalEl = document.getElementById('osModal');
+            modalEl.innerHTML = html;
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+          });
+      });
+    });
+  });
+</script>
 {% endblock %}

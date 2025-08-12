@@ -495,6 +495,17 @@ def os_detalhar(ordem_id):
     )
 
 
+@ordens_servico_bp.route('/os/<ordem_id>/modal', endpoint='os_modal')
+def os_modal(ordem_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    ordem = _get_ordem_servico(ordem_id)
+    usuario = User.query.get(session['user_id'])
+    if not _usuario_pode_acessar_os(usuario, ordem):
+        abort(403)
+    return render_template('ordens_servico/os_modal.html', ordem=ordem, status_enum=OSStatus)
+
+
 @ordens_servico_bp.route('/os/minhas', endpoint='os_minhas')
 def os_minhas():
     if 'user_id' not in session:
