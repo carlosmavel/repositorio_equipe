@@ -15,9 +15,11 @@ from core.models import (
     Funcao,
     Formulario,
     Equipamento,
+    Cargo,
 )
 from core.utils import gerar_codigo_os
 from core.enums import OSStatus
+from blueprints.ordens_servico import _usuario_pode_acessar_os
 
 
 @pytest.fixture
@@ -303,4 +305,59 @@ def test_os_detalhar_respeita_permissoes(client):
         negada_id = os_negada.id
     assert client.get(f'/os/{permitida_id}').status_code == 200
     assert client.get(f'/os/{negada_id}').status_code == 403
+
+
+def test_acesso_os_celulas_por_hierarquia(app_ctx):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst1')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est1', instituicao=inst)
+        setor = Setor(nome='S1', estabelecimento=est)
+        cel_principal = Celula(nome='C0', estabelecimento=est, setor=setor)
+        cel_sub = Celula(nome='C1', estabelecimento=est, setor=setor)
+        cargo_lider = Cargo(nome='Lider', nivel_hierarquico=5, pode_atender_os=True)
+        cargo_op = Cargo(nome='Operador', nivel_hierarquico=6, pode_atender_os=True)
+        db.session.add_all([inst, est, setor, cel_principal, cel_sub, cargo_lider, cargo_op])
+        db.session.commit()
+
+        lider = User(
+            username='lider',
+            email='l@test',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel_principal,
+            cargo=cargo_lider,
+        )
+        lider.set_password('x')
+        lider.extra_celulas.extend([cel_principal, cel_sub])
+
+        operador = User(
+            username='op',
+            email='o@test',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel_principal,
+            cargo=cargo_op,
+        )
+        operador.set_password('x')
+        operador.extra_celulas.extend([cel_principal, cel_sub])
+        db.session.add_all([lider, operador])
+        db.session.commit()
+
+        tipo = TipoOS(nome='T', descricao='d', equipe_responsavel_id=cel_sub.id)
+        db.session.add(tipo)
+        db.session.commit()
+
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS',
+            descricao='d',
+            tipo_os=tipo,
+            equipe_responsavel_id=cel_sub.id,
+            criado_por_id=lider.id,
+        )
+        db.session.add(os_obj)
+        db.session.commit()
+
+        assert _usuario_pode_acessar_os(lider, os_obj) is True
+        assert _usuario_pode_acessar_os(operador, os_obj) is False
 

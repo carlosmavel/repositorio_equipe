@@ -69,7 +69,13 @@ def _usuario_pode_acessar_os(usuario, os_obj):
         return True
     if usuario in os_obj.participantes:
         return True
-    if os_obj.equipe_responsavel_id == getattr(usuario, 'celula_id', None) and usuario.pode_atender_os:
+    cargo = getattr(usuario, "cargo", None)
+    nivel = getattr(cargo, "nivel_hierarquico", None)
+    if nivel is not None and nivel <= 5:
+        celulas_ids = [c.id for c in usuario.extra_celulas]
+    else:
+        celulas_ids = [getattr(usuario, "celula_id", None)]
+    if os_obj.equipe_responsavel_id in celulas_ids and usuario.pode_atender_os:
         return True
     return False
 
