@@ -324,14 +324,14 @@
                     <hr class="my-2">
 
                     {# Bloco ORDENS DE SERVIÇO #}
-                    {% set os_active = 'os_' in request.endpoint or 'formularios' in request.endpoint %}
+                    {% set os_active = request.blueprint in ['ordens_servico_bp', 'formularios_bp'] %}
                     <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} collapsed"
-                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="false" aria-controls="collapseOSGlobal">
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} {{ '' if os_active else 'collapsed' }}"
+                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="{{ 'true' if os_active else 'false' }}" aria-controls="collapseOSGlobal">
                             <span><i class="bi bi-card-checklist me-2"></i> Ordens de Serviço</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
-                        <div class="collapse" id="collapseOSGlobal">
+                        <div class="collapse {{ 'show' if os_active else '' }}" id="collapseOSGlobal">
                             <ul class="nav flex-column ps-3">
                                 {% if current_user and current_user.pode_atender_os %}
                                 <li class="nav-item">
