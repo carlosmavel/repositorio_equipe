@@ -547,7 +547,12 @@ class OrdemServico(db.Model):
     titulo = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
     tipo_os_id = db.Column(db.Integer, db.ForeignKey('tipo_os.id'), nullable=False)
-    status = db.Column(db.String(20), nullable=False, default=OSStatus.RASCUNHO.value, server_default=OSStatus.RASCUNHO.value)
+    status = db.Column(
+        db.String(50),
+        nullable=False,
+        default=OSStatus.RASCUNHO.value,
+        server_default=OSStatus.RASCUNHO.value,
+    )
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     atribuido_para_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     equipe_responsavel_id = db.Column(db.Integer, nullable=True)
@@ -581,8 +586,8 @@ class OrdemServicoLog(db.Model):
     data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     acao = db.Column(db.String(255), nullable=False)
-    origem_status = db.Column(db.String(20), nullable=True)
-    destino_status = db.Column(db.String(20), nullable=True)
+    origem_status = db.Column(db.String(50), nullable=True)
+    destino_status = db.Column(db.String(50), nullable=True)
     observacao = db.Column(db.Text, nullable=True)
 
     os = db.relationship('OrdemServico')
