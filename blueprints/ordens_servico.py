@@ -2,6 +2,7 @@ import os
 import json
 from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, abort, current_app
+from sqlalchemy import or_
 
 try:
     from ..core.database import db
@@ -53,6 +54,9 @@ except ImportError:  # pragma: no cover
     from core.decorators import admin_required
 
 ordens_servico_bp = Blueprint('ordens_servico_bp', __name__)
+
+SISTEMA_STATUS = ['Ativo', 'Inativo']
+EQUIPAMENTO_STATUS = ['Operacional', 'Manutenção', 'Inativo']
 
 
 def _usuario_pode_acessar_os(usuario, os_obj):
@@ -625,4 +629,275 @@ def os_historico(ordem_id):
         for l in logs
     ]
     return jsonify(historico)
+
+
+# ----------------------------
+# CRUD de Sistemas
+# ----------------------------
+
+
+@ordens_servico_bp.route('/os/sistemas')
+@admin_required
+def sistemas_list():
+    search = request.args.get('q', '')
+    status = request.args.get('status', '')
+    sort = request.args.get('sort', 'nome')
+    page = request.args.get('page', type=int, default=1)
+
+    query = Sistema.query
+    if search:
+        query = query.filter(Sistema.nome.ilike(f'%{search}%'))
+    if status:
+        query = query.filter(Sistema.status == status)
+
+    order_col = Sistema.status if sort == 'status' else Sistema.nome
+    sistemas = query.order_by(order_col).paginate(page=page, per_page=10)
+
+    return render_template(
+        'admin/sistemas_list.html',
+        sistemas=sistemas,
+        search=search,
+        status=status,
+        sort=sort,
+        status_options=SISTEMA_STATUS,
+    )
+
+
+@ordens_servico_bp.route('/os/sistemas/novo', methods=['GET', 'POST'])
+@admin_required
+def sistemas_novo():
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao') or None
+        responsavel = request.form.get('responsavel') or None
+        observacoes = request.form.get('observacoes') or None
+        status = request.form.get('status', 'Ativo')
+        if not nome:
+            flash('Nome é obrigatório.', 'danger')
+        elif Sistema.query.filter_by(nome=nome).first():
+            flash('Nome já cadastrado.', 'danger')
+        else:
+            sistema = Sistema(
+                nome=nome,
+                descricao=descricao,
+                responsavel=responsavel,
+                observacoes=observacoes,
+                status=status,
+            )
+            db.session.add(sistema)
+            db.session.commit()
+            flash('Sistema salvo com sucesso!', 'success')
+            return redirect(url_for('ordens_servico_bp.sistemas_list'))
+    return render_template(
+        'admin/sistema_form.html', sistema=None, status_options=SISTEMA_STATUS
+    )
+
+
+@ordens_servico_bp.route('/os/sistemas/<int:sistema_id>/editar', methods=['GET', 'POST'])
+@admin_required
+def sistemas_editar(sistema_id):
+    sistema = Sistema.query.get_or_404(sistema_id)
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao') or None
+        responsavel = request.form.get('responsavel') or None
+        observacoes = request.form.get('observacoes') or None
+        status = request.form.get('status', 'Ativo')
+        if not nome:
+            flash('Nome é obrigatório.', 'danger')
+        elif (
+            Sistema.query.filter(Sistema.id != sistema.id, Sistema.nome == nome).first()
+        ):
+            flash('Nome já cadastrado.', 'danger')
+        else:
+            sistema.nome = nome
+            sistema.descricao = descricao
+            sistema.responsavel = responsavel
+            sistema.observacoes = observacoes
+            sistema.status = status
+            db.session.commit()
+            flash('Sistema salvo com sucesso!', 'success')
+            return redirect(url_for('ordens_servico_bp.sistemas_list'))
+    return render_template(
+        'admin/sistema_form.html', sistema=sistema, status_options=SISTEMA_STATUS
+    )
+
+
+@ordens_servico_bp.route('/os/sistemas/<int:sistema_id>/excluir', methods=['POST'])
+@admin_required
+def sistemas_excluir(sistema_id):
+    sistema = Sistema.query.get_or_404(sistema_id)
+    db.session.delete(sistema)
+    db.session.commit()
+    flash('Sistema excluído com sucesso!', 'success')
+    return redirect(url_for('ordens_servico_bp.sistemas_list'))
+
+
+# ----------------------------
+# CRUD de Equipamentos
+# ----------------------------
+
+
+@ordens_servico_bp.route('/os/equipamentos')
+@admin_required
+def equipamentos_list():
+    search = request.args.get('q', '')
+    status = request.args.get('status', '')
+    localizacao = request.args.get('localizacao', '')
+    sort = request.args.get('sort', 'nome')
+    page = request.args.get('page', type=int, default=1)
+
+    query = Equipamento.query
+    if search:
+        query = query.filter(Equipamento.nome.ilike(f'%{search}%'))
+    if status:
+        query = query.filter(Equipamento.status == status)
+    if localizacao:
+        query = query.filter(Equipamento.localizacao == localizacao)
+
+    order_col = Equipamento.status if sort == 'status' else Equipamento.nome
+    equipamentos = query.order_by(order_col).paginate(page=page, per_page=10)
+
+    locais = [
+        l[0]
+        for l in db.session.query(Equipamento.localizacao)
+        .distinct()
+        .filter(Equipamento.localizacao.isnot(None))
+        .all()
+    ]
+
+    return render_template(
+        'admin/equipamentos_list.html',
+        equipamentos=equipamentos,
+        search=search,
+        status=status,
+        localizacao=localizacao,
+        sort=sort,
+        status_options=EQUIPAMENTO_STATUS,
+        locais=locais,
+    )
+
+
+@ordens_servico_bp.route('/os/equipamentos/novo', methods=['GET', 'POST'])
+@admin_required
+def equipamentos_novo():
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        patrimonio = request.form.get('patrimonio') or None
+        serial = request.form.get('serial') or None
+        localizacao = request.form.get('localizacao') or None
+        status = request.form.get('status', 'Operacional')
+        observacoes = request.form.get('observacoes') or None
+        if not nome:
+            flash('Nome é obrigatório.', 'danger')
+        elif patrimonio and Equipamento.query.filter_by(patrimonio=patrimonio).first():
+            flash('Patrimônio já cadastrado.', 'danger')
+        else:
+            equipamento = Equipamento(
+                nome=nome,
+                patrimonio=patrimonio,
+                serial=serial,
+                localizacao=localizacao,
+                status=status,
+                observacoes=observacoes,
+            )
+            db.session.add(equipamento)
+            db.session.commit()
+            flash('Equipamento salvo com sucesso!', 'success')
+            return redirect(url_for('ordens_servico_bp.equipamentos_list'))
+    return render_template(
+        'admin/equipamento_form.html',
+        equipamento=None,
+        status_options=EQUIPAMENTO_STATUS,
+    )
+
+
+@ordens_servico_bp.route('/os/equipamentos/<int:equipamento_id>/editar', methods=['GET', 'POST'])
+@admin_required
+def equipamentos_editar(equipamento_id):
+    equipamento = Equipamento.query.get_or_404(equipamento_id)
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        patrimonio = request.form.get('patrimonio') or None
+        serial = request.form.get('serial') or None
+        localizacao = request.form.get('localizacao') or None
+        status = request.form.get('status', 'Operacional')
+        observacoes = request.form.get('observacoes') or None
+        if not nome:
+            flash('Nome é obrigatório.', 'danger')
+        elif patrimonio and (
+            Equipamento.query.filter(
+                Equipamento.id != equipamento.id, Equipamento.patrimonio == patrimonio
+            ).first()
+        ):
+            flash('Patrimônio já cadastrado.', 'danger')
+        else:
+            equipamento.nome = nome
+            equipamento.patrimonio = patrimonio
+            equipamento.serial = serial
+            equipamento.localizacao = localizacao
+            equipamento.status = status
+            equipamento.observacoes = observacoes
+            db.session.commit()
+            flash('Equipamento salvo com sucesso!', 'success')
+            return redirect(url_for('ordens_servico_bp.equipamentos_list'))
+    return render_template(
+        'admin/equipamento_form.html',
+        equipamento=equipamento,
+        status_options=EQUIPAMENTO_STATUS,
+    )
+
+
+@ordens_servico_bp.route('/os/equipamentos/<int:equipamento_id>/excluir', methods=['POST'])
+@admin_required
+def equipamentos_excluir(equipamento_id):
+    equipamento = Equipamento.query.get_or_404(equipamento_id)
+    db.session.delete(equipamento)
+    db.session.commit()
+    flash('Equipamento excluído com sucesso!', 'success')
+    return redirect(url_for('ordens_servico_bp.equipamentos_list'))
+
+
+# ----------------------------
+# APIs para Sistemas e Equipamentos
+# ----------------------------
+
+
+@ordens_servico_bp.route('/api/sistemas')
+def api_sistemas():
+    q = request.args.get('q', '')
+    query = Sistema.query
+    if q:
+        query = query.filter(Sistema.nome.ilike(f'%{q}%'))
+    sistemas = query.order_by(Sistema.nome).limit(10).all()
+    return jsonify([{'id': s.id, 'nome': s.nome} for s in sistemas])
+
+
+@ordens_servico_bp.route('/api/equipamentos')
+def api_equipamentos():
+    q = request.args.get('q', '')
+    query = Equipamento.query
+    if q:
+        like = f'%{q}%'
+        query = query.filter(
+            or_(
+                Equipamento.nome.ilike(like),
+                Equipamento.patrimonio.ilike(like),
+                Equipamento.serial.ilike(like),
+            )
+        )
+    equipamentos = query.order_by(Equipamento.nome).limit(10).all()
+    return jsonify(
+        [
+            {
+                'id': e.id,
+                'nome': e.nome,
+                'patrimonio': e.patrimonio,
+                'serial': e.serial,
+                'status': e.status,
+                'localizacao': e.localizacao,
+            }
+            for e in equipamentos
+        ]
+    )
 

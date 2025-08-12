@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Sistemas{% endblock %}
+{% block content %}
+<div class="container-fluid px-5 mt-3">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
+    <h1 class="h2">Sistemas</h1>
+    <a href="{{ url_for('ordens_servico_bp.sistemas_novo') }}" class="btn btn-primary">Novo</a>
+  </div>
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-4">
+      <input type="text" name="q" class="form-control" placeholder="Busca por nome" value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select">
+        <option value="">Todos os status</option>
+        {% for st in status_options %}
+        <option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="sort" class="form-select">
+        <option value="nome" {% if sort == 'nome' %}selected{% endif %}>Ordenar por Nome</option>
+        <option value="status" {% if sort == 'status' %}selected{% endif %}>Ordenar por Status</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-secondary w-100" type="submit">Filtrar</button>
+    </div>
+  </form>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Responsável</th>
+          <th>Status</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sistemas.items %}
+        <tr>
+          <td>{{ s.nome }}</td>
+          <td>{{ s.responsavel or '-' }}</td>
+          <td>{{ s.status }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('ordens_servico_bp.sistemas_editar', sistema_id=s.id) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+            <form method="post" action="{{ url_for('ordens_servico_bp.sistemas_excluir', sistema_id=s.id) }}" class="d-inline" onsubmit="return confirm('Excluir sistema?');">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav>
+    <ul class="pagination">
+      {% if sistemas.has_prev %}
+      <li class="page-item"><a class="page-link" href="?page={{ sistemas.prev_num }}&q={{ search }}&status={{ status }}&sort={{ sort }}">Anterior</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ sistemas.page }} de {{ sistemas.pages }}</span></li>
+      {% if sistemas.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ sistemas.next_num }}&q={{ search }}&status={{ status }}&sort={{ sort }}">Próxima</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

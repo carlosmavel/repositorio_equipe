@@ -381,6 +381,8 @@
                                         <ul class="nav flex-column ps-3">
                                             {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
                                             <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_tipos_os' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'sistemas_' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.sistemas_list') }}"><i class="bi bi-hdd-network me-2"></i> Sistemas</a></li>
+                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'equipamentos_' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.equipamentos_list') }}"><i class="bi bi-cpu me-2"></i> Equipamentos</a></li>
                                             {% endif %}
                                             {% if user_can_access_form_builder(current_user) %}
                                             <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
