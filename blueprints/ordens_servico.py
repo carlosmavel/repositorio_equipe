@@ -69,12 +69,7 @@ def _usuario_pode_acessar_os(usuario, os_obj):
         return True
     if usuario in os_obj.participantes:
         return True
-    cargo = getattr(usuario, "cargo", None)
-    nivel = getattr(cargo, "nivel_hierarquico", None)
-    if nivel is not None and nivel <= 5:
-        celulas_ids = [c.id for c in usuario.extra_celulas]
-    else:
-        celulas_ids = [getattr(usuario, "celula_id", None)]
+    celulas_ids = get_celulas_visiveis(usuario)
     if os_obj.equipe_responsavel_id in celulas_ids and usuario.pode_atender_os:
         return True
     return False
@@ -91,15 +86,16 @@ def _get_ordem_servico(identifier):
 
 
 def get_celulas_visiveis(usuario):
-    """Retorna os IDs de células que o usuário pode visualizar."""
+    """Retorna os IDs de células que o usuário pode visualizar conforme hierarquia."""
     if not usuario:
         return []
-    celulas_ids = []
-    if getattr(usuario, "celula_id", None):
-        celulas_ids.append(usuario.celula_id)
-    if hasattr(usuario, "extra_celulas"):
-        celulas_ids.extend([c.id for c in usuario.extra_celulas])
-    return list(set(celulas_ids))
+    cargo = getattr(usuario, "cargo", None)
+    nivel = getattr(cargo, "nivel_hierarquico", None)
+    if nivel is not None and nivel <= 5:
+        celulas_ids = [c.id for c in getattr(usuario, "extra_celulas", [])]
+    else:
+        celulas_ids = [getattr(usuario, "celula_id", None)]
+    return [c for c in set(celulas_ids) if c]
 
 
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
@@ -487,8 +483,9 @@ def os_kanban_atendimento():
     usuario = User.query.get(session['user_id'])
     if not usuario or not usuario.pode_atender_os:
         abort(403)
+    celulas_ids = get_celulas_visiveis(usuario)
     ordens = (
-        OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id)
+        OrdemServico.query.filter(OrdemServico.equipe_responsavel_id.in_(celulas_ids))
         .filter(OrdemServico.status != OSStatus.RASCUNHO.value)
         .order_by(OrdemServico.data_criacao.desc())
         .all()
@@ -540,9 +537,10 @@ def os_atendimento():
     usuario = User.query.get(session['user_id'])
     if not usuario or not usuario.pode_atender_os:
         abort(403)
-    query = OrdemServico.query.filter_by(equipe_responsavel_id=usuario.celula_id).filter(
-        OrdemServico.status != OSStatus.RASCUNHO.value
-    )
+    celulas_ids = get_celulas_visiveis(usuario)
+    query = OrdemServico.query.filter(
+        OrdemServico.equipe_responsavel_id.in_(celulas_ids)
+    ).filter(OrdemServico.status != OSStatus.RASCUNHO.value)
     status = request.args.get('status')
     if status:
         query = query.filter_by(status=status)
