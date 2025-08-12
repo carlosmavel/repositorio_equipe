@@ -66,22 +66,39 @@ class Permissao(Enum):
 class OSStatus(Enum):
     """Status possíveis de uma Ordem de Serviço."""
 
-    def __new__(cls, value: str, label: str):
+    def __new__(cls, value: str, label: str, color: str, text_color: str):
         obj = object.__new__(cls)
         obj._value_ = value
         obj.label = label
+        obj.color = color
+        obj.text_color = text_color
         return obj
 
-    RASCUNHO = ("rascunho", "Rascunho")
-    AGUARDANDO_ATENDIMENTO = ("aguardando_atendimento", "Aguardando Atendimento")
-    EM_ATENDIMENTO = ("em_atendimento", "Em Atendimento")
-    AGUARDANDO_INFORMACOES_SOLICITANTE = ("aguardando_info_solicitante", "Aguardando Informações do Solicitante")
-    AGUARDANDO_INTERACAO_TERCEIRO = ("aguardando_terceiro", "Aguardando Interação com Terceiro")
-    ENCAMINHADA_PARA_OUTRA_EQUIPE = ("encaminhada_outra_equipe", "Encaminhada para Outra Equipe")
-    PAUSADA = ("pausada", "Pausada")
-    CONCLUIDA = ("concluida", "Concluída")
-    CANCELADA = ("cancelada", "Cancelada")
-    REJEITADA = ("rejeitada", "Rejeitada")
+    RASCUNHO = ("rascunho", "Rascunho", "secondary", "white")
+    AGUARDANDO_ATENDIMENTO = ("aguardando_atendimento", "Aguardando Atendimento", "primary", "white")
+    EM_ATENDIMENTO = ("em_atendimento", "Em Atendimento", "info", "dark")
+    AGUARDANDO_INFORMACOES_SOLICITANTE = (
+        "aguardando_info_solicitante",
+        "Aguardando Informações do Solicitante",
+        "warning",
+        "dark",
+    )
+    AGUARDANDO_INTERACAO_TERCEIRO = (
+        "aguardando_terceiro",
+        "Aguardando Interação com Terceiro",
+        "warning",
+        "dark",
+    )
+    ENCAMINHADA_PARA_OUTRA_EQUIPE = (
+        "encaminhada_outra_equipe",
+        "Encaminhada para Outra Equipe",
+        "info",
+        "dark",
+    )
+    PAUSADA = ("pausada", "Pausada", "secondary", "white")
+    CONCLUIDA = ("concluida", "Concluída", "success", "white")
+    CANCELADA = ("cancelada", "Cancelada", "danger", "white")
+    REJEITADA = ("rejeitada", "Rejeitada", "danger", "white")
 
 
 class OSPrioridade(Enum):
