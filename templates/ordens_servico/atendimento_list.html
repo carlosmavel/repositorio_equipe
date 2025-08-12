@@ -32,7 +32,7 @@
     <table class="table table-sm table-hover align-middle">
       <thead>
         <tr>
-          <th>ID</th>
+          <th>Código</th>
           <th>Título</th>
           <th>Tipo</th>
           <th>Prioridade</th>
@@ -45,7 +45,7 @@
       <tbody>
         {% for os in ordens %}
         <tr>
-          <td>{{ os.id }}</td>
+          <td>{{ os.codigo }}</td>
           <td>{{ os.titulo }}</td>
           <td>{{ os.tipo_os.nome if os.tipo_os else '' }}</td>
           <td>{{ os.prioridade or '' }}</td>
@@ -53,22 +53,22 @@
           <td>{{ os.criado_por.nome_completo or os.criado_por.username }}</td>
           <td>{{ os.data_criacao.strftime('%d/%m/%Y') if os.data_criacao else '' }}</td>
           <td class="text-end">
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.id) }}" title="Visualizar"><i class="bi bi-eye"></i></a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.codigo) }}" title="Visualizar"><i class="bi bi-eye"></i></a>
             {% if os.status != 'em_atendimento' %}
-            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.codigo) }}" style="display:inline-block">
               <input type="hidden" name="status" value="em_atendimento">
               <button class="btn btn-sm btn-outline-primary" title="Iniciar atendimento"><i class="bi bi-play-circle"></i></button>
             </form>
             {% else %}
-            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.codigo) }}" style="display:inline-block">
               <input type="hidden" name="status" value="aguardando_info_solicitante">
               <button class="btn btn-sm btn-outline-warning" title="Aguardar informações do solicitante"><i class="bi bi-hourglass-split"></i></button>
             </form>
-            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.codigo) }}" style="display:inline-block">
               <input type="hidden" name="status" value="concluida">
               <button class="btn btn-sm btn-outline-success" title="Concluir"><i class="bi bi-check2-circle"></i></button>
             </form>
-            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.id) }}" style="display:inline-block">
+            <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=os.codigo) }}" style="display:inline-block">
               <input type="hidden" name="status" value="cancelada">
               <button class="btn btn-sm btn-outline-danger" title="Cancelar"><i class="bi bi-x-circle"></i></button>
             </form>
