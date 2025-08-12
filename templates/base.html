@@ -326,66 +326,63 @@
                     {# Bloco ORDENS DE SERVIÇO #}
                     {% set os_active = 'os_' in request.endpoint or 'formularios' in request.endpoint %}
                     <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} {{ 'collapsed' if not os_active }}"
-                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="{{ 'true' if os_active else 'false' }}" aria-controls="collapseOSGlobal">
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_active else '' }} collapsed"
+                        data-bs-toggle="collapse" href="#collapseOSGlobal" role="button" aria-expanded="false" aria-controls="collapseOSGlobal">
                             <span><i class="bi bi-card-checklist me-2"></i> Ordens de Serviço</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
-                        <div class="collapse {{ 'show' if os_active }}" id="collapseOSGlobal">
+                        <div class="collapse" id="collapseOSGlobal">
                             <ul class="nav flex-column ps-3">
                                 {% if current_user and current_user.pode_atender_os %}
-                                {% set os_atender_active = 'os_atendimento' in request.endpoint or 'os_kanban_atendimento' in request.endpoint or 'os_listar' in request.endpoint %}
                                 <li class="nav-item">
-                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_atender_active else '' }} {{ 'collapsed' if not os_atender_active }}"
-                                    data-bs-toggle="collapse" href="#collapseOSAtender" role="button" aria-expanded="{{ 'true' if os_atender_active else 'false' }}" aria-controls="collapseOSAtender">
+                                    <a class="nav-link d-flex justify-content-between align-items-center collapsed"
+                                    data-bs-toggle="collapse" href="#collapseOSAtender" role="button" aria-expanded="false" aria-controls="collapseOSAtender">
                                         <span>Atender OS</span>
                                         <i class="bi bi-chevron-down small"></i>
                                     </a>
-                                    <div class="collapse {{ 'show' if os_atender_active }}" id="collapseOSAtender">
+                                    <div class="collapse" id="collapseOSAtender">
                                         <ul class="nav flex-column ps-3">
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban_atendimento' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban_atendimento') }}"><i class="bi bi-kanban me-2"></i> Kanban de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atendimento" href="{{ url_for('ordens_servico_bp.os_atendimento') }}"><i class="bi bi-headset me-2"></i> Atendimento de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atender_consultar" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="atender_kanban" href="{{ url_for('ordens_servico_bp.os_kanban_atendimento') }}"><i class="bi bi-kanban me-2"></i> Kanban de OS</a></li>
                                         </ul>
                                     </div>
                                 </li>
                                 {% endif %}
 
-                        {% set os_abrir_active = 'os_kanban' in request.endpoint or 'os_nova' in request.endpoint or 'os_listar' in request.endpoint or 'os_minhas' in request.endpoint %}
                                 <li class="nav-item">
-                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_abrir_active else '' }} {{ 'collapsed' if not os_abrir_active }}"
-                                    data-bs-toggle="collapse" href="#collapseOSAbrir" role="button" aria-expanded="{{ 'true' if os_abrir_active else 'false' }}" aria-controls="collapseOSAbrir">
+                                    <a class="nav-link d-flex justify-content-between align-items-center collapsed"
+                                    data-bs-toggle="collapse" href="#collapseOSAbrir" role="button" aria-expanded="false" aria-controls="collapseOSAbrir">
                                         <span>Abrir OS</span>
                                         <i class="bi bi-chevron-down small"></i>
                                     </a>
-                                    <div class="collapse {{ 'show' if os_abrir_active }}" id="collapseOSAbrir">
+                                    <div class="collapse" id="collapseOSAbrir">
                                         <ul class="nav flex-column ps-3">
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_kanban' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_kanban') }}"><i class="bi bi-kanban me-2"></i> Acompanhar OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_nova' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_listar' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'os_minhas' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="abrir_nova" href="{{ url_for('ordens_servico_bp.os_nova') }}"><i class="bi bi-plus-circle-dotted me-2"></i> Abrir Nova OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="abrir_acompanhar" href="{{ url_for('ordens_servico_bp.os_kanban') }}"><i class="bi bi-kanban me-2"></i> Acompanhar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="abrir_consultar" href="{{ url_for('ordens_servico_bp.os_listar') }}"><i class="bi bi-binoculars-fill me-2"></i> Consultar OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="abrir_minhas" href="{{ url_for('ordens_servico_bp.os_minhas') }}"><i class="bi bi-person-lines-fill me-2"></i> Minhas OS</a></li>
                                         </ul>
                                     </div>
                                 </li>
 
                                 {% set show_cadastros = (current_user.is_authenticated and current_user.has_permissao('admin')) or user_can_access_form_builder(current_user) %}
                                 {% if show_cadastros %}
-                                {% set os_cadastros_active = 'admin_tipos_os' in request.endpoint or 'formularios' in request.endpoint %}
                                 <li class="nav-item">
-                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if os_cadastros_active else '' }} {{ 'collapsed' if not os_cadastros_active }}"
-                                    data-bs-toggle="collapse" href="#collapseOSCadastros" role="button" aria-expanded="{{ 'true' if os_cadastros_active else 'false' }}" aria-controls="collapseOSCadastros">
+                                    <a class="nav-link d-flex justify-content-between align-items-center collapsed"
+                                    data-bs-toggle="collapse" href="#collapseOSCadastros" role="button" aria-expanded="false" aria-controls="collapseOSCadastros">
                                         <span>Cadastros OS</span>
                                         <i class="bi bi-chevron-down small"></i>
                                     </a>
-                                    <div class="collapse {{ 'show' if os_cadastros_active }}" id="collapseOSCadastros">
+                                    <div class="collapse" id="collapseOSCadastros">
                                         <ul class="nav flex-column ps-3">
                                             {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_tipos_os' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'sistemas_' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.sistemas_list') }}"><i class="bi bi-hdd-network me-2"></i> Sistemas</a></li>
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'equipamentos_' in request.endpoint else '' }}" href="{{ url_for('ordens_servico_bp.equipamentos_list') }}"><i class="bi bi-cpu me-2"></i> Equipamentos</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_tipos" href="{{ url_for('ordens_servico_bp.admin_tipos_os') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_sistemas" href="{{ url_for('ordens_servico_bp.sistemas_list') }}"><i class="bi bi-hdd-network me-2"></i> Sistemas</a></li>
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_equipamentos" href="{{ url_for('ordens_servico_bp.equipamentos_list') }}"><i class="bi bi-cpu me-2"></i> Equipamentos</a></li>
                                             {% endif %}
-                                            {% if user_can_access_form_builder(current_user) %}
-                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'formularios' in request.endpoint else '' }}" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
+                        {% if user_can_access_form_builder(current_user) %}
+                                            <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_formularios" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
                                             {% endif %}
                                         </ul>
                                     </div>
