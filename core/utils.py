@@ -31,6 +31,15 @@ try:
 except Exception:  # pragma: no cover
     Image = None
 
+try:
+    from .database import db  # type: ignore  # pragma: no cover
+    from .models import OrdemServico  # type: ignore  # pragma: no cover
+except ImportError:  # pragma: no cover
+    from core.database import db  # type: ignore
+    from core.models import OrdemServico  # type: ignore
+
+from sqlalchemy import select
+
 logger = logging.getLogger(__name__)
 
 
@@ -196,6 +205,53 @@ import secrets
 import string
 
 DEFAULT_NEW_USER_PASSWORD = 'Mudanca123!'
+
+
+def gerar_codigo_os() -> str:
+    """Gera um código sequencial para Ordem de Serviço.
+
+    O código possui um prefixo alfabético seguido de seis dígitos. Exemplo:
+    ``A000001``. Quando o número atinge ``999999`` o prefixo é avançado para a
+    próxima letra. A consulta utiliza ``SELECT ... FOR UPDATE`` para evitar
+    condições de corrida; portanto, é esperado que esta função seja chamada
+    dentro de uma transação ativa.
+    """
+
+    stmt = (
+        select(OrdemServico.codigo)
+        .order_by(OrdemServico.codigo.desc())
+        .limit(1)
+        .with_for_update()
+    )
+    ultimo_codigo = db.session.execute(stmt).scalar()
+
+    if ultimo_codigo:
+        prefixo = ultimo_codigo[0]
+        numero = int(ultimo_codigo[1:]) + 1
+        if numero > 999999:
+            prefixo = chr(ord(prefixo) + 1)
+            numero = 1
+    else:
+        prefixo, numero = 'A', 1
+
+    if ord(prefixo) > ord('Z'):
+        raise ValueError('Limite de códigos atingido')
+
+    codigo = f"{prefixo}{numero:06d}"
+
+    # Garantia adicional de unicidade
+    while db.session.execute(
+        select(OrdemServico.id).filter_by(codigo=codigo)
+    ).scalar():
+        numero += 1
+        if numero > 999999:
+            prefixo = chr(ord(prefixo) + 1)
+            numero = 1
+            if ord(prefixo) > ord('Z'):
+                raise ValueError('Limite de códigos atingido')
+        codigo = f"{prefixo}{numero:06d}"
+
+    return codigo
 
 
 def password_meets_requirements(password: str) -> bool:
