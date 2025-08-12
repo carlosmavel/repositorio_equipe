@@ -1,3 +1,4 @@
+import re
 import pytest
 
 from app import app, db
@@ -65,6 +66,8 @@ def test_crud_ordem_servico(client):
         os_obj = OrdemServico.query.filter_by(titulo='OS1').first()
         assert os_obj is not None
         os_id = os_obj.id
+        os_codigo = os_obj.codigo
+        assert re.match(r'^[A-Z]\d{6}$', os_codigo)
         assert os_obj.tipo_os_id == proc_id
     # update
     resp = client.post('/admin/ordens_servico', data={
@@ -76,7 +79,7 @@ def test_crud_ordem_servico(client):
     }, follow_redirects=True)
     assert resp.status_code == 200
     with app.app_context():
-        os_obj = OrdemServico.query.get(os_id)
+        os_obj = OrdemServico.query.filter_by(codigo=os_codigo).first()
         assert os_obj.titulo == 'OS1 edit'
         assert os_obj.tipo_os_id == proc_id
         assert os_obj.status == 'cancelada'
@@ -84,7 +87,7 @@ def test_crud_ordem_servico(client):
     resp = client.post(f'/admin/ordens_servico/delete/{os_id}', follow_redirects=True)
     assert resp.status_code == 200
     with app.app_context():
-        assert OrdemServico.query.get(os_id) is None
+        assert OrdemServico.query.filter_by(codigo=os_codigo).first() is None
 
 
 def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
@@ -112,6 +115,7 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
         db.session.add_all([proc, etapa, tipo, os_obj])
         db.session.commit()
         os_id = os_obj.id
+        os_codigo = os_obj.codigo
     resp = client.post(
         f'/os/{os_id}/status',
         data={'status': 'aguardando_atendimento'},
@@ -120,7 +124,50 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
     assert resp.status_code == 200
     assert 'Formulário obrigatório não preenchido' in resp.get_data(as_text=True)
     with app.app_context():
-        assert OrdemServico.query.get(os_id).status == 'rascunho'
+        assert OrdemServico.query.filter_by(codigo=os_codigo).first().status == 'rascunho'
+
+
+def test_codigo_os_formato_unicidade_incremento(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcC')
+        etapa = ProcessoEtapa(nome='EtapaC', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        tipo = TipoOS(nome='TipoC', descricao='d', equipe_responsavel_id=cel.id)
+        etapa.tipos_os.append(tipo)
+        user = User.query.filter_by(username='admin').first()
+        db.session.add_all([proc, etapa, tipo])
+        db.session.commit()
+
+        codigo1 = gerar_codigo_os()
+        os1 = OrdemServico(
+            codigo=codigo1,
+            titulo='OS A',
+            descricao='d',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=user.id,
+        )
+        db.session.add(os1)
+        db.session.commit()
+
+        codigo2 = gerar_codigo_os()
+        os2 = OrdemServico(
+            codigo=codigo2,
+            titulo='OS B',
+            descricao='d',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=user.id,
+        )
+        db.session.add(os2)
+        db.session.commit()
+
+        assert re.match(r'^[A-Z]\d{6}$', codigo1)
+        assert re.match(r'^[A-Z]\d{6}$', codigo2)
+        assert codigo1 != codigo2
+        assert codigo1[0] == codigo2[0]
+        assert int(codigo2[1:]) == int(codigo1[1:]) + 1
 
 
 def test_get_formulario_vinculado(client):
