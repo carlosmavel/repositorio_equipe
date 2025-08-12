@@ -148,3 +148,47 @@ def test_extract_text_image_multiple_passes(monkeypatch):
     assert len(calls) == 2
     assert any("--psm 6" in c for c in calls)
     assert any("--psm 11" in c for c in calls)
+
+
+def test_extract_text_pdf_mixed_native_and_ocr(monkeypatch, tmp_path):
+    pdf_file = tmp_path / "dummy.pdf"
+    pdf_file.write_bytes(b"%PDF-1.4")
+
+    class DummyPage:
+        def __init__(self, text):
+            self._text = text
+
+        def extract_text(self):
+            return self._text
+
+    class DummyReader:
+        def __init__(self, path):
+            self.pages = [DummyPage("Texto nativo"), DummyPage("")]
+
+    monkeypatch.setattr("core.utils.PdfReader", DummyReader)
+
+    from PIL import Image
+
+    convert_calls = []
+
+    def dummy_convert(path, dpi=300, first_page=1, last_page=1):
+        convert_calls.append((first_page, last_page))
+        assert first_page == last_page == 2
+        return [Image.new("RGB", (10, 10), color="white")]
+
+    monkeypatch.setattr("core.utils.convert_from_path", dummy_convert)
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+
+    def dummy_image_to_string(img, **kwargs):
+        return "Texto OCR"
+
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=dummy_image_to_string),
+    )
+
+    text = extract_text_from_pdf(str(pdf_file))
+
+    assert "Texto nativo" in text
+    assert "Texto OCR" in text
+    assert len(convert_calls) == 1
