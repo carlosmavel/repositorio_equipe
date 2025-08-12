@@ -411,3 +411,28 @@ def test_acesso_os_celulas_por_hierarquia(app_ctx):
         assert _usuario_pode_acessar_os(lider, os_obj) is True
         assert _usuario_pode_acessar_os(operador, os_obj) is False
 
+
+def test_os_modal_endpoint(client):
+    login_admin(client)
+    with app.app_context():
+        cel = Celula.query.first()
+        proc = Processo(nome='ProcM')
+        etapa = ProcessoEtapa(nome='EtapaM', ordem=1, processo=proc)
+        tipo = TipoOS(nome='TipoM', descricao='d', equipe_responsavel_id=cel.id)
+        etapa.tipos_os.append(tipo)
+        user = User.query.filter_by(username='admin').first()
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OS modal test',
+            descricao='desc',
+            tipo_os=tipo,
+            status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
+            criado_por=user,
+        )
+        db.session.add_all([proc, etapa, tipo, os_obj])
+        db.session.commit()
+        codigo = os_obj.codigo
+    resp = client.get(f'/os/{codigo}/modal')
+    assert resp.status_code == 200
+    assert 'OS modal test' in resp.get_data(as_text=True)
+
