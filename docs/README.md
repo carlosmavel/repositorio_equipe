@@ -44,6 +44,19 @@ Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter 
 Consulte o passo a passo de instalação dessas dependências e a configuração do
 `PATH` em nosso [Guia de Instalação](./GUIA_DE_INSTALACAO.md#6-instalacao-do-poppler-e-do-tesseract-dependencias-de-ocr).
 
+### Configuração do OCR
+
+O Tesseract é executado por padrão com `OEM 3` e `PSM 6`. Em cenários que
+requerem ajustes diferentes (por exemplo, documentos com layout complexo),
+defina as variáveis de ambiente `OCR_OEM` e `OCR_PSM` ou informe esses valores
+diretamente ao chamar as funções `extract_text_from_pdf` ou
+`extract_text_from_image`.
+
+```bash
+export OCR_OEM=1  # LSTM apenas
+export OCR_PSM=4  # Segmentação por coluna
+```
+
 ## Como Rodar o Projeto (Desenvolvimento)
 
 1.  **Clone o repositório:**
