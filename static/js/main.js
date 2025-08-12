@@ -380,6 +380,48 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   /* ----------------------------------------------------------- */
 
+  /* -----------------------------------------------------------
+   * Estado do menu de Ordens de Serviço
+   * ----------------------------------------------------------- */
+  const collapseIds = [
+    "collapseOSGlobal",
+    "collapseOSAtender",
+    "collapseOSAbrir",
+    "collapseOSCadastros",
+  ];
+
+  collapseIds.forEach((id) => {
+    const collapseEl = document.getElementById(id);
+    const trigger = document.querySelector(`[href="#${id}"]`);
+    if (!collapseEl || !trigger) return;
+    const key = `collapseState_${id}`;
+    if (localStorage.getItem(key) === "true") {
+      collapseEl.classList.add("show");
+      trigger.classList.remove("collapsed");
+      trigger.setAttribute("aria-expanded", "true");
+    }
+    collapseEl.addEventListener("show.bs.collapse", () => {
+      localStorage.setItem(key, "true");
+    });
+    collapseEl.addEventListener("hide.bs.collapse", () => {
+      localStorage.setItem(key, "false");
+    });
+  });
+
+  const osNavItems = document.querySelectorAll(".os-nav-item");
+  osNavItems.forEach((link) => {
+    link.addEventListener("click", () => {
+      localStorage.setItem("activeOSItem", link.dataset.osItem);
+    });
+  });
+  const storedItem = localStorage.getItem("activeOSItem");
+  if (storedItem) {
+    osNavItems.forEach((link) => {
+      link.classList.toggle("active", link.dataset.osItem === storedItem);
+    });
+  }
+  /* ----------------------------------------------------------- */
+
   // Torna linhas de tabela com a classe .clickable-row navegáveis
   document.querySelectorAll('.clickable-row').forEach((row) => {
     row.addEventListener('click', (e) => {
