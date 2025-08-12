@@ -163,8 +163,34 @@ def extract_text(path: str, pdf_dpi: int | None = None) -> str:
     return ''
 
 
-def preprocess_image(img, debug_dir=None, page_idx=0):
-    """Aplica etapas de pre-processamento utilizando OpenCV."""
+def preprocess_image(
+    img,
+    debug_dir: str | None = None,
+    page_idx: int = 0,
+    *,
+    apply_sharpen: bool = True,
+    apply_threshold: bool = True,
+):
+    """Aplica etapas de pré-processamento utilizando OpenCV.
+
+    Parameters
+    ----------
+    img: ``PIL.Image``
+        Imagem a ser processada.
+    debug_dir: str | None, opcional
+        Se fornecido, salva arquivos intermediários neste diretório.
+    page_idx: int, opcional
+        Índice da página (usado no nome dos arquivos de depuração).
+    apply_sharpen: bool, opcional
+        Se ``True`` (padrão), aplica um filtro de nitidez.
+    apply_threshold: bool, opcional
+        Se ``True`` (padrão), aplica limiarização de Otsu para binarização.
+
+    Returns
+    -------
+    ``PIL.Image``
+        Imagem resultante após as transformações selecionadas.
+    """
     if not (cv2 and np):  # pragma: no cover - dependencias ausentes
         return img
 
@@ -173,15 +199,26 @@ def preprocess_image(img, debug_dir=None, page_idx=0):
     if debug_dir:
         cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_gray.png"), gray)
 
-    sharp = cv2.addWeighted(gray, 1.5, cv2.GaussianBlur(gray, (0, 0), 1.0), -0.5, 0)
-    if debug_dir:
-        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_sharp.png"), sharp)
+    processed = gray
+    if apply_sharpen:
+        processed = cv2.addWeighted(
+            processed, 1.5, cv2.GaussianBlur(processed, (0, 0), 1.0), -0.5, 0
+        )
+        if debug_dir:
+            cv2.imwrite(
+                os.path.join(debug_dir, f"page_{page_idx}_sharp.png"), processed
+            )
 
-    _, binary = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    if debug_dir:
-        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_binary.png"), binary)
+    if apply_threshold:
+        _, processed = cv2.threshold(
+            processed, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        if debug_dir:
+            cv2.imwrite(
+                os.path.join(debug_dir, f"page_{page_idx}_binary.png"), processed
+            )
 
-    return Image.fromarray(binary)
+    return Image.fromarray(processed)
 
 
 def extract_text_from_image(image, lang: str = "por", oem: str | None = None, psm: str | None = None) -> str:
@@ -216,14 +253,24 @@ def extract_text_from_image(image, lang: str = "por", oem: str | None = None, ps
     return pytesseract.image_to_string(image, lang=lang, config=config)
 
 
-def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
+def extract_text_from_pdf(
+    path: str,
+    dpi: int | None = None,
+    *,
+    apply_sharpen: bool = True,
+    apply_threshold: bool = True,
+    lang: str = "por",
+    oem: str | None = None,
+    psm: str | None = None,
+) -> str:
 
 
     """Extrai texto de PDFs.
 
     Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
     esse texto ou a biblioteca não estiver disponível, recorre ao OCR usando
-    ``pdf2image`` + ``pytesseract``.
+    ``pdf2image`` + ``pytesseract``. As etapas de pré-processamento podem ser
+    habilitadas ou desabilitadas conforme o tipo de documento.
 
     Parameters
     ----------
@@ -234,6 +281,16 @@ def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
         Valores mais altos tendem a melhorar a acurácia do OCR, mas aumentam o
         tempo de processamento e o consumo de memória. Quando ``None``, o valor
         é obtido da variável de ambiente ``PDF_OCR_DPI`` (padrão: 300).
+    apply_sharpen: bool, opcional
+        Aplica filtro de nitidez antes do OCR.
+    apply_threshold: bool, opcional
+        Realiza a limiarização (binarização) após o filtro de nitidez.
+    lang: str, opcional
+        Idioma a ser utilizado no Tesseract (padrão ``"por"``).
+    oem: str | None, opcional
+        ``OEM`` do Tesseract. ``None`` utiliza ``"3"``.
+    psm: str | None, opcional
+        ``PSM`` do Tesseract. ``None`` utiliza ``"6"``.
     """
 
     if dpi is None:
@@ -270,7 +327,13 @@ def extract_text_from_pdf(path: str, dpi: int | None = None) -> str:
 
     for i, img in enumerate(images, start=1):
         try:
-            pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
+            pre = preprocess_image(
+                img,
+                debug_dir=debug_dir,
+                page_idx=i,
+                apply_sharpen=apply_sharpen,
+                apply_threshold=apply_threshold,
+            )
             text = extract_text_from_image(pre, lang=lang, oem=oem, psm=psm)
             text_parts.append(text)
             logger.info("Pagina %s processada com sucesso", i)
