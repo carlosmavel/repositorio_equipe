@@ -79,12 +79,12 @@
         </div>
       </div>
 
-      {% if ordens %}
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <div class="list-group">
-            {% for os in ordens %}
-            <div class="list-group-item list-group-item-action">
+        {% if ordens %}
+        <div class="card shadow-sm mb-4 aprovacao-list">
+          <div class="card-body">
+            <div class="list-group">
+              {% for os in ordens %}
+              <div class="list-group-item list-group-item-action">
               <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">{{ os.titulo|striptags }} <small class="text-muted">#{{ os.codigo }}</small></h5>
                 <div>
@@ -103,15 +103,17 @@
                 {% if os.atribuido_para %}<strong>Responsável:</strong> {{ os.atribuido_para.nome_completo or os.atribuido_para.username }} |{% endif %}
                 <strong>Aberta em:</strong> {{ os.data_criacao.strftime('%d/%m/%Y %H:%M') }}
               </small>
-              <div class="mt-2">
-                <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
-                <a href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.codigo) }}" class="btn btn-sm btn-outline-success">Atender</a>
+                <div class="mt-2">
+                  <a href="{{ url_for('ordens_servico_bp.os_detalhar', ordem_id=os.codigo, next=request.full_path) }}" class="btn btn-sm btn-outline-primary">Detalhes</a>
+                  {% if mostrar_atender %}
+                  <a href="{{ url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=os.codigo) }}" class="btn btn-sm btn-outline-success">Atender</a>
+                  {% endif %}
+                </div>
               </div>
+              {% endfor %}
             </div>
-            {% endfor %}
           </div>
         </div>
-      </div>
       {% else %}
       <p class="text-muted">Nenhuma Ordem de Serviço encontrada.</p>
       {% endif %}

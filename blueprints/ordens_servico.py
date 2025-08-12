@@ -463,6 +463,9 @@ def os_listar():
     equipamentos = Equipamento.query.order_by(Equipamento.nome).all()
     usuarios = User.query.order_by(User.username).all()
 
+    modo = request.args.get('modo', 'abrir')
+    mostrar_atender = modo == 'atender' and getattr(usuario, 'pode_atender_os', False)
+
     return render_template(
         'ordens_servico/listar_os.html',
         ordens=ordens,
@@ -472,6 +475,7 @@ def os_listar():
         sistemas=sistemas,
         equipamentos=equipamentos,
         usuarios=usuarios,
+        mostrar_atender=mostrar_atender,
     )
 
 
