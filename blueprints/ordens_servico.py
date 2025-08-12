@@ -74,6 +74,16 @@ def _usuario_pode_acessar_os(usuario, os_obj):
     return False
 
 
+def _get_ordem_servico(identifier):
+    """Recupera OrdemServico por id (UUID) ou código."""
+    ordem = OrdemServico.query.get(identifier)
+    if not ordem:
+        ordem = OrdemServico.query.filter_by(codigo=identifier).first()
+    if not ordem:
+        abort(404)
+    return ordem
+
+
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
 @admin_required
 def admin_ordens_servico():
@@ -175,7 +185,7 @@ def admin_ordens_servico():
 @ordens_servico_bp.route('/admin/ordens_servico/delete/<ordem_id>', methods=['POST'])
 @admin_required
 def admin_delete_ordem(ordem_id):
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     try:
         db.session.delete(ordem)
         db.session.commit()
@@ -376,7 +386,7 @@ def os_listar():
 def os_detalhar(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     return render_template('ordens_servico/detalhe_os.html', ordem=ordem, status_enum=OSStatus)
 
 
@@ -533,7 +543,7 @@ def os_atendimento_detalhar(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
@@ -550,7 +560,7 @@ def os_mudar_status(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     novo_status = request.form.get('status')
@@ -558,7 +568,7 @@ def os_mudar_status(ordem_id):
         abort(400)
     if novo_status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
         flash('Formulário obrigatório não preenchido', 'danger')
-        return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+        return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.codigo))
     origem = ordem.status
     ordem.status = novo_status
     log = OrdemServicoLog(
@@ -570,7 +580,7 @@ def os_mudar_status(ordem_id):
     )
     db.session.add(log)
     db.session.commit()
-    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.codigo))
 
 
 @ordens_servico_bp.post('/os/<ordem_id>/comentario', endpoint='os_comentar')
@@ -578,7 +588,7 @@ def os_comentar(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     mensagem = request.form.get('mensagem', '').strip()
@@ -586,7 +596,7 @@ def os_comentar(ordem_id):
         comentario = OrdemServicoComentario(os_id=ordem.id, usuario_id=usuario.id, mensagem=mensagem)
         db.session.add(comentario)
         db.session.commit()
-    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.codigo))
 
 
 @ordens_servico_bp.post('/os/<ordem_id>/anexo', endpoint='os_anexo')
@@ -594,7 +604,7 @@ def os_anexo(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     arquivo = request.files.get('anexo')
@@ -607,7 +617,7 @@ def os_anexo(ordem_id):
         comentario = OrdemServicoComentario(os_id=ordem.id, usuario_id=usuario.id, mensagem='', anexo=filename)
         db.session.add(comentario)
         db.session.commit()
-    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.id))
+    return redirect(url_for('ordens_servico_bp.os_atendimento_detalhar', ordem_id=ordem.codigo))
 
 
 @ordens_servico_bp.route('/os/<ordem_id>/historico', methods=['GET'], endpoint='os_historico')
@@ -615,7 +625,7 @@ def os_historico(ordem_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     usuario = User.query.get(session['user_id'])
-    ordem = OrdemServico.query.get_or_404(ordem_id)
+    ordem = _get_ordem_servico(ordem_id)
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     logs = OrdemServicoLog.query.filter_by(os_id=ordem.id).order_by(OrdemServicoLog.data_hora.asc()).all()
