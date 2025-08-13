@@ -21,6 +21,7 @@ try:
         Celula,
         Equipamento,
         Sistema,
+        Processo,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
     )
@@ -35,6 +36,7 @@ except ImportError:  # pragma: no cover
         Celula,
         Equipamento,
         Sistema,
+        Processo,
         ProcessoEtapa,
         processo_etapa_cargo_abre,
     )
@@ -228,15 +230,18 @@ def tipos_os_admin():
         id_para_atualizar = request.form.get('id_para_atualizar', type=int)
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
+        processo_id = request.form.get('processo_id')
         etapa_id = request.form.get('etapa_id')
         equipe_responsavel_id = request.form.get('equipe_responsavel_id', type=int)
         formulario_vinculado_id = request.form.get('formulario_vinculado_id', type=int)
         obrigatorio_preenchimento = request.form.get('obrigatorio_preenchimento') == 'on'
-        if not nome or not etapa_id:
-            flash('Nome e Etapa são obrigatórios.', 'danger')
+        if not nome or not processo_id or not etapa_id:
+            flash('Nome, Processo e Etapa são obrigatórios.', 'danger')
         else:
-            etapa = ProcessoEtapa.query.get(etapa_id)
-            if id_para_atualizar:
+            etapa = ProcessoEtapa.query.filter_by(id=etapa_id, processo_id=processo_id).first()
+            if not etapa:
+                flash('Etapa inválida para o processo selecionado.', 'danger')
+            elif id_para_atualizar:
                 tipo = TipoOS.query.get_or_404(id_para_atualizar)
                 tipo.nome = nome
                 tipo.descricao = descricao
@@ -267,7 +272,18 @@ def tipos_os_admin():
         if id_para_atualizar:
             tipo_editar = TipoOS.query.get(id_para_atualizar)
     tipos = TipoOS.query.order_by(TipoOS.nome).all()
-    etapas = ProcessoEtapa.query.order_by(ProcessoEtapa.nome).all()
+    processos = Processo.query.order_by(Processo.nome).all()
+    processo_selecionado = request.form.get(
+        'processo_id',
+        tipo_editar.etapas.first().processo_id if tipo_editar and tipo_editar.etapas.first() else '',
+    )
+    etapas = []
+    if processo_selecionado:
+        etapas = (
+            ProcessoEtapa.query.filter_by(processo_id=processo_selecionado)
+            .order_by(ProcessoEtapa.nome)
+            .all()
+        )
     celulas = Celula.query.order_by(Celula.nome).all()
     formularios_list = Formulario.query.order_by(Formulario.nome).all()
     formularios_dict = {f.id: f for f in formularios_list}
@@ -275,6 +291,8 @@ def tipos_os_admin():
         'admin/tipos_os.html',
         tipos=tipos,
         tipo_editar=tipo_editar,
+        processos=processos,
+        processo_selecionado=processo_selecionado,
         etapas=etapas,
         celulas=celulas,
         formularios=formularios_list,
@@ -294,6 +312,17 @@ def tipos_os_admin_delete(id):
         db.session.rollback()
         flash(f'Erro ao remover Tipo de OS: {str(e)}', 'danger')
     return redirect(url_for('ordens_servico_bp.tipos_os_admin'))
+
+
+@ordens_servico_bp.get('/admin/tipos_os/etapas/<processo_id>', endpoint='tipos_os_etapas_por_processo')
+@admin_required
+def tipos_os_etapas_por_processo(processo_id):
+    etapas = (
+        ProcessoEtapa.query.filter_by(processo_id=processo_id)
+        .order_by(ProcessoEtapa.nome)
+        .all()
+    )
+    return jsonify([{'id': e.id, 'nome': e.nome} for e in etapas])
 
 
 @ordens_servico_bp.route('/os/nova', methods=['GET', 'POST'], endpoint='os_nova')
