@@ -43,7 +43,6 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     assert "Texto2" in text
     assert len(calls) == 2
 
-
 def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy2.pdf"
     pdf_file.write_bytes(b"%PDF-1.4")
@@ -70,3 +69,4 @@ def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
 
     text = extract_text(str(pdf_file))
     assert text.splitlines() == ["Native", "OCR"]
+
