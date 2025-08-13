@@ -109,6 +109,43 @@ Para instruções de instalação e configuração **completas e detalhadas**, p
 * **[Tarefas de Revisão e Testes](./TAREFAS_REVISAO_SISTEMA.md)**
 * **[Guia de Implantação em Produção](./DEPLOY.md)**
 
+## OCR de alta qualidade
+
+Para extrair texto de imagens e PDFs com maior precisão, garanta que as
+dependências de OCR estejam instaladas e configuradas corretamente.
+
+### Instalação do Tesseract e Poppler
+
+- **Debian/Ubuntu:** `sudo apt-get install tesseract-ocr poppler-utils`
+- **Windows:** baixe os instaladores do
+  [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) e do
+  [Poppler for Windows](https://github.com/oschwartz10612/poppler-windows/releases)
+  e adicione os binários ao `PATH`.
+
+### Variáveis de ambiente
+
+- `OCR_LANG`: idiomas a serem usados pelo Tesseract. Ex.: `por+eng`.
+- `OCR_PSMS`: lista de *Page Segmentation Modes* testados automaticamente. Ex.:
+  `6,3`.
+
+### Metadados retornados
+
+As funções `extract_text_from_image` e `extract_text` retornam, além do texto,
+um dicionário com informações como:
+
+- `best_psm` — PSM selecionado.
+- `candidates` — estatísticas de cada PSM testado.
+- `angle` — rotação detectada.
+- `processing_time` — tempo total de processamento.
+
+### Teste de integração
+
+O teste `tests/test_utils.py::test_extract_text_integration` é ignorado por
+padrão. Para habilitá-lo:
+
+1. Defina `OCR_TEST_FILE` com o caminho de um PDF ou imagem contendo texto.
+2. Execute `pytest` normalmente; o teste será incluído na suíte.
+
 ## Estrutura do Projeto (Simplificada)
 ```text
 /ORQUETASK_PROJECT_ROOT/
