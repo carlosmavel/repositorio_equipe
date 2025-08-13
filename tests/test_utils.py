@@ -91,6 +91,38 @@ def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
     assert meta[1]["best_psm"] == 6
 
 
+def test_extract_text_pdf_missing_page(monkeypatch, tmp_path):
+    pdf_file = tmp_path / "dummy_missing.pdf"
+    pdf_file.write_bytes(b"%PDF-1.4")
+
+    from PIL import Image
+
+    class DummyPage:
+        def extract_text(self):
+            return ""
+
+    class DummyReader:
+        def __init__(self, path):
+            self.pages = [DummyPage(), DummyPage()]
+
+    monkeypatch.setattr("core.utils.PdfReader", DummyReader)
+    images = [Image.new("RGB", (10, 10), color="white")]
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: images)
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setattr(
+        "core.utils.select_best_psm", lambda img, lang, psms: (6, [(6, 0.0, 1)])
+    )
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=lambda img, lang, config: "OCR"),
+    )
+
+    text, meta = extract_text(str(pdf_file))
+    assert text.splitlines() == ["OCR"]
+    assert len(meta) == 2
+    assert meta[1]["conversion_failed"] is True
+
+
 def test_select_best_psm(monkeypatch):
     data = {
         3: {"conf": ["10", "20", "-1"], "text": ["a", "b", ""]},
