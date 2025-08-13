@@ -42,8 +42,7 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     )
 
     text = extract_text(str(pdf_file))
-    assert "Texto1" in text
-    assert "Texto2" in text
+    assert text == "Texto1\nTexto2"
 
 
 def test_extract_text_from_image_simple(monkeypatch):
