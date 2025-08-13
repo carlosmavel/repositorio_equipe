@@ -78,11 +78,24 @@ def sanitize_html(text: str) -> str:
         css_sanitizer=css_sanitizer
     )
 
+"""
+Funções utilitárias do projeto.
+
+Este módulo recebeu melhorias relacionadas ao pós-processamento do OCR. Toda a
+extração existente permanece inalterada e os novos comportamentos são opcionais
+e executados somente quando parâmetros específicos são informados.
+"""
+
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(path: str) -> str:
-    """Extrai texto de vários formatos de arquivo."""
+def extract_text(path: str, **ocr_options) -> str:
+    """Extrai texto de vários formatos de arquivo.
+
+    Parâmetros adicionais são encaminhados para as rotinas de OCR quando o
+    arquivo é um PDF ou imagem. O comportamento padrão permanece idêntico ao
+    anterior quando nenhum parâmetro extra é fornecido.
+    """
     ext = os.path.splitext(path)[1].lower()
     text_parts: list[str] = []
 
@@ -129,7 +142,7 @@ def extract_text(path: str) -> str:
 
     # PDF
     if ext == '.pdf':
-        return extract_text_from_pdf(path)
+        return extract_text_from_pdf(path, **ocr_options)
 
     # outros formatos não suportados
     return ''
@@ -156,18 +169,121 @@ def preprocess_image(img, debug_dir=None, page_idx=0):
     return Image.fromarray(binary)
 
 
-def extract_text_from_image(image, lang: str = "por") -> str:
-    """Realiza OCR simples na imagem usando pytesseract."""
+def _reconstruct_text(data: dict, width: int) -> str:
+    """Reordena blocos de texto obtidos via ``image_to_data``."""
+    items = []
+    for i, txt in enumerate(data.get("text", [])):
+        if not txt:
+            continue
+        items.append(
+            (
+                data["page_num"][i],
+                data["top"][i],
+                data["left"][i],
+                txt,
+            )
+        )
+
+    from itertools import groupby
+
+    pages: list[str] = []
+    for page, group in groupby(items, key=lambda x: x[0]):
+        group_items = list(group)
+        xs = [g[2] for g in group_items]
+        column_split = None
+        if xs:
+            mid = width / 2
+            left_count = sum(1 for x in xs if x < mid)
+            right_count = sum(1 for x in xs if x >= mid)
+            if left_count > 0 and right_count > 0 and left_count / len(xs) > 0.2 and right_count / len(xs) > 0.2:
+                column_split = mid
+
+        if column_split:
+            left_items = sorted([g for g in group_items if g[2] < column_split], key=lambda x: (x[1], x[2]))
+            right_items = sorted([g for g in group_items if g[2] >= column_split], key=lambda x: (x[1], x[2]))
+            ordered = left_items + right_items
+        else:
+            ordered = sorted(group_items, key=lambda x: (x[1], x[2]))
+
+        current_y = None
+        page_lines: list[str] = []
+        for _, top, left, text in ordered:
+            if current_y is None or abs(top - current_y) > 10:
+                page_lines.append(text)
+                current_y = top
+            else:
+                page_lines[-1] += " " + text
+        pages.append("\n".join(page_lines).strip())
+
+    return "\n".join(pages)
+
+
+def _clean_text(text: str) -> str:
+    """Remove ruídos comuns do OCR e normaliza o texto."""
+    text = re.sub(r"(?<!\S)[ºª|—](?!\S)", "", text)
+    text = re.sub(r"\s[?<>]\s", " ", text)
+    text = re.sub(r"(\w+)-\n(\w+)", r"\1\2\n", text)
+    text = re.sub(r"[ ]{2,}", " ", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    return text.strip()
+
+
+def _detect_sparse(data: dict, width: int, height: int) -> bool:
+    words = [t for t in data.get("text", []) if t.strip()]
+    if not words:
+        return True
+    areas = [data["width"][i] * data["height"][i] for i, t in enumerate(data["text"]) if t.strip()]
+    density = sum(areas) / float(width * height)
+    return density < 0.02 or len(words) < 20
+
+
+def extract_text_from_image(
+    image,
+    lang: str = "por",
+    *,
+    reorder: bool = False,
+    clean: bool = False,
+    detect_sparse: bool = False,
+) -> str:
+    """Realiza OCR na imagem usando pytesseract com pós-processamento opcional."""
     if not pytesseract:  # pragma: no cover - dependencias ausentes
         return ""
-    text = pytesseract.image_to_string(
-        image, lang=lang, config="--oem 3 --psm 6"
-    )
-    return text.replace("\x0c", "").strip()
+
+    if reorder or detect_sparse:
+        data = pytesseract.image_to_data(
+            image, lang=lang, config="--oem 3 --psm 6", output_type=pytesseract.Output.DICT
+        )
+        text = _reconstruct_text(data, image.width)
+        if detect_sparse and _detect_sparse(data, image.width, image.height):
+            aux = pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 11")
+            if aux:
+                text = text + "\n" + aux.replace("\x0c", "").strip()
+    else:
+        text = pytesseract.image_to_string(
+            image, lang=lang, config="--oem 3 --psm 6"
+        )
+
+    text = text.replace("\x0c", "").strip()
+    if clean:
+        text = _clean_text(text)
+    return text
 
 
-def extract_text_from_pdf(path: str) -> str:
-    """Extrai texto de PDFs usando ``pdf2image`` + ``pytesseract``."""
+def extract_text_from_pdf(
+    path: str,
+    *,
+    lang: str = "por",
+    reorder: bool = False,
+    clean: bool = False,
+    detect_sparse: bool = False,
+) -> str:
+    """Extrai texto de PDFs usando ``pdf2image`` + ``pytesseract``.
+
+    O reordenamento, a limpeza de texto e a detecção de layout esparso são
+    opcionais e aplicados apenas quando os parâmetros correspondentes são
+    habilitados. Com todos os parâmetros em ``False`` o comportamento é idêntico
+    ao anterior.
+    """
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
@@ -180,7 +296,15 @@ def extract_text_from_pdf(path: str) -> str:
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, page_idx=i)
-            text_parts.append(extract_text_from_image(pre))
+            text_parts.append(
+                extract_text_from_image(
+                    pre,
+                    lang=lang,
+                    reorder=reorder,
+                    clean=clean,
+                    detect_sparse=detect_sparse,
+                )
+            )
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
