@@ -188,7 +188,6 @@ def extract_text_from_pdf(path: str) -> str:
     ``pdf2image`` + ``pytesseract``.
     """
     text_parts: list[str] = []
-
     # 1) Tenta extrair texto nativo do PDF -------------------------------
     if PdfReader is not None:
         try:
