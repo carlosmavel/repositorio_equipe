@@ -173,11 +173,62 @@ def preprocess_image(img, debug_dir=None, page_idx=0):
     return Image.fromarray(binary)
 
 
-def extract_text_from_image(image, lang="por") -> str:
-    """Realiza OCR na imagem usando pytesseract."""
+def select_best_psm(image, lang: str, psms: list[int]):
+    """Seleciona o melhor *Page Segmentation Mode* (PSM) para a imagem.
+
+    Para cada PSM candidato executa ``pytesseract.image_to_data`` coletando a
+    confiança média (ignorando valores ``-1``) e a quantidade de palavras
+    reconhecidas. Retorna o PSM com maior média de confiança e, em caso de
+    empate, o com maior contagem de palavras, junto com as estatísticas
+    calculadas para cada PSM.
+    """
+
     if not pytesseract:  # pragma: no cover - dependencias ausentes
-        return ""
-    return pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 6")
+        return (psms[0] if psms else 6, [])
+
+    stats: list[tuple[int, float, int]] = []
+    best_psm = psms[0]
+    best_mean = -1.0
+    best_words = -1
+
+    for psm in psms:
+        data = pytesseract.image_to_data(
+            image,
+            lang=lang,
+            config=f"--oem 3 --psm {psm}",
+            output_type=pytesseract.Output.DICT,
+        )
+        confs = [int(c) for c in data.get("conf", []) if c != "-1"]
+        mean_conf = sum(confs) / len(confs) if confs else 0.0
+        words = [w for w in data.get("text", []) if w.strip()]
+        word_count = len(words)
+        stats.append((psm, mean_conf, word_count))
+        if mean_conf > best_mean or (
+            mean_conf == best_mean and word_count > best_words
+        ):
+            best_psm = psm
+            best_mean = mean_conf
+            best_words = word_count
+
+    return best_psm, stats
+
+
+def extract_text_from_image(image, lang="por", psms=None):
+    """Realiza OCR na imagem usando pytesseract.
+
+    Retorna o texto reconhecido e metadados sobre o processo, incluindo o PSM
+    selecionado e as estatísticas de cada PSM candidato.
+    """
+    if not pytesseract:  # pragma: no cover - dependencias ausentes
+        return "", {"best_psm": None, "candidates": []}
+
+    psms = psms or [6, 3]
+    best_psm, stats = select_best_psm(image, lang, psms)
+    text = pytesseract.image_to_string(
+        image, lang=lang, config=f"--oem 3 --psm {best_psm}"
+    )
+    metadata = {"best_psm": best_psm, "candidates": stats}
+    return text, metadata
 
 
 def extract_text_from_pdf(path: str) -> str:
@@ -223,7 +274,7 @@ def extract_text_from_pdf(path: str) -> str:
             img = images[page_number - 1]
             try:
                 pre = preprocess_image(img, debug_dir=debug_dir, page_idx=page_number)
-                ocr_text = extract_text_from_image(pre, lang="por")
+                ocr_text, _ = extract_text_from_image(pre, lang="por")
                 text_parts.append(ocr_text)
                 logger.info("Pagina %s processada via OCR", page_number)
             except Exception as e:  # pragma: no cover
@@ -244,7 +295,7 @@ def extract_text_from_pdf(path: str) -> str:
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
-            text = extract_text_from_image(pre, lang="por")
+            text, _ = extract_text_from_image(pre, lang="por")
             text_parts.append(text)
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover

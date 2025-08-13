@@ -1,7 +1,7 @@
 import pytest
 
 import types
-from core.utils import sanitize_html, extract_text
+from core.utils import sanitize_html, extract_text, select_best_psm
 
 
 def test_sanitize_html_removes_disallowed_tags():
@@ -30,12 +30,13 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
 
     calls = []
 
-    def dummy_image_to_string(img, **kwargs):
+    def dummy_extract(img, lang="por"):
         calls.append(img)
-        return "Texto1" if len(calls) == 1 else "Texto2"
+        return ("Texto1" if len(calls) == 1 else "Texto2", {"best_psm": 6, "candidates": []})
 
-    monkeypatch.setattr("core.utils.pytesseract", types.SimpleNamespace(image_to_string=dummy_image_to_string))
+    monkeypatch.setattr("core.utils.extract_text_from_image", dummy_extract)
     monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setattr("core.utils.pytesseract", object())
 
     text = extract_text(str(pdf_file))
 
@@ -64,9 +65,35 @@ def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
     images = [Image.new("RGB", (10, 10), color="white"), Image.new("RGB", (10, 10), color="white")]
     monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: images)
     monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
-    monkeypatch.setattr("core.utils.extract_text_from_image", lambda img, lang="por": "OCR")
+    monkeypatch.setattr(
+        "core.utils.extract_text_from_image",
+        lambda img, lang="por": ("OCR", {"best_psm": 6, "candidates": []}),
+    )
     monkeypatch.setattr("core.utils.pytesseract", object())
 
     text = extract_text(str(pdf_file))
     assert text.splitlines() == ["Native", "OCR"]
+
+
+def test_select_best_psm(monkeypatch):
+    data = {
+        3: {"conf": ["10", "20", "-1"], "text": ["a", "b", ""]},
+        6: {"conf": ["30", "30"], "text": ["c", ""]},
+    }
+
+    def fake_image_to_data(image, lang, config, output_type):
+        psm = int(config.split()[-1])
+        return data[psm]
+
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(
+            image_to_data=fake_image_to_data,
+            Output=types.SimpleNamespace(DICT=None),
+        ),
+    )
+
+    best_psm, stats = select_best_psm(None, "por", [3, 6])
+    assert best_psm == 6
+    assert stats == [(3, 15.0, 2), (6, 30.0, 1)]
 
