@@ -495,7 +495,18 @@ def extract_text_from_pdf(
         apply_threshold = pre_cfg.get("apply_threshold", True)
 
     text_parts: list[str] = []
-    ocr_available = bool(convert_from_path and Image and pytesseract)
+    required = {
+        "pdf2image": convert_from_path,
+        "Pillow": Image,
+        "pytesseract": pytesseract,
+    }
+    optional = {
+        "opencv-python": cv2,
+        "numpy": np,
+    }
+    missing_deps = [name for name, mod in required.items() if mod is None]
+    missing_opt = [name for name, mod in optional.items() if mod is None]
+    ocr_available = not missing_deps
     page_errors = False
 
     # 1) Percorre cada pagina com PdfReader ------------------------------
@@ -565,7 +576,8 @@ def extract_text_from_pdf(
                         )
                 else:
                     logger.warning(
-                        "Dependencias de OCR indisponiveis para a pagina %s de %s",
+                        "Dependencias de OCR indisponiveis (%s) para a pagina %s de %s",
+                        ", ".join(missing_deps + missing_opt),
                         page_number,
                         path,
                     )
@@ -585,7 +597,11 @@ def extract_text_from_pdf(
 
         # 2) Fallback para OCR completo -------------------------------------
         if not ocr_available:
-            logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
+            logger.warning(
+                "Dependencias de OCR indisponiveis (%s) para %s",
+                ", ".join(missing_deps + missing_opt),
+                path,
+            )
             return ""
 
         try:
