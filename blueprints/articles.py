@@ -62,8 +62,13 @@ def novo_artigo():
         # 1) Coleta dados do formulário
         titulo      = request.form['titulo'].strip()
         texto_raw   = request.form['texto']
-        texto_limpo = sanitize_html(texto_raw)
+        texto_limpo = sanitize_html(texto_raw).strip()
         files       = request.files.getlist('files')
+
+        # Campos obrigatórios
+        if not titulo or not texto_limpo:
+            flash('Título e texto são obrigatórios.', 'warning')
+            return redirect(url_for('novo_artigo'))
 
         # 1.1) Descobre se é rascunho ou envio para revisão
         acao   = request.form.get('acao', 'enviar')  # 'rascunho' ou 'enviar'
@@ -260,8 +265,14 @@ def editar_artigo(artigo_id):
         acao = request.form.get("acao", "salvar")   # salvar | enviar
 
         # campos básicos
-        artigo.titulo = request.form["titulo"]
-        artigo.texto  = request.form["texto"]
+        titulo = request.form["titulo"].strip()
+        texto  = request.form["texto"].strip()
+        if not titulo or not texto:
+            flash('Título e texto são obrigatórios.', 'warning')
+            return redirect(url_for('editar_artigo', artigo_id=artigo_id))
+
+        artigo.titulo = titulo
+        artigo.texto  = texto
         artigo.updated_at = datetime.now(timezone.utc)
 
         # visibilidade
