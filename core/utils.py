@@ -277,6 +277,7 @@ def extract_text_from_image(
     text = pytesseract.image_to_string(
         rotated, lang=lang, config=f"--oem 3 --psm {best_psm}"
     )
+    text = text.replace('\x0c', '').strip()
     processing_time = time.perf_counter() - start_time
     metadata = {
         "best_psm": best_psm,
@@ -355,6 +356,7 @@ def extract_text_from_pdf(
                 text = pytesseract.image_to_string(
                     pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
                 )
+                text = text.replace('\x0c', '').strip()
                 text_parts.append(text)
                 mean_conf, word_count = next(
                     ((m, w) for p, m, w in stats if p == best_psm),
@@ -401,6 +403,7 @@ def extract_text_from_pdf(
             text = pytesseract.image_to_string(
                 pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
             )
+            text = text.replace('\x0c', '').strip()
             text_parts.append(text)
             mean_conf, word_count = next(
                 ((m, w) for p, m, w in stats if p == best_psm),
