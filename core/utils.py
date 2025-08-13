@@ -496,6 +496,7 @@ def extract_text_from_pdf(
 
     text_parts: list[str] = []
     ocr_available = bool(convert_from_path and Image and pytesseract)
+    page_errors = False
 
     # 1) Percorre cada pagina com PdfReader ------------------------------
     if PdfReader is not None:
@@ -509,12 +510,22 @@ def extract_text_from_pdf(
                     text_parts.append(text)
                 elif ocr_available:
                     try:
-                        img = convert_from_path(
-                            path,
-                            dpi=dpi,
-                            first_page=page_number,
-                            last_page=page_number,
-                        )[0]
+                        try:
+                            img = convert_from_path(
+                                path,
+                                dpi=dpi,
+                                first_page=page_number,
+                                last_page=page_number,
+                            )[0]
+                        except Exception as e:  # pragma: no cover
+                            page_errors = True
+                            logger.error(
+                                "Erro ao converter pagina %s do PDF %s: %s",
+                                page_number,
+                                path,
+                                e,
+                            )
+                            continue
                         pre = preprocess_image(
                             img,
                             debug_dir=debug_dir,
@@ -545,6 +556,7 @@ def extract_text_from_pdf(
                         text_parts.append(text_ocr)
                         logger.info("Pagina %s processada via OCR", page_number)
                     except Exception as e:  # pragma: no cover
+                        page_errors = True
                         logger.error(
                             "Erro no OCR da pagina %s do PDF %s: %s",
                             page_number,
@@ -557,59 +569,69 @@ def extract_text_from_pdf(
                         page_number,
                         path,
                     )
-            return "\n".join(text_parts)
+            if text_parts:
+                return "\n".join(text_parts)
+            if not page_errors:
+                return ""
         except Exception as e:  # pragma: no cover - falha no parse
+            page_errors = True
             logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
+    if not text_parts:
+        if page_errors:
+            logger.warning(
+                "OCR por pagina falhou para %s; acionando fallback completo",
+                path,
+            )
 
-    # 2) Fallback para OCR completo -------------------------------------
-    if not ocr_available:
-        logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
-        return ""
+        # 2) Fallback para OCR completo -------------------------------------
+        if not ocr_available:
+            logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
+            return ""
 
-    try:
-        images = convert_from_path(path, dpi=dpi)
-    except Exception as e:  # pragma: no cover - erro ao converter
-        logger.error("Erro ao converter PDF %s: %s", path, e)
-        return ""
-
-    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
-    os.makedirs(debug_dir, exist_ok=True)
-
-    for i, img in enumerate(images, start=1):
         try:
-            pre = preprocess_image(
-                img,
-                debug_dir=debug_dir,
-                page_idx=i,
-                apply_sharpen=apply_sharpen,
-                apply_threshold=apply_threshold,
-                brightness=pre_cfg.get("brightness", 0),
-                contrast=pre_cfg.get("contrast", 1.0),
-                denoise=pre_cfg.get("denoise"),
-                denoise_ksize=pre_cfg.get("denoise_ksize", 3),
-                adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
-                block_size=pre_cfg.get("block_size", 25),
-                c=pre_cfg.get("C", 10),
-                deskew=pre_cfg.get("deskew", True),
-                perspective=pre_cfg.get("perspective", True),
-            )
-            text = extract_text_from_image(
-                pre,
-                lang=lang,
-                oem=oem,
-                psm=psm,
-                whitelist=cfg.get("whitelist"),
-                blacklist=cfg.get("blacklist"),
-                split_regions=cfg.get("split_regions"),
-                multiple_passes=cfg.get("multiple_passes"),
-                config=cfg,
-            )
-            text_parts.append(text)
-            logger.info("Pagina %s processada via OCR", i)
-        except Exception as e:  # pragma: no cover
-            logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
+            images = convert_from_path(path, dpi=dpi)
+        except Exception as e:  # pragma: no cover - erro ao converter
+            logger.error("Erro ao converter PDF %s: %s", path, e)
+            return ""
 
-    return "\n".join(text_parts)
+        debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
+        os.makedirs(debug_dir, exist_ok=True)
+
+        for i, img in enumerate(images, start=1):
+            try:
+                pre = preprocess_image(
+                    img,
+                    debug_dir=debug_dir,
+                    page_idx=i,
+                    apply_sharpen=apply_sharpen,
+                    apply_threshold=apply_threshold,
+                    brightness=pre_cfg.get("brightness", 0),
+                    contrast=pre_cfg.get("contrast", 1.0),
+                    denoise=pre_cfg.get("denoise"),
+                    denoise_ksize=pre_cfg.get("denoise_ksize", 3),
+                    adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
+                    block_size=pre_cfg.get("block_size", 25),
+                    c=pre_cfg.get("C", 10),
+                    deskew=pre_cfg.get("deskew", True),
+                    perspective=pre_cfg.get("perspective", True),
+                )
+                text = extract_text_from_image(
+                    pre,
+                    lang=lang,
+                    oem=oem,
+                    psm=psm,
+                    whitelist=cfg.get("whitelist"),
+                    blacklist=cfg.get("blacklist"),
+                    split_regions=cfg.get("split_regions"),
+                    multiple_passes=cfg.get("multiple_passes"),
+                    config=cfg,
+                )
+                text_parts.append(text)
+                logger.info("Pagina %s processada via OCR", i)
+            except Exception as e:  # pragma: no cover
+                logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
+
+        return "\n".join(text_parts)
 
 import secrets
 import string
