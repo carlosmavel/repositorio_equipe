@@ -50,28 +50,6 @@ from sqlalchemy import select
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_OCR_CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "ocr_config.json"
-)
-
-
-def load_ocr_config(path: str | None = None) -> dict:
-    """Carrega as configurações de OCR a partir de um arquivo JSON.
-
-    O caminho pode ser informado manualmente ou lido da variável de ambiente
-    ``OCR_CONFIG_PATH``. Quando o arquivo não é encontrado ou ocorre algum
-    erro de leitura, um dicionário vazio é retornado.
-    """
-
-    if path is None:
-        path = os.getenv("OCR_CONFIG_PATH", DEFAULT_OCR_CONFIG_PATH)
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:  # pragma: no cover - arquivo inexistente ou invalido
-        return {}
-
-
 
 
 
@@ -116,23 +94,12 @@ def sanitize_html(text: str) -> str:
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(path: str, pdf_dpi: int | None = None) -> str:
+def extract_text(path: str) -> str:
     """
     Extrai texto de vários formatos de arquivo:
     - .txt, .docx, .xlsx, .xls, .ods, .pdf
     Retorna todo o texto concatenado como string.
-
-    Parameters
-    ----------
-    path: str
-        Caminho do arquivo a ser processado.
-    pdf_dpi: int | None, opcional
-        DPI utilizado quando ``path`` aponta para um PDF. Quando ``None``, o
-        valor é obtido da variável de ambiente ``PDF_OCR_DPI`` (padrão: 300).
     """
-    if pdf_dpi is None:
-        pdf_dpi = int(os.getenv("PDF_OCR_DPI", "300"))
-
     ext = os.path.splitext(path)[1].lower()
     text_parts = []
 
@@ -179,475 +146,85 @@ def extract_text(path: str, pdf_dpi: int | None = None) -> str:
 
     # PDF (texto ou imagem)
     if ext == '.pdf':
-        return extract_text_from_pdf(path, dpi=pdf_dpi)
+        return extract_text_from_pdf(path)
 
     # outros formatos não suportados
     return ''
 
 
-def preprocess_image(
-    img,
-    debug_dir: str | None = None,
-    page_idx: int = 0,
-    *,
-    apply_sharpen: bool = True,
-    apply_threshold: bool = True,
-    brightness: int = 0,
-    contrast: float = 1.0,
-    denoise: str | None = None,
-    denoise_ksize: int = 3,
-    adaptive_threshold: bool = False,
-    block_size: int = 25,
-    c: int = 10,
-    deskew: bool = True,
-    perspective: bool = True,
-):
-    """Aplica etapas de pré-processamento utilizando OpenCV.
-
-    Parameters
-    ----------
-    img: ``PIL.Image``
-        Imagem a ser processada.
-    debug_dir: str | None, opcional
-        Se fornecido, salva arquivos intermediários neste diretório.
-    page_idx: int, opcional
-        Índice da página (usado no nome dos arquivos de depuração).
-    apply_sharpen: bool, opcional
-        Se ``True`` (padrão), aplica um filtro de nitidez.
-    apply_threshold: bool, opcional
-        Se ``True`` (padrão), aplica limiarização de Otsu para binarização.
-
-    Returns
-    -------
-    ``PIL.Image``
-        Imagem resultante após as transformações selecionadas.
-    """
+def preprocess_image(img, debug_dir=None, page_idx=0):
+    """Aplica etapas de pre-processamento utilizando OpenCV."""
     if not (cv2 and np):  # pragma: no cover - dependencias ausentes
         return img
 
     img_array = np.array(img)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-
-    if deskew:
-        coords = np.column_stack(np.where(gray > 0))
-        if coords.size:
-            angle = cv2.minAreaRect(coords)[-1]
-            if angle < -45:
-                angle = -(90 + angle)
-            else:
-                angle = -angle
-            h, w = img_array.shape[:2]
-            M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-            img_array = cv2.warpAffine(
-                img_array,
-                M,
-                (w, h),
-                flags=cv2.INTER_CUBIC,
-                borderMode=cv2.BORDER_REPLICATE,
-            )
-            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-
-    if perspective:
-        try:
-            thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-            contours, _ = cv2.findContours(
-                thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-            if contours:
-                cnt = max(contours, key=cv2.contourArea)
-                peri = cv2.arcLength(cnt, True)
-                approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-                if len(approx) == 4:
-                    pts = approx.reshape(4, 2).astype("float32")
-                    s = pts.sum(axis=1)
-                    diff = np.diff(pts, axis=1)
-                    rect = np.zeros((4, 2), dtype="float32")
-                    rect[0] = pts[np.argmin(s)]
-                    rect[2] = pts[np.argmax(s)]
-                    rect[1] = pts[np.argmin(diff)]
-                    rect[3] = pts[np.argmax(diff)]
-                    (tl, tr, br, bl) = rect
-                    widthA = np.linalg.norm(br - bl)
-                    widthB = np.linalg.norm(tr - tl)
-                    maxWidth = int(max(widthA, widthB))
-                    heightA = np.linalg.norm(tr - br)
-                    heightB = np.linalg.norm(tl - bl)
-                    maxHeight = int(max(heightA, heightB))
-                    dst = np.array(
-                        [
-                            [0, 0],
-                            [maxWidth - 1, 0],
-                            [maxWidth - 1, maxHeight - 1],
-                            [0, maxHeight - 1],
-                        ],
-                        dtype="float32",
-                    )
-                    M = cv2.getPerspectiveTransform(rect, dst)
-                    img_array = cv2.warpPerspective(
-                        img_array, M, (maxWidth, maxHeight)
-                    )
-                    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        except Exception:
-            pass
-
-    processed = cv2.convertScaleAbs(gray, alpha=contrast, beta=brightness)
-
-    if denoise == "gaussian":
-        processed = cv2.GaussianBlur(
-            processed, (denoise_ksize, denoise_ksize), 0
-        )
-    elif denoise == "median":
-        processed = cv2.medianBlur(processed, denoise_ksize)
-
-    if apply_sharpen:
-        processed = cv2.addWeighted(
-            processed, 1.5, cv2.GaussianBlur(processed, (0, 0), 1.0), -0.5, 0
-        )
-
-    if apply_threshold:
-        if adaptive_threshold:
-            processed = cv2.adaptiveThreshold(
-                processed,
-                255,
-                cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY,
-                block_size,
-                c,
-            )
-        else:
-            _, processed = cv2.threshold(
-                processed, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-            )
-
     if debug_dir:
-        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_pre.png"), processed)
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_gray.png"), gray)
 
-    return Image.fromarray(processed)
+    sharp = cv2.addWeighted(gray, 1.5, cv2.GaussianBlur(gray, (0, 0), 1.0), -0.5, 0)
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_sharp.png"), sharp)
+
+    _, binary = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if debug_dir:
+        cv2.imwrite(os.path.join(debug_dir, f"page_{page_idx}_binary.png"), binary)
+
+    return Image.fromarray(binary)
 
 
-def split_image_into_regions(image):
-    """Divide a imagem em regiões distintas com base em contornos.
-
-    Utilizado para melhorar a acurácia do OCR em documentos que possuem
-    múltiplas áreas de texto. Caso o OpenCV não esteja disponível, retorna
-    apenas a imagem original.
-    """
-
-    if not (cv2 and np):  # pragma: no cover
-        yield image
-        return
-
-    img_array = np.array(image)
-    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    found = False
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        if w * h < 100:  # ignora ruídos
-            continue
-        found = True
-        yield image.crop((x, y, x + w, y + h))
-    if not found:
-        yield image
-
-def extract_text_from_image(
-    image,
-    lang: str = "por",
-    oem: str | None = None,
-    psm: str | None = None,
-    *,
-    whitelist: str | None = None,
-    blacklist: str | None = None,
-    split_regions: bool | None = None,
-    multiple_passes: list[dict] | None = None,
-    config: dict | None = None,
-) -> str:
-    """Realiza OCR na imagem usando pytesseract.
-
-    Parameters
-    ----------
-    image: PIL.Image
-        Imagem já carregada na memória.
-    lang: str, opcional
-        Idioma para o OCR (padrão ``"por"``).
-    oem: str | None, opcional
-        *OEM* (OCR Engine Mode) do Tesseract. Se ``None``, utiliza ``"3"``.
-    psm: str | None, opcional
-        *PSM* (Page Segmentation Mode). Se ``None``, utiliza ``"6"``.
-    whitelist: str | None, opcional
-        Lista de caracteres permitidos pelo Tesseract.
-    blacklist: str | None, opcional
-        Lista de caracteres proibidos pelo Tesseract.
-    split_regions: bool | None, opcional
-        Se ``True``, divide a imagem em múltiplas regiões de texto.
-    multiple_passes: list[dict] | None, opcional
-        Lista de tentativas adicionais de OCR com parâmetros diferenciados.
-    config: dict | None, opcional
-        Dicionário de configuração carregado de ``ocr_config.json``.
-    """
-
+def extract_text_from_image(image, lang="por") -> str:
+    """Realiza OCR na imagem usando pytesseract."""
     if not pytesseract:  # pragma: no cover - dependencias ausentes
         return ""
-
-    cfg = load_ocr_config() if config is None else config
-
-    if oem is None:
-        oem = str(cfg.get("oem", "3"))
-    if psm is None:
-        psm = str(cfg.get("psm", "6"))
-    if whitelist is None:
-        whitelist = cfg.get("whitelist")
-    if blacklist is None:
-        blacklist = cfg.get("blacklist")
-    if split_regions is None:
-        split_regions = cfg.get("split_regions", False)
-    if multiple_passes is None:
-        multiple_passes = cfg.get("multiple_passes")
-
-    def _run(image, psm_value, oem_value, wl, bl):
-        parts: list[str] = []
-        if oem_value:
-            parts.append(f"--oem {oem_value}")
-        if psm_value:
-            parts.append(f"--psm {psm_value}")
-        if wl:
-            parts.append(f"-c tessedit_char_whitelist={wl}")
-        if bl:
-            parts.append(f"-c tessedit_char_blacklist={bl}")
-        cfg_str = " ".join(parts)
-        return pytesseract.image_to_string(image, lang=lang, config=cfg_str)
-
-    regions = list(split_image_into_regions(image)) if split_regions else [image]
-
-    results: list[str] = []
-    for region in regions:
-        if multiple_passes:
-            for attempt in multiple_passes:
-                psm_v = attempt.get("psm", psm)
-                oem_v = attempt.get("oem", oem)
-                wl = attempt.get("whitelist", whitelist)
-                bl = attempt.get("blacklist", blacklist)
-                results.append(_run(region, psm_v, oem_v, wl, bl))
-        else:
-            results.append(_run(region, psm, oem, whitelist, blacklist))
-
-    return "\n".join(filter(None, results))
+    return pytesseract.image_to_string(image, lang=lang, config="--oem 3 --psm 6")
 
 
-def extract_text_from_pdf(
-    path: str,
-    dpi: int | None = None,
-    *,
-    apply_sharpen: bool | None = None,
-    apply_threshold: bool | None = None,
-    lang: str | None = None,
-    oem: str | None = None,
-    psm: str | None = None,
-    config: dict | None = None,
-) -> str:
-
-
+def extract_text_from_pdf(path: str) -> str:
     """Extrai texto de PDFs.
 
     Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
     esse texto ou a biblioteca não estiver disponível, recorre ao OCR usando
-    ``pdf2image`` + ``pytesseract``. As etapas de pré-processamento podem ser
-    habilitadas ou desabilitadas conforme o tipo de documento.
-
-    Parameters
-    ----------
-    path: str
-        Caminho para o arquivo PDF.
-    dpi: int | None, opcional
-        Resolução em *dots per inch* utilizada ao converter o PDF em imagens.
-        Valores mais altos tendem a melhorar a acurácia do OCR, mas aumentam o
-        tempo de processamento e o consumo de memória. Quando ``None``, o valor
-        é obtido da variável de ambiente ``PDF_OCR_DPI`` (padrão: 300).
-    apply_sharpen: bool, opcional
-        Aplica filtro de nitidez antes do OCR.
-    apply_threshold: bool, opcional
-        Realiza a limiarização (binarização) após o filtro de nitidez.
-    lang: str, opcional
-        Idioma a ser utilizado no Tesseract (padrão ``"por"``).
-    oem: str | None, opcional
-        ``OEM`` do Tesseract. ``None`` utiliza ``"3"``.
-    psm: str | None, opcional
-        ``PSM`` do Tesseract. ``None`` utiliza ``"6"``.
+    ``pdf2image`` + ``pytesseract``.
     """
-
-    cfg = load_ocr_config() if config is None else config
-
-    if dpi is None:
-        dpi = int(os.getenv("PDF_OCR_DPI", "300"))
-
-    if lang is None:
-        lang = cfg.get("lang", "por")
-    if oem is None:
-        oem = str(cfg.get("oem", "3"))
-    if psm is None:
-        psm = str(cfg.get("psm", "6"))
-
-    pre_cfg = cfg.get("preprocess", {})
-    if apply_sharpen is None:
-        apply_sharpen = pre_cfg.get("apply_sharpen", True)
-    if apply_threshold is None:
-        apply_threshold = pre_cfg.get("apply_threshold", True)
-
     text_parts: list[str] = []
-    required = {
-        "pdf2image": convert_from_path,
-        "Pillow": Image,
-        "pytesseract": pytesseract,
-    }
-    optional = {
-        "opencv-python": cv2,
-        "numpy": np,
-    }
-    missing_deps = [name for name, mod in required.items() if mod is None]
-    missing_opt = [name for name, mod in optional.items() if mod is None]
-    ocr_available = not missing_deps
-    page_errors = False
-
-    # 1) Percorre cada pagina com PdfReader ------------------------------
+    # 1) Tenta extrair texto nativo do PDF -------------------------------
     if PdfReader is not None:
         try:
             reader = PdfReader(path)
-            debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
-            os.makedirs(debug_dir, exist_ok=True)
-            for page_number, page in enumerate(getattr(reader, "pages", []), start=1):
+            for page in getattr(reader, 'pages', []):
                 text = page.extract_text() or ""
                 if text.strip():
                     text_parts.append(text)
-                elif ocr_available:
-                    try:
-                        try:
-                            img = convert_from_path(
-                                path,
-                                dpi=dpi,
-                                first_page=page_number,
-                                last_page=page_number,
-                            )[0]
-                        except Exception as e:  # pragma: no cover
-                            page_errors = True
-                            logger.error(
-                                "Erro ao converter pagina %s do PDF %s: %s",
-                                page_number,
-                                path,
-                                e,
-                            )
-                            continue
-                        pre = preprocess_image(
-                            img,
-                            debug_dir=debug_dir,
-                            page_idx=page_number,
-                            apply_sharpen=apply_sharpen,
-                            apply_threshold=apply_threshold,
-                            brightness=pre_cfg.get("brightness", 0),
-                            contrast=pre_cfg.get("contrast", 1.0),
-                            denoise=pre_cfg.get("denoise"),
-                            denoise_ksize=pre_cfg.get("denoise_ksize", 3),
-                            adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
-                            block_size=pre_cfg.get("block_size", 25),
-                            c=pre_cfg.get("C", 10),
-                            deskew=pre_cfg.get("deskew", True),
-                            perspective=pre_cfg.get("perspective", True),
-                        )
-                        text_ocr = extract_text_from_image(
-                            pre,
-                            lang=lang,
-                            oem=oem,
-                            psm=psm,
-                            whitelist=cfg.get("whitelist"),
-                            blacklist=cfg.get("blacklist"),
-                            split_regions=cfg.get("split_regions"),
-                            multiple_passes=cfg.get("multiple_passes"),
-                            config=cfg,
-                        )
-                        text_parts.append(text_ocr)
-                        logger.info("Pagina %s processada via OCR", page_number)
-                    except Exception as e:  # pragma: no cover
-                        page_errors = True
-                        logger.error(
-                            "Erro no OCR da pagina %s do PDF %s: %s",
-                            page_number,
-                            path,
-                            e,
-                        )
-                else:
-                    logger.warning(
-                        "Dependencias de OCR indisponiveis (%s) para a pagina %s de %s",
-                        ", ".join(missing_deps + missing_opt),
-                        page_number,
-                        path,
-                    )
-            if text_parts:
-                return "\n".join(text_parts)
-            if not page_errors:
-                return ""
         except Exception as e:  # pragma: no cover - falha no parse
-            page_errors = True
             logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
-    if not text_parts:
-        if page_errors:
-            logger.warning(
-                "OCR por pagina falhou para %s; acionando fallback completo",
-                path,
-            )
-
-        # 2) Fallback para OCR completo -------------------------------------
-        if not ocr_available:
-            logger.warning(
-                "Dependencias de OCR indisponiveis (%s) para %s",
-                ", ".join(missing_deps + missing_opt),
-                path,
-            )
-            return ""
-
-        try:
-            images = convert_from_path(path, dpi=dpi)
-        except Exception as e:  # pragma: no cover - erro ao converter
-            logger.error("Erro ao converter PDF %s: %s", path, e)
-            return ""
-
-        debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
-        os.makedirs(debug_dir, exist_ok=True)
-
-        for i, img in enumerate(images, start=1):
-            try:
-                pre = preprocess_image(
-                    img,
-                    debug_dir=debug_dir,
-                    page_idx=i,
-                    apply_sharpen=apply_sharpen,
-                    apply_threshold=apply_threshold,
-                    brightness=pre_cfg.get("brightness", 0),
-                    contrast=pre_cfg.get("contrast", 1.0),
-                    denoise=pre_cfg.get("denoise"),
-                    denoise_ksize=pre_cfg.get("denoise_ksize", 3),
-                    adaptive_threshold=pre_cfg.get("adaptive_threshold", False),
-                    block_size=pre_cfg.get("block_size", 25),
-                    c=pre_cfg.get("C", 10),
-                    deskew=pre_cfg.get("deskew", True),
-                    perspective=pre_cfg.get("perspective", True),
-                )
-                text = extract_text_from_image(
-                    pre,
-                    lang=lang,
-                    oem=oem,
-                    psm=psm,
-                    whitelist=cfg.get("whitelist"),
-                    blacklist=cfg.get("blacklist"),
-                    split_regions=cfg.get("split_regions"),
-                    multiple_passes=cfg.get("multiple_passes"),
-                    config=cfg,
-                )
-                text_parts.append(text)
-                logger.info("Pagina %s processada via OCR", i)
-            except Exception as e:  # pragma: no cover
-                logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
-
+    if text_parts:
         return "\n".join(text_parts)
+
+    # 2) Fallback para OCR -----------------------------------------------
+    if not (convert_from_path and Image and pytesseract):
+        logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
+        return ""
+
+    try:
+        images = convert_from_path(path, dpi=300)
+    except Exception as e:  # pragma: no cover - erro ao converter
+        logger.error("Erro ao converter PDF %s: %s", path, e)
+        return ""
+
+    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
+    os.makedirs(debug_dir, exist_ok=True)
+
+    for i, img in enumerate(images, start=1):
+        try:
+            pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
+            text = extract_text_from_image(pre, lang="por")
+            text_parts.append(text)
+            logger.info("Pagina %s processada com sucesso", i)
+        except Exception as e:  # pragma: no cover
+            logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
+
+    return "\n".join(text_parts)
 
 import secrets
 import string
