@@ -436,3 +436,26 @@ def test_os_modal_endpoint(client):
     assert resp.status_code == 200
     assert 'OS modal test' in resp.get_data(as_text=True)
 
+
+def test_etapas_por_processo_endpoint(client):
+    login_admin(client)
+    with app.app_context():
+        proc1 = Processo(nome='ProcA')
+        proc2 = Processo(nome='ProcB')
+        e1 = ProcessoEtapa(nome='EtapaA', ordem=1, processo=proc1)
+        e2 = ProcessoEtapa(nome='EtapaB', ordem=1, processo=proc2)
+        db.session.add_all([proc1, proc2, e1, e2])
+        db.session.commit()
+        proc1_id, proc2_id = proc1.id, proc2.id
+        e1_id, e2_id = e1.id, e2.id
+    resp = client.get(f'/admin/tipos_os/etapas/{proc1_id}')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert len(data) == 1
+    assert data[0]['id'] == e1_id
+    resp = client.get(f'/admin/tipos_os/etapas/{proc2_id}')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert len(data) == 1
+    assert data[0]['id'] == e2_id
+

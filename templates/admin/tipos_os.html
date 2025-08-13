@@ -65,6 +65,15 @@
               <textarea class="form-control form-control-sm" id="descricao" name="descricao" rows="2">{{ request.form.get('descricao', tipo_editar.descricao if tipo_editar else '') }}</textarea>
             </div>
             <div class="mb-1">
+              <label for="processo_id" class="form-label">Processo <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="processo_id" name="processo_id" required>
+                <option value="">--</option>
+                {% for p in processos %}
+                <option value="{{ p.id }}" {% if processo_selecionado == p.id|string %}selected{% endif %}>{{ p.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-1">
               <label for="etapa_id" class="form-label">Etapa <span class="text-danger">*</span></label>
               <select class="form-select form-select-sm" id="etapa_id" name="etapa_id" required>
                 <option value="">--</option>
@@ -105,6 +114,27 @@
     </div>
   </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const processoSelect = document.getElementById('processo_id');
+    const etapaSelect = document.getElementById('etapa_id');
+    processoSelect.addEventListener('change', function(){
+      const procId = this.value;
+      etapaSelect.innerHTML = '<option value="">--</option>';
+      if (!procId) return;
+      fetch(`/admin/tipos_os/etapas/${procId}`)
+        .then(r => r.json())
+        .then(data => {
+          data.forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.nome;
+            etapaSelect.appendChild(opt);
+          });
+        });
+    });
+  });
+</script>
 {% if tipo_editar %}
 <script>
   document.addEventListener('DOMContentLoaded', function(){
