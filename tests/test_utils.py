@@ -23,26 +23,35 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     pdf_file.write_bytes(b"%PDF-1.4")
 
     from PIL import Image
-
+    
     img1 = Image.new("RGB", (10, 10), color="white")
     img2 = Image.new("RGB", (10, 10), color="black")
     monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: [img1, img2])
 
     calls = []
 
-    def dummy_extract(img, lang="por"):
+    def dummy_select(img, lang, psms):
         calls.append(img)
-        return ("Texto1" if len(calls) == 1 else "Texto2", {"best_psm": 6, "candidates": []})
+        return 6, [(6, 0.0, 1)]
 
-    monkeypatch.setattr("core.utils.extract_text_from_image", dummy_extract)
+    monkeypatch.setattr("core.utils.select_best_psm", dummy_select)
     monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
-    monkeypatch.setattr("core.utils.pytesseract", object())
 
-    text = extract_text(str(pdf_file))
+    def dummy_to_string(img, lang, config):
+        return "Texto1" if img is img1 else "Texto2"
+
+    monkeypatch.setattr(
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=dummy_to_string),
+    )
+
+    text, meta = extract_text(str(pdf_file))
 
     assert "Texto1" in text
     assert "Texto2" in text
     assert len(calls) == 2
+    assert meta[0]["best_psm"] == 6
+    assert meta[1]["page"] == 2
 
 def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy2.pdf"
@@ -65,14 +74,15 @@ def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
     images = [Image.new("RGB", (10, 10), color="white"), Image.new("RGB", (10, 10), color="white")]
     monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: images)
     monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setattr("core.utils.select_best_psm", lambda img, lang, psms: (6, [(6, 0.0, 1)]))
     monkeypatch.setattr(
-        "core.utils.extract_text_from_image",
-        lambda img, lang="por": ("OCR", {"best_psm": 6, "candidates": []}),
+        "core.utils.pytesseract",
+        types.SimpleNamespace(image_to_string=lambda img, lang, config: "OCR"),
     )
-    monkeypatch.setattr("core.utils.pytesseract", object())
 
-    text = extract_text(str(pdf_file))
+    text, meta = extract_text(str(pdf_file))
     assert text.splitlines() == ["Native", "OCR"]
+    assert meta[1]["best_psm"] == 6
 
 
 def test_select_best_psm(monkeypatch):
