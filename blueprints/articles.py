@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
 from sqlalchemy import or_, func
+import re
 
 try:
     from ..core.database import db
@@ -468,9 +469,10 @@ def aprovacao_detail(artigo_id):
 
     if request.method=='POST':
         acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
-        comentario = request.form.get('comentario','').strip()
+        raw_comment = request.form.get('comentario', '').strip()
+        comentario = re.sub(r'<[^>]*?>', '', raw_comment).strip()
 
-        # Comentário obrigatório
+        # Comentário obrigatório (após remover tags HTML)
         if not comentario:
             flash('Comentário é obrigatório.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))

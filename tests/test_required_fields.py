@@ -58,7 +58,8 @@ def _login_user(client, perms=None):
     return uid
 
 
-def test_approve_requires_comment(client):
+@pytest.mark.parametrize("comentario", [" ", "<p><br></p>"])
+def test_approve_requires_comment(client, comentario):
     _login_user(client, [Permissao.ARTIGO_APROVAR_CELULA])
     with app.app_context():
         inst = Instituicao.query.first()
@@ -77,7 +78,7 @@ def test_approve_requires_comment(client):
         db.session.add(art)
         db.session.commit()
         aid = art.id
-    client.post(f'/aprovacao/{aid}', data={'acao': 'aprovar', 'comentario': ' '}, follow_redirects=True)
+    client.post(f'/aprovacao/{aid}', data={'acao': 'aprovar', 'comentario': comentario}, follow_redirects=True)
     with app.app_context():
         art = Article.query.get(aid)
         assert art.status == ArticleStatus.PENDENTE
