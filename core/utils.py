@@ -350,7 +350,10 @@ def extract_text_from_pdf(
                     return "\n".join(text_parts), metadata
             img = images[page_number - 1]
             try:
-                pre = preprocess_image(img, debug_dir=debug_dir, page_idx=page_number)
+                rotated_img, angle = detect_and_rotate(img)
+                pre = preprocess_image(
+                    rotated_img, debug_dir=debug_dir, page_idx=page_number
+                )
                 best_psm, stats = select_best_psm(pre, lang, psms)
                 text = pytesseract.image_to_string(
                     pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
@@ -366,6 +369,7 @@ def extract_text_from_pdf(
                         "best_psm": best_psm,
                         "mean_conf": mean_conf,
                         "word_count": word_count,
+                        "angle": angle,
                     }
                 )
                 logger.info("Pagina %s processada via OCR", page_number)
@@ -396,7 +400,8 @@ def extract_text_from_pdf(
     os.makedirs(debug_dir, exist_ok=True)
     for i, img in enumerate(images, start=1):
         try:
-            pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
+            rotated_img, angle = detect_and_rotate(img)
+            pre = preprocess_image(rotated_img, debug_dir=debug_dir, page_idx=i)
             best_psm, stats = select_best_psm(pre, lang, psms)
             text = pytesseract.image_to_string(
                 pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
@@ -412,6 +417,7 @@ def extract_text_from_pdf(
                     "best_psm": best_psm,
                     "mean_conf": mean_conf,
                     "word_count": word_count,
+                    "angle": angle,
                 }
             )
             logger.info("Pagina %s processada com sucesso", i)
