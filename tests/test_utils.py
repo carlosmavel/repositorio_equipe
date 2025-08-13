@@ -1,7 +1,13 @@
+import os
 import pytest
 
 import types
-from core.utils import sanitize_html, extract_text, select_best_psm
+from core.utils import (
+    sanitize_html,
+    extract_text,
+    select_best_psm,
+    extract_text_from_image,
+)
 
 
 def test_sanitize_html_removes_disallowed_tags():
@@ -106,4 +112,37 @@ def test_select_best_psm(monkeypatch):
     best_psm, stats = select_best_psm(None, "por", [3, 6])
     assert best_psm == 6
     assert stats == [(3, 15.0, 2), (6, 30.0, 1)]
+
+
+@pytest.mark.skipif(not os.getenv("OCR_TEST_FILE"), reason="OCR_TEST_FILE not set")
+def test_extract_text_integration(tmp_path):
+    path = os.getenv("OCR_TEST_FILE")
+    ext = os.path.splitext(path)[1].lower()
+
+    if ext == ".pdf":
+        text, meta = extract_text(path)
+        assert text.strip()
+        assert meta and meta[0]["best_psm"] is not None
+
+        from pdf2image import convert_from_path
+
+        images = convert_from_path(path, dpi=300)
+        rotated = images[0].rotate(90, expand=True)
+        text_rot, meta_rot = extract_text_from_image(rotated)
+        assert text_rot.strip()
+        assert meta_rot["best_psm"] is not None
+        assert meta_rot["angle"] != 0
+    else:
+        from PIL import Image
+
+        img = Image.open(path)
+        text, meta = extract_text_from_image(img)
+        assert text.strip()
+        assert meta["best_psm"] is not None
+
+        rotated = img.rotate(90, expand=True)
+        text_rot, meta_rot = extract_text_from_image(rotated)
+        assert text_rot.strip()
+        assert meta_rot["best_psm"] is not None
+        assert meta_rot["angle"] != 0
 
