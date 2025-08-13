@@ -219,6 +219,7 @@
                             </a>
                             <div class="collapse {{ 'show' if 'admin_' in request.endpoint }}" id="collapseAdministracao">
                                 <ul class="nav flex-column ps-3">
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
                                     <li class="nav-item">
                                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if endpoint_base in cadastros_base else '' }} {{ 'collapsed' if endpoint_base not in cadastros_base }}"
                                         data-bs-toggle="collapse" href="#collapseCadastrosOrgSub" role="button"
@@ -251,7 +252,6 @@
                                             </ul>
                                         </div>
                                     </li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
                                     <li class="nav-item">
                                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_usuarios' in request.endpoint else '' }} {{ 'collapsed' if 'admin_usuarios' not in request.endpoint }}"
                                         data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button"
