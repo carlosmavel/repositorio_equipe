@@ -42,3 +42,31 @@ def test_extract_text_image_pdf(monkeypatch, tmp_path):
     assert "Texto1" in text
     assert "Texto2" in text
     assert len(calls) == 2
+
+def test_extract_text_mixed_pdf(monkeypatch, tmp_path):
+    pdf_file = tmp_path / "dummy2.pdf"
+    pdf_file.write_bytes(b"%PDF-1.4")
+
+    from PIL import Image
+
+    class DummyPage:
+        def __init__(self, text):
+            self._text = text
+
+        def extract_text(self):
+            return self._text
+
+    class DummyReader:
+        def __init__(self, path):
+            self.pages = [DummyPage("Native"), DummyPage("")]
+
+    monkeypatch.setattr("core.utils.PdfReader", DummyReader)
+    images = [Image.new("RGB", (10, 10), color="white"), Image.new("RGB", (10, 10), color="white")]
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: images)
+    monkeypatch.setattr("core.utils.preprocess_image", lambda img, **k: img)
+    monkeypatch.setattr("core.utils.extract_text_from_image", lambda img, lang="por": "OCR")
+    monkeypatch.setattr("core.utils.pytesseract", object())
+
+    text = extract_text(str(pdf_file))
+    assert text.splitlines() == ["Native", "OCR"]
+

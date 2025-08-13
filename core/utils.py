@@ -188,33 +188,59 @@ def extract_text_from_pdf(path: str) -> str:
     ``pdf2image`` + ``pytesseract``.
     """
     text_parts: list[str] = []
-    # 1) Tenta extrair texto nativo do PDF -------------------------------
+
+    reader = None
     if PdfReader is not None:
         try:
             reader = PdfReader(path)
-            for page in getattr(reader, 'pages', []):
-                text = page.extract_text() or ""
-                if text.strip():
-                    text_parts.append(text)
         except Exception as e:  # pragma: no cover - falha no parse
             logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
-    if text_parts:
+
+    images: list[Image.Image] | None = None
+    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
+
+    if reader is not None:
+        for page_number, page in enumerate(reader.pages, start=1):
+            text = (page.extract_text() or "").strip()
+            if text:
+                text_parts.append(text)
+                continue
+            if not (convert_from_path and Image and pytesseract):
+                logger.warning(
+                    "Dependencias de OCR indisponiveis para a pagina %s de %s",
+                    page_number,
+                    path,
+                )
+                text_parts.append("")
+                continue
+            if images is None:
+                try:
+                    images = convert_from_path(path, dpi=300)
+                    os.makedirs(debug_dir, exist_ok=True)
+                except Exception as e:  # pragma: no cover - erro ao converter
+                    logger.error("Erro ao converter PDF %s: %s", path, e)
+                    return "\n".join(text_parts)
+            img = images[page_number - 1]
+            try:
+                pre = preprocess_image(img, debug_dir=debug_dir, page_idx=page_number)
+                ocr_text = extract_text_from_image(pre, lang="por")
+                text_parts.append(ocr_text)
+                logger.info("Pagina %s processada via OCR", page_number)
+            except Exception as e:  # pragma: no cover
+                logger.error("Erro no OCR da pagina %s do PDF %s: %s", page_number, path, e)
+                text_parts.append("")
         return "\n".join(text_parts)
 
-    # 2) Fallback para OCR -----------------------------------------------
+    # Se nao foi possivel ler com PdfReader, tenta OCR em todas as paginas
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
-
     try:
         images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
         return ""
-
-    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
     os.makedirs(debug_dir, exist_ok=True)
-
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, debug_dir=debug_dir, page_idx=i)
@@ -223,7 +249,6 @@ def extract_text_from_pdf(path: str) -> str:
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
-
     return "\n".join(text_parts)
 
 import secrets
