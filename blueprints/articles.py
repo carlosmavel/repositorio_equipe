@@ -122,7 +122,7 @@ def novo_artigo():
                 filenames.append(unique_name)
 
                 # extrai texto e descobre MIME
-                texto_extraido, _ = extract_text(dest)
+                texto_extraido = extract_text(dest)
                 mime_type, _   = guess_type(dest)
 
                 # cria o registro de attachment
@@ -317,7 +317,7 @@ def editar_artigo(artigo_id):
                 existing.append(unique_name)
 
                 # 1) extrai texto
-                texto_extraido, _ = extract_text(dest)
+                texto_extraido = extract_text(dest)
                 # 2) descobre o MIME
                 mime_type, _ = guess_type(dest)
                 # 3) adiciona o attachment ao session

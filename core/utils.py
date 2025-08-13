@@ -12,7 +12,6 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 import logging
-import time
 try:
     import cv2
     import numpy as np
@@ -31,13 +30,6 @@ try:
     from PIL import Image
 except Exception:  # pragma: no cover
     Image = None
-try:
-    from pypdf import PdfReader
-except Exception:  # pragma: no cover
-    try:
-        from PyPDF2 import PdfReader  # type: ignore
-    except Exception:  # pragma: no cover
-        PdfReader = None
 
 try:
     from .database import db  # type: ignore  # pragma: no cover
@@ -49,35 +41,6 @@ except ImportError:  # pragma: no cover
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
-
-
-def _load_ocr_settings() -> dict:
-    """Load OCR settings from a JSON file if present."""
-    try:
-        with open("settings.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-_settings = _load_ocr_settings()
-DEFAULT_OCR_LANG = os.getenv("OCR_LANG") or _settings.get("OCR_LANG", "por+eng")
-_psms_raw = os.getenv("OCR_PSMS") or _settings.get("OCR_PSMS")
-if isinstance(_psms_raw, str):
-    try:
-        DEFAULT_OCR_PSMS = [int(p.strip()) for p in _psms_raw.split(",") if p.strip()]
-    except ValueError:
-        DEFAULT_OCR_PSMS = [6, 3]
-elif isinstance(_psms_raw, list):
-    DEFAULT_OCR_PSMS = [int(p) for p in _psms_raw]
-else:
-    DEFAULT_OCR_PSMS = [6, 3]
-
-
-
-
-
-
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
 #-------------------------------------------------------------------------------------------
@@ -118,28 +81,22 @@ def sanitize_html(text: str) -> str:
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(
-    path: str, lang: str | None = None, psms: list[int] | None = None
-) -> tuple[str, list[dict]]:
-    """
-    Extrai texto de vários formatos de arquivo:
-    - .txt, .docx, .xlsx, .xls, .ods, .pdf
-    Retorna todo o texto concatenado e metadados (se houver).
-    """
+def extract_text(path: str) -> str:
+    """Extrai texto de vários formatos de arquivo."""
     ext = os.path.splitext(path)[1].lower()
     text_parts: list[str] = []
 
     # TXT
     if ext == '.txt':
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-            return f.read(), []
+            return f.read()
 
     # DOCX
     if ext == '.docx':
         doc = Document(path)
         for para in doc.paragraphs:
             text_parts.append(para.text)
-        return '\n'.join(text_parts), []
+        return '\n'.join(text_parts)
 
     # XLSX
     if ext == '.xlsx':
@@ -150,7 +107,7 @@ def extract_text(
                 for cell in row:
                     if cell is not None:
                         text_parts.append(str(cell))
-        return '\n'.join(text_parts), []
+        return '\n'.join(text_parts)
 
     # XLS (Excel antigo)
     if ext == '.xls':
@@ -161,40 +118,21 @@ def extract_text(
                     cell = sheet.cell(rx, cx).value
                     if cell:
                         text_parts.append(str(cell))
-        return '\n'.join(text_parts), []
+        return '\n'.join(text_parts)
 
     # ODS (LibreOffice Calc)
     if ext == '.ods':
         doc = opendocument.load(path)
         for elem in doc.getElementsByType(P):
             text_parts.append(str(elem))
-        return '\n'.join(text_parts), []
+        return '\n'.join(text_parts)
 
-    # PDF (texto ou imagem)
+    # PDF
     if ext == '.pdf':
-        return extract_text_from_pdf(path, lang=lang, psms=psms)
+        return extract_text_from_pdf(path)
 
     # outros formatos não suportados
-    return '', []
-
-
-def detect_and_rotate(image):
-    """Detecta a orientação da imagem e a rotaciona conforme necessário.
-
-    Retorna a imagem possivelmente rotacionada e o ângulo detectado em graus.
-    """
-    if not pytesseract:  # pragma: no cover - dependencias ausentes
-        return image, 0
-    try:
-        osd = pytesseract.image_to_osd(image)
-        match = re.search(r"Rotate: (\d+)", osd)
-        angle = int(match.group(1)) if match else 0
-        if angle != 0 and Image:
-            # PIL.rotate gira no sentido anti-horário; usamos negativo
-            return image.rotate(-angle, expand=True), angle
-    except Exception:  # pragma: no cover - falha na detecção
-        pass
-    return image, 0
+    return ''
 
 
 def preprocess_image(img, debug_dir=None, page_idx=0):
@@ -218,242 +156,36 @@ def preprocess_image(img, debug_dir=None, page_idx=0):
     return Image.fromarray(binary)
 
 
-def select_best_psm(image, lang: str, psms: list[int]):
-    """Seleciona o melhor *Page Segmentation Mode* (PSM) para a imagem.
-
-    Para cada PSM candidato executa ``pytesseract.image_to_data`` coletando a
-    confiança média (ignorando valores ``-1``) e a quantidade de palavras
-    reconhecidas. Retorna o PSM com maior média de confiança e, em caso de
-    empate, o com maior contagem de palavras, junto com as estatísticas
-    calculadas para cada PSM.
-    """
-
+def extract_text_from_image(image, lang: str = "por") -> str:
+    """Realiza OCR simples na imagem usando pytesseract."""
     if not pytesseract:  # pragma: no cover - dependencias ausentes
-        return (psms[0] if psms else 6, [])
-
-    stats: list[tuple[int, float, int]] = []
-    best_psm = psms[0]
-    best_mean = -1.0
-    best_words = -1
-
-    for psm in psms:
-        data = pytesseract.image_to_data(
-            image,
-            lang=lang,
-            config=f"--oem 3 --psm {psm}",
-            output_type=pytesseract.Output.DICT,
-        )
-        confs = [int(c) for c in data.get("conf", []) if c != "-1"]
-        mean_conf = sum(confs) / len(confs) if confs else 0.0
-        words = [w for w in data.get("text", []) if w.strip()]
-        word_count = len(words)
-        stats.append((psm, mean_conf, word_count))
-        if mean_conf > best_mean or (
-            mean_conf == best_mean and word_count > best_words
-        ):
-            best_psm = psm
-            best_mean = mean_conf
-            best_words = word_count
-
-    return best_psm, stats
-
-
-def extract_text_from_image(
-    image, lang: str | None = None, psms: list[int] | None = None
-):
-    """Realiza OCR na imagem usando pytesseract.
-
-    Retorna o texto reconhecido e metadados sobre o processo, incluindo o PSM
-    selecionado e as estatísticas de cada PSM candidato.
-    """
-    if not pytesseract:  # pragma: no cover - dependencias ausentes
-        return "", {"best_psm": None, "candidates": [], "angle": None, "processing_time": 0.0}
-
-    start_time = time.perf_counter()
-    rotated, angle = detect_and_rotate(image)
-    lang = lang or DEFAULT_OCR_LANG
-    psms = psms or DEFAULT_OCR_PSMS
-    best_psm, stats = select_best_psm(rotated, lang, psms)
+        return ""
     text = pytesseract.image_to_string(
-        rotated, lang=lang, config=f"--oem 3 --psm {best_psm}"
+        image, lang=lang, config="--oem 3 --psm 6"
     )
-    text = text.replace('\x0c', '').strip()
-    processing_time = time.perf_counter() - start_time
-    metadata = {
-        "best_psm": best_psm,
-        "candidates": stats,
-        "angle": angle,
-        "processing_time": processing_time,
-    }
-    return text, metadata
+    return text.replace("\x0c", "").strip()
 
 
-def extract_text_from_pdf(
-    path: str, lang: str | None = None, psms: list[int] | None = None
-) -> tuple[str, list[dict]]:
-    """Extrai texto de PDFs.
-
-    Primeiro tenta usar o texto embutido com ``pypdf``/``PyPDF2``. Se não houver
-    esse texto ou a biblioteca não estiver disponível, recorre ao OCR usando
-    ``pdf2image`` + ``pytesseract``.
-    """
-    lang = lang or DEFAULT_OCR_LANG
-    psms = psms or DEFAULT_OCR_PSMS
-    text_parts: list[str] = []
-    metadata: list[dict] = []
-
-    reader = None
-    if PdfReader is not None:
-        try:
-            reader = PdfReader(path)
-        except Exception as e:  # pragma: no cover - falha no parse
-            logger.error("Erro ao extrair texto do PDF %s: %s", path, e)
-
-    images: list[Image.Image] | None = None
-    debug_dir = os.path.splitext(path)[0] + "_ocr_debug"
-
-    if reader is not None:
-        for page_number, page in enumerate(reader.pages, start=1):
-            text = (page.extract_text() or "").strip()
-            if text:
-                text_parts.append(text)
-                metadata.append(
-                    {
-                        "page": page_number,
-                        "best_psm": None,
-                        "mean_conf": None,
-                        "word_count": None,
-                    }
-                )
-                continue
-            if not (convert_from_path and Image and pytesseract):
-                logger.warning(
-                    "Dependencias de OCR indisponiveis para a pagina %s de %s",
-                    page_number,
-                    path,
-                )
-                text_parts.append("")
-                metadata.append(
-                    {
-                        "page": page_number,
-                        "best_psm": None,
-                        "mean_conf": None,
-                        "word_count": None,
-                    }
-                )
-                continue
-            if images is None:
-                try:
-                    images = convert_from_path(path, dpi=300)
-                    os.makedirs(debug_dir, exist_ok=True)
-                except Exception as e:  # pragma: no cover - erro ao converter
-                    logger.error("Erro ao converter PDF %s: %s", path, e)
-                    return "\n".join(text_parts), metadata
-            if len(images) < page_number:
-                logger.error(
-                    "convert_from_path gerou apenas %s imagens para %s; pagina %s ausente",
-                    len(images),
-                    path,
-                    page_number,
-                )
-                text_parts.append("")
-                metadata.append(
-                    {
-                        "page": page_number,
-                        "best_psm": None,
-                        "mean_conf": None,
-                        "word_count": None,
-                        "conversion_failed": True,
-                    }
-                )
-                continue
-
-            img = images[page_number - 1]
-            try:
-                rotated_img, angle = detect_and_rotate(img)
-                pre = preprocess_image(
-                    rotated_img, debug_dir=debug_dir, page_idx=page_number
-                )
-                best_psm, stats = select_best_psm(pre, lang, psms)
-                text = pytesseract.image_to_string(
-                    pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
-                )
-                text = text.replace('\x0c', '').strip()
-                text_parts.append(text)
-                mean_conf, word_count = next(
-                    ((m, w) for p, m, w in stats if p == best_psm),
-                    (0.0, 0),
-                )
-                metadata.append(
-                    {
-                        "page": page_number,
-                        "best_psm": best_psm,
-                        "mean_conf": mean_conf,
-                        "word_count": word_count,
-                        "angle": angle,
-                    }
-                )
-                logger.info("Pagina %s processada via OCR", page_number)
-            except Exception as e:  # pragma: no cover
-                logger.error(
-                    "Erro no OCR da pagina %s do PDF %s: %s", page_number, path, e
-                )
-                text_parts.append("")
-                metadata.append(
-                    {
-                        "page": page_number,
-                        "best_psm": None,
-                        "mean_conf": None,
-                        "word_count": None,
-                    }
-                )
-        return "\n".join(text_parts), metadata
-
-    # Se nao foi possivel ler com PdfReader, tenta OCR em todas as paginas
+def extract_text_from_pdf(path: str) -> str:
+    """Extrai texto de PDFs usando ``pdf2image`` + ``pytesseract``."""
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
-        return "", []
+        return ""
     try:
         images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
-        return "", []
-    os.makedirs(debug_dir, exist_ok=True)
+        return ""
+    text_parts: list[str] = []
     for i, img in enumerate(images, start=1):
         try:
-            rotated_img, angle = detect_and_rotate(img)
-            pre = preprocess_image(rotated_img, debug_dir=debug_dir, page_idx=i)
-            best_psm, stats = select_best_psm(pre, lang, psms)
-            text = pytesseract.image_to_string(
-                pre, lang=lang, config=f"--oem 3 --psm {best_psm}"
-            )
-            text = text.replace('\x0c', '').strip()
-            text_parts.append(text)
-            mean_conf, word_count = next(
-                ((m, w) for p, m, w in stats if p == best_psm),
-                (0.0, 0),
-            )
-            metadata.append(
-                {
-                    "page": i,
-                    "best_psm": best_psm,
-                    "mean_conf": mean_conf,
-                    "word_count": word_count,
-                    "angle": angle,
-                }
-            )
+            pre = preprocess_image(img, page_idx=i)
+            text_parts.append(extract_text_from_image(pre))
             logger.info("Pagina %s processada com sucesso", i)
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
-            metadata.append(
-                {
-                    "page": i,
-                    "best_psm": None,
-                    "mean_conf": None,
-                    "word_count": None,
-                }
-            )
-    return "\n".join(text_parts), metadata
+            text_parts.append("")
+    return "\n".join(text_parts)
 
 import secrets
 import string
