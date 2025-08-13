@@ -106,13 +106,15 @@
   (() => {
     'use strict';
     const form = document.getElementById('reviewForm');
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      form.classList.add('was-validated');
-    }, false);
+    if (form) {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    }
   })();
 
   // Nosso novo script para marcar a notificação como lida
