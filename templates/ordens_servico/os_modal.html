@@ -12,10 +12,10 @@
       {% if ordem.equipamento %}<p class="mb-1"><strong>Equipamento:</strong> {{ ordem.equipamento.nome }}</p>{% endif %}
       {% if ordem.sistema %}<p class="mb-1"><strong>Sistema:</strong> {{ ordem.sistema.nome }}</p>{% endif %}
       <p class="mt-2 mb-1"><strong>Descrição:</strong></p>
-      <p class="mb-1">{{ ordem.descricao }}</p>
+      <p class="mb-1">{{ ordem.descricao|safe }}</p>
       {% if ordem.observacoes %}
       <p class="mt-2 mb-1"><strong>Observações:</strong></p>
-      <p class="mb-0">{{ ordem.observacoes }}</p>
+      <p class="mb-0">{{ ordem.observacoes|safe }}</p>
       {% endif %}
     </div>
   </div>
