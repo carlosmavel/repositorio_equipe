@@ -9,7 +9,7 @@
 
         <div class="row">
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card futuristic-card">
                     <div class="card-header">Usuários Ativos</div>
                     <div class="card-body">
                         <canvas id="usersChart" class="dashboard-chart"></canvas>
@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card futuristic-card">
                     <div class="card-header">Artigos por Status</div>
                     <div class="card-body">
                         <canvas id="articlesChart" class="dashboard-chart"></canvas>
@@ -25,13 +25,52 @@
                 </div>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card futuristic-card">
+                    <div class="card-header">Notificações</div>
+                    <div class="card-body">
+                        <canvas id="notificationsChart" class="dashboard-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card futuristic-card">
+                    <div class="card-header">Entidades no Sistema</div>
+                    <div class="card-body">
+                        <canvas id="systemChart" class="dashboard-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+{% endblock %}
+
+{% block extra_css %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
 {% endblock %}
 
 {% block extra_js %}
     {{ super() }}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const baseOptions = {
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
+            plugins: {
+                legend: { labels: { color: '#fff' } }
+            },
+            scales: {
+                r: { angleLines: { color: '#444' }, grid: { color: '#444' }, ticks: { color: '#aaa' }, pointLabels: { color: '#fff' } },
+                x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
+                y: { ticks: { color: '#fff' }, grid: { color: '#333' }, beginAtZero: true }
+            }
+        };
+
         const usersData = {
             labels: ['Ativos', 'Inativos'],
             datasets: [{
@@ -41,7 +80,8 @@
         };
         new Chart(document.getElementById('usersChart'), {
             type: 'doughnut',
-            data: usersData
+            data: usersData,
+            options: baseOptions
         });
 
         const articleData = {{ article_status_counts|tojson }};
@@ -55,7 +95,40 @@
                     backgroundColor: 'rgba(54, 162, 235, 0.6)'
                 }]
             },
-            options: {scales: {y: {beginAtZero: true}}}
+            options: baseOptions
+        });
+
+        const notificationsData = {
+            labels: ['Lidas', 'Não Lidas'],
+            datasets: [{
+                data: [{{ notifications_read }}, {{ notifications_unread }}],
+                backgroundColor: ['#0d6efd', '#ffc107']
+            }]
+        };
+        new Chart(document.getElementById('notificationsChart'), {
+            type: 'doughnut',
+            data: notificationsData,
+            options: baseOptions
+        });
+
+        const systemData = {{ system_counts|tojson }};
+        const ctxSys = document.getElementById('systemChart').getContext('2d');
+        const gradient = ctxSys.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 0.6)');
+        gradient.addColorStop(1, 'rgba(0, 0, 255, 0.6)');
+        new Chart(ctxSys, {
+            type: 'radar',
+            data: {
+                labels: Object.keys(systemData),
+                datasets: [{
+                    label: 'Quantidade',
+                    data: Object.values(systemData),
+                    backgroundColor: gradient,
+                    borderColor: 'rgba(0, 255, 255, 0.8)',
+                    borderWidth: 2
+                }]
+            },
+            options: baseOptions
         });
     </script>
 {% endblock %}

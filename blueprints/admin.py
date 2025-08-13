@@ -102,6 +102,21 @@ def admin_dashboard():
     notifications_unread = Notification.query.filter_by(lido=False).count()
     notifications_read = Notification.query.filter_by(lido=True).count()
 
+    system_counts = {
+        "Usuários": user_total,
+        "Artigos": Article.query.count(),
+        "Revisões": RevisionRequest.query.count(),
+        "Comentários": Comment.query.count(),
+        "Anexos": Attachment.query.count(),
+        "Instituições": Instituicao.query.count(),
+        "Estabelecimentos": Estabelecimento.query.count(),
+        "Setores": Setor.query.count(),
+        "Células": Celula.query.count(),
+        "Cargos": Cargo.query.count(),
+        "Funções": Funcao.query.count(),
+        "Notificações": notifications_read + notifications_unread,
+    }
+
     return render_template(
         "admin/dashboard.html",
         user_total=user_total,
@@ -110,6 +125,7 @@ def admin_dashboard():
         article_status_counts=status_counts,
         notifications_unread=notifications_unread,
         notifications_read=notifications_read,
+        system_counts=system_counts,
     )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])
