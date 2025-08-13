@@ -74,6 +74,7 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
 3.  **Instale as dependências:**
     ```bash
     pip install -r requirements.txt
+    # O arquivo `requirements.txt` já impõe `numpy<2`, garantindo uma versão suportada.
     # Caso ocorra erro envolvendo NumPy ou lxml em Python 3.11,
     # reinstale os pacotes compilados:
     pip install --force-reinstall lxml "numpy<2" opencv-python python-docx

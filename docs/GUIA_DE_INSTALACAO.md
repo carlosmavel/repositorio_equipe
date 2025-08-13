@@ -171,6 +171,7 @@ configurá-las corretamente.
 Com o ambiente virtual (`venv`) ativo:
 ```bash
 pip install -r requirements.txt
+# O arquivo `requirements.txt` já impõe `numpy<2`, garantindo uma versão suportada.
 # Se ocorrerem erros de compilação (lxml, numpy ou opencv),
 # execute a reinstalação a seguir para Python 3.11:
 pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
