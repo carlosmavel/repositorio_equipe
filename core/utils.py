@@ -349,6 +349,25 @@ def extract_text_from_pdf(
                 except Exception as e:  # pragma: no cover - erro ao converter
                     logger.error("Erro ao converter PDF %s: %s", path, e)
                     return "\n".join(text_parts), metadata
+            if len(images) < page_number:
+                logger.error(
+                    "convert_from_path gerou apenas %s imagens para %s; pagina %s ausente",
+                    len(images),
+                    path,
+                    page_number,
+                )
+                text_parts.append("")
+                metadata.append(
+                    {
+                        "page": page_number,
+                        "best_psm": None,
+                        "mean_conf": None,
+                        "word_count": None,
+                        "conversion_failed": True,
+                    }
+                )
+                continue
+
             img = images[page_number - 1]
             try:
                 rotated_img, angle = detect_and_rotate(img)
