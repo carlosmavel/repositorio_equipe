@@ -1,0 +1,21 @@
+.dashboard-chart {
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.futuristic-card {
+    background: linear-gradient(145deg, #1e1e2f, #2e2e47);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    border: none;
+    color: #fff;
+}
+
+.futuristic-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+    color: #0ff;
+}
