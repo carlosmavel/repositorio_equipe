@@ -12,6 +12,7 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 import logging
+import time
 try:
     import cv2
     import numpy as np
@@ -152,6 +153,25 @@ def extract_text(path: str) -> str:
     return ''
 
 
+def detect_and_rotate(image):
+    """Detecta a orientação da imagem e a rotaciona conforme necessário.
+
+    Retorna a imagem possivelmente rotacionada e o ângulo detectado em graus.
+    """
+    if not pytesseract:  # pragma: no cover - dependencias ausentes
+        return image, 0
+    try:
+        osd = pytesseract.image_to_osd(image)
+        match = re.search(r"Rotate: (\d+)", osd)
+        angle = int(match.group(1)) if match else 0
+        if angle != 0 and Image:
+            # PIL.rotate gira no sentido anti-horário; usamos negativo
+            return image.rotate(-angle, expand=True), angle
+    except Exception:  # pragma: no cover - falha na detecção
+        pass
+    return image, 0
+
+
 def preprocess_image(img, debug_dir=None, page_idx=0):
     """Aplica etapas de pre-processamento utilizando OpenCV."""
     if not (cv2 and np):  # pragma: no cover - dependencias ausentes
@@ -220,14 +240,22 @@ def extract_text_from_image(image, lang="por", psms=None):
     selecionado e as estatísticas de cada PSM candidato.
     """
     if not pytesseract:  # pragma: no cover - dependencias ausentes
-        return "", {"best_psm": None, "candidates": []}
+        return "", {"best_psm": None, "candidates": [], "angle": None, "processing_time": 0.0}
 
+    start_time = time.perf_counter()
+    rotated, angle = detect_and_rotate(image)
     psms = psms or [6, 3]
-    best_psm, stats = select_best_psm(image, lang, psms)
+    best_psm, stats = select_best_psm(rotated, lang, psms)
     text = pytesseract.image_to_string(
-        image, lang=lang, config=f"--oem 3 --psm {best_psm}"
+        rotated, lang=lang, config=f"--oem 3 --psm {best_psm}"
     )
-    metadata = {"best_psm": best_psm, "candidates": stats}
+    processing_time = time.perf_counter() - start_time
+    metadata = {
+        "best_psm": best_psm,
+        "candidates": stats,
+        "angle": angle,
+        "processing_time": processing_time,
+    }
     return text, metadata
 
 
