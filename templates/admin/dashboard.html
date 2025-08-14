@@ -37,9 +37,9 @@
             </div>
             <div class="col-md-6 mb-4">
                 <div class="card futuristic-card">
-                    <div class="card-header">Entidades no Sistema</div>
+                    <div class="card-header">OS por Célula</div>
                     <div class="card-body">
-                        <canvas id="systemChart" class="dashboard-chart"></canvas>
+                        <canvas id="osCellChart" class="dashboard-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -111,21 +111,15 @@
             options: baseOptions
         });
 
-        const systemData = {{ system_counts|tojson }};
-        const ctxSys = document.getElementById('systemChart').getContext('2d');
-        const gradient = ctxSys.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(0, 255, 255, 0.6)');
-        gradient.addColorStop(1, 'rgba(0, 0, 255, 0.6)');
-        new Chart(ctxSys, {
-            type: 'radar',
+        const osCellData = {{ os_por_celula|tojson }};
+        new Chart(document.getElementById('osCellChart'), {
+            type: 'bar',
             data: {
-                labels: Object.keys(systemData),
+                labels: Object.keys(osCellData),
                 datasets: [{
-                    label: 'Quantidade',
-                    data: Object.values(systemData),
-                    backgroundColor: gradient,
-                    borderColor: 'rgba(0, 255, 255, 0.8)',
-                    borderWidth: 2
+                    label: 'OS',
+                    data: Object.values(osCellData),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
                 }]
             },
             options: baseOptions

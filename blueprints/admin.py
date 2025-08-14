@@ -20,6 +20,7 @@ try:
         Setor,
         Cargo,
         Funcao,
+        OrdemServico,
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -35,6 +36,7 @@ except ImportError:  # pragma: no cover
         Setor,
         Cargo,
         Funcao,
+        OrdemServico,
     )
 
 try:
@@ -101,21 +103,12 @@ def admin_dashboard():
 
     notifications_unread = Notification.query.filter_by(lido=False).count()
     notifications_read = Notification.query.filter_by(lido=True).count()
-
-    system_counts = {
-        "Usuários": user_total,
-        "Artigos": Article.query.count(),
-        "Revisões": RevisionRequest.query.count(),
-        "Comentários": Comment.query.count(),
-        "Anexos": Attachment.query.count(),
-        "Instituições": Instituicao.query.count(),
-        "Estabelecimentos": Estabelecimento.query.count(),
-        "Setores": Setor.query.count(),
-        "Células": Celula.query.count(),
-        "Cargos": Cargo.query.count(),
-        "Funções": Funcao.query.count(),
-        "Notificações": notifications_read + notifications_unread,
-    }
+    os_por_celula = dict(
+        db.session.query(Celula.nome, func.count(OrdemServico.id))
+        .join(OrdemServico, OrdemServico.equipe_responsavel_id == Celula.id)
+        .group_by(Celula.nome)
+        .all()
+    )
 
     return render_template(
         "admin/dashboard.html",
@@ -125,7 +118,7 @@ def admin_dashboard():
         article_status_counts=status_counts,
         notifications_unread=notifications_unread,
         notifications_read=notifications_read,
-        system_counts=system_counts,
+        os_por_celula=os_por_celula,
     )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])
