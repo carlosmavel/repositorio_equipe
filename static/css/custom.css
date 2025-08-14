@@ -227,24 +227,27 @@ body > .container {
 
 /* Hierarquia de cargos */
 .caret-toggle .bi {
-  transition: transform .2s ease;
-}
-.caret-toggle.expanded .bi {
-  transform: rotate(90deg);
+  transition: none;
 }
 
+.estabelecimento-wrapper {
+  background-color: #f8f9fa;
+}
 .setor-container {
   margin-left: 1rem;
+  background-color: #e9ecef;
 }
 .celula-container {
   margin-left: 2rem;
   border-left: 1px solid var(--border-default);
   padding-left: 1rem;
+  background-color: #f1f3f5;
 }
 .cargo-item {
   margin-left: 3rem;
   border-left: 1px solid var(--border-lighter);
   padding-left: 1rem;
+  background-color: #ffffff;
 }
 
 .search-highlight {

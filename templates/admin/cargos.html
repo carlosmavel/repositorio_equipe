@@ -23,13 +23,12 @@
                 <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Cargos Cadastrados ({{ cargos|length }})</h5>
+                            <h5 class="mb-0">Cargos Cadastrados</h5>
                         </div>
                         <div class="card-body">
                             {% if estrutura %}
                                 <div class="mb-3">
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
                                         <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor, célula ou instituição">
                                     </div>
                                 </div>
@@ -42,10 +41,10 @@
                                             </div>
                                             <div id="inst-{{ inst.obj.id }}" class="collapse show">
                                                 {% for est in inst.estabelecimentos %}
-                                                    <div class="ms-4 estabelecimento-container">
+                                                    <div class="ms-4 mb-3 p-2 border rounded estabelecimento-wrapper">
                                                         <h6 class="fw-bold">Estabelecimento: <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h6>
                                                         {% for setor in est.setores %}
-                                                            <div class="setor-container border rounded p-2 mb-2">
+                                                            <div class="setor-container p-2 mb-2 rounded">
                                                                 <div class="d-flex align-items-center">
                                                                     <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="celulas" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
                                                                     <strong class="mb-0">Setor: <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></strong>
@@ -54,37 +53,27 @@
                                                                     {% if setor.cargos %}
                                                                         <ul class="list-group list-group-flush mb-2">
                                                                             {% for cargo in setor.cargos %}
-                                                                            <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
-                                                                                <span>
-                                                                                    <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
-                                                                                {% if cargo.pode_atender_os %}
-                                                                                    <span class="badge bg-info text-dark ms-2">Atende OS</span>
-                                                                                {% endif %}
-                                                                            </span>
-                                                                            <div class="d-flex align-items-center">
-                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm btn-outline-primary me-1" title="Editar Cargo">
-                                                                                    <i class="bi bi-pencil-fill"></i>
-                                                                                </a>
-                                                                                {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                    {% if cargo.ativo %}
-                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Desativar Cargo">
-                                                                                            <i class="bi bi-archive-fill"></i>
-                                                                                        </button>
-                                                                                    {% else %}
-                                                                                        <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Ativar Cargo">
-                                                                                            <i class="bi bi-archive-restore-fill"></i>
-                                                                                        </button>
+                                                                                <li class="list-group-item d-flex align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
+                                                                                    <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</a>
+                                                                                    {% if cargo.pode_atender_os %}
+                                                                                        <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                     {% endif %}
-                                                                                </form>
-                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes" class="btn btn-sm btn-outline-secondary" title="Gerenciar Permissões">
-                                                                                    <i class="bi bi-shield-lock-fill"></i>
-                                                                                </a>
-                                                                            </div>
-                                                                        </li>
-                                                                        {% endfor %}
-                                                                    </ul>
+                                                                                    {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                    {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                    <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="ms-2 d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                        {% if cargo.ativo %}
+                                                                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
+                                                                                                <i class="bi bi-archive-fill"></i>
+                                                                                            </button>
+                                                                                        {% else %}
+                                                                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
+                                                                                                <i class="bi bi-archive-restore-fill"></i>
+                                                                                            </button>
+                                                                                        {% endif %}
+                                                                                    </form>
+                                                                                </li>
+                                                                            {% endfor %}
+                                                                        </ul>
                                                                     {% endif %}
                                                                     {% for cel in setor.celulas %}
                                                                         <div class="celula-container ps-3 mb-2">
@@ -96,35 +85,25 @@
                                                                                 {% if cel.cargos %}
                                                                                     <ul class="list-group list-group-flush">
                                                                                         {% for cargo in cel.cargos %}
-                                                                                        <li class="list-group-item d-flex justify-content-between align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
-                                                                                            <span>
-                                                                                                <span class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
+                                                                                            <li class="list-group-item d-flex align-items-center cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
+                                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</a>
                                                                                                 {% if cargo.pode_atender_os %}
                                                                                                     <span class="badge bg-info text-dark ms-2">Atende OS</span>
                                                                                                 {% endif %}
-                                                                                            </span>
-                                                                                            <div class="d-flex align-items-center">
-                                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm btn-outline-primary me-1" title="Editar Cargo">
-                                                                                                    <i class="bi bi-pencil-fill"></i>
-                                                                                                </a>
                                                                                                 {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                                 {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="ms-2 d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
                                                                                                     {% if cargo.ativo %}
-                                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Desativar Cargo">
+                                                                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
                                                                                                             <i class="bi bi-archive-fill"></i>
                                                                                                         </button>
                                                                                                     {% else %}
-                                                                                                        <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Ativar Cargo">
+                                                                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
                                                                                                             <i class="bi bi-archive-restore-fill"></i>
                                                                                                         </button>
                                                                                                     {% endif %}
                                                                                                 </form>
-                                                                                                <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#permissoes" class="btn btn-sm btn-outline-secondary" title="Gerenciar Permissões">
-                                                                                                    <i class="bi bi-shield-lock-fill"></i>
-                                                                                                </a>
-                                                                                            </div>
-                                                                                        </li>
+                                                                                            </li>
                                                                                         {% endfor %}
                                                                                     </ul>
                                                                                 {% else %}
@@ -475,17 +454,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const targetSelector = btn.getAttribute('data-bs-target');
         const level = btn.dataset.level;
         const target = document.querySelector(targetSelector);
+        const icon = btn.querySelector('i');
         const stateMap = level === 'celulas' ? mostrarCelulas : level === 'cargos' ? mostrarCargos : mostrarSetores;
-        stateMap[targetSelector] = true;
+        stateMap[targetSelector] = target.classList.contains('show');
+        if (target.classList.contains('show') && icon) {
+            icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
+            btn.classList.add('expanded');
+        }
 
         btn.addEventListener('click', function() {
             setTimeout(function() {
                 if (target.classList.contains('show')) {
                     btn.classList.add('expanded');
                     stateMap[targetSelector] = true;
+                    if (icon) icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
                 } else {
                     btn.classList.remove('expanded');
                     stateMap[targetSelector] = false;
+                    if (icon) icon.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
                 }
             }, 200);
         });
