@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const newTheme = localStorage.getItem(THEME_KEY) === "dark" ? "light" : "dark";
     localStorage.setItem(THEME_KEY, newTheme);
     applyTheme(newTheme);
+    window.dispatchEvent(new Event("themeChange"));
   }
 
   document.getElementById("themeToggle")?.addEventListener("click", function (e) {
