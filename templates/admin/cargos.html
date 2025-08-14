@@ -477,9 +477,9 @@ window.cargoGraphElements = [
                 { data: { id: 'set{{ setor.obj.id }}', label: {{ setor.obj.nome|tojson }}, type: 'setor' } },
                 { data: { id: 'edge_est{{ est.obj.id }}_set{{ setor.obj.id }}', source: 'est{{ est.obj.id }}', target: 'set{{ setor.obj.id }}', rel: 'hierarquia' } },
                 {% for cargo in setor.cargos %}
-                    { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
+                    { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
                     { data: { id: 'edge_set{{ setor.obj.id }}_cargo{{ cargo.id }}', source: 'set{{ setor.obj.id }}', target: 'cargo{{ cargo.id }}', rel: 'hierarquia' } },
-                    {% if cargo.nivel_hierarquico <= 5 %}
+                    {% if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 %}
                     { data: { id: 'edge_cargo{{ cargo.id }}_set{{ setor.obj.id }}', source: 'cargo{{ cargo.id }}', target: 'set{{ setor.obj.id }}', rel: 'gestao', label: '{{ 'Gerencia' if cargo.nivel_hierarquico in [1,2] else 'Supervisiona' if cargo.nivel_hierarquico in [3,4] else 'Lidera' }}' } },
                     {% endif %}
                 {% endfor %}
@@ -487,9 +487,9 @@ window.cargoGraphElements = [
                     { data: { id: 'cel{{ cel.obj.id }}', label: {{ cel.obj.nome|tojson }}, type: 'celula' } },
                     { data: { id: 'edge_set{{ setor.obj.id }}_cel{{ cel.obj.id }}', source: 'set{{ setor.obj.id }}', target: 'cel{{ cel.obj.id }}', rel: 'hierarquia' } },
                     {% for cargo in cel.cargos %}
-                        { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
+                        { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
                         { data: { id: 'edge_cel{{ cel.obj.id }}_cargo{{ cargo.id }}', source: 'cel{{ cel.obj.id }}', target: 'cargo{{ cargo.id }}', rel: 'hierarquia' } },
-                        {% if cargo.nivel_hierarquico <= 5 %}
+                        {% if cargo.nivel_hierarquico is not none and cargo.nivel_hierarquico <= 5 %}
                         { data: { id: 'edge_cargo{{ cargo.id }}_cel{{ cel.obj.id }}', source: 'cargo{{ cargo.id }}', target: 'cel{{ cel.obj.id }}', rel: 'gestao', label: '{{ 'Gerencia' if cargo.nivel_hierarquico in [1,2] else 'Supervisiona' if cargo.nivel_hierarquico in [3,4] else 'Lidera' }}' } },
                         {% endif %}
                     {% endfor %}
