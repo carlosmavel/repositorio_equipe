@@ -58,22 +58,19 @@
                                                                                     <div class="linha-cargo">
                                                                                         <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
                                                                                         <div class="acoes-cargo">
-                                                                                            {% if cargo.pode_atender_os %}
-                                                                                                <span class="badge bg-info text-dark">Atende OS</span>
+                                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                            {% if cargo.ativo %}
+                                                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
+                                                                                                    <i class="bi bi-toggle-on"></i>
+                                                                                                </button>
+                                                                                            {% else %}
+                                                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
+                                                                                                    <i class="bi bi-toggle-off"></i>
+                                                                                                </button>
                                                                                             {% endif %}
-                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                {% if cargo.ativo %}
-                                                                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
-                                                                                                        <i class="bi bi-archive-fill"></i>
-                                                                                                    </button>
-                                                                                                {% else %}
-                                                                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
-                                                                                                        <i class="bi bi-archive-restore-fill"></i>
-                                                                                                    </button>
-                                                                                                {% endif %}
-                                                                                            </form>
+                                                                                        </form>
                                                                                         </div>
                                                                                     </div>
                                                                                 </li>
@@ -94,19 +91,16 @@
                                                                                                 <div class="linha-cargo">
                                                                                                     <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
                                                                                                     <div class="acoes-cargo">
-                                                                                                        {% if cargo.pode_atender_os %}
-                                                                                                            <span class="badge bg-info text-dark">Atende OS</span>
-                                                                                                        {% endif %}
                                                                                                         {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                                         {% set cargo_nome_js = cargo.nome | tojson %}
                                                                                                         <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
                                                                                                             {% if cargo.ativo %}
                                                                                                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
-                                                                                                                    <i class="bi bi-archive-fill"></i>
+                                                                                                                    <i class="bi bi-toggle-on"></i>
                                                                                                                 </button>
                                                                                                             {% else %}
                                                                                                                 <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
-                                                                                                                    <i class="bi bi-archive-restore-fill"></i>
+                                                                                                                    <i class="bi bi-toggle-off"></i>
                                                                                                                 </button>
                                                                                                             {% endif %}
                                                                                                         </form>
@@ -457,20 +451,19 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.toggle-section').forEach(function(btn) {
-        const targetSelector = btn.getAttribute('data-bs-target');
-        const target = document.querySelector(targetSelector);
         const icon = btn.querySelector('i');
-
-        if (target.classList.contains('show') && icon) {
+        if (btn.getAttribute('aria-expanded') === 'true') {
             icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
         }
 
-        target.addEventListener('shown.bs.collapse', function() {
-            if (icon) icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
-        });
-
-        target.addEventListener('hidden.bs.collapse', function() {
-            if (icon) icon.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
+        btn.addEventListener('click', function() {
+            setTimeout(function() {
+                if (btn.getAttribute('aria-expanded') === 'true') {
+                    icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
+                } else {
+                    icon.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
+                }
+            }, 150);
         });
     });
 

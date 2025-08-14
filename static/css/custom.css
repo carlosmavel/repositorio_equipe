@@ -235,11 +235,15 @@ body > .container {
 }
 
 .estabelecimento-wrapper {
-  background-color: var(--bg-muted);
+  background-color: var(--bg-muted) !important;
   border: 1px solid var(--border-default);
   border-radius: 0.25rem;
   padding: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.instituicao-container .estabelecimento-wrapper:first-child {
+  margin-top: 1rem;
 }
 
 .instituicao-container .estabelecimento-wrapper:first-child {
@@ -253,7 +257,7 @@ body > .container {
   margin-left: 1rem;
   margin-bottom: 0.5rem;
   padding: 0.5rem;
-  background-color: var(--bg-hover);
+  background-color: var(--bg-default) !important;
   border: 1px solid var(--border-light);
   border-radius: 0.25rem;
 }
@@ -265,7 +269,7 @@ body > .container {
   padding-left: 1rem;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
-  background-color: var(--bg-hover-subtle);
+  background-color: var(--bg-muted) !important;
 }
 
 .cargo-item {
@@ -273,7 +277,7 @@ body > .container {
   margin-bottom: 0.25rem;
   border-left: 1px solid var(--border-lighter);
   padding-left: 1rem;
-  background-color: var(--bg-default);
+  background-color: var(--bg-default) !important;
 }
 
 .linha-cargo {
