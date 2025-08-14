@@ -246,6 +246,9 @@ body > .container {
   margin-top: 1rem;
 }
 
+.estabelecimento-wrapper {
+  background-color: #f8f9fa;
+}
 .setor-container {
   margin-left: 1rem;
   margin-bottom: 0.5rem;
