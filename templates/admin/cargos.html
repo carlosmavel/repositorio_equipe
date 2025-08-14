@@ -30,6 +30,8 @@
                                 <div class="mb-3">
                                     <div class="input-group">
                                         <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor, célula ou instituição">
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleGraph">Visualização em grafo</button>
+                                        <button class="btn btn-outline-secondary d-none" type="button" id="toggleTree">Voltar à visualização em árvore</button>
                                     </div>
                                 </div>
                                 <div class="ms-2" id="cargoContainer">
@@ -125,9 +127,25 @@
                                         </div>
                                     {% endfor %}
                                 </div>
+                                <div class="d-none" id="graphContainer">
+                                    <div id="cargoGraph" style="width: 100%; height: 600px;"></div>
+                                </div>
                             {% else %}
                                 <p class="text-muted">Nenhum cargo cadastrado ainda. Adicione um acima!</p>
                             {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="cargoModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cargoModalLabel"></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                                <iframe id="cargoModalFrame" style="width:100%;height:500px;border:none;"></iframe>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -448,6 +466,41 @@
 {% endblock content %}
 
 {% block extra_js %}
+<script>
+window.cargoGraphElements = [
+    {% for inst in estrutura %}
+        { data: { id: 'inst{{ inst.obj.id }}', label: {{ inst.obj.nome|tojson }}, type: 'instituicao' } },
+        {% for est in inst.estabelecimentos %}
+            { data: { id: 'est{{ est.obj.id }}', label: {{ est.obj.nome_fantasia|tojson }}, type: 'estabelecimento' } },
+            { data: { id: 'edge_inst{{ inst.obj.id }}_est{{ est.obj.id }}', source: 'inst{{ inst.obj.id }}', target: 'est{{ est.obj.id }}', rel: 'hierarquia' } },
+            {% for setor in est.setores %}
+                { data: { id: 'set{{ setor.obj.id }}', label: {{ setor.obj.nome|tojson }}, type: 'setor' } },
+                { data: { id: 'edge_est{{ est.obj.id }}_set{{ setor.obj.id }}', source: 'est{{ est.obj.id }}', target: 'set{{ setor.obj.id }}', rel: 'hierarquia' } },
+                {% for cargo in setor.cargos %}
+                    { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
+                    { data: { id: 'edge_set{{ setor.obj.id }}_cargo{{ cargo.id }}', source: 'set{{ setor.obj.id }}', target: 'cargo{{ cargo.id }}', rel: 'hierarquia' } },
+                    {% if cargo.nivel_hierarquico <= 5 %}
+                    { data: { id: 'edge_cargo{{ cargo.id }}_set{{ setor.obj.id }}', source: 'cargo{{ cargo.id }}', target: 'set{{ setor.obj.id }}', rel: 'gestao', label: '{{ 'Gerencia' if cargo.nivel_hierarquico in [1,2] else 'Supervisiona' if cargo.nivel_hierarquico in [3,4] else 'Lidera' }}' } },
+                    {% endif %}
+                {% endfor %}
+                {% for cel in setor.celulas %}
+                    { data: { id: 'cel{{ cel.obj.id }}', label: {{ cel.obj.nome|tojson }}, type: 'celula' } },
+                    { data: { id: 'edge_set{{ setor.obj.id }}_cel{{ cel.obj.id }}', source: 'set{{ setor.obj.id }}', target: 'cel{{ cel.obj.id }}', rel: 'hierarquia' } },
+                    {% for cargo in cel.cargos %}
+                        { data: { id: 'cargo{{ cargo.id }}', label: {{ cargo.nome|tojson }}, type: 'cargo', color: '{{ '#1E90FF' if cargo.nivel_hierarquico == 8 else '#2E8B57' if cargo.nivel_hierarquico == 6 else '#800080' if cargo.nivel_hierarquico <= 5 else '#999999' }}', shape: '{{ 'hexagon' if cargo.nivel_hierarquico <= 5 else 'ellipse' }}', url: {{ url_for('admin_bp.admin_cargos', edit_id=cargo.id)|tojson }}, nivel: {{ cargo.nivel_hierarquico }} } },
+                        { data: { id: 'edge_cel{{ cel.obj.id }}_cargo{{ cargo.id }}', source: 'cel{{ cel.obj.id }}', target: 'cargo{{ cargo.id }}', rel: 'hierarquia' } },
+                        {% if cargo.nivel_hierarquico <= 5 %}
+                        { data: { id: 'edge_cargo{{ cargo.id }}_cel{{ cel.obj.id }}', source: 'cargo{{ cargo.id }}', target: 'cel{{ cel.obj.id }}', rel: 'gestao', label: '{{ 'Gerencia' if cargo.nivel_hierarquico in [1,2] else 'Supervisiona' if cargo.nivel_hierarquico in [3,4] else 'Lidera' }}' } },
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+];
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
+<script src="{{ url_for('static', filename='js/cargo_graph.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.toggle-section').forEach(function(btn) {
