@@ -499,7 +499,7 @@ window.cargoGraphElements = [
     {% endfor %}
 ];
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
+<script src="{{ url_for('static', filename='js/cytoscape.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/cargo_graph.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
