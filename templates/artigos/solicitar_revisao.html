@@ -5,7 +5,7 @@
   <form method="post" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
     <div class="mb-3">
       <label for="comentario" class="form-label">Comentário</label>
-      <textarea id="comentario" name="comentario" class="form-control" rows="4" required></textarea>
+      <textarea id="comentario" name="comentario" class="form-control no-quill" rows="4" required></textarea>
     </div>
     <button type="submit" class="btn btn-warning">Enviar pedido</button>
     <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">Cancelar</a>
