@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mt-4">
   <h2>Solicitar revisão: “{{ artigo.titulo }}”</h2>
-  <form method="post">
+  <form method="post" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
     <div class="mb-3">
       <label for="comentario" class="form-label">Comentário</label>
       <textarea id="comentario" name="comentario" class="form-control" rows="4" required></textarea>
