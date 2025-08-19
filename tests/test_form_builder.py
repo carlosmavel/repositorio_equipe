@@ -122,6 +122,22 @@ def test_field_added_after_type_selection(client):
     html = resp.data.decode('utf-8')
     assert 'id="previewContainer"' in html
     assert "onclick=\"addField('text')\"" in html
+    assert "onclick=\"addField('number')\"" in html
+
+
+def test_render_number_field(client):
+    with app.app_context():
+        user_allowed_id = create_user('number_field', True)
+    login(client, user_allowed_id)
+    estrutura = '[{"id":1,"tipo":"number","label":"Idade","ordem":0}]'
+    resp = client.post('/ordem-servico/formularios/', data={'nome': 'FormNum', 'estrutura': estrutura}, follow_redirects=True)
+    assert resp.status_code == 200
+    with app.app_context():
+        form = Formulario.query.filter_by(nome='FormNum').first()
+        form_id = form.id
+    resp = client.get(f'/ordem-servico/formularios/{form_id}/preencher')
+    assert resp.status_code == 200
+    assert '<input type="number"' in resp.data.decode('utf-8')
 
 
 def test_section_model_relationship(app_ctx):

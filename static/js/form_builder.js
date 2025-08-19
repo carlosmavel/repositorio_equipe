@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <option value="option">Opção</option>
             <option value="rating">Classificação</option>
             <option value="date">Data</option>
+            <option value="number">Número</option>
             <option value="likert">Likert</option>
             <option value="file">Carregar Arquivo</option>
             <option value="nps">Net Promoter Score®</option>
@@ -625,6 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <li><button class="dropdown-item" type="button" data-type="option">Opção</button></li>
               <li><button class="dropdown-item" type="button" data-type="rating">Classificação</button></li>
               <li><button class="dropdown-item" type="button" data-type="date">Data</button></li>
+              <li><button class="dropdown-item" type="button" data-type="number">Número</button></li>
               <li><button class="dropdown-item" type="button" data-type="likert">Likert</button></li>
               <li><button class="dropdown-item" type="button" data-type="file">Carregar Arquivo</button></li>
               <li><button class="dropdown-item" type="button" data-type="nps">Net Promoter Score®</button></li>
@@ -835,6 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <li><button class="dropdown-item" type="button" data-type="option">Opção</button></li>
             <li><button class="dropdown-item" type="button" data-type="rating">Classificação</button></li>
             <li><button class="dropdown-item" type="button" data-type="date">Data</button></li>
+            <li><button class="dropdown-item" type="button" data-type="number">Número</button></li>
             <li><button class="dropdown-item" type="button" data-type="likert">Likert</button></li>
             <li><button class="dropdown-item" type="button" data-type="file">Carregar Arquivo</button></li>
             <li><button class="dropdown-item" type="button" data-type="nps">Net Promoter Score®</button></li>
