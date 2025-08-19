@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Garante que o diretório raiz do projeto esteja no PYTHONPATH quando executado diretamente
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 try:
     from .core.database import db
 except ImportError:  # pragma: no cover - fallback for direct execution
@@ -34,7 +40,11 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
 from app import app
-from . import seed_funcoes
+
+try:
+    from . import seed_funcoes
+except ImportError:  # pragma: no cover - fallback para execução direta
+    import seed_funcoes
 
 
 def get_or_create(model, defaults=None, **kwargs):
