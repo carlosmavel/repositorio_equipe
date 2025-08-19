@@ -409,6 +409,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  const paginaInicialLink = document.getElementById("paginaInicialLink");
+  if (paginaInicialLink) {
+    paginaInicialLink.addEventListener("click", () => {
+      collapseIds.forEach((id) => {
+        localStorage.setItem(`collapseState_${id}`, "false");
+      });
+      document
+        .querySelectorAll("#globalSidebarOffcanvas .collapse.show")
+        .forEach((el) => {
+          const instance = bootstrap.Collapse.getInstance(el);
+          if (instance) {
+            instance.hide();
+          } else {
+            new bootstrap.Collapse(el, { toggle: false }).hide();
+          }
+        });
+    });
+  }
+
   const osNavItems = document.querySelectorAll(".os-nav-item");
   osNavItems.forEach((link) => {
     link.addEventListener("click", () => {
