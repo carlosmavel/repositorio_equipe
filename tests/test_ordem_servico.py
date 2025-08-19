@@ -341,6 +341,49 @@ def test_os_detalhar_exibe_respostas_formulario_lista(client):
     assert 'RespL' in html
 
 
+def test_os_modal_e_atendimento_exibem_respostas_formulario(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcM')
+        etapa = ProcessoEtapa(nome='EtapaM', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='FormM',
+            estrutura='[{"tipo":"section","titulo":"Sec","campos":[{"id":1,"tipo":"text","label":"P1"}]}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
+        respostas = FormularioResposta(dados={"1": "RespM"})
+        db.session.add_all([proc, etapa, form, respostas])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoM',
+            descricao='d',
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+        )
+        etapa.tipos_os.append(tipo)
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OSM',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=admin_user.id,
+            formulario_respostas_id=respostas.id,
+        )
+        db.session.add_all([tipo, os_obj])
+        db.session.commit()
+        os_id = os_obj.id
+    resp = client.get(f'/os/{os_id}/modal')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespM' in html
+    resp = client.get(f'/os/atendimento/{os_id}')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespM' in html
+
 def test_os_nova_lista_tipos_para_usuario_sem_cargo(client):
     login_admin(client)
     with app.app_context():
