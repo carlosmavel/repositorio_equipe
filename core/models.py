@@ -584,7 +584,6 @@ class OrdemServico(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     codigo = db.Column(db.String(7), unique=True, nullable=False)
     titulo = db.Column(db.String(255), nullable=False)
-    descricao = db.Column(db.Text, nullable=False)
     tipo_os_id = db.Column(db.Integer, db.ForeignKey('tipo_os.id'), nullable=False)
     status = db.Column(
         db.String(50),
@@ -601,7 +600,6 @@ class OrdemServico(db.Model):
     prioridade = db.Column(db.String(10), nullable=True)
     equipamento_id = db.Column(db.Integer, db.ForeignKey('equipamento.id'), nullable=True)
     sistema_id = db.Column(db.Integer, db.ForeignKey('sistema.id'), nullable=True)
-    observacoes = db.Column(db.Text, nullable=True)
 
     criado_por = db.relationship('User', foreign_keys=[criado_por_id])
     atribuido_para = db.relationship('User', foreign_keys=[atribuido_para_id])

@@ -21,6 +21,14 @@
                 {% endfor %}
               </select>
             </div>
+            <div class="mb-3">
+              <label for="alvo_tipo" class="form-label">Relacionado a</label>
+              <select class="form-select" id="alvo_tipo" name="alvo_tipo">
+                <option value="">--</option>
+                <option value="sistema">Sistema</option>
+                <option value="equipamento">Equipamento</option>
+              </select>
+            </div>
             <div class="mb-3 d-none" id="equipamento_field">
               <label for="equipamento_id" class="form-label">Equipamento</label>
               <select class="form-select" id="equipamento_id" name="equipamento_id">
@@ -40,27 +48,7 @@
               </select>
             </div>
             <div class="mb-3">
-              <label for="descricao" class="form-label">Descrição</label>
-              <textarea class="form-control" id="descricao" name="descricao" rows="4"></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="observacoes" class="form-label">Observações</label>
-              <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="cargo" class="form-label">Cargo</label>
-              <input type="text" class="form-control" id="cargo" value="{{ usuario.cargo.nome if usuario and usuario.cargo else '' }}" readonly data-bs-toggle="tooltip" title="Essas informações são derivadas do seu cargo no sistema.">
-            </div>
-            <div class="mb-3">
-              <label for="setor" class="form-label">Setor</label>
-              <input type="text" class="form-control" id="setor" value="{{ usuario.setor.nome if usuario and usuario.setor else '' }}" readonly data-bs-toggle="tooltip" title="Essas informações são derivadas do seu cargo no sistema.">
-            </div>
-            <div class="mb-3">
-              <label for="celula" class="form-label">Célula</label>
-              <input type="text" class="form-control" id="celula" value="{{ usuario.celula.nome if usuario and usuario.celula else '' }}" readonly data-bs-toggle="tooltip" title="Essas informações são derivadas do seu cargo no sistema.">
-            </div>
-            <div class="mb-3">
-              <label for="tipo_os_id" class="form-label">Tipo</label>
+              <label for="tipo_os_id" class="form-label">Categoria</label>
               <select class="form-select" id="tipo_os_id" name="tipo_os_id">
                 <option value="">--</option>
                 {% for t in tipos_os %}
@@ -90,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sistema = document.getElementById('sistema_id');
   const equipamentoField = document.getElementById('equipamento_field');
   const sistemaField = document.getElementById('sistema_field');
+  const alvoSelect = document.getElementById('alvo_tipo');
   function save() {
     const data = {};
     inputs.forEach(i => data[i.id] = i.value);
@@ -111,15 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const formContainer = document.getElementById('formulario-vinculado');
   let formularioObrigatorio = false;
   function atualizarCampos() {
-    const texto = tipoSelect.options[tipoSelect.selectedIndex]?.text || '';
-    if (texto === 'Suporte ao Sistema') {
+    const alvo = alvoSelect.value;
+    if (alvo === 'sistema') {
       sistemaField.classList.remove('d-none');
       equipamentoField.classList.add('d-none');
       sistema.setAttribute('required', 'required');
       equipamento.removeAttribute('required');
       sistemaField.querySelector('label').innerHTML = 'Sistema <span class="text-danger">*</span>';
       equipamentoField.querySelector('label').innerHTML = 'Equipamento';
-    } else if (texto === 'Manutenção de Equipamento') {
+    } else if (alvo === 'equipamento') {
       equipamentoField.classList.remove('d-none');
       sistemaField.classList.add('d-none');
       equipamento.setAttribute('required', 'required');
@@ -136,8 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  tipoSelect.addEventListener('change', () => {
+  alvoSelect.addEventListener('change', () => {
     atualizarCampos();
+  });
+
+  tipoSelect.addEventListener('change', () => {
     const tipoId = tipoSelect.value;
     if (!tipoId) {
       formContainer.innerHTML = '';
@@ -162,15 +154,15 @@ document.addEventListener('DOMContentLoaded', () => {
   atualizarCampos();
 
   form.addEventListener('submit', (e) => {
-    const texto = tipoSelect.options[tipoSelect.selectedIndex]?.text || '';
-    if (texto === 'Suporte ao Sistema' && !sistema.value) {
+    const alvo = alvoSelect.value;
+    if (alvo === 'sistema' && !sistema.value) {
       e.preventDefault();
-      alert("O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'.");
+      alert('O campo Sistema é obrigatório.');
       return;
     }
-    if (texto === 'Manutenção de Equipamento' && !equipamento.value) {
+    if (alvo === 'equipamento' && !equipamento.value) {
       e.preventDefault();
-      alert("O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'.");
+      alert('O campo Equipamento é obrigatório.');
       return;
     }
     if (formularioObrigatorio) {
@@ -188,8 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem(STORAGE_KEY);
   });
 
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
 });
 </script>
 {% endblock %}

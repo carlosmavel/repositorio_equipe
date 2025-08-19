@@ -8,7 +8,7 @@
         <div class="card-body">
           <form method="get" class="row g-2 align-items-end">
             <div class="col-md-3">
-              <input name="q" value="{{ request.args.get('q','') }}" class="form-control" placeholder="Buscar por título ou descrição" />
+              <input name="q" value="{{ request.args.get('q','') }}" class="form-control" placeholder="Buscar por título" />
             </div>
             <div class="col-md-2">
               <select name="status" class="form-select">
@@ -28,7 +28,7 @@
             </div>
             <div class="col-md-2">
               <select name="tipo" class="form-select">
-                <option value="">Tipo</option>
+                <option value="">Categoria</option>
                 {% for t in tipos_os %}
                 <option value="{{ t.id }}" {% if request.args.get('tipo', type=int)==t.id %}selected{% endif %}>{{ t.nome }}</option>
                 {% endfor %}
