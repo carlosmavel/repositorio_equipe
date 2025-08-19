@@ -119,11 +119,24 @@ def _get_formulario_estrutura_respostas(ordem):
         if fr and fr.dados:
             if isinstance(fr.dados, str):
                 try:
-                    formulario_respostas = json.loads(fr.dados)
+                    dados = json.loads(fr.dados)
                 except ValueError:
-                    formulario_respostas = None
+                    dados = None
             else:
-                formulario_respostas = fr.dados
+                dados = fr.dados
+            if isinstance(dados, list):
+                respostas_dict = {}
+                for item in dados:
+                    if isinstance(item, dict):
+                        key = item.get('id') or item.get('campo_id') or item.get('campo')
+                        value = item.get('valor') if 'valor' in item else item.get('resposta')
+                        if key is not None and value is not None:
+                            respostas_dict[str(key)] = value
+                formulario_respostas = respostas_dict or None
+            elif isinstance(dados, dict):
+                formulario_respostas = {str(k): v for k, v in dados.items()}
+            else:
+                formulario_respostas = None
     return formulario_estrutura, formulario_respostas
 
 
