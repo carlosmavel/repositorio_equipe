@@ -251,10 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       onStart: () => {
-        if (container === fieldsContainer) fieldsContainer.classList.add('sorting');
+        fieldsContainer.classList.add('sorting');
       },
       onEnd: () => {
-        if (container === fieldsContainer) fieldsContainer.classList.remove('sorting');
+        fieldsContainer.classList.remove('sorting');
         updateNumbers();
         updateJSON();
         const ids = Array.from(fieldsContainer.querySelectorAll('.field'))
