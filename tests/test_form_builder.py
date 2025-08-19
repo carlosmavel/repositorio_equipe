@@ -92,7 +92,9 @@ def test_field_added_after_type_selection(client):
 
 def test_section_model_relationship(app_ctx):
     with app_ctx.app_context():
-        f = Formulario(nome='F', estrutura='[]')
+        user_id = create_user('rel', True)
+        user = User.query.get(user_id)
+        f = Formulario(nome='F', estrutura='[]', criado_por_id=user.id, celula_id=user.celula_id)
         db.session.add(f)
         db.session.flush()
         s = Secao(formulario_id=f.id, titulo='Sec', ordem=0)
@@ -140,3 +142,14 @@ def test_filter_and_search_visible_with_no_active_forms(client):
     assert b'id="formSearch"' in resp.data
     assert b'name="status"' in resp.data
     assert b'Nenhum formul' in resp.data
+
+
+def test_formulario_visibility_by_celula(client):
+    with app.app_context():
+        u1_id = create_user('vis1', True)
+        u2_id = create_user('vis2', True)
+    login(client, u1_id)
+    client.post('/ordem-servico/formularios/', data={'nome': 'FormU1', 'estrutura': '{}'}, follow_redirects=True)
+    login(client, u2_id)
+    resp = client.get('/ordem-servico/formularios/')
+    assert b'FormU1' not in resp.data

@@ -36,3 +36,18 @@ def form_builder_required(f):
             return redirect(url_for('pagina_inicial'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+def os_admin_required(f):
+    """Permite acesso a administradores ou usuários com permissão de atender OS."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Por favor, faça login para acessar esta página.', 'warning')
+            return redirect(url_for('login', next=request.url))
+        user = User.query.get(session['user_id'])
+        if not user or not (user.has_permissao('admin') or user.pode_atender_os):
+            flash('Acesso negado.', 'danger')
+            return redirect(url_for('pagina_inicial'))
+        return f(*args, **kwargs)
+    return decorated_function

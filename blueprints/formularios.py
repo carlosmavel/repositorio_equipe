@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify, abort
 import json
 import random
 import os
@@ -31,6 +31,7 @@ formularios_bp = Blueprint('formularios_bp', __name__, url_prefix='/ordem-servic
 @form_builder_required
 def formularios():
     aba_ativa = 'consulta'
+    user = User.query.get(session['user_id'])
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
@@ -44,7 +45,13 @@ def formularios():
                 flash(msg, 'danger')
                 aba_ativa = 'cadastro'
             else:
-                f = Formulario(nome=nome, descricao=descricao, estrutura=estrutura)
+                f = Formulario(
+                    nome=nome,
+                    descricao=descricao,
+                    estrutura=estrutura,
+                    criado_por_id=user.id,
+                    celula_id=user.celula_id,
+                )
                 db.session.add(f)
                 db.session.commit()
                 flash('Formulário criado com sucesso!', 'success')
@@ -55,6 +62,8 @@ def formularios():
         query = query.filter_by(ativo=True)
     elif status == 'inativos':
         query = query.filter_by(ativo=False)
+    if not user.has_permissao('admin'):
+        query = query.filter_by(celula_id=user.celula_id)
     formularios = query.order_by(Formulario.created_at.desc()).all()
     return render_template('formularios/formulario.html', formularios=formularios, aba_ativa=aba_ativa, status=status)
 
@@ -62,7 +71,11 @@ def formularios():
 @formularios_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 @form_builder_required
 def editar_formulario(id):
+    user = User.query.get(session['user_id'])
     formulario = Formulario.query.get_or_404(id)
+    if not user.has_permissao('admin') and formulario.celula_id != user.celula_id:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('formularios_bp.formularios'))
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         descricao = request.form.get('descricao', '').strip()
@@ -86,7 +99,11 @@ def editar_formulario(id):
 @formularios_bp.route('/<int:id>/toggle-ativo', methods=['POST'])
 @form_builder_required
 def toggle_ativo_formulario(id):
+    user = User.query.get(session['user_id'])
     formulario = Formulario.query.get_or_404(id)
+    if not user.has_permissao('admin') and formulario.celula_id != user.celula_id:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('formularios_bp.formularios'))
     formulario.ativo = not formulario.ativo
     db.session.commit()
     status_texto = 'ativado' if formulario.ativo else 'inativado'
@@ -127,10 +144,13 @@ def preencher_formulario(id):
         except ValueError:
             flash('Estrutura do formulário inválida.', 'danger')
     can_edit = False
+    user = None
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         if user and user_can_access_form_builder(user):
             can_edit = True
+    if user and not user.has_permissao('admin') and formulario.celula_id != user.celula_id:
+        abort(403)
     return render_template(
         'formularios/preencher_formulario.html',
         formulario=formulario,

@@ -366,7 +366,7 @@
                                     </div>
                                 </li>
 
-                                {% set show_cadastros = (current_user.is_authenticated and current_user.has_permissao('admin')) or user_can_access_form_builder(current_user) %}
+                                {% set show_cadastros = current_user.is_authenticated and (current_user.has_permissao('admin') or current_user.pode_atender_os) %}
                                 {% if show_cadastros %}
                                 <li class="nav-item">
                                     <a class="nav-link d-flex justify-content-between align-items-center collapsed"
@@ -376,14 +376,10 @@
                                     </a>
                                     <div class="collapse" id="collapseOSCadastros">
                                         <ul class="nav flex-column ps-3">
-                                            {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_tipos" href="{{ url_for('ordens_servico_bp.tipos_os_admin') }}"><i class="bi bi-card-text me-2"></i> Tipos de OS</a></li>
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_sistemas" href="{{ url_for('ordens_servico_bp.sistemas_list') }}"><i class="bi bi-hdd-network me-2"></i> Sistemas</a></li>
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_equipamentos" href="{{ url_for('ordens_servico_bp.equipamentos_list') }}"><i class="bi bi-cpu me-2"></i> Equipamentos</a></li>
-                                            {% endif %}
-                        {% if user_can_access_form_builder(current_user) %}
                                             <li class="nav-item"><a class="nav-link os-nav-item" data-os-item="cadastros_formularios" href="{{ url_for('formularios_bp.formularios') }}"><i class="bi bi-ui-checks-grid me-2"></i> Criador de Formulários</a></li>
-                                            {% endif %}
                                         </ul>
                                     </div>
                                 </li>
