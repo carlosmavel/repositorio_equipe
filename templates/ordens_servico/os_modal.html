@@ -13,8 +13,9 @@
       {% if ordem.sistema %}<p class="mb-1"><strong>Sistema:</strong> {{ ordem.sistema.nome }}</p>{% endif %}
       {% if formulario_estrutura %}
       <div class="mt-3">
-        {% set estrutura = formulario_estrutura %}
-        {% include 'ordens_servico/_formulario_vinculado_readonly.html' %}
+        {% with estrutura=formulario_estrutura, formulario_respostas=formulario_respostas %}
+          {% include 'ordens_servico/_formulario_vinculado_readonly.html' %}
+        {% endwith %}
       </div>
       {% endif %}
     </div>

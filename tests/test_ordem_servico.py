@@ -1,4 +1,5 @@
 import re
+import json
 import pytest
 
 from app import app, db
@@ -300,6 +301,136 @@ def test_os_detalhar_exibe_respostas_formulario(client):
     html = resp.get_data(as_text=True)
     assert 'Resposta' in html
 
+
+def test_os_detalhar_exibe_respostas_formulario_lista(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcRL')
+        etapa = ProcessoEtapa(nome='EtapaRL', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='FormRL',
+            estrutura='[{"tipo":"section","titulo":"Sec","campos":[{"id":1,"tipo":"text","label":"P1"}]}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
+        respostas = FormularioResposta(dados=[{"id": 1, "resposta": "RespL"}])
+        db.session.add_all([proc, etapa, form, respostas])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoRL',
+            descricao='d',
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+        )
+        etapa.tipos_os.append(tipo)
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OSRL',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=admin_user.id,
+            formulario_respostas_id=respostas.id,
+        )
+        db.session.add_all([tipo, os_obj])
+        db.session.commit()
+        os_id = os_obj.id
+    resp = client.get(f'/os/{os_id}')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespL' in html
+
+
+def test_os_modal_e_atendimento_exibem_respostas_formulario(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcM')
+        etapa = ProcessoEtapa(nome='EtapaM', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='FormM',
+            estrutura='[{"tipo":"section","titulo":"Sec","campos":[{"id":1,"tipo":"text","label":"P1"}]}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
+        respostas = FormularioResposta(dados={"1": "RespM"})
+        db.session.add_all([proc, etapa, form, respostas])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoM',
+            descricao='d',
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+        )
+        etapa.tipos_os.append(tipo)
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OSM',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=admin_user.id,
+            formulario_respostas_id=respostas.id,
+        )
+        db.session.add_all([tipo, os_obj])
+        db.session.commit()
+        os_id = os_obj.id
+    resp = client.get(f'/os/{os_id}/modal')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespM' in html
+    resp = client.get(f'/os/atendimento/{os_id}')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespM' in html
+
+def test_os_nova_salva_respostas_formulario(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcPost')
+        etapa = ProcessoEtapa(nome='EtapaPost', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='FormPost',
+            estrutura='[{"tipo":"section","titulo":"Sec","campos":[{"id":1,"tipo":"text","label":"P1"}]}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
+        db.session.add_all([proc, etapa, form])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoPost',
+            descricao='d',
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+            obrigatorio_preenchimento=True,
+        )
+        etapa.tipos_os.append(tipo)
+        db.session.add(tipo)
+        db.session.commit()
+        tipo_id = tipo.id
+    data = {
+        'titulo': 'OSP',
+        'tipo_os_id': str(tipo_id),
+        'alvo_tipo': '',
+        'equipamento_id': '',
+        'sistema_id': '',
+        'prioridade': '',
+        'action': 'enviar',
+        'formulario_respostas': json.dumps({'1': 'Resp POST'}),
+    }
+    client.post('/os/nova', data=data)
+    with app.app_context():
+        os_obj = OrdemServico.query.filter_by(titulo='OSP').first()
+        assert os_obj is not None
+        fr = FormularioResposta.query.get(os_obj.formulario_respostas_id)
+        assert fr and fr.dados.get('1') == 'Resp POST'
+        os_id = os_obj.id
+    resp = client.get(f'/os/{os_id}')
+    assert resp.status_code == 200
+    assert 'Resp POST' in resp.get_data(as_text=True)
 
 def test_os_nova_lista_tipos_para_usuario_sem_cargo(client):
     login_admin(client)

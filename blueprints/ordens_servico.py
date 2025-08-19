@@ -103,6 +103,43 @@ def get_celulas_visiveis(usuario):
     return [c for c in set(celulas_ids) if c]
 
 
+def _get_formulario_estrutura_respostas(ordem):
+    """Recupera a estrutura e as respostas do formulário vinculado à OS."""
+    formulario_estrutura = None
+    formulario_respostas = None
+    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
+        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
+        if formulario and formulario.estrutura:
+            try:
+                formulario_estrutura = json.loads(formulario.estrutura)
+            except ValueError:
+                formulario_estrutura = []
+    if ordem.formulario_respostas_id:
+        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
+        if fr and fr.dados:
+            if isinstance(fr.dados, str):
+                try:
+                    dados = json.loads(fr.dados)
+                except ValueError:
+                    dados = None
+            else:
+                dados = fr.dados
+            if isinstance(dados, list):
+                respostas_dict = {}
+                for item in dados:
+                    if isinstance(item, dict):
+                        key = item.get('id') or item.get('campo_id') or item.get('campo')
+                        value = item.get('valor') if 'valor' in item else item.get('resposta')
+                        if key is not None and value is not None:
+                            respostas_dict[str(key)] = value
+                formulario_respostas = respostas_dict or None
+            elif isinstance(dados, dict):
+                formulario_respostas = {str(k): v for k, v in dados.items()}
+            else:
+                formulario_respostas = None
+    return formulario_estrutura, formulario_respostas
+
+
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
 @os_admin_required
 def admin_ordens_servico():
@@ -122,6 +159,18 @@ def admin_ordens_servico():
         equipamento_id = request.form.get('equipamento_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
         atribuido_para_id = request.form.get('atribuido_para_id') or None
+        respostas_raw = request.form.get('formulario_respostas')
+        respostas_id = None
+        if respostas_raw:
+            try:
+                dados_resp = json.loads(respostas_raw)
+            except ValueError:
+                dados_resp = None
+            if dados_resp:
+                fr = FormularioResposta(dados=dados_resp)
+                db.session.add(fr)
+                db.session.flush()
+                respostas_id = fr.id
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
@@ -143,6 +192,8 @@ def admin_ordens_servico():
                 ordem.equipamento_id = equipamento_id if alvo_tipo == 'equipamento' else None
                 ordem.sistema_id = sistema_id if alvo_tipo == 'sistema' else None
                 ordem.atribuido_para_id = atribuido_para_id
+                if respostas_id is not None:
+                    ordem.formulario_respostas_id = respostas_id
                 action_msg = 'atualizada'
             else:
                 ordem = OrdemServico(
@@ -156,6 +207,7 @@ def admin_ordens_servico():
                     sistema_id=sistema_id if alvo_tipo == 'sistema' else None,
                     atribuido_para_id=atribuido_para_id,
                     criado_por_id=session.get('user_id'),
+                    formulario_respostas_id=respostas_id,
                 )
                 db.session.add(ordem)
                 origem_status = None
@@ -340,6 +392,18 @@ def os_nova():
             if acao == 'enviar'
             else OSStatus.RASCUNHO.value
         )
+        respostas_raw = request.form.get('formulario_respostas')
+        respostas_id = None
+        if respostas_raw:
+            try:
+                dados_resp = json.loads(respostas_raw)
+            except ValueError:
+                dados_resp = None
+            if dados_resp:
+                fr = FormularioResposta(dados=dados_resp)
+                db.session.add(fr)
+                db.session.flush()
+                respostas_id = fr.id
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
@@ -360,6 +424,7 @@ def os_nova():
                 criado_por_id=session.get('user_id'),
                 equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                 status=status,
+                formulario_respostas_id=respostas_id,
             )
             try:
                 if status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
@@ -510,19 +575,7 @@ def os_detalhar(ordem_id):
         abort(403)
     logs = OrdemServicoLog.query.filter_by(os_id=ordem.id).order_by(OrdemServicoLog.data_hora.asc()).all()
     comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
-    formulario_estrutura = None
-    formulario_respostas = None
-    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
-        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
-        if formulario and formulario.estrutura:
-            try:
-                formulario_estrutura = json.loads(formulario.estrutura)
-            except ValueError:
-                formulario_estrutura = []
-    if ordem.formulario_respostas_id:
-        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
-        if fr and fr.dados:
-            formulario_respostas = fr.dados
+    formulario_estrutura, formulario_respostas = _get_formulario_estrutura_respostas(ordem)
     return render_template(
         'ordens_servico/detalhe_os.html',
         ordem=ordem,
@@ -543,19 +596,7 @@ def os_modal(ordem_id):
     usuario = User.query.get(session['user_id'])
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
-    formulario_estrutura = None
-    formulario_respostas = None
-    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
-        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
-        if formulario and formulario.estrutura:
-            try:
-                formulario_estrutura = json.loads(formulario.estrutura)
-            except ValueError:
-                formulario_estrutura = []
-    if ordem.formulario_respostas_id:
-        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
-        if fr and fr.dados:
-            formulario_respostas = fr.dados
+    formulario_estrutura, formulario_respostas = _get_formulario_estrutura_respostas(ordem)
     return render_template(
         'ordens_servico/os_modal.html',
         ordem=ordem,
@@ -777,19 +818,7 @@ def os_atendimento_detalhar(ordem_id):
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
-    formulario_estrutura = None
-    formulario_respostas = None
-    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
-        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
-        if formulario and formulario.estrutura:
-            try:
-                formulario_estrutura = json.loads(formulario.estrutura)
-            except ValueError:
-                formulario_estrutura = []
-    if ordem.formulario_respostas_id:
-        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
-        if fr and fr.dados:
-            formulario_respostas = fr.dados
+    formulario_estrutura, formulario_respostas = _get_formulario_estrutura_respostas(ordem)
     return render_template(
         'ordens_servico/atendimento_detalhe.html',
         ordem=ordem,
