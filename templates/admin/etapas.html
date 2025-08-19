@@ -175,6 +175,42 @@
 </div>
 {% endblock content %}
 {% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function atualizarCelulas(setorSelect, celulaSelect, selecionada) {
+            celulaSelect.innerHTML = '<option value="">-- Nenhuma --</option>';
+            var setorId = setorSelect.value;
+            if (!setorId) return;
+            fetch(`/admin/setores/${setorId}/celulas`)
+                .then(r => r.json())
+                .then(data => {
+                    data.forEach(c => {
+                        var opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.nome;
+                        if (selecionada && selecionada == c.id) opt.selected = true;
+                        celulaSelect.appendChild(opt);
+                    });
+                });
+        }
+
+        function vincular(setorId, celulaId) {
+            var setorSelect = document.getElementById(setorId);
+            var celulaSelect = document.getElementById(celulaId);
+            if (!setorSelect || !celulaSelect) return;
+            setorSelect.addEventListener('change', function(){
+                atualizarCelulas(setorSelect, celulaSelect);
+            });
+            if (setorSelect.value) {
+                var selecionada = celulaSelect.value;
+                atualizarCelulas(setorSelect, celulaSelect, selecionada);
+            }
+        }
+
+        vincular('setor_responsavel_id', 'celula_responsavel_id');
+        vincular('edit_setor_responsavel_id', 'edit_celula_responsavel_id');
+    });
+</script>
 {% if etapa_editar %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {

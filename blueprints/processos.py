@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app as app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app as app, jsonify
 
 try:
     from ..core.database import db
@@ -147,6 +147,13 @@ def admin_etapas(processo_id):
     setores = Setor.query.order_by(Setor.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
     return render_template('admin/etapas.html', processo=proc, etapas=etapas, etapa_editar=etapa_para_editar, setores=setores, celulas=celulas)
+
+
+@processos_bp.get('/admin/setores/<int:setor_id>/celulas')
+@admin_required
+def celulas_por_setor(setor_id):
+    celulas = Celula.query.filter_by(setor_id=setor_id).order_by(Celula.nome).all()
+    return jsonify([{'id': c.id, 'nome': c.nome} for c in celulas])
 
 @processos_bp.route('/admin/etapas/delete/<etapa_id>', methods=['POST'])
 @admin_required
