@@ -112,22 +112,21 @@ def admin_ordens_servico():
     if request.method == 'POST':
         id_para_atualizar = request.form.get('id_para_atualizar')
         titulo = request.form.get('titulo', '').strip()
-        descricao = request.form.get('descricao', '').strip()
         tipo_os_id = request.form.get('tipo_os_id') or None
         tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         status = request.form.get('status', OSStatus.RASCUNHO.value)
         prioridade = request.form.get('prioridade') or None
+        alvo_tipo = request.form.get('alvo_tipo')
         equipamento_id = request.form.get('equipamento_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
-        observacoes = request.form.get('observacoes') or None
         atribuido_para_id = request.form.get('atribuido_para_id') or None
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
-        elif tipo_obj and tipo_obj.nome == 'Suporte ao Sistema' and not sistema_id:
-            error = "O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'."
-        elif tipo_obj and tipo_obj.nome == 'Manutenção de Equipamento' and not equipamento_id:
-            error = "O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'."
+        elif alvo_tipo == 'sistema' and not sistema_id:
+            error = 'O campo Sistema é obrigatório.'
+        elif alvo_tipo == 'equipamento' and not equipamento_id:
+            error = 'O campo Equipamento é obrigatório.'
         if error:
             flash(error, 'danger')
         else:
@@ -135,28 +134,24 @@ def admin_ordens_servico():
                 ordem = OrdemServico.query.get_or_404(id_para_atualizar)
                 origem_status = ordem.status
                 ordem.titulo = titulo
-                ordem.descricao = descricao
                 ordem.tipo_os_id = tipo_os_id
                 ordem.equipe_responsavel_id = tipo_obj.equipe_responsavel_id if tipo_obj else None
                 ordem.status = status
                 ordem.prioridade = prioridade
-                ordem.equipamento_id = equipamento_id
-                ordem.sistema_id = sistema_id
-                ordem.observacoes = observacoes
+                ordem.equipamento_id = equipamento_id if alvo_tipo == 'equipamento' else None
+                ordem.sistema_id = sistema_id if alvo_tipo == 'sistema' else None
                 ordem.atribuido_para_id = atribuido_para_id
                 action_msg = 'atualizada'
             else:
                 ordem = OrdemServico(
                     codigo=gerar_codigo_os(),
                     titulo=titulo,
-                    descricao=descricao,
                     tipo_os_id=tipo_os_id,
                     equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                     status=status,
                     prioridade=prioridade,
-                    equipamento_id=equipamento_id,
-                    sistema_id=sistema_id,
-                    observacoes=observacoes,
+                    equipamento_id=equipamento_id if alvo_tipo == 'equipamento' else None,
+                    sistema_id=sistema_id if alvo_tipo == 'sistema' else None,
                     atribuido_para_id=atribuido_para_id,
                     criado_por_id=session.get('user_id'),
                 )
@@ -331,13 +326,12 @@ def os_nova():
         return redirect(url_for('login'))
     if request.method == 'POST':
         titulo = request.form.get('titulo', '').strip()
-        descricao = request.form.get('descricao', '').strip()
         tipo_os_id = request.form.get('tipo_os_id') or None
         tipo_obj = TipoOS.query.get(tipo_os_id) if tipo_os_id else None
         prioridade = request.form.get('prioridade') or None
+        alvo_tipo = request.form.get('alvo_tipo')
         equipamento_id = request.form.get('equipamento_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
-        observacoes = request.form.get('observacoes') or None
         acao = request.form.get('action')
         status = (
             OSStatus.AGUARDANDO_ATENDIMENTO.value
@@ -347,22 +341,20 @@ def os_nova():
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
-        elif tipo_obj and tipo_obj.nome == 'Suporte ao Sistema' and not sistema_id:
-            error = "O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'."
-        elif tipo_obj and tipo_obj.nome == 'Manutenção de Equipamento' and not equipamento_id:
-            error = "O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'."
+        elif alvo_tipo == 'sistema' and not sistema_id:
+            error = 'O campo Sistema é obrigatório.'
+        elif alvo_tipo == 'equipamento' and not equipamento_id:
+            error = 'O campo Equipamento é obrigatório.'
         if error:
             flash(error, 'danger')
         else:
             ordem = OrdemServico(
                 codigo=gerar_codigo_os(),
                 titulo=titulo,
-                descricao=descricao,
                 tipo_os_id=tipo_os_id,
                 prioridade=prioridade,
-                equipamento_id=equipamento_id,
-                sistema_id=sistema_id,
-                observacoes=observacoes,
+                equipamento_id=equipamento_id if alvo_tipo == 'equipamento' else None,
+                sistema_id=sistema_id if alvo_tipo == 'sistema' else None,
                 criado_por_id=session.get('user_id'),
                 equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                 status=status,
@@ -465,9 +457,7 @@ def os_listar():
     busca = request.args.get('q', '').strip()
     if busca:
         like = f"%{busca}%"
-        query = query.filter(
-            or_(OrdemServico.titulo.ilike(like), OrdemServico.descricao.ilike(like))
-        )
+        query = query.filter(OrdemServico.titulo.ilike(like))
 
     data_de = request.args.get('data_de')
     if data_de:
@@ -568,9 +558,7 @@ def os_minhas():
     busca = request.args.get('q', '').strip()
     if busca:
         like = f"%{busca}%"
-        query = query.filter(
-            or_(OrdemServico.titulo.ilike(like), OrdemServico.descricao.ilike(like))
-        )
+        query = query.filter(OrdemServico.titulo.ilike(like))
 
     data_de = request.args.get('data_de')
     if data_de:

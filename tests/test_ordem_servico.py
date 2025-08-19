@@ -63,8 +63,8 @@ def test_crud_ordem_servico(client):
     # create
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS1',
-        'descricao': 'desc',
         'tipo_os_id': proc_id,
+        'alvo_tipo': 'equipamento',
         'equipamento_id': equip_id,
         'status': 'rascunho',
         'prioridade': 'baixa'
@@ -82,8 +82,8 @@ def test_crud_ordem_servico(client):
     resp = client.post('/admin/ordens_servico', data={
         'id_para_atualizar': os_id,
         'titulo': 'OS1 edit',
-        'descricao': 'd2',
         'tipo_os_id': proc_id,
+        'alvo_tipo': 'equipamento',
         'equipamento_id': equip_id,
         'status': 'cancelada'
     }, follow_redirects=True)
@@ -117,7 +117,6 @@ def test_os_mudar_status_bloqueia_quando_form_obrigatorio(client):
         os_obj = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS2',
-            descricao='desc',
             tipo_os=tipo,
             status='rascunho',
             criado_por_id=user.id,
@@ -156,30 +155,30 @@ def test_validacao_condicional_campos(client):
         sist_id = sist.id
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS S',
-        'descricao': 'd',
         'tipo_os_id': tipo_sis_id,
+        'alvo_tipo': 'sistema',
         'status': 'rascunho'
     }, follow_redirects=True)
     assert "O campo Sistema é obrigatório" in resp.get_data(as_text=True)
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS E',
-        'descricao': 'd',
         'tipo_os_id': tipo_eq_id,
+        'alvo_tipo': 'equipamento',
         'status': 'rascunho'
     }, follow_redirects=True)
     assert "O campo Equipamento é obrigatório" in resp.get_data(as_text=True)
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS S ok',
-        'descricao': 'd',
         'tipo_os_id': tipo_sis_id,
+        'alvo_tipo': 'sistema',
         'sistema_id': sist_id,
         'status': 'rascunho'
     }, follow_redirects=True)
     assert resp.status_code == 200
     resp = client.post('/admin/ordens_servico', data={
         'titulo': 'OS E ok',
-        'descricao': 'd',
         'tipo_os_id': tipo_eq_id,
+        'alvo_tipo': 'equipamento',
         'equipamento_id': equip_id,
         'status': 'rascunho'
     }, follow_redirects=True)
@@ -202,7 +201,6 @@ def test_codigo_os_formato_unicidade_incremento(client):
         os1 = OrdemServico(
             codigo=codigo1,
             titulo='OS A',
-            descricao='d',
             tipo_os=tipo,
             status='rascunho',
             criado_por_id=user.id,
@@ -214,7 +212,6 @@ def test_codigo_os_formato_unicidade_incremento(client):
         os2 = OrdemServico(
             codigo=codigo2,
             titulo='OS B',
-            descricao='d',
             tipo_os=tipo,
             status='rascunho',
             criado_por_id=user.id,
@@ -294,7 +291,6 @@ def test_os_listar_filtra_por_celulas(client):
         os1 = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS A',
-            descricao='d',
             tipo_os=tipo1,
             equipe_responsavel_id=cel1.id,
             status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
@@ -305,7 +301,6 @@ def test_os_listar_filtra_por_celulas(client):
         os2 = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS B',
-            descricao='d',
             tipo_os=tipo2,
             equipe_responsavel_id=cel2.id,
             status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
@@ -338,7 +333,6 @@ def test_os_detalhar_respeita_permissoes(client):
         os_permitida = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS OK',
-            descricao='d',
             tipo_os=tipo1,
             equipe_responsavel_id=cel1.id,
             status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
@@ -349,7 +343,6 @@ def test_os_detalhar_respeita_permissoes(client):
         os_negada = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS NO',
-            descricao='d',
             tipo_os=tipo2,
             equipe_responsavel_id=cel2.id,
             status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
@@ -406,7 +399,6 @@ def test_acesso_os_celulas_por_hierarquia(app_ctx):
         os_obj = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS',
-            descricao='d',
             tipo_os=tipo,
             equipe_responsavel_id=cel_sub.id,
             criado_por_id=lider.id,
@@ -430,7 +422,6 @@ def test_os_modal_endpoint(client):
         os_obj = OrdemServico(
             codigo=gerar_codigo_os(),
             titulo='OS modal test',
-            descricao='desc',
             tipo_os=tipo,
             status=OSStatus.AGUARDANDO_ATENDIMENTO.value,
             criado_por=user,

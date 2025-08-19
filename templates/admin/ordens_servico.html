@@ -15,11 +15,7 @@
           <input type="text" class="form-control" id="titulo" name="titulo" value="{{ request.form.get('titulo', ordem_editar.titulo if ordem_editar else '') }}" required>
         </div>
         <div class="mb-3">
-          <label for="descricao" class="form-label">Descrição</label>
-          <textarea class="form-control" id="descricao" name="descricao" rows="3">{{ request.form.get('descricao', ordem_editar.descricao if ordem_editar else '') }}</textarea>
-        </div>
-        <div class="mb-3">
-          <label for="tipo_os_id" class="form-label">Tipo</label>
+          <label for="tipo_os_id" class="form-label">Categoria</label>
           <select class="form-select" id="tipo_os_id" name="tipo_os_id" required>
             <option value="">--</option>
             {% for t in tipos_os %}
@@ -40,6 +36,14 @@
             {% endfor %}
           </select>
         </div>
+        <div class="mb-3">
+          <label for="alvo_tipo" class="form-label">Relacionado a</label>
+          <select class="form-select" id="alvo_tipo" name="alvo_tipo">
+            <option value="">--</option>
+            <option value="sistema" {% if request.form.get('alvo_tipo')=='sistema' or (ordem_editar and ordem_editar.sistema_id) %}selected{% endif %}>Sistema</option>
+            <option value="equipamento" {% if request.form.get('alvo_tipo')=='equipamento' or (ordem_editar and ordem_editar.equipamento_id) %}selected{% endif %}>Equipamento</option>
+          </select>
+        </div>
         <div class="mb-3 d-none" id="equipamento_field">
           <label for="equipamento_id" class="form-label">Equipamento</label>
           <select class="form-select" id="equipamento_id" name="equipamento_id">
@@ -57,10 +61,6 @@
             <option value="{{ s.id }}" {% if ordem_editar and ordem_editar.sistema_id==s.id %}selected{% endif %}>{{ s.nome }}</option>
             {% endfor %}
           </select>
-        </div>
-        <div class="mb-3">
-          <label for="observacoes" class="form-label">Observações</label>
-          <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ request.form.get('observacoes', ordem_editar.observacoes if ordem_editar else '') }}</textarea>
         </div>
         <div class="mb-3">
           <label for="status" class="form-label">Status</label>
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let inputs = form.querySelectorAll('input, textarea, select');
   const idField = form.querySelector('input[name="id_para_atualizar"]');
   const STORAGE_KEY = 'draft_admin_os_' + (idField ? idField.value || 'novo' : 'novo');
-  const tipoSelect = document.getElementById('tipo_os_id');
+  const alvoSelect = document.getElementById('alvo_tipo');
   const equipamento = document.getElementById('equipamento_id');
   const sistema = document.getElementById('sistema_id');
   const equipamentoField = document.getElementById('equipamento_field');
@@ -128,15 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   function atualizarCampos() {
-    const texto = tipoSelect.options[tipoSelect.selectedIndex]?.text || '';
-    if (texto === 'Suporte ao Sistema') {
+    const alvo = alvoSelect.value;
+    if (alvo === 'sistema') {
       sistemaField.classList.remove('d-none');
       equipamentoField.classList.add('d-none');
       sistema.setAttribute('required', 'required');
       equipamento.removeAttribute('required');
       sistemaField.querySelector('label').innerHTML = 'Sistema <span class="text-danger">*</span>';
       equipamentoField.querySelector('label').innerHTML = 'Equipamento';
-    } else if (texto === 'Manutenção de Equipamento') {
+    } else if (alvo === 'equipamento') {
       equipamentoField.classList.remove('d-none');
       sistemaField.classList.add('d-none');
       equipamento.setAttribute('required', 'required');
@@ -155,19 +155,19 @@ document.addEventListener('DOMContentLoaded', () => {
   load();
   atualizarCampos();
   inputs.forEach(i => i.addEventListener('input', save));
-  tipoSelect.addEventListener('change', () => {
+  alvoSelect.addEventListener('change', () => {
     atualizarCampos();
   });
   form.addEventListener('submit', (e) => {
-    const texto = tipoSelect.options[tipoSelect.selectedIndex]?.text || '';
-    if (texto === 'Suporte ao Sistema' && !sistema.value) {
+    const alvo = alvoSelect.value;
+    if (alvo === 'sistema' && !sistema.value) {
       e.preventDefault();
-      alert("O campo Sistema é obrigatório para OS do tipo 'Suporte ao Sistema'.");
+      alert('O campo Sistema é obrigatório.');
       return;
     }
-    if (texto === 'Manutenção de Equipamento' && !equipamento.value) {
+    if (alvo === 'equipamento' && !equipamento.value) {
       e.preventDefault();
-      alert("O campo Equipamento é obrigatório para OS do tipo 'Manutenção de Equipamento'.");
+      alert('O campo Equipamento é obrigatório.');
       return;
     }
     localStorage.removeItem(STORAGE_KEY);

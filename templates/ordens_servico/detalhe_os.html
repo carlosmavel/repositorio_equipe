@@ -16,15 +16,13 @@
           <p class="text-muted">Protocolo: {{ ordem.codigo }}</p>
           <p><strong>Status:</strong> {{ status_enum(ordem.status).label }}</p>
           {% if ordem.prioridade %}<p><strong>Prioridade:</strong> {{ ordem.prioridade }}</p>{% endif %}
-          {% if ordem.tipo_os %}<p><strong>Tipo:</strong> {{ ordem.tipo_os.nome }}</p>{% endif %}
+          {% if ordem.tipo_os %}<p><strong>Categoria:</strong> {{ ordem.tipo_os.nome }}</p>{% endif %}
           {% if ordem.sistema %}<p><strong>Sistema:</strong> {{ ordem.sistema.nome }}</p>{% endif %}
           {% if ordem.equipamento %}<p><strong>Equipamento:</strong> {{ ordem.equipamento.nome }}</p>{% endif %}
           <p><strong>Solicitante:</strong> {{ ordem.criado_por.nome_completo or ordem.criado_por.username }}</p>
           {% if ordem.atribuido_para %}<p><strong>Responsável:</strong> {{ ordem.atribuido_para.nome_completo or ordem.atribuido_para.username }}</p>{% endif %}
           <p><strong>Aberta em:</strong> {{ ordem.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
           {% if ordem.data_conclusao %}<p><strong>Concluída em:</strong> {{ ordem.data_conclusao.strftime('%d/%m/%Y %H:%M') }}</p>{% endif %}
-          <p><strong>Descrição:</strong> {{ ordem.descricao|striptags }}</p>
-          {% if ordem.observacoes %}<p><strong>Observações:</strong> {{ ordem.observacoes|striptags }}</p>{% endif %}
         </div>
       </div>
 
