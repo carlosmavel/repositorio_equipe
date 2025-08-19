@@ -137,17 +137,42 @@
 </div>
 {% endmacro %}
 
-{% set q_idx = namespace(value=0) %}
-{% for bloco in estrutura %}
-  {% if bloco.tipo == 'section' %}
-    <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
-      {% for campo in bloco.campos %}
-        {{ render_campo(campo, q_idx.value) }}
-        {% set q_idx.value = q_idx.value + 1 %}
-      {% endfor %}
+<div class="form-container">
+  <div class="mb-3">
+    <h5 id="sectionTitle" class="mb-2"></h5>
+    <div class="progress">
+      <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
     </div>
-  {% else %}
-    {{ render_campo(bloco, q_idx.value) }}
-    {% set q_idx.value = q_idx.value + 1 %}
-  {% endif %}
-{% endfor %}
+  </div>
+
+  {% set q_idx = namespace(value=0) %}
+  {% for bloco in estrutura %}
+    {% if bloco.tipo == 'section' %}
+      <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
+        {% for campo in bloco.campos %}
+          {{ render_campo(campo, q_idx.value) }}
+          {% set q_idx.value = q_idx.value + 1 %}
+        {% endfor %}
+      </div>
+    {% else %}
+      {{ render_campo(bloco, q_idx.value) }}
+      {% set q_idx.value = q_idx.value + 1 %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="d-flex mt-3 align-items-center flex-wrap gap-2" id="navButtons">
+    <button type="button" class="btn btn-secondary" id="backBtn">Voltar</button>
+    <div class="ms-auto d-flex gap-2">
+      <button type="button" class="btn btn-primary" id="nextBtn">Próximo</button>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="videoExpandModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-body p-0">
+        <iframe width="100%" height="400" src="" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</div>
