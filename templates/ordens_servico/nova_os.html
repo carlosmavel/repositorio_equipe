@@ -8,6 +8,7 @@
         <div class="card-body">
           <h3>Abrir Nova Ordem de Serviço</h3>
           <form method="POST">
+            <input type="hidden" id="formulario_respostas" name="formulario_respostas">
             <div class="mb-3">
               <label for="titulo" class="form-label">Título <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="titulo" name="titulo" required>
@@ -419,6 +420,44 @@ document.addEventListener('DOMContentLoaded', () => {
   atualizarCampos();
   initFormularioVinculado();
 
+  function coletarRespostas() {
+    const respostas = {};
+    const container = document.getElementById('formulario-vinculado');
+    if (!container) return respostas;
+    container.querySelectorAll('.question-block').forEach(q => {
+      const id = q.dataset.id;
+      if (!id) return;
+      let valor = null;
+      const inputs = q.querySelectorAll('input, textarea, select');
+      if (inputs.length === 1) {
+        const inp = inputs[0];
+        if (inp.type === 'checkbox') {
+          const checked = q.querySelectorAll('input[type="checkbox"]:checked');
+          if (checked.length) valor = Array.from(checked).map(c => c.value);
+        } else if (inp.type === 'radio') {
+          const checked = q.querySelector('input[type="radio"]:checked');
+          if (checked) valor = checked.value;
+        } else if (inp.tagName === 'SELECT' && inp.multiple) {
+          valor = Array.from(inp.selectedOptions).map(o => o.value);
+        } else {
+          valor = inp.value;
+        }
+      } else if (inputs.length > 1) {
+        const checkedRadios = q.querySelector('input[type="radio"]:checked');
+        if (checkedRadios) {
+          valor = checkedRadios.value;
+        } else {
+          const checkedBoxes = q.querySelectorAll('input[type="checkbox"]:checked');
+          if (checkedBoxes.length) valor = Array.from(checkedBoxes).map(c => c.value);
+        }
+      }
+      if (valor !== null && valor !== '' && !(Array.isArray(valor) && valor.length === 0)) {
+        respostas[id] = valor;
+      }
+    });
+    return respostas;
+  }
+
   form.addEventListener('submit', (e) => {
     const alvo = getAlvoValue();
     if (alvo === 'sistema' && !sistema.value) {
@@ -443,6 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
     }
+    const respostas = coletarRespostas();
+    document.getElementById('formulario_respostas').value = JSON.stringify(respostas);
     localStorage.removeItem(STORAGE_KEY);
   });
 

@@ -159,6 +159,18 @@ def admin_ordens_servico():
         equipamento_id = request.form.get('equipamento_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
         atribuido_para_id = request.form.get('atribuido_para_id') or None
+        respostas_raw = request.form.get('formulario_respostas')
+        respostas_id = None
+        if respostas_raw:
+            try:
+                dados_resp = json.loads(respostas_raw)
+            except ValueError:
+                dados_resp = None
+            if dados_resp:
+                fr = FormularioResposta(dados=dados_resp)
+                db.session.add(fr)
+                db.session.flush()
+                respostas_id = fr.id
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
@@ -180,6 +192,8 @@ def admin_ordens_servico():
                 ordem.equipamento_id = equipamento_id if alvo_tipo == 'equipamento' else None
                 ordem.sistema_id = sistema_id if alvo_tipo == 'sistema' else None
                 ordem.atribuido_para_id = atribuido_para_id
+                if respostas_id is not None:
+                    ordem.formulario_respostas_id = respostas_id
                 action_msg = 'atualizada'
             else:
                 ordem = OrdemServico(
@@ -193,6 +207,7 @@ def admin_ordens_servico():
                     sistema_id=sistema_id if alvo_tipo == 'sistema' else None,
                     atribuido_para_id=atribuido_para_id,
                     criado_por_id=session.get('user_id'),
+                    formulario_respostas_id=respostas_id,
                 )
                 db.session.add(ordem)
                 origem_status = None
@@ -377,6 +392,18 @@ def os_nova():
             if acao == 'enviar'
             else OSStatus.RASCUNHO.value
         )
+        respostas_raw = request.form.get('formulario_respostas')
+        respostas_id = None
+        if respostas_raw:
+            try:
+                dados_resp = json.loads(respostas_raw)
+            except ValueError:
+                dados_resp = None
+            if dados_resp:
+                fr = FormularioResposta(dados=dados_resp)
+                db.session.add(fr)
+                db.session.flush()
+                respostas_id = fr.id
         error = None
         if not titulo:
             error = 'Título da Ordem de Serviço é obrigatório.'
@@ -397,6 +424,7 @@ def os_nova():
                 criado_por_id=session.get('user_id'),
                 equipe_responsavel_id=tipo_obj.equipe_responsavel_id if tipo_obj else None,
                 status=status,
+                formulario_respostas_id=respostas_id,
             )
             try:
                 if status == OSStatus.AGUARDANDO_ATENDIMENTO.value and not ordem.pode_mudar_para_aguardando():
