@@ -301,6 +301,46 @@ def test_os_detalhar_exibe_respostas_formulario(client):
     assert 'Resposta' in html
 
 
+def test_os_detalhar_exibe_respostas_formulario_lista(client):
+    login_admin(client)
+    with app.app_context():
+        proc = Processo(nome='ProcRL')
+        etapa = ProcessoEtapa(nome='EtapaRL', ordem=1, processo=proc)
+        cel = Celula.query.first()
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='FormRL',
+            estrutura='[{"tipo":"section","titulo":"Sec","campos":[{"id":1,"tipo":"text","label":"P1"}]}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
+        respostas = FormularioResposta(dados=[{"id": 1, "resposta": "RespL"}])
+        db.session.add_all([proc, etapa, form, respostas])
+        db.session.commit()
+        tipo = TipoOS(
+            nome='TipoRL',
+            descricao='d',
+            equipe_responsavel_id=cel.id,
+            formulario_vinculado_id=form.id,
+        )
+        etapa.tipos_os.append(tipo)
+        os_obj = OrdemServico(
+            codigo=gerar_codigo_os(),
+            titulo='OSRL',
+            tipo_os=tipo,
+            status='rascunho',
+            criado_por_id=admin_user.id,
+            formulario_respostas_id=respostas.id,
+        )
+        db.session.add_all([tipo, os_obj])
+        db.session.commit()
+        os_id = os_obj.id
+    resp = client.get(f'/os/{os_id}')
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'RespL' in html
+
+
 def test_os_nova_lista_tipos_para_usuario_sem_cargo(client):
     login_admin(client)
     with app.app_context():
