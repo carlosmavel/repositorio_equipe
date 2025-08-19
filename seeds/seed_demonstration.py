@@ -104,76 +104,182 @@ def run():
     with app.app_context():
         print("Populando dados de exemplo...")
 
-        inst1 = get_or_create(Instituicao, codigo="INST001", nome="Instituição 1", descricao="Inst 1")
-        inst2 = get_or_create(Instituicao, codigo="INST002", nome="Instituição 2", descricao="Inst 2")
+        inst1 = get_or_create(
+            Instituicao,
+            codigo="INST001",
+            nome="Empresa 01",
+            descricao="Operadora de Saúde",
+        )
 
-        est1 = get_or_create(Estabelecimento, codigo="EST1", nome_fantasia="Estabelecimento 1", instituicao=inst1)
-        est2 = get_or_create(Estabelecimento, codigo="EST2", nome_fantasia="Estabelecimento 2", instituicao=inst2)
+        est1 = get_or_create(
+            Estabelecimento,
+            codigo="EST1",
+            nome_fantasia="Centro Administrativo",
+            instituicao=inst1,
+        )
+        est2 = get_or_create(
+            Estabelecimento,
+            codigo="EST2",
+            nome_fantasia="Hospital 01",
+            instituicao=inst1,
+        )
 
-        setor1 = get_or_create(Setor, nome="Setor 1", estabelecimento=est1)
-        setor2 = get_or_create(Setor, nome="Setor 2", estabelecimento=est1)
-        setor1_e2 = get_or_create(Setor, nome="Setor 1 Estab 2", estabelecimento=est2)
-        setor2_e2 = get_or_create(Setor, nome="Setor 2 Estab 2", estabelecimento=est2)
+        setor1 = get_or_create(
+            Setor, nome="Tecnologia da Informação", estabelecimento=est1
+        )
+        setor2 = get_or_create(Setor, nome="Regulação", estabelecimento=est1)
+        setor3 = get_or_create(Setor, nome="Contas Médicas", estabelecimento=est1)
+        setor1_e2 = get_or_create(Setor, nome="Faturamento", estabelecimento=est2)
+        setor2_e2 = get_or_create(Setor, nome="Recepção", estabelecimento=est2)
+        setor3_e2 = get_or_create(
+            Setor, nome="Centro Cirúrgico", estabelecimento=est2
+        )
 
-        cel1 = get_or_create(Celula, nome="Celula 1", estabelecimento=est1, setor=setor1)
-        cel2 = get_or_create(Celula, nome="Celula 2", estabelecimento=est1, setor=setor1)
-        cel_s2_1 = get_or_create(Celula, nome="Celula Setor2 1", estabelecimento=est1, setor=setor2)
-        cel_s2_2 = get_or_create(Celula, nome="Celula Setor2 2", estabelecimento=est1, setor=setor2)
-        cel3 = get_or_create(Celula, nome="CelulaEstab2 1", estabelecimento=est2, setor=setor2_e2)
-        cel4 = get_or_create(Celula, nome="CelulaEstab2 2", estabelecimento=est2, setor=setor2_e2)
+        cel1 = get_or_create(
+            Celula,
+            nome="TI - Regras e Parametrizações",
+            estabelecimento=est1,
+            setor=setor1,
+        )
+        cel2 = get_or_create(
+            Celula,
+            nome="TI - Infraestrutura",
+            estabelecimento=est1,
+            setor=setor1,
+        )
+        cel3 = get_or_create(
+            Celula,
+            nome="TI - Operadora",
+            estabelecimento=est1,
+            setor=setor1,
+        )
 
-        cargos = [
-            ("Analista Celula 1 JR", [setor1], [cel1], ["artigo_criar"]),
-            ("Analista Celula 1 SR", [setor1], [cel1], [
-                "artigo_criar",
-                Permissao.ARTIGO_APROVAR_CELULA.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
-                Permissao.ARTIGO_REVISAR_CELULA.value,
-                Permissao.ARTIGO_EDITAR_CELULA.value,
-            ]),
-            ("Analista Celula 2 JR", [setor1], [cel2], ["artigo_criar"]),
-            ("Analista Celula 2 SR", [setor1], [cel2], [
-                "artigo_criar",
-                Permissao.ARTIGO_APROVAR_CELULA.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
-                Permissao.ARTIGO_REVISAR_CELULA.value,
-                Permissao.ARTIGO_EDITAR_CELULA.value,
-            ]),
-            ("Analista Setor2 Celula 1 JR", [setor2], [cel_s2_1], ["artigo_criar"]),
-            ("Analista Setor2 Celula 1 SR", [setor2], [cel_s2_1], [
-                "artigo_criar",
-                Permissao.ARTIGO_APROVAR_CELULA.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
-                Permissao.ARTIGO_REVISAR_CELULA.value,
-                Permissao.ARTIGO_EDITAR_CELULA.value,
-            ]),
-            ("Analista Setor2 Celula 2 JR", [setor2], [cel_s2_2], ["artigo_criar"]),
-            ("Analista Setor2 Celula 2 SR", [setor2], [cel_s2_2], [
-                "artigo_criar",
-                Permissao.ARTIGO_APROVAR_CELULA.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
-                Permissao.ARTIGO_REVISAR_CELULA.value,
-                Permissao.ARTIGO_EDITAR_CELULA.value,
-            ]),
-            ("Gestor Setor 1", [setor1], [], [
-                Permissao.ARTIGO_APROVAR_SETOR.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
-                Permissao.ARTIGO_REVISAR_SETOR.value,
-                Permissao.ARTIGO_EDITAR_SETOR.value,
-            ]),
-            ("Gestor Setor 2", [setor2], [], [
-                Permissao.ARTIGO_APROVAR_SETOR.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
-                Permissao.ARTIGO_REVISAR_SETOR.value,
-                Permissao.ARTIGO_EDITAR_SETOR.value,
-            ]),
-            ("Gestor Setor 1 Estab 2", [setor1_e2], [], [
-                Permissao.ARTIGO_APROVAR_SETOR.value,
-                Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
-                Permissao.ARTIGO_REVISAR_SETOR.value,
-                Permissao.ARTIGO_EDITAR_SETOR.value,
-            ]),
+        cel_s2_1 = get_or_create(
+            Celula,
+            nome="Gestão de Redes",
+            estabelecimento=est1,
+            setor=setor2,
+        )
+        cel_s2_2 = get_or_create(
+            Celula,
+            nome="Gestão de Autorizações",
+            estabelecimento=est1,
+            setor=setor2,
+        )
+
+        cel_s3_1 = get_or_create(
+            Celula,
+            nome="Cobrança Intercâmbio",
+            estabelecimento=est1,
+            setor=setor3,
+        )
+        cel_s3_2 = get_or_create(
+            Celula,
+            nome="Contas Recursos Próprios",
+            estabelecimento=est1,
+            setor=setor3,
+        )
+
+        cel4 = get_or_create(
+            Celula,
+            nome="Faturamento Internações",
+            estabelecimento=est2,
+            setor=setor1_e2,
+        )
+        cel5 = get_or_create(
+            Celula,
+            nome="Faturamento Consultas",
+            estabelecimento=est2,
+            setor=setor1_e2,
+        )
+        cel6 = get_or_create(
+            Celula,
+            nome="Atendimento",
+            estabelecimento=est2,
+            setor=setor2_e2,
+        )
+        cel7 = get_or_create(
+            Celula,
+            nome="Autorizações",
+            estabelecimento=est2,
+            setor=setor2_e2,
+        )
+        cel8 = get_or_create(
+            Celula,
+            nome="Sala 01",
+            estabelecimento=est2,
+            setor=setor3_e2,
+        )
+        cel9 = get_or_create(
+            Celula,
+            nome="Sala 02",
+            estabelecimento=est2,
+            setor=setor3_e2,
+        )
+
+        celulas = [
+            cel1,
+            cel2,
+            cel3,
+            cel_s2_1,
+            cel_s2_2,
+            cel_s3_1,
+            cel_s3_2,
+            cel4,
+            cel5,
+            cel6,
+            cel7,
+            cel8,
+            cel9,
         ]
+
+        cargos = []
+        for cel in celulas:
+            cargos.append(
+                (
+                    f"Analista {cel.nome} JR",
+                    [cel.setor],
+                    [cel],
+                    ["artigo_criar"],
+                )
+            )
+            cargos.append(
+                (
+                    f"Analista {cel.nome} SR",
+                    [cel.setor],
+                    [cel],
+                    [
+                        "artigo_criar",
+                        Permissao.ARTIGO_APROVAR_CELULA.value,
+                        Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value,
+                        Permissao.ARTIGO_REVISAR_CELULA.value,
+                        Permissao.ARTIGO_EDITAR_CELULA.value,
+                    ],
+                )
+            )
+
+        for setor in [
+            setor1,
+            setor2,
+            setor3,
+            setor1_e2,
+            setor2_e2,
+            setor3_e2,
+        ]:
+            cargos.append(
+                (
+                    f"Gestor {setor.nome}",
+                    [setor],
+                    [],
+                    [
+                        "artigo_criar",
+                        Permissao.ARTIGO_APROVAR_SETOR.value,
+                        Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value,
+                        Permissao.ARTIGO_REVISAR_SETOR.value,
+                        Permissao.ARTIGO_EDITAR_SETOR.value,
+                    ],
+                )
+            )
 
         cargo_objs = {}
         for nome, setores, celulas, perms in cargos:
@@ -191,17 +297,61 @@ def run():
             cargo_objs[nome] = cargo
 
         users = [
-            ("analista1jr", "Analista Celula 1 JR", cel1),
-            ("analista1sr", "Analista Celula 1 SR", cel1),
-            ("analista2jr", "Analista Celula 2 JR", cel2),
-            ("analista2sr", "Analista Celula 2 SR", cel2),
-            ("analistas2c1jr", "Analista Setor2 Celula 1 JR", cel_s2_1),
-            ("analistas2c1sr", "Analista Setor2 Celula 1 SR", cel_s2_1),
-            ("analistas2c2jr", "Analista Setor2 Celula 2 JR", cel_s2_2),
-            ("analistas2c2sr", "Analista Setor2 Celula 2 SR", cel_s2_2),
-            ("gestor1", "Gestor Setor 1", cel1),
-            ("gestor2", "Gestor Setor 2", cel_s2_1),
-            ("gestor1e2", "Gestor Setor 1 Estab 2", cel3),
+            (
+                "analista_ti_regras_jr",
+                f"Analista {cel1.nome} JR",
+                cel1,
+            ),
+            (
+                "analista_ti_regras_sr",
+                f"Analista {cel1.nome} SR",
+                cel1,
+            ),
+            (
+                "analista_ti_infra_jr",
+                f"Analista {cel2.nome} JR",
+                cel2,
+            ),
+            (
+                "analista_ti_infra_sr",
+                f"Analista {cel2.nome} SR",
+                cel2,
+            ),
+            (
+                "analista_gestao_redes_jr",
+                f"Analista {cel_s2_1.nome} JR",
+                cel_s2_1,
+            ),
+            (
+                "analista_gestao_redes_sr",
+                f"Analista {cel_s2_1.nome} SR",
+                cel_s2_1,
+            ),
+            (
+                "analista_gestao_autorizacoes_jr",
+                f"Analista {cel_s2_2.nome} JR",
+                cel_s2_2,
+            ),
+            (
+                "analista_gestao_autorizacoes_sr",
+                f"Analista {cel_s2_2.nome} SR",
+                cel_s2_2,
+            ),
+            (
+                "gestor_ti",
+                f"Gestor {setor1.nome}",
+                cel1,
+            ),
+            (
+                "gestor_regulacao",
+                f"Gestor {setor2.nome}",
+                cel_s2_1,
+            ),
+            (
+                "gestor_faturamento",
+                f"Gestor {setor1_e2.nome}",
+                cel4,
+            ),
         ]
 
         for username, cargo_nome, cel in users:
