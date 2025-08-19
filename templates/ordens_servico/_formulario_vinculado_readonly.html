@@ -1,0 +1,17 @@
+{% for bloco in estrutura %}
+  {% if bloco.tipo == 'section' %}
+    <div class="mb-4">
+      {% if bloco.titulo %}<h5 class="mb-1">{{ bloco.titulo }}</h5>{% endif %}
+      {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
+      {% for campo in bloco.campos %}
+        <p class="ms-3 mb-1">{{ campo.label }}</p>
+        {% if campo.subtitulo %}<p class="ms-3 text-muted mb-2">{{ campo.subtitulo }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mb-3">
+      <p class="mb-1">{{ bloco.label }}</p>
+      {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
+    </div>
+  {% endif %}
+{% endfor %}
