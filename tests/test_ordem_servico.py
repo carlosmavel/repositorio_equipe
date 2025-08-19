@@ -235,7 +235,13 @@ def test_get_formulario_vinculado(client):
         proc = Processo(nome='ProcF')
         etapa = ProcessoEtapa(nome='EtapaF', ordem=1, processo=proc)
         cel = Celula.query.first()
-        form = Formulario(nome='Form', estrutura='[{"tipo":"text","label":"Pergunta","obrigatoria":true}]')
+        admin_user = User.query.filter_by(username='admin').first()
+        form = Formulario(
+            nome='Form',
+            estrutura='[{"tipo":"text","label":"Pergunta","obrigatoria":true}]',
+            criado_por_id=admin_user.id,
+            celula_id=cel.id,
+        )
         db.session.add_all([proc, etapa, form])
         db.session.commit()
         tipo = TipoOS(

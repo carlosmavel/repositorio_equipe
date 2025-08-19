@@ -677,6 +677,11 @@ class Formulario(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
+
+    criado_por = db.relationship('User')
+    celula = db.relationship('Celula')
 
     campos = db.relationship('CampoFormulario', back_populates='formulario', cascade='all, delete-orphan')
     secoes = db.relationship(

@@ -52,9 +52,9 @@ except ImportError:  # pragma: no cover
     from core.utils import send_email, gerar_codigo_os
 
 try:
-    from ..core.decorators import admin_required
+    from ..core.decorators import os_admin_required
 except ImportError:  # pragma: no cover
-    from core.decorators import admin_required
+    from core.decorators import os_admin_required
 
 ordens_servico_bp = Blueprint('ordens_servico_bp', __name__)
 
@@ -102,7 +102,7 @@ def get_celulas_visiveis(usuario):
 
 
 @ordens_servico_bp.route('/admin/ordens_servico', methods=['GET', 'POST'])
-@admin_required
+@os_admin_required
 def admin_ordens_servico():
     ordem_editar = None
     if request.method == 'GET':
@@ -205,7 +205,7 @@ def admin_ordens_servico():
 
 
 @ordens_servico_bp.route('/admin/ordens_servico/delete/<ordem_id>', methods=['POST'])
-@admin_required
+@os_admin_required
 def admin_delete_ordem(ordem_id):
     ordem = _get_ordem_servico(ordem_id)
     try:
@@ -219,7 +219,7 @@ def admin_delete_ordem(ordem_id):
 
 
 @ordens_servico_bp.route('/admin/tipos_os', methods=['GET', 'POST'], endpoint='tipos_os_admin')
-@admin_required
+@os_admin_required
 def tipos_os_admin():
     tipo_editar = None
     if request.method == 'GET':
@@ -301,7 +301,7 @@ def tipos_os_admin():
 
 
 @ordens_servico_bp.route('/admin/tipos_os/delete/<int:id>', methods=['POST'], endpoint='tipos_os_admin_delete')
-@admin_required
+@os_admin_required
 def tipos_os_admin_delete(id):
     tipo = TipoOS.query.get_or_404(id)
     try:
@@ -315,7 +315,7 @@ def tipos_os_admin_delete(id):
 
 
 @ordens_servico_bp.get('/admin/tipos_os/etapas/<processo_id>', endpoint='tipos_os_etapas_por_processo')
-@admin_required
+@os_admin_required
 def tipos_os_etapas_por_processo(processo_id):
     etapas = (
         ProcessoEtapa.query.filter_by(processo_id=processo_id)
@@ -853,7 +853,7 @@ def os_historico(ordem_id):
 
 
 @ordens_servico_bp.route('/os/sistemas')
-@admin_required
+@os_admin_required
 def sistemas_list():
     search = request.args.get('q', '')
     status = request.args.get('status', '')
@@ -880,7 +880,7 @@ def sistemas_list():
 
 
 @ordens_servico_bp.route('/os/sistemas/novo', methods=['GET', 'POST'])
-@admin_required
+@os_admin_required
 def sistemas_novo():
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
@@ -910,7 +910,7 @@ def sistemas_novo():
 
 
 @ordens_servico_bp.route('/os/sistemas/<int:sistema_id>/editar', methods=['GET', 'POST'])
-@admin_required
+@os_admin_required
 def sistemas_editar(sistema_id):
     sistema = Sistema.query.get_or_404(sistema_id)
     if request.method == 'POST':
@@ -940,7 +940,7 @@ def sistemas_editar(sistema_id):
 
 
 @ordens_servico_bp.route('/os/sistemas/<int:sistema_id>/excluir', methods=['POST'])
-@admin_required
+@os_admin_required
 def sistemas_excluir(sistema_id):
     sistema = Sistema.query.get_or_404(sistema_id)
     db.session.delete(sistema)
@@ -955,7 +955,7 @@ def sistemas_excluir(sistema_id):
 
 
 @ordens_servico_bp.route('/os/equipamentos')
-@admin_required
+@os_admin_required
 def equipamentos_list():
     search = request.args.get('q', '')
     status = request.args.get('status', '')
@@ -995,7 +995,7 @@ def equipamentos_list():
 
 
 @ordens_servico_bp.route('/os/equipamentos/novo', methods=['GET', 'POST'])
-@admin_required
+@os_admin_required
 def equipamentos_novo():
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
@@ -1029,7 +1029,7 @@ def equipamentos_novo():
 
 
 @ordens_servico_bp.route('/os/equipamentos/<int:equipamento_id>/editar', methods=['GET', 'POST'])
-@admin_required
+@os_admin_required
 def equipamentos_editar(equipamento_id):
     equipamento = Equipamento.query.get_or_404(equipamento_id)
     if request.method == 'POST':
@@ -1065,7 +1065,7 @@ def equipamentos_editar(equipamento_id):
 
 
 @ordens_servico_bp.route('/os/equipamentos/<int:equipamento_id>/excluir', methods=['POST'])
-@admin_required
+@os_admin_required
 def equipamentos_excluir(equipamento_id):
     equipamento = Equipamento.query.get_or_404(equipamento_id)
     db.session.delete(equipamento)
