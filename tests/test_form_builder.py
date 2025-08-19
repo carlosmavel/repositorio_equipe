@@ -1,6 +1,17 @@
 import pytest
 from app import app, db
-from core.models import Cargo, Instituicao, Estabelecimento, Setor, Celula, User, Formulario, Secao, CampoFormulario
+from core.models import (
+    Cargo,
+    Instituicao,
+    Estabelecimento,
+    Setor,
+    Celula,
+    User,
+    Formulario,
+    Secao,
+    CampoFormulario,
+    Funcao,
+)
 from core.utils import user_can_access_form_builder
 
 def setup_org(prefix):
@@ -19,12 +30,23 @@ def setup_org(prefix):
     return est.id, setor.id, cel.id
 
 
-def create_user(username, atende=False):
+def create_user(username, atende=False, admin=False):
     est_id, setor_id, cel_id = setup_org(username)
     cargo = Cargo(nome=f'Cargo_{username}', pode_atender_os=atende)
     db.session.add(cargo)
+    if admin:
+        funcao_admin = Funcao(codigo='admin', nome='Admin')
+        db.session.add(funcao_admin)
+        cargo.permissoes.append(funcao_admin)
     db.session.flush()
-    user = User(username=username, email=f'{username}@test', estabelecimento_id=est_id, setor_id=setor_id, celula_id=cel_id, cargo_id=cargo.id)
+    user = User(
+        username=username,
+        email=f'{username}@test',
+        estabelecimento_id=est_id,
+        setor_id=setor_id,
+        celula_id=cel_id,
+        cargo_id=cargo.id,
+    )
     user.set_password('x')
     db.session.add(user)
     db.session.commit()
@@ -52,6 +74,18 @@ def test_permission_function(app_ctx):
         assert user_denied.pode_atender_os is False
         assert user_can_access_form_builder(user_allowed) is True
         assert user_can_access_form_builder(user_denied) is False
+
+
+def test_admin_has_form_builder_access(client):
+    with app.app_context():
+        admin_id = create_user('admin_user', atende=False, admin=True)
+    login(client, admin_id)
+    resp = client.get('/ordem-servico/formularios/')
+    assert resp.status_code == 200
+    with app.app_context():
+        admin = User.query.get(admin_id)
+        assert admin.pode_atender_os is True
+        assert user_can_access_form_builder(admin) is True
 
 
 def test_route_permission(client):
