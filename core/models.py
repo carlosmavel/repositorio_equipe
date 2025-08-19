@@ -308,7 +308,10 @@ class User(db.Model):
     @property
     def pode_atender_os(self) -> bool:
         """Indica se o usuário pode atender ordens de serviço."""
-        return bool(self.cargo and getattr(self.cargo, 'pode_atender_os', False))
+        return bool(
+            self.has_permissao('admin')
+            or (self.cargo and getattr(self.cargo, 'pode_atender_os', False))
+        )
 
     # Compatibilidade com nome antigo
     atende_ordem_servico = pode_atender_os

@@ -639,7 +639,13 @@ def eligible_review_notification_users(article):
 
 def user_can_access_form_builder(user):
     """Verifica se o usuário tem acesso ao criador de formulários."""
-    return bool(user and getattr(user, 'pode_atender_os', False))
+    return bool(
+        user
+        and (
+            getattr(user, 'pode_atender_os', False)
+            or getattr(user, 'has_permissao', lambda _p: False)('admin')
+        )
+    )
 
 
 def validar_fluxo_ramificacoes(estrutura):
