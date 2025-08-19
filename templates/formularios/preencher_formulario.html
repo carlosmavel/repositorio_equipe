@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (rule.destino === 'end') return -1;
           if (rule.destino !== 'next') {
             const destIdx = findSectionByQuestionId(rule.destino);
-            if (destIdx !== -1) return destIdx;
+            if (destIdx !== -1 && destIdx !== idx) return destIdx;
           }
         }
       }
