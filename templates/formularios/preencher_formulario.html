@@ -160,7 +160,7 @@
             <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
               <div class="d-flex justify-content-between">
                 <div class="flex-grow-1 me-3">
-                  <h4 class="mb-1">{{ bloco.titulo }}</h4>
+                  <h4 class="mb-1 d-none">{{ bloco.titulo }}</h4>
                   {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
                 </div>
                 <div class="text-end">
@@ -241,17 +241,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   branchDestinations.forEach(id => {
     const el = questionById.get(id);
-    if (el) el.style.display = 'none';
+    if (el) hideQuestionAndDescendants(el);
   });
 
   function hideQuestionAndDescendants(qEl) {
     qEl.style.display = 'none';
+    qEl.querySelectorAll('[required]').forEach(inp => {
+      inp.dataset.wasRequired = 'true';
+      inp.required = false;
+    });
     const ram = JSON.parse(qEl.dataset.ramificacoes || '[]');
     ram.forEach(r => {
       if (r.destino && r.destino !== 'next' && r.destino !== 'end') {
         const destEl = questionById.get(r.destino);
         if (destEl) hideQuestionAndDescendants(destEl);
       }
+    });
+  }
+
+  function showQuestion(qEl) {
+    qEl.style.display = '';
+    qEl.querySelectorAll('[data-was-required]').forEach(inp => {
+      inp.required = true;
+      inp.removeAttribute('data-was-required');
     });
   }
 
@@ -327,42 +339,46 @@ document.addEventListener('DOMContentLoaded', () => {
       if (checked) val = checked.value;
     }
 
-    // oculta todos os destinos possíveis antes de aplicar nova regra
-    ram.forEach(r => {
-      if (r.destino && r.destino !== 'next' && r.destino !== 'end') {
-        const destEl = questionById.get(r.destino);
-        if (destEl) hideQuestionAndDescendants(destEl);
-      }
-    });
+    // oculta destino anterior
+    if (q.dataset.activeDest && q.dataset.activeDest !== 'next' && q.dataset.activeDest !== 'end') {
+      const prevEl = questionById.get(q.dataset.activeDest);
+      if (prevEl) hideQuestionAndDescendants(prevEl);
+    }
 
     const currentSecIdx = questionToSection.get(q);
     const pos = history.indexOf(currentSecIdx);
     history = pos === -1 ? [currentSecIdx] : history.slice(0, pos + 1);
 
+    let rule = null;
     if (val) {
-      const rule = ram.find(r => r.opcao === val);
-      if (rule) {
-        if (rule.destino === 'end') {
-          for (let i = idx + 1; i < questions.length; i++) {
-            hideQuestionAndDescendants(questions[i]);
-          }
-          updateSectionsVisibility();
-          showSection(currentSecIdx);
-          return;
+      rule = ram.find(r => r.opcao === val);
+    }
+    q.dataset.activeDest = rule ? rule.destino : '';
+
+    if (rule) {
+      if (rule.destino === 'end') {
+        for (let i = idx + 1; i < questions.length; i++) {
+          hideQuestionAndDescendants(questions[i]);
         }
-        if (rule.destino !== 'next') {
-          const destEl = questionById.get(rule.destino);
-          if (destEl) {
-            destEl.style.display = '';
-            const destSecIdx = questionToSection.get(destEl);
-            sections[destSecIdx].style.display = '';
-            updateSectionsVisibility();
-            if (destSecIdx !== currentSecIdx) {
-              history.push(destSecIdx);
-              showSection(destSecIdx);
-              return;
-            }
+        updateSectionsVisibility();
+        showSection(currentSecIdx);
+        return;
+      }
+      if (rule.destino && rule.destino !== 'next') {
+        const destEl = questionById.get(rule.destino);
+        if (destEl) {
+          showQuestion(destEl);
+          const destSecIdx = questionToSection.get(destEl);
+          sections[destSecIdx].style.display = '';
+          updateSectionsVisibility();
+          if (destSecIdx !== currentSecIdx) {
+            history.push(destSecIdx);
+            showSection(destSecIdx);
+            return;
           }
+          const destIdx = questions.indexOf(destEl);
+          const nextAfterDest = questions[destIdx + 1];
+          if (nextAfterDest) showQuestion(nextAfterDest);
         }
       }
     }
@@ -384,6 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submitBtn');
 
   nextBtn.addEventListener('click', () => {
+    const currentSection = sections[history[history.length - 1]];
+    const inputs = currentSection.querySelectorAll('input, select, textarea');
+    for (const inp of inputs) {
+      if (!inp.checkValidity()) {
+        inp.reportValidity();
+        return;
+      }
+    }
     const target = determineNext(history[history.length - 1]);
     if (target === -1) {
       submitBtn.click();
