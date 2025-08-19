@@ -18,6 +18,7 @@ try:
         OrdemServicoComentario,
         User,
         Formulario,
+        FormularioResposta,
         Celula,
         Equipamento,
         Sistema,
@@ -33,6 +34,7 @@ except ImportError:  # pragma: no cover
         OrdemServicoComentario,
         User,
         Formulario,
+        FormularioResposta,
         Celula,
         Equipamento,
         Sistema,
@@ -508,12 +510,27 @@ def os_detalhar(ordem_id):
         abort(403)
     logs = OrdemServicoLog.query.filter_by(os_id=ordem.id).order_by(OrdemServicoLog.data_hora.asc()).all()
     comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
+    formulario_estrutura = None
+    formulario_respostas = None
+    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
+        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
+        if formulario and formulario.estrutura:
+            try:
+                formulario_estrutura = json.loads(formulario.estrutura)
+            except ValueError:
+                formulario_estrutura = []
+    if ordem.formulario_respostas_id:
+        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
+        if fr and fr.dados:
+            formulario_respostas = fr.dados
     return render_template(
         'ordens_servico/detalhe_os.html',
         ordem=ordem,
         status_enum=OSStatus,
         logs=logs,
         comentarios=comentarios,
+        formulario_estrutura=formulario_estrutura,
+        formulario_respostas=formulario_respostas,
         next=request.args.get('next'),
     )
 
@@ -526,7 +543,26 @@ def os_modal(ordem_id):
     usuario = User.query.get(session['user_id'])
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
-    return render_template('ordens_servico/os_modal.html', ordem=ordem, status_enum=OSStatus)
+    formulario_estrutura = None
+    formulario_respostas = None
+    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
+        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
+        if formulario and formulario.estrutura:
+            try:
+                formulario_estrutura = json.loads(formulario.estrutura)
+            except ValueError:
+                formulario_estrutura = []
+    if ordem.formulario_respostas_id:
+        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
+        if fr and fr.dados:
+            formulario_respostas = fr.dados
+    return render_template(
+        'ordens_servico/os_modal.html',
+        ordem=ordem,
+        status_enum=OSStatus,
+        formulario_estrutura=formulario_estrutura,
+        formulario_respostas=formulario_respostas,
+    )
 
 
 @ordens_servico_bp.route('/os/minhas', endpoint='os_minhas')
@@ -741,11 +777,26 @@ def os_atendimento_detalhar(ordem_id):
     if not _usuario_pode_acessar_os(usuario, ordem):
         abort(403)
     comentarios = OrdemServicoComentario.query.filter_by(os_id=ordem.id).order_by(OrdemServicoComentario.data_hora.asc()).all()
+    formulario_estrutura = None
+    formulario_respostas = None
+    if ordem.tipo_os and ordem.tipo_os.formulario_vinculado_id:
+        formulario = Formulario.query.get(ordem.tipo_os.formulario_vinculado_id)
+        if formulario and formulario.estrutura:
+            try:
+                formulario_estrutura = json.loads(formulario.estrutura)
+            except ValueError:
+                formulario_estrutura = []
+    if ordem.formulario_respostas_id:
+        fr = FormularioResposta.query.get(ordem.formulario_respostas_id)
+        if fr and fr.dados:
+            formulario_respostas = fr.dados
     return render_template(
         'ordens_servico/atendimento_detalhe.html',
         ordem=ordem,
         comentarios=comentarios,
         status_choices=OSStatus,
+        formulario_estrutura=formulario_estrutura,
+        formulario_respostas=formulario_respostas,
     )
 
 

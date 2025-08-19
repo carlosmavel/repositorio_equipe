@@ -668,6 +668,16 @@ class RespostaEtapaOS(db.Model):
 # --- MODELOS DO CRIADOR DE FORMULÁRIOS ---
 
 
+class FormularioResposta(db.Model):
+    __tablename__ = 'formulario_respostas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    dados = db.Column(db.JSON, nullable=True)
+
+    def __repr__(self):  # pragma: no cover
+        return f"<FormularioResposta {self.id}>"
+
+
 class Formulario(db.Model):
     __tablename__ = 'formulario'
 

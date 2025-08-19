@@ -316,8 +316,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showSection(idx) {
     sections.forEach((sec, i) => { sec.style.display = i === idx ? '' : 'none'; });
-    const title = sections[idx].querySelector('h4')?.textContent || `Seção ${idx + 1}`;
-    document.getElementById('sectionTitle').textContent = title;
+    const titleEl = sections[idx].querySelector('h4');
+    const subtitleEl = sections[idx].querySelector('p.text-muted');
+    let title = titleEl?.textContent.trim();
+    let subtitle = subtitleEl?.textContent.trim();
+    let display = title || `Seção ${idx + 1}`;
+    if (subtitle) display += ` - ${subtitle}`;
+    document.getElementById('sectionTitle').textContent = display;
     const pct = ((idx + 1) / sections.length) * 100;
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('backBtn').style.display = history.length > 1 ? '' : 'none';

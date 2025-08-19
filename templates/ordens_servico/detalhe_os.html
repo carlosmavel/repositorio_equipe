@@ -26,6 +26,15 @@
         </div>
       </div>
 
+      {% if formulario_estrutura %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          {% set estrutura = formulario_estrutura %}
+          {% include 'ordens_servico/_formulario_vinculado_readonly.html' %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if comentarios %}
       <div class="card shadow-sm mb-4">
         <div class="card-body">

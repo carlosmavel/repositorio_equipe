@@ -11,6 +11,12 @@
       {% if ordem.prioridade %}<p class="mb-1"><strong>Prioridade:</strong> {{ ordem.prioridade }}</p>{% endif %}
       {% if ordem.equipamento %}<p class="mb-1"><strong>Equipamento:</strong> {{ ordem.equipamento.nome }}</p>{% endif %}
       {% if ordem.sistema %}<p class="mb-1"><strong>Sistema:</strong> {{ ordem.sistema.nome }}</p>{% endif %}
+      {% if formulario_estrutura %}
+      <div class="mt-3">
+        {% set estrutura = formulario_estrutura %}
+        {% include 'ordens_servico/_formulario_vinculado_readonly.html' %}
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
