@@ -61,6 +61,8 @@
     </select>
   {% elif campo.tipo == 'date' %}
     <input type="date" class="form-control date-field" placeholder="dd/mm/aaaa" {% if campo.obrigatoria %}required{% endif %}>
+  {% elif campo.tipo == 'number' %}
+    <input type="number" class="form-control" {% if campo.obrigatoria %}required{% endif %}>
   {% elif campo.tipo == 'likert' %}
     {% set linhas = campo.linhas if campo.linhas else ['Item 1'] %}
     {% set colunas = campo.colunas if campo.colunas else ['Discordo totalmente','Discordo','Neutro','Concordo','Concordo totalmente'] %}
