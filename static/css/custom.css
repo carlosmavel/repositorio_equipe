@@ -467,8 +467,22 @@ body > .container {
 /* Card layout for Ordens de Serviço */
 .os-card {
   min-height: 180px;
+  border-left: 5px solid transparent;
 }
 
 .os-card .card-footer .btn {
   min-width: 90px;
+}
+
+/* Priority colors for Ordem de Serviço cards */
+.os-card.prioridade-baixa {
+  border-left-color: var(--bs-success);
+}
+
+.os-card.prioridade-media {
+  border-left-color: var(--bs-warning);
+}
+
+.os-card.prioridade-alta {
+  border-left-color: var(--bs-danger);
 }

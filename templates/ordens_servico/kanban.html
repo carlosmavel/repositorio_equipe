@@ -10,7 +10,7 @@
         <h5>{{ labels[key] }}</h5>
         {% if columns[key] %}
           {% for os in columns[key] %}
-          <div class="card mb-2 os-card" data-os="{{ os.codigo }}" style="cursor:pointer;">
+          <div class="card mb-2 os-card {% if os.prioridade %}prioridade-{{ os.prioridade }}{% endif %}" data-os="{{ os.codigo }}" style="cursor:pointer;">
             <div class="card-body p-2">
               <div><strong>Código OS:</strong> {{ os.codigo }}</div>
               <div class="fw-bold"><strong>Título:</strong> {{ os.titulo }}</div>

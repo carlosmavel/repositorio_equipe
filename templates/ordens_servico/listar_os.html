@@ -85,14 +85,15 @@
             <div class="row row-cols-1 g-3">
               {% for os in ordens %}
               <div class="col">
-                <div class="card os-card h-100 shadow-sm">
+                <div class="card os-card h-100 shadow-sm {% if os.prioridade %}prioridade-{{ os.prioridade }}{% endif %}">
                   <div class="card-header d-flex justify-content-between align-items-start">
                     <strong>{{ os.codigo }}</strong>
                     <div>
                       {% set st = status_enum(os.status) %}
                       <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">{{ st.label }}</span>
                       {% if os.prioridade %}
-                      <span class="badge bg-secondary">{{ os.prioridade }}</span>
+                      {% set pr_colors = {'baixa':'success','media':'warning','alta':'danger'} %}
+                      <span class="badge bg-{{ pr_colors[os.prioridade] }}">{{ os.prioridade }}</span>
                       {% endif %}
                     </div>
                   </div>
