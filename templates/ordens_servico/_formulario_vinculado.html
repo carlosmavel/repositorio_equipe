@@ -149,6 +149,16 @@
   {% for bloco in estrutura %}
     {% if bloco.tipo == 'section' %}
       <div class="section-block mb-4" data-section-index="{{ loop.index0 }}">
+        <div class="d-flex justify-content-between">
+          <div class="flex-grow-1 me-3">
+            <h4 class="mb-1 d-none">{{ bloco.titulo }}</h4>
+            {% if bloco.subtitulo %}<p class="text-muted mb-2">{{ bloco.subtitulo }}</p>{% endif %}
+          </div>
+          <div class="text-end">
+            {% if bloco.imagem_url %}<img src="{{ bloco.imagem_url }}" class="img-fluid mb-2" style="max-width: 200px;" alt="">{% endif %}
+            {% if bloco.video_url %}<div class="video-holder"><iframe width="250" height="140" src="{{ bloco.video_url }}" allowfullscreen></iframe><button type="button" class="btn btn-link p-0 mt-1 expand-video" data-video="{{ bloco.video_url }}">Expandir</button></div>{% endif %}
+          </div>
+        </div>
         {% for campo in bloco.campos %}
           {{ render_campo(campo, q_idx.value) }}
           {% set q_idx.value = q_idx.value + 1 %}

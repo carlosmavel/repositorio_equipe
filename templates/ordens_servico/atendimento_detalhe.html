@@ -10,6 +10,14 @@
       <p class="text-muted">Status atual: {{ status_choices(ordem.status).label }}</p>
     </div>
   </div>
+  {% if formulario_estrutura %}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      {% set estrutura = formulario_estrutura %}
+      {% include 'ordens_servico/_formulario_vinculado_readonly.html' %}
+    </div>
+  </div>
+  {% endif %}
   <div class="mb-3">
     <form method="post" action="{{ url_for('ordens_servico_bp.os_mudar_status', ordem_id=ordem.codigo) }}" class="d-flex">
       <select class="form-select form-select-sm" name="status">
