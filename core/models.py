@@ -14,6 +14,10 @@ try:
     from .enums import ArticleStatus, ArticleVisibility, OSStatus
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.enums import ArticleStatus, ArticleVisibility, OSStatus
+try:  # pragma: no cover - utils import
+    from .utils import serialize_json, deserialize_json
+except ImportError:  # pragma: no cover
+    from core.utils import serialize_json, deserialize_json
 
 # --- association tables for article visibility ---
 article_extra_celulas = db.Table(
@@ -529,13 +533,21 @@ class CampoEtapa(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
     obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    opcoes = db.Column(db.JSON, nullable=True)
+    _opcoes = db.Column('opcoes', db.Text, nullable=True)
     dica = db.Column(db.String(255), nullable=True)
 
     etapa = db.relationship('ProcessoEtapa', back_populates='campos')
 
     def __repr__(self):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
+
+    @property
+    def opcoes(self):
+        return deserialize_json(self._opcoes)
+
+    @opcoes.setter
+    def opcoes(self, value):
+        self._opcoes = serialize_json(value)
 
 
 # --- Novos modelos para Equipamento e Sistema ---
@@ -673,10 +685,18 @@ class FormularioResposta(db.Model):
     __tablename__ = 'formulario_respostas'
 
     id = db.Column(db.Integer, primary_key=True)
-    dados = db.Column(db.JSON, nullable=True)
+    _dados = db.Column('dados', db.Text, nullable=True)
 
     def __repr__(self):  # pragma: no cover
         return f"<FormularioResposta {self.id}>"
+
+    @property
+    def dados(self):
+        return deserialize_json(self._dados)
+
+    @dados.setter
+    def dados(self, value):
+        self._dados = serialize_json(value)
 
 
 class Formulario(db.Model):
@@ -722,7 +742,7 @@ class CampoFormulario(db.Model):
     usar_menu_suspenso = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
     embaralhar_opcoes = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
     tem_opcao_outra = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    ramificacoes = db.Column(db.JSON, nullable=True)
+    _ramificacoes = db.Column('ramificacoes', db.Text, nullable=True)
     ordem = db.Column(db.Integer, nullable=False)
     opcoes = db.Column(db.Text, nullable=True)
     condicional = db.Column(db.Text, nullable=True)
@@ -741,6 +761,14 @@ class CampoFormulario(db.Model):
 
     def __repr__(self):
         return f"<CampoFormulario {self.label} ({self.tipo})>"
+
+    @property
+    def ramificacoes(self):
+        return deserialize_json(self._ramificacoes)
+
+    @ramificacoes.setter
+    def ramificacoes(self, value):
+        self._ramificacoes = serialize_json(value)
 
 
 class Secao(db.Model):

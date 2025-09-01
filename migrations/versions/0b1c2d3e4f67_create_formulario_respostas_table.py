@@ -13,7 +13,7 @@ def upgrade():
     op.create_table(
         'formulario_respostas',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('dados', sa.JSON(), nullable=True),
+        sa.Column('dados', sa.Text(), nullable=True),
     )
     op.create_foreign_key(
         'ordem_servico_formulario_respostas_id_fkey',
