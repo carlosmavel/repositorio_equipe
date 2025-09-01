@@ -8,6 +8,24 @@ Create Date: 2025-07-09 00:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 
+
+def _has_column(table: str, column: str) -> bool:
+    """Check whether a given column exists in the specified table."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    cols = {c["name"] for c in inspector.get_columns(table)}
+    return column in cols
+
+
+def _is_nullable(table: str, column: str) -> bool:
+    """Return True if the given column on the table is nullable."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    for col in inspector.get_columns(table):
+        if col["name"] == column:
+            return col.get("nullable", True)
+    return True
+
 # revision identifiers, used by Alembic.
 revision = 'ab12cd34ef56'
 down_revision = ('fa23b0c1c9d0', '7c8d9e0f1a2b')
@@ -25,8 +43,13 @@ def upgrade():
           END IF;
       END;
     """)
-    op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
-    op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
+    if _has_column('ordem_servico', 'processo_id'):
+        if _has_column('ordem_servico', 'tipo_os_id'):
+            op.drop_column('ordem_servico', 'processo_id')
+        else:
+            op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
+    if _has_column('ordem_servico', 'tipo_os_id') and _is_nullable('ordem_servico', 'tipo_os_id'):
+        op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
     op.alter_column(
         'ordem_servico',
         'status',
@@ -43,8 +66,10 @@ def upgrade():
     op.add_column('ordem_servico', sa.Column('prioridade', sa.String(length=10), nullable=True))
     op.add_column('ordem_servico', sa.Column('origem', sa.String(length=255), nullable=True))
     op.add_column('ordem_servico', sa.Column('observacoes', sa.Text(), nullable=True))
-    op.drop_column('ordem_servico', 'created_at')
-    op.drop_column('ordem_servico', 'updated_at')
+    if _has_column('ordem_servico', 'created_at'):
+        op.drop_column('ordem_servico', 'created_at')
+    if _has_column('ordem_servico', 'updated_at'):
+        op.drop_column('ordem_servico', 'updated_at')
 
     op.create_table(
         'ordem_servico_participante',
@@ -91,5 +116,6 @@ def downgrade():
     op.drop_column('ordem_servico', 'atribuido_para_id')
     op.drop_column('ordem_servico', 'criado_por_id')
     op.alter_column('ordem_servico', 'status', existing_type=sa.String(length=20), nullable=False, server_default='aberta')
-    op.alter_column('ordem_servico', 'tipo_os_id', new_column_name='processo_id', existing_type=sa.String(length=36), nullable=True)
+    if _has_column('ordem_servico', 'tipo_os_id'):
+        op.alter_column('ordem_servico', 'tipo_os_id', new_column_name='processo_id', existing_type=sa.String(length=36), nullable=True)
     op.alter_column('ordem_servico', 'descricao', existing_type=sa.Text(), nullable=True)
