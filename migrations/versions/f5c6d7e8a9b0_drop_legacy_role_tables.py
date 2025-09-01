@@ -10,9 +10,13 @@ depends_on = None
 
 
 def upgrade():
-    # Remove tables from the old role-based display system if they exist
-    for table in ['legacy_role', 'legacy_role_permissions']:
-        op.execute(f'DROP TABLE IF EXISTS {table} CASCADE')
+    """Remove tables from the old role-based display system if they exist."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    # Drop child table first to avoid foreign key issues
+    for table in ['legacy_role_permissions', 'legacy_role']:
+        if inspector.has_table(table):
+            op.drop_table(table)
 
 
 def downgrade():
