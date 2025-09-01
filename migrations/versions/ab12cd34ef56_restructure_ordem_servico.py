@@ -13,8 +13,9 @@ def _has_column(table: str, column: str) -> bool:
     """Check whether a given column exists in the specified table."""
     bind = op.get_bind()
     inspector = sa.inspect(bind)
-    cols = {c["name"] for c in inspector.get_columns(table)}
-    return column in cols
+    cols = {c["name"].lower() for c in inspector.get_columns(table)}
+    return column.lower() in cols
+
 
 
 def _is_nullable(table: str, column: str) -> bool:
@@ -22,7 +23,8 @@ def _is_nullable(table: str, column: str) -> bool:
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     for col in inspector.get_columns(table):
-        if col["name"] == column:
+        if col["name"].lower() == column.lower():
+
             return col.get("nullable", True)
     return True
 
@@ -49,7 +51,6 @@ def upgrade():
         else:
             op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
     if _has_column('ordem_servico', 'tipo_os_id') and _is_nullable('ordem_servico', 'tipo_os_id'):
-
         op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
     op.alter_column(
         'ordem_servico',

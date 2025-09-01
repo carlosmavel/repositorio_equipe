@@ -13,7 +13,8 @@ def _has_column(table: str, column: str) -> bool:
     """Return True if the given table has the specified column."""
     bind = op.get_bind()
     inspector = sa.inspect(bind)
-    return column in {c["name"] for c in inspector.get_columns(table)}
+    cols = {c["name"].lower() for c in inspector.get_columns(table)}
+    return column.lower() in cols
 
 # revision identifiers, used by Alembic.
 revision = '52f02b1c789a'
