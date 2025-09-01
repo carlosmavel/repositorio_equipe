@@ -175,6 +175,8 @@ pip install -r requirements.txt
 # Se ocorrerem erros de compilação (lxml, numpy ou opencv),
 # execute a reinstalação a seguir para Python 3.11:
 pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
+# Caso utilize Oracle, instale também o driver opcional:
+# pip install oracledb
 ```
 
 ## 10. Configurar Variáveis de Ambiente Essenciais (no Windows)
@@ -211,10 +213,11 @@ O arquivo `app.py` do Orquetask está programado para ler essas variáveis do se
         * Copie a longa string hexadecimal que for gerada. Este será o valor da sua variável `SECRET_KEY`.
 
     4.  **`DATABASE_URI`**:
-        * **Propósito:** A string de conexão com o seu banco de dados PostgreSQL.
+        * **Propósito:** A string de conexão com o banco de dados e o **driver** usado pelo SQLAlchemy.
         * **AÇÃO OBRIGATÓRIA:** Você **DEVE** definir esta variável de ambiente com as credenciais do **novo usuário seguro** que você criou no Passo 5 do guia de configuração do banco de dados. A aplicação Orquetask foi configurada para dar erro se esta variável não for encontrada no ambiente, garantindo que apenas conexões seguras e explicitamente configuradas sejam usadas.
-        * **Valor a Definir (exemplo de formato):**
-            `postgresql://SEU_NOVO_USUARIO_DO_BANCO:SUA_NOVA_SENHA_FORTE@localhost:5432/repositorio_equipe_db`
+        * **Valor a Definir (exemplos de formato):**
+            `postgresql+psycopg2://SEU_NOVO_USUARIO_DO_BANCO:SUA_NOVA_SENHA_FORTE@localhost:5432/repositorio_equipe_db`
+            `oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL` *(requer o pacote opcional `oracledb`)*
             *(Substitua `SEU_NOVO_USUARIO_DO_BANCO` e `SUA_NOVA_SENHA_FORTE` pelos que você criou no Passo 5. Lembre-se de codificar caracteres especiais na senha se houver, como `!` que vira `%21`).*
 
 * **Como Definir as Variáveis de Ambiente Permanentemente no Windows (Recomendado):**
