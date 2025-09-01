@@ -114,7 +114,9 @@ def downgrade():
         batch_op.drop_column('email')
 
     with op.batch_alter_table('attachment', schema=None) as batch_op:
-        batch_op.create_index('ix_attachment_content_fts', ['content'])
+        bind = op.get_bind()
+        if bind.dialect.name != 'oracle':
+            batch_op.create_index('ix_attachment_content_fts', ['content'])
         batch_op.drop_column('original_filename')
 
     with op.batch_alter_table('article', schema=None) as batch_op:

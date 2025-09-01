@@ -27,7 +27,10 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     )
     # 2) Índice para busca no content
-    op.create_index('ix_attachment_content_fts', 'attachment', ['content'])
+    bind = op.get_bind()
+    if bind.dialect.name != 'oracle':
+        # Oracle não permite índice direto em colunas LOB
+        op.create_index('ix_attachment_content_fts', 'attachment', ['content'])
 
     # Ajustes herdados da migração anterior
     with op.batch_alter_table('article', schema=None) as batch_op:
@@ -45,7 +48,6 @@ def upgrade():
             existing_server_default=sa.text("'rascunho'")
         )
 
-    bind = op.get_bind()
     inspector = sa.inspect(bind)
     columns = {col['name'] for col in inspector.get_columns('user')}
 
@@ -70,7 +72,9 @@ def upgrade():
 
 def downgrade():
     # 1) Remove índice e tabela attachment
-    op.drop_index('ix_attachment_content_fts', table_name='attachment')
+    bind = op.get_bind()
+    if bind.dialect.name != 'oracle':
+        op.drop_index('ix_attachment_content_fts', table_name='attachment')
     op.drop_table('attachment')
 
     # 2) Reverte ajustes de user
