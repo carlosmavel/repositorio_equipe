@@ -17,7 +17,7 @@ def upgrade():
     op.add_column('campo_formulario', sa.Column('usar_menu_suspenso', sa.Boolean(), nullable=False, server_default=sa.text('0')))
     op.add_column('campo_formulario', sa.Column('embaralhar_opcoes', sa.Boolean(), nullable=False, server_default=sa.text('0')))
     op.add_column('campo_formulario', sa.Column('tem_opcao_outra', sa.Boolean(), nullable=False, server_default=sa.text('0')))
-    op.add_column('campo_formulario', sa.Column('ramificacoes', sa.JSON(), nullable=True))
+    op.add_column('campo_formulario', sa.Column('ramificacoes', sa.Text(), nullable=True))
 
 
 def downgrade():
