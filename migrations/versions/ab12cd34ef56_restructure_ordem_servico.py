@@ -15,7 +15,16 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.alter_column('ordem_servico', 'descricao', existing_type=sa.Text(), nullable=False)
+    op.execute("""
+      BEGIN
+        EXECUTE IMMEDIATE 'ALTER TABLE ordem_servico MODIFY descricao NOT NULL';
+      EXCEPTION
+        WHEN OTHERS THEN
+          IF SQLCODE != -1442 THEN
+            RAISE;
+          END IF;
+      END;
+    """)
     op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
     op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
     op.alter_column('ordem_servico', 'status', existing_type=sa.String(length=20), nullable=False, server_default='rascunho')

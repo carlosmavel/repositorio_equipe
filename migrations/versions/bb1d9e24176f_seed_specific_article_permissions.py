@@ -23,14 +23,22 @@ depends_on = None
 def upgrade():
     connection = op.get_bind()
     perms = [(p.value, p.value.replace('_', ' ').capitalize()) for p in Permissao]
+
+    # Generate ids manually to support databases without implicit
+    # autoincrement on integer primary keys (e.g. Oracle).
+    next_id = connection.execute(
+        sa.text("SELECT COALESCE(MAX(id), 0) FROM funcao")
+    ).scalar()
+
     for codigo, nome in perms:
         res = connection.execute(
             sa.text("SELECT id FROM funcao WHERE codigo=:c"), {"c": codigo}
         ).first()
         if not res:
+            next_id += 1
             connection.execute(
-                sa.text("INSERT INTO funcao (codigo, nome) VALUES (:c, :n)"),
-                {"c": codigo, "n": nome},
+                sa.text("INSERT INTO funcao (id, codigo, nome) VALUES (:i, :c, :n)"),
+                {"i": next_id, "c": codigo, "n": nome},
             )
 
 
