@@ -48,7 +48,6 @@ def upgrade():
             op.drop_column('ordem_servico', 'processo_id')
         else:
             op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
-
     if _has_column('ordem_servico', 'tipo_os_id') and _is_nullable('ordem_servico', 'tipo_os_id'):
 
         op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
