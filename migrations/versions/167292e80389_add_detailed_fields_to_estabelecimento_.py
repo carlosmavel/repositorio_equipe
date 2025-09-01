@@ -29,10 +29,10 @@ def upgrade():
         #batch_op.drop_index('ix_attachment_content_fts', postgresql_using='gin')
 
     with op.batch_alter_table('cargo', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False))
+        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
 
     with op.batch_alter_table('centro_custo', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False))
+        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
 
     with op.batch_alter_table('estabelecimento', schema=None) as batch_op:
         batch_op.add_column(sa.Column('nome_fantasia', sa.String(length=200), nullable=False))
@@ -54,14 +54,14 @@ def upgrade():
         batch_op.add_column(sa.Column('email_contato', sa.String(length=120), nullable=True))
         batch_op.add_column(sa.Column('data_abertura', sa.Date(), nullable=True))
         batch_op.add_column(sa.Column('observacoes', sa.Text(), nullable=True))
-        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False))
+        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
         batch_op.add_column(sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
         batch_op.add_column(sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
         batch_op.create_unique_constraint(None, ['cnpj'])
         batch_op.drop_column('nome')
 
     with op.batch_alter_table('setor', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False))
+        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
 
     # ### end Alembic commands ###
 

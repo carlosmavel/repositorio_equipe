@@ -16,7 +16,7 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('cargo', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('pode_atender_os', sa.Boolean(), nullable=False, server_default='false'))
+        batch_op.add_column(sa.Column('pode_atender_os', sa.Boolean(), nullable=False, server_default=sa.text('0')))
 
     op.create_table(
         'formulario',
@@ -33,7 +33,7 @@ def upgrade():
         sa.Column('formulario_id', sa.Integer(), sa.ForeignKey('formulario.id'), nullable=False),
         sa.Column('tipo', sa.String(length=50), nullable=False),
         sa.Column('label', sa.String(length=200), nullable=False),
-        sa.Column('obrigatorio', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('obrigatorio', sa.Boolean(), nullable=False, server_default=sa.text('0')),
         sa.Column('ordem', sa.Integer(), nullable=False),
         sa.Column('opcoes', sa.Text(), nullable=True),
         sa.Column('condicional', sa.Text(), nullable=True),

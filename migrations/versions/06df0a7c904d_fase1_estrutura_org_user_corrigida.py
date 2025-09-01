@@ -65,7 +65,7 @@ def upgrade():
         batch_op.add_column(sa.Column('data_nascimento', sa.Date(), nullable=True))
         batch_op.add_column(sa.Column('data_admissao', sa.Date(), nullable=True))
         batch_op.add_column(sa.Column('telefone_contato', sa.String(length=20), nullable=True))
-        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False))
+        batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
         batch_op.add_column(sa.Column('estabelecimento_id', sa.Integer(), nullable=True))
         batch_op.add_column(sa.Column('centro_custo_id', sa.Integer(), nullable=True))
         batch_op.add_column(sa.Column('setor_id', sa.Integer(), nullable=True))
