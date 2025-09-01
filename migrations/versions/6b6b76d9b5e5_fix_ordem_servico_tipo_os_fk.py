@@ -19,7 +19,6 @@ def upgrade():
             existing_type=sa.String(length=36),
             type_=sa.Integer(),
             existing_nullable=False,
-            postgresql_using='tipo_os_id::integer'
         )
         # Create new FK to tipo_os
         batch_op.create_foreign_key(
@@ -34,7 +33,6 @@ def downgrade():
             existing_type=sa.Integer(),
             type_=sa.String(length=36),
             existing_nullable=False,
-            postgresql_using='tipo_os_id::text'
         )
         batch_op.create_foreign_key(
             'ordem_servico_processo_id_fkey', 'processo', ['tipo_os_id'], ['id']

@@ -23,10 +23,10 @@ def upgrade():
     #           existing_type=sa.VARCHAR(length=10),
     #           type_=sa.Enum('rascunho', 'pendente', 'em_revisao', 'em_ajuste', 'aprovado', 'rejeitado', name='article_status'),
     #           existing_nullable=False,
-    #           existing_server_default=sa.text("'rascunho'::article_status"))
+    #           existing_server_default=sa.text("'rascunho'"))
 
     #with op.batch_alter_table('attachment', schema=None) as batch_op:
-        #batch_op.drop_index('ix_attachment_content_fts', postgresql_using='gin')
+    #    batch_op.drop_index('ix_attachment_content_fts')
 
     with op.batch_alter_table('cargo', schema=None) as batch_op:
         batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
@@ -55,8 +55,8 @@ def upgrade():
         batch_op.add_column(sa.Column('data_abertura', sa.Date(), nullable=True))
         batch_op.add_column(sa.Column('observacoes', sa.Text(), nullable=True))
         batch_op.add_column(sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False))
-        batch_op.add_column(sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
-        batch_op.add_column(sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
+        batch_op.add_column(sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True))
+        batch_op.add_column(sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True))
         batch_op.create_unique_constraint(None, ['cnpj'])
         batch_op.drop_column('nome')
 
@@ -104,13 +104,13 @@ def downgrade():
         batch_op.drop_column('ativo')
 
     with op.batch_alter_table('attachment', schema=None) as batch_op:
-        batch_op.create_index('ix_attachment_content_fts', [sa.literal_column("to_tsvector('portuguese'::regconfig, content)")], unique=False, postgresql_using='gin')
+        batch_op.create_index('ix_attachment_content_fts', ['content'])
 
     #with op.batch_alter_table('article', schema=None) as batch_op:
     #    batch_op.alter_column('status',
     #           existing_type=sa.Enum('rascunho', 'pendente', 'em_revisao', 'em_ajuste', 'aprovado', 'rejeitado', name='article_status'),
     #           type_=sa.VARCHAR(length=10),
     #           existing_nullable=False,
-    #           existing_server_default=sa.text("'rascunho'::article_status"))
+    #           existing_server_default=sa.text("'rascunho'"))
 
     # ### end Alembic commands ###

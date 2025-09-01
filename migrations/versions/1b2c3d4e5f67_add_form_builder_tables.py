@@ -23,8 +23,8 @@ def upgrade():
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('nome', sa.String(length=200), nullable=False),
         sa.Column('estrutura', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     )
 
     op.create_table(

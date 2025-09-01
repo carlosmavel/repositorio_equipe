@@ -56,7 +56,7 @@ def upgrade():
         sa.Column('campo_etapa_id', sa.String(length=36), sa.ForeignKey('campo_etapa.id'), nullable=False),
         sa.Column('valor', sa.Text(), nullable=True),
         sa.Column('preenchido_por', sa.Integer(), sa.ForeignKey('user.id'), nullable=False),
-        sa.Column('data_hora', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('now()')),
+        sa.Column('data_hora', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
     )
 
 

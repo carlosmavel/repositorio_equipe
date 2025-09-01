@@ -54,7 +54,7 @@ def upgrade():
     
     with op.batch_alter_table('attachment', schema=None) as batch_op:
         batch_op.add_column(sa.Column('original_filename', sa.Text(), nullable=True))
-        #batch_op.drop_index('ix_attachment_content_fts', postgresql_using='gin')
+        # batch_op.drop_index('ix_attachment_content_fts')
 
     with op.batch_alter_table('user', schema=None) as batch_op:
         batch_op.add_column(sa.Column('email', sa.String(length=120), nullable=False))
@@ -114,15 +114,15 @@ def downgrade():
         batch_op.drop_column('email')
 
     with op.batch_alter_table('attachment', schema=None) as batch_op:
-        batch_op.create_index('ix_attachment_content_fts', [sa.literal_column("to_tsvector('portuguese'::regconfig, content)")], unique=False, postgresql_using='gin')
+        batch_op.create_index('ix_attachment_content_fts', ['content'])
         batch_op.drop_column('original_filename')
 
     with op.batch_alter_table('article', schema=None) as batch_op:
         batch_op.alter_column('status',
-               existing_type=sa.Enum('rascunho', 'pendente', 'em_revisao', 'em_ajuste', 'aprovado', 'rejeitado', name='article_status'),
+               existing_type=sa.Enum('rascunho', 'pendente', 'em_revisao', 'em_ajuste', 'aprovado', 'rejeitado', name='article_status', native_enum=False),
                type_=sa.VARCHAR(length=10),
                existing_nullable=False,
-               existing_server_default=sa.text("'rascunho'::article_status"))
+               existing_server_default=sa.text("'rascunho'"))
 
     op.drop_table('setor')
     op.drop_table('centro_custo')
