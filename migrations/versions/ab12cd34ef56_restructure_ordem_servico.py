@@ -15,7 +15,13 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.alter_column('ordem_servico', 'descricao', existing_type=sa.Text(), nullable=False)
+    op.alter_column(
+        'ordem_servico',
+        'descricao',
+        existing_type=sa.Text(),
+        existing_nullable=False,
+        nullable=False,
+    )
     op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
     op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
     op.alter_column(
