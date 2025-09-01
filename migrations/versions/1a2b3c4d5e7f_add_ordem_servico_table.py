@@ -17,8 +17,8 @@ def upgrade():
         sa.Column('descricao', sa.Text(), nullable=True),
         sa.Column('processo_id', sa.String(length=36), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=False, server_default='aberta'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), onupdate=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.ForeignKeyConstraint(['processo_id'], ['processo.id']),
         sa.PrimaryKeyConstraint('id')
     )

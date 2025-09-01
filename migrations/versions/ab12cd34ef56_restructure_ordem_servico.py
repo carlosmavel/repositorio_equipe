@@ -22,7 +22,7 @@ def upgrade():
     op.add_column('ordem_servico', sa.Column('criado_por_id', sa.Integer(), nullable=False))
     op.add_column('ordem_servico', sa.Column('atribuido_para_id', sa.Integer(), nullable=True))
     op.add_column('ordem_servico', sa.Column('equipe_responsavel_id', sa.Integer(), nullable=True))
-    op.add_column('ordem_servico', sa.Column('data_criacao', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False))
+    op.add_column('ordem_servico', sa.Column('data_criacao', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False))
     op.add_column('ordem_servico', sa.Column('data_conclusao', sa.DateTime(timezone=True), nullable=True))
     op.add_column('ordem_servico', sa.Column('formulario_respostas_id', sa.Integer(), nullable=True))
     op.add_column('ordem_servico', sa.Column('prioridade', sa.String(length=10), nullable=True))
@@ -41,7 +41,7 @@ def upgrade():
         'ordem_servico_log',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('os_id', sa.String(length=36), sa.ForeignKey('ordem_servico.id'), nullable=False),
-        sa.Column('data_hora', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('data_hora', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('usuario_id', sa.Integer(), sa.ForeignKey('user.id'), nullable=False),
         sa.Column('acao', sa.String(length=255), nullable=False),
         sa.Column('origem_status', sa.String(length=20)),
@@ -54,7 +54,7 @@ def upgrade():
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('os_id', sa.String(length=36), sa.ForeignKey('ordem_servico.id'), nullable=False),
         sa.Column('usuario_id', sa.Integer(), sa.ForeignKey('user.id'), nullable=False),
-        sa.Column('data_hora', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('data_hora', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('mensagem', sa.Text(), nullable=False),
         sa.Column('anexo', sa.String(length=255))
     )
@@ -64,8 +64,8 @@ def downgrade():
     op.drop_table('ordem_servico_comentario')
     op.drop_table('ordem_servico_log')
     op.drop_table('ordem_servico_participante')
-    op.add_column('ordem_servico', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False))
-    op.add_column('ordem_servico', sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False))
+    op.add_column('ordem_servico', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False))
+    op.add_column('ordem_servico', sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False))
     op.drop_column('ordem_servico', 'observacoes')
     op.drop_column('ordem_servico', 'origem')
     op.drop_column('ordem_servico', 'prioridade')
