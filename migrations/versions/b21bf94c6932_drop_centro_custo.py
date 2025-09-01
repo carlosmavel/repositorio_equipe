@@ -10,17 +10,14 @@ depends_on = None
 
 
 def upgrade():
-    # Remove foreign key constraints and columns referencing centro_custo
+    """Remove columns referencing centro_custo and drop the table."""
     with op.batch_alter_table('user') as batch_op:
-        batch_op.drop_constraint('user_centro_custo_id_fkey', type_='foreignkey')
         batch_op.drop_column('centro_custo_id')
 
     with op.batch_alter_table('setor') as batch_op:
-        batch_op.drop_constraint('setor_centro_custo_id_fkey', type_='foreignkey')
         batch_op.drop_column('centro_custo_id')
 
     with op.batch_alter_table('celula') as batch_op:
-        batch_op.drop_constraint('celula_centro_custo_id_fkey', type_='foreignkey')
         batch_op.drop_column('centro_custo_id')
 
     op.drop_table('centro_custo')
