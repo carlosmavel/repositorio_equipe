@@ -8,11 +8,13 @@ Antes de iniciar, certifique-se de que possui os seguintes softwares instalados 
 
 * **Python:** Versão 3.11 (recomendado) ou 3.10.
 * **Git:** Para controle de versão e clonagem do repositório.
-* **PostgreSQL:** Sistema de gerenciamento de banco de dados, versão 12 ou superior.
-* **pgAdmin 4:** Interface gráfica para gerenciar o PostgreSQL (geralmente instalada junto com o PostgreSQL).
+* **Oracle Database:** sistema de gerenciamento de banco de dados (por exemplo, Oracle Database XE 21c).
+* **Oracle SQL Developer:** ferramenta gráfica opcional para administrar o Oracle.
 * Um **editor de código** de sua preferência (ex: VS Code, PyCharm, Sublime Text).
 * **Acesso à Internet.**
 * **Permissões de Administrador** no Windows (podem ser necessárias para algumas instalações).
+
+> **Nota:** As seções a seguir sobre PostgreSQL permanecem para referência histórica. Caso utilize Oracle, consulte a documentação oficial do banco para instalação e configuração.
 
 ## 2. Instalação do Python
 
@@ -216,8 +218,8 @@ O arquivo `app.py` do Orquetask está programado para ler essas variáveis do se
         * **Propósito:** A string de conexão com o banco de dados e o **driver** usado pelo SQLAlchemy.
         * **AÇÃO OBRIGATÓRIA:** Você **DEVE** definir esta variável de ambiente com as credenciais do **novo usuário seguro** que você criou no Passo 5 do guia de configuração do banco de dados. A aplicação Orquetask foi configurada para dar erro se esta variável não for encontrada no ambiente, garantindo que apenas conexões seguras e explicitamente configuradas sejam usadas.
         * **Valor a Definir (exemplos de formato):**
+            `oracle+oracledb://SEU_USUARIO:SUA_SENHA@host:1521/?service_name=ORCL` *(requer o pacote `oracledb`)*
             `postgresql+psycopg2://SEU_NOVO_USUARIO_DO_BANCO:SUA_NOVA_SENHA_FORTE@localhost:5432/repositorio_equipe_db`
-            `oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL` *(requer o pacote opcional `oracledb`)*
             *(Substitua `SEU_NOVO_USUARIO_DO_BANCO` e `SUA_NOVA_SENHA_FORTE` pelos que você criou no Passo 5. Lembre-se de codificar caracteres especiais na senha se houver, como `!` que vira `%21`).*
 
 * **Como Definir as Variáveis de Ambiente Permanentemente no Windows (Recomendado):**
