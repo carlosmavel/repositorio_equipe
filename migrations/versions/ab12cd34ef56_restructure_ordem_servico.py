@@ -16,6 +16,16 @@ def _has_column(table: str, column: str) -> bool:
     cols = {c["name"] for c in inspector.get_columns(table)}
     return column in cols
 
+
+def _is_nullable(table: str, column: str) -> bool:
+    """Return True if the given column on the table is nullable."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    for col in inspector.get_columns(table):
+        if col["name"] == column:
+            return col.get("nullable", True)
+    return True
+
 # revision identifiers, used by Alembic.
 revision = 'ab12cd34ef56'
 down_revision = ('fa23b0c1c9d0', '7c8d9e0f1a2b')
@@ -38,7 +48,9 @@ def upgrade():
             op.drop_column('ordem_servico', 'processo_id')
         else:
             op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
-    if _has_column('ordem_servico', 'tipo_os_id'):
+
+    if _has_column('ordem_servico', 'tipo_os_id') and _is_nullable('ordem_servico', 'tipo_os_id'):
+
         op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
     op.alter_column(
         'ordem_servico',
