@@ -38,7 +38,9 @@ Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `S
 SENDGRID_API_KEY=seu_token_sendgrid
 EMAIL_FROM=notificacoes@exemplo.com
 SECRET_KEY=<sua_chave_aleatoria>
-DATABASE_URI=postgresql://usuario:senha@localhost:5432/repositorio_equipe_db
+DATABASE_URI=postgresql+psycopg2://usuario:senha@localhost:5432/repositorio_equipe_db
+# Para usar Oracle, instale o pacote opcional `oracledb` e utilize:
+# DATABASE_URI=oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL
 ```
 Garanta também que `FLASK_APP=app.py` e `FLASK_DEBUG=0` estejam configurados para execução em produção.
 

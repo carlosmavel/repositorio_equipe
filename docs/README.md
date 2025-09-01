@@ -27,7 +27,7 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
 
 * **Backend:** Python 3, Flask
 * **Frontend:** HTML5, CSS3 (Bootstrap 5), JavaScript (Vanilla JS), Quill.js
-* **Banco de Dados:** PostgreSQL
+* **Banco de Dados:** PostgreSQL (padrão) / Oracle (opcional via `oracledb`)
 * **ORM / Migrations:** SQLAlchemy, Alembic (via Flask-SQLAlchemy, Flask-Migrate)
 * **Principais Bibliotecas:** Werkzeug, Jinja2, psycopg2-binary, python-docx, openpyxl, xlrd, odfpy, pdf2image, pytesseract, Pillow, opencv-python, Bleach, python-dotenv.
 
@@ -80,9 +80,12 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
     ```
 
-4.  **Configure o Banco de Dados PostgreSQL e Variáveis de Ambiente:**
+4.  **Configure o Banco de Dados e Variáveis de Ambiente:**
 
     * Siga as instruções detalhadas no nosso **[Guia de Instalação e Configuração](./GUIA_DE_INSTALACAO.md)** para criar o banco de dados, o usuário do banco com as permissões corretas, e para configurar as variáveis de ambiente essenciais (`FLASK_APP`, `FLASK_DEBUG`, `SECRET_KEY`, `DATABASE_URI`).
+    * A variável `DATABASE_URI` também define o **driver** do SQLAlchemy. Exemplos:
+        * `postgresql+psycopg2://usuario:senha@localhost:5432/repositorio_equipe_db` (padrão, já utiliza `psycopg2-binary`).
+        * `oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL` (requer o pacote opcional `oracledb`).
     * Para habilitar o envio de e-mails, consulte a seção [Configurar Envio de E-mails com SendGrid](./GUIA_DE_INSTALACAO.md#14-configurar-envio-de-e-mails-com-sendgrid-opcional) e defina `SENDGRID_API_KEY` e `EMAIL_FROM` no seu ambiente.
 
 5.  **Aplique as migrações do banco de dados:**
