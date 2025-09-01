@@ -28,6 +28,7 @@ def _has_fk(table: str, constraint: str) -> bool:
     return constraint.lower() in fks
 
 
+
 def _fk_exists(table: str, columns: list[str], referred: str) -> bool:
     """Return True if a FK on the given columns exists to the referred table."""
     bind = op.get_bind()
@@ -47,6 +48,7 @@ def upgrade():
     if _has_table('etapa_processo') and not _has_table('processo_etapa'):
         op.rename_table('etapa_processo', 'processo_etapa')
     if not _fk_exists('campo_etapa', ['etapa_id'], 'processo_etapa'):
+
         op.create_foreign_key('campo_etapa_etapa_id_fkey', 'campo_etapa', 'processo_etapa', ['etapa_id'], ['id'])
 
     # Create subprocesso table
@@ -93,7 +95,9 @@ def downgrade():
     # Rename processo_etapa back to etapa_processo and restore FK
     if _has_fk('campo_etapa', 'campo_etapa_etapa_id_fkey'):
         op.drop_constraint('campo_etapa_etapa_id_fkey', 'campo_etapa', type_='foreignkey')
+
     if _has_table('processo_etapa') and not _has_table('etapa_processo'):
         op.rename_table('processo_etapa', 'etapa_processo')
     if not _fk_exists('campo_etapa', ['etapa_id'], 'etapa_processo'):
+
         op.create_foreign_key('campo_etapa_etapa_id_fkey', 'campo_etapa', 'etapa_processo', ['etapa_id'], ['id'])
