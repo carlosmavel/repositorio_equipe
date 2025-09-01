@@ -13,10 +13,10 @@ def upgrade():
     op.alter_column('campo_formulario', 'obrigatorio', new_column_name='obrigatoria')
     op.add_column('campo_formulario', sa.Column('subtitulo', sa.String(length=200), nullable=True))
     op.add_column('campo_formulario', sa.Column('midia_url', sa.String(length=255), nullable=True))
-    op.add_column('campo_formulario', sa.Column('permite_multipla_escolha', sa.Boolean(), nullable=False, server_default='false'))
-    op.add_column('campo_formulario', sa.Column('usar_menu_suspenso', sa.Boolean(), nullable=False, server_default='false'))
-    op.add_column('campo_formulario', sa.Column('embaralhar_opcoes', sa.Boolean(), nullable=False, server_default='false'))
-    op.add_column('campo_formulario', sa.Column('tem_opcao_outra', sa.Boolean(), nullable=False, server_default='false'))
+    op.add_column('campo_formulario', sa.Column('permite_multipla_escolha', sa.Boolean(), nullable=False, server_default=sa.text('0')))
+    op.add_column('campo_formulario', sa.Column('usar_menu_suspenso', sa.Boolean(), nullable=False, server_default=sa.text('0')))
+    op.add_column('campo_formulario', sa.Column('embaralhar_opcoes', sa.Boolean(), nullable=False, server_default=sa.text('0')))
+    op.add_column('campo_formulario', sa.Column('tem_opcao_outra', sa.Boolean(), nullable=False, server_default=sa.text('0')))
     op.add_column('campo_formulario', sa.Column('ramificacoes', sa.JSON(), nullable=True))
 
 

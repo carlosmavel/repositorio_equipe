@@ -38,7 +38,7 @@ def upgrade():
         'celula',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('nome', sa.String(length=200), nullable=False),
-        sa.Column('ativo', sa.Boolean(), server_default='true', nullable=False),
+        sa.Column('ativo', sa.Boolean(), server_default=sa.text('1'), nullable=False),
         sa.Column('estabelecimento_id', sa.Integer(), nullable=False),
         sa.Column('setor_id', sa.Integer(), nullable=True),
         sa.Column('centro_custo_id', sa.Integer(), nullable=False),

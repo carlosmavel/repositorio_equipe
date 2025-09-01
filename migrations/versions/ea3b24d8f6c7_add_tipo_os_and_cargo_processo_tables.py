@@ -41,7 +41,7 @@ def upgrade():
         sa.Column('subprocesso_id', sa.Integer(), sa.ForeignKey('subprocesso.id'), nullable=False),
         sa.Column('equipe_responsavel_id', sa.Integer(), sa.ForeignKey('celula.id'), nullable=True),
         sa.Column('formulario_vinculado_id', sa.Integer(), nullable=True),
-        sa.Column('obrigatorio_preenchimento', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('obrigatorio_preenchimento', sa.Boolean(), nullable=False, server_default=sa.text('0')),
     )
 
 
