@@ -17,7 +17,6 @@ def _has_table(table: str) -> bool:
     tables = {t.lower() for t in inspector.get_table_names()}
     return table.lower() in tables
 
-
 def _has_fk(table: str, constraint: str) -> bool:
     """Check whether the table has a foreign key with the given name."""
     bind = op.get_bind()
@@ -26,6 +25,7 @@ def _has_fk(table: str, constraint: str) -> bool:
         return False
     fks = {fk["name"].lower() for fk in inspector.get_foreign_keys(table)}
     return constraint.lower() in fks
+
 
 
 def upgrade():

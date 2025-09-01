@@ -17,12 +17,14 @@ def _has_column(table: str, column: str) -> bool:
     return column.lower() in cols
 
 
+
 def _is_nullable(table: str, column: str) -> bool:
     """Return True if the given column on the table is nullable."""
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     for col in inspector.get_columns(table):
         if col["name"].lower() == column.lower():
+
             return col.get("nullable", True)
     return True
 
