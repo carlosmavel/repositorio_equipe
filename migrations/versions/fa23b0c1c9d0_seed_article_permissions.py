@@ -25,16 +25,25 @@ def upgrade():
         ("artigo_revisar", "Revisar artigo"),
         ("artigo_assumir_revisao", "Assumir revisão"),
     ]
+
+    # Determine the current max id once to generate new ids manually. This
+    # avoids relying on database-specific autoincrement behavior which may be
+    # absent (e.g. in Oracle).
+    next_id = connection.execute(
+        sa.text("SELECT COALESCE(MAX(id), 0) FROM funcao")
+    ).scalar()
+
     for codigo, nome in perms:
         res = connection.execute(
             sa.text("SELECT id FROM funcao WHERE codigo=:c"), {"c": codigo}
         ).first()
         if not res:
+            next_id += 1
             connection.execute(
                 sa.text(
-                    "INSERT INTO funcao (codigo, nome) VALUES (:c, :n)"
+                    "INSERT INTO funcao (id, codigo, nome) VALUES (:i, :c, :n)"
                 ),
-                {"c": codigo, "n": nome},
+                {"i": next_id, "c": codigo, "n": nome},
             )
 
 
