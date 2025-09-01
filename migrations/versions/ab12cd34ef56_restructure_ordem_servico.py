@@ -27,7 +27,13 @@ def upgrade():
     """)
     op.alter_column('ordem_servico', 'processo_id', new_column_name='tipo_os_id')
     op.alter_column('ordem_servico', 'tipo_os_id', existing_type=sa.String(length=36), nullable=False)
-    op.alter_column('ordem_servico', 'status', existing_type=sa.String(length=20), nullable=False, server_default='rascunho')
+    op.alter_column(
+        'ordem_servico',
+        'status',
+        existing_type=sa.String(length=20),
+        existing_nullable=False,
+        server_default='rascunho',
+    )
     op.add_column('ordem_servico', sa.Column('criado_por_id', sa.Integer(), nullable=False))
     op.add_column('ordem_servico', sa.Column('atribuido_para_id', sa.Integer(), nullable=True))
     op.add_column('ordem_servico', sa.Column('equipe_responsavel_id', sa.Integer(), nullable=True))
