@@ -20,6 +20,14 @@ def _has_column(table: str, column: str) -> bool:
     return column in cols
 
 
+def _has_fk(table: str, constraint: str) -> bool:
+    """Return True if the given FK constraint exists on the table."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    fks = {fk["name"].lower() for fk in inspector.get_foreign_keys(table)}
+    return constraint.lower() in fks
+
+
 def upgrade():
     if not _has_column('processo_etapa', 'categoria'):
         op.add_column('processo_etapa', sa.Column('categoria', sa.String(255), nullable=True))
@@ -53,7 +61,8 @@ def upgrade():
         )
 
     if _has_column('tipo_os', 'subprocesso_id'):
-        op.drop_constraint('tipo_os_subprocesso_id_fkey', 'tipo_os', type_='foreignkey')
+        if _has_fk('tipo_os', 'tipo_os_subprocesso_id_fkey'):
+            op.drop_constraint('tipo_os_subprocesso_id_fkey', 'tipo_os', type_='foreignkey')
         op.drop_column('tipo_os', 'subprocesso_id')
     if _has_table('cargo_processo'):
         op.drop_table('cargo_processo')
@@ -82,7 +91,8 @@ def downgrade():
         if _has_table(table):
             op.drop_table(table)
     if _has_column('processo_etapa', 'formulario_padrao_id'):
-        op.drop_constraint('processo_etapa_formulario_padrao_id_fkey', 'processo_etapa', type_='foreignkey')
+        if _has_fk('processo_etapa', 'processo_etapa_formulario_padrao_id_fkey'):
+            op.drop_constraint('processo_etapa_formulario_padrao_id_fkey', 'processo_etapa', type_='foreignkey')
         op.drop_column('processo_etapa', 'formulario_padrao_id')
     if _has_column('processo_etapa', 'categoria'):
         op.drop_column('processo_etapa', 'categoria')
