@@ -23,6 +23,7 @@ def _fk_names(table: str, column: str) -> list[str]:
             names.append(fk["name"])
     return names
 
+
 # revision identifiers, used by Alembic.
 revision = '6b6b76d9b5e5'
 down_revision = 'c2d1e3f4a567'
@@ -34,6 +35,7 @@ def upgrade():
         # Drop any existing FKs on tipo_os_id before altering type
         for fk_name in _fk_names('ordem_servico', 'tipo_os_id'):
             batch_op.drop_constraint(fk_name, type_='foreignkey')
+
 
         # Alter column type to Integer
         batch_op.alter_column(
