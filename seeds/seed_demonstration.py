@@ -111,7 +111,10 @@ def create_articles():
                 continue
             for vis in visibilities:
                 title = f"Artigo {vis.value.title()} - {user.username}"
-                exists = Article.query.filter_by(titulo=title, user_id=user.id).first()
+                with db.session.no_autoflush:
+                    exists = Article.query.filter_by(
+                        titulo=title, user_id=user.id
+                    ).first()
                 if exists:
                     continue
                 data = {
@@ -140,7 +143,19 @@ def create_articles():
                 elif vis is ArticleVisibility.CELULA:
                     data["vis_celula_id"] = user.celula_id
 
-                db.session.add(Article(**data))
+                article = Article(**data)
+                if hasattr(Article, "id") and getattr(article, "id", None) is None:
+                    current = id_counters.get(Article)
+                    if current is None:
+                        with db.session.no_autoflush:
+                            current = (
+                                db.session.query(func.max(Article.id)).scalar() or 0
+                            )
+                    current += 1
+                    id_counters[Article] = current
+                    article.id = current
+
+                db.session.add(article)
         db.session.commit()
         print("🚀 Artigos de exemplo criados.")
 
