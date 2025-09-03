@@ -338,7 +338,11 @@ class User(db.Model):
 
 class Article(db.Model):
     __tablename__ = 'article'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        sa.Sequence('article_id_seq', optional=True),
+        primary_key=True
+    )
     titulo = db.Column(db.String(200), nullable=False)
     texto = db.Column(db.Text, nullable=False)
     status = db.Column(
