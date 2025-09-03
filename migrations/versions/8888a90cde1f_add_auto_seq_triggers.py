@@ -5,6 +5,7 @@ Revises: fa23b0c1c9d0
 Create Date: 2025-08-30 00:00:00.000000
 """
 
+import logging
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import exc
@@ -15,12 +16,18 @@ branch_labels = None
 depends_on = None
 
 
-def _ensure_sequence_and_trigger(bind, table):
+def _ensure_sequence_and_trigger(bind, table, logger):
     seq = f"{table}_seq"
     trig = f"{table}_before_insert"
-    start_id = bind.execute(
-        sa.text(f"SELECT NVL(MAX(id), 0) + 1 FROM {table}")
-    ).scalar()
+    try:
+        start_id = bind.execute(
+            sa.text(f"SELECT NVL(MAX(id), 0) + 1 FROM {table}")
+        ).scalar()
+    except exc.DatabaseError as e:
+        logger.warning(
+            "Skipping table %s: unable to compute MAX(id) (%s)", table, e
+        )
+        return
     # Remove any legacy default first
     bind.exec_driver_sql(f"ALTER TABLE {table} MODIFY (id DEFAULT NULL)")
 
@@ -64,29 +71,56 @@ def _ensure_sequence_and_trigger(bind, table):
                 raise
 
 
+logger = logging.getLogger("alembic.runtime.migration")
+
+
 def upgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
-        tables = bind.execute(
+        numeric_tables = bind.execute(
             sa.text(
                 "SELECT table_name FROM user_tab_columns "
-                "WHERE column_name = 'ID' AND identity_column = 'NO'"
+                "WHERE column_name = 'ID' AND identity_column = 'NO' "
+                "AND data_type = 'NUMBER'"
             )
         ).scalars().all()
-        for table in tables:
-            _ensure_sequence_and_trigger(bind, table)
+        skipped = bind.execute(
+            sa.text(
+                "SELECT table_name, data_type FROM user_tab_columns "
+                "WHERE column_name = 'ID' AND identity_column = 'NO' "
+                "AND data_type <> 'NUMBER'"
+            )
+        ).fetchall()
+        for table, data_type in skipped:
+            logger.info(
+                "Skipping table %s: ID column type %s is not numeric", table, data_type
+            )
+        for table in numeric_tables:
+            _ensure_sequence_and_trigger(bind, table, logger)
 
 
 def downgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
-        tables = bind.execute(
+        numeric_tables = bind.execute(
             sa.text(
                 "SELECT table_name FROM user_tab_columns "
-                "WHERE column_name = 'ID' AND identity_column = 'NO'"
+                "WHERE column_name = 'ID' AND identity_column = 'NO' "
+                "AND data_type = 'NUMBER'"
             )
         ).scalars().all()
-        for table in tables:
+        skipped = bind.execute(
+            sa.text(
+                "SELECT table_name, data_type FROM user_tab_columns "
+                "WHERE column_name = 'ID' AND identity_column = 'NO' "
+                "AND data_type <> 'NUMBER'"
+            )
+        ).fetchall()
+        for table, data_type in skipped:
+            logger.info(
+                "Skipping table %s: ID column type %s is not numeric", table, data_type
+            )
+        for table in numeric_tables:
             seq = f"{table}_seq"
             trig = f"{table}_before_insert"
             trig_exists = bind.execute(
