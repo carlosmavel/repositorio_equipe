@@ -39,7 +39,9 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
+
 from sqlalchemy import Text, func
+
 from app import app
 
 try:
