@@ -23,6 +23,7 @@ def upgrade():
         # Remove legacy default that referenced a sequence
         op.execute(sa.text("ALTER TABLE article MODIFY (id DEFAULT NULL)"))
 
+
         # Create sequence only if it does not already exist
         seq_exists = bind.execute(
             sa.text(
@@ -58,12 +59,14 @@ def upgrade():
                     END;
                     """
                 )
+
             )
 
 
 def downgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
+
         trig_exists = bind.execute(
             sa.text(
                 "SELECT COUNT(*) FROM user_triggers "
@@ -81,3 +84,4 @@ def downgrade():
         ).scalar()
         if seq_exists:
             op.execute(sa.text("DROP SEQUENCE article_seq"))
+
