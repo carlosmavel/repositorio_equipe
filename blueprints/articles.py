@@ -399,19 +399,27 @@ def aprovacao():
     ]
 
     uid = user.id
+
+    # Subconsulta para obter a data do último comentário de cada artigo
+    comment_dates_subq = (
+        db.session.query(
+            Comment.artigo_id.label("artigo_id"),
+            func.max(Comment.created_at).label("max_created_at"),
+        )
+        .filter(Comment.user_id == uid)
+        .group_by(Comment.artigo_id)
+        .subquery()
+    )
+
     revisados_query = (
         Article.query
-        .join(Comment, Comment.artigo_id == Article.id)
-        .filter(Comment.user_id == uid)
+        .join(comment_dates_subq, comment_dates_subq.c.artigo_id == Article.id)
         .filter(Article.status != ArticleStatus.PENDENTE)
+        .order_by(comment_dates_subq.c.max_created_at.desc())
     )
+
     revisados = [
-        a for a in (
-            revisados_query
-            .group_by(Article.id)
-            .order_by(func.max(Comment.created_at).desc())
-            .all()
-        )
+        a for a in revisados_query.all()
         if user_can_approve_article(user, a) or user_can_review_article(user, a)
     ]
 
