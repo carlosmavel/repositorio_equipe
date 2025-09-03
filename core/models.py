@@ -340,7 +340,7 @@ class Article(db.Model):
     __tablename__ = 'article'
     id = db.Column(
         db.Integer,
-        sa.Sequence('article_id_seq', optional=True),
+        sa.Identity(start=1),
         primary_key=True
     )
     titulo = db.Column(db.String(200), nullable=False)
