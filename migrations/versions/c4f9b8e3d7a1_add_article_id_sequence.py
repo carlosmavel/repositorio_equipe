@@ -23,32 +23,65 @@ def upgrade():
         # Remove legacy default that referenced a sequence
         op.execute(sa.text("ALTER TABLE article MODIFY (id DEFAULT NULL)"))
 
-        # Create sequence starting after existing rows
-        op.execute(
-            sa.text(
-                f"CREATE SEQUENCE article_seq START WITH {start_id} INCREMENT BY 1"
-            )
-        )
 
-        # Create trigger to populate id from the sequence when not provided
-        op.execute(
+        # Create sequence only if it does not already exist
+        seq_exists = bind.execute(
             sa.text(
-                """
-                CREATE OR REPLACE TRIGGER article_before_insert
-                BEFORE INSERT ON article
-                FOR EACH ROW
-                BEGIN
-                  IF :new.id IS NULL THEN
-                    SELECT article_seq.NEXTVAL INTO :new.id FROM dual;
-                  END IF;
-                END;
-                """
+                "SELECT COUNT(*) FROM user_sequences "
+                "WHERE sequence_name = 'ARTICLE_SEQ'"
             )
-        )
+        ).scalar()
+        if not seq_exists:
+            op.execute(
+                sa.text(
+                    f"CREATE SEQUENCE article_seq START WITH {start_id} INCREMENT BY 1"
+                )
+            )
+
+        # Create trigger only if it does not already exist
+        trig_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_triggers "
+                "WHERE trigger_name = 'ARTICLE_BEFORE_INSERT'"
+            )
+        ).scalar()
+        if not trig_exists:
+            op.execute(
+                sa.text(
+                    """
+                    CREATE OR REPLACE TRIGGER article_before_insert
+                    BEFORE INSERT ON article
+                    FOR EACH ROW
+                    BEGIN
+                      IF :new.id IS NULL THEN
+                        SELECT article_seq.NEXTVAL INTO :new.id FROM dual;
+                      END IF;
+                    END;
+                    """
+                )
+
+            )
 
 
 def downgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
-        op.execute(sa.text("DROP TRIGGER article_before_insert"))
-        op.execute(sa.text("DROP SEQUENCE article_seq"))
+
+        trig_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_triggers "
+                "WHERE trigger_name = 'ARTICLE_BEFORE_INSERT'"
+            )
+        ).scalar()
+        if trig_exists:
+            op.execute(sa.text("DROP TRIGGER article_before_insert"))
+
+        seq_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_sequences "
+                "WHERE sequence_name = 'ARTICLE_SEQ'"
+            )
+        ).scalar()
+        if seq_exists:
+            op.execute(sa.text("DROP SEQUENCE article_seq"))
+
