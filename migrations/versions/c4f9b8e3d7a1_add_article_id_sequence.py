@@ -22,6 +22,7 @@ def upgrade():
         # previously filled via a sequence or trigger.
         op.execute(sa.text("ALTER TABLE article MODIFY (id GENERATED AS IDENTITY)"))
 
+
         # Restart the identity sequence so that it continues after existing
         # rows. This requires the column to already be an identity, so the
         # previous statement must succeed before this runs.
