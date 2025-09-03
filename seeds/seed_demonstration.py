@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
+from sqlalchemy import Text
 from app import app
 
 try:
@@ -48,10 +49,25 @@ except ImportError:  # pragma: no cover - fallback para execução direta
 
 
 def get_or_create(model, defaults=None, **kwargs):
-    instance = model.query.filter_by(**kwargs).first()
+    """Fetches an existing row matching ``kwargs`` or creates one.
+
+    Columns of type ``Text`` are excluded from the lookup to avoid Oracle
+    ``CLOB`` comparison errors. Any excluded fields are instead applied only
+    when creating a new instance.
+    """
+
+    params = defaults.copy() if defaults else {}
+    filter_kwargs = {}
+    for key, value in kwargs.items():
+        column = model.__table__.columns.get(key)
+        if column is not None and isinstance(column.type, Text):
+            params[key] = value
+        else:
+            filter_kwargs[key] = value
+
+    instance = model.query.filter_by(**filter_kwargs).first()
     if not instance:
-        params = defaults or {}
-        params.update(kwargs)
+        params.update(filter_kwargs)
         instance = model(**params)
         db.session.add(instance)
     return instance
