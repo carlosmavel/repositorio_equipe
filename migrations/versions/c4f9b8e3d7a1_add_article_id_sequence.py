@@ -22,7 +22,7 @@ def upgrade():
         ).scalar()
 
         # Remove legacy default that referenced a sequence
-        op.execute(sa.text("ALTER TABLE article MODIFY (id DEFAULT NULL)"))
+        bind.exec_driver_sql("ALTER TABLE article MODIFY (id DEFAULT NULL)")
 
 
         # Create sequence only if it does not already exist
@@ -35,10 +35,8 @@ def upgrade():
         if not seq_exists:
 
             try:
-                op.execute(
-                    sa.text(
-                        f"CREATE SEQUENCE article_seq START WITH {start_id} INCREMENT BY 1"
-                    )
+                bind.exec_driver_sql(
+                    f"CREATE SEQUENCE article_seq START WITH {start_id} INCREMENT BY 1"
                 )
             except exc.DatabaseError as e:
                 if "ORA-01031" not in str(e):
@@ -54,19 +52,17 @@ def upgrade():
         ).scalar()
         if not trig_exists:
             try:
-                op.execute(
-                    sa.text(
-                        """
-                        CREATE OR REPLACE TRIGGER article_before_insert
-                        BEFORE INSERT ON article
-                        FOR EACH ROW
-                        BEGIN
-                          IF :new.id IS NULL THEN
-                            SELECT article_seq.NEXTVAL INTO :new.id FROM dual;
-                          END IF;
-                        END;
-                        """
-                    )
+                bind.exec_driver_sql(
+                    """
+                    CREATE OR REPLACE TRIGGER article_before_insert
+                    BEFORE INSERT ON article
+                    FOR EACH ROW
+                    BEGIN
+                      IF :new.id IS NULL THEN
+                        SELECT article_seq.NEXTVAL INTO :new.id FROM dual;
+                      END IF;
+                    END;
+                    """
                 )
             except exc.DatabaseError as e:
                 if "ORA-01031" not in str(e):
@@ -85,7 +81,7 @@ def downgrade():
             )
         ).scalar()
         if trig_exists:
-            op.execute(sa.text("DROP TRIGGER article_before_insert"))
+            bind.exec_driver_sql("DROP TRIGGER article_before_insert")
 
         seq_exists = bind.execute(
             sa.text(
@@ -94,4 +90,4 @@ def downgrade():
             )
         ).scalar()
         if seq_exists:
-            op.execute(sa.text("DROP SEQUENCE article_seq"))
+            bind.exec_driver_sql("DROP SEQUENCE article_seq")
