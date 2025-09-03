@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
+from sqlalchemy import Text, func
 from app import app
 
 try:
@@ -47,12 +48,45 @@ except ImportError:  # pragma: no cover - fallback para execução direta
     import seed_funcoes
 
 
+id_counters = {}
+
+
 def get_or_create(model, defaults=None, **kwargs):
-    instance = model.query.filter_by(**kwargs).first()
+    """Fetches an existing row matching ``kwargs`` or creates one.
+
+    Columns of type ``Text`` are excluded from the lookup to avoid Oracle
+    ``CLOB`` comparison errors. Any excluded fields are instead applied only
+    when creating a new instance.
+
+    When creating a new row, a manual incremental ``id`` is assigned for
+    databases (like Oracle) that don't auto-generate integer primary keys.
+    """
+
+    params = defaults.copy() if defaults else {}
+    filter_kwargs = {}
+    for key, value in kwargs.items():
+        column = model.__table__.columns.get(key)
+        if column is not None and isinstance(column.type, Text):
+            params[key] = value
+        else:
+            filter_kwargs[key] = value
+
+    with db.session.no_autoflush:
+        instance = model.query.filter_by(**filter_kwargs).first()
+
     if not instance:
-        params = defaults or {}
-        params.update(kwargs)
+        params.update(filter_kwargs)
         instance = model(**params)
+
+        if hasattr(model, "id") and getattr(instance, "id", None) is None:
+            current = id_counters.get(model)
+            if current is None:
+                with db.session.no_autoflush:
+                    current = db.session.query(func.max(model.id)).scalar() or 0
+            current += 1
+            id_counters[model] = current
+            instance.id = current
+
         db.session.add(instance)
     return instance
 
@@ -293,10 +327,7 @@ def run():
 
         cargo_objs = {}
         for nome, setores, celulas, perms in cargos:
-            cargo = Cargo.query.filter_by(nome=nome).first()
-            if not cargo:
-                cargo = Cargo(nome=nome, ativo=True)
-                db.session.add(cargo)
+            cargo = get_or_create(Cargo, defaults={"ativo": True}, nome=nome)
             for s in setores:
                 if s not in cargo.default_setores:
                     cargo.default_setores.append(s)
@@ -365,37 +396,37 @@ def run():
         ]
 
         for username, cargo_nome, cel in users:
-            user = User.query.filter_by(username=username).first()
-            if not user:
-                user = User(
-                    username=username,
-                    email=f"{username}@example.com",
-                    password_hash=generate_password_hash("Senha123!"),
-                    estabelecimento_id=cel.estabelecimento_id,
-                    setor_id=cel.setor_id,
-                    celula_id=cel.id,
-                    cargo=cargo_objs[cargo_nome],
-                )
-                db.session.add(user)
+            get_or_create(
+                User,
+                defaults={
+                    "email": f"{username}@example.com",
+                    "password_hash": generate_password_hash("Senha123!"),
+                    "estabelecimento_id": cel.estabelecimento_id,
+                    "setor_id": cel.setor_id,
+                    "celula_id": cel.id,
+                    "cargo": cargo_objs[cargo_nome],
+                },
+                username=username,
+            )
 
         # Usuário administrador padrao
-        admin = User.query.filter_by(username="admin").first()
-        if not admin:
-            admin = User(
-                username="admin",
-                email="admin@seudominio.com",
-                password_hash=generate_password_hash("Senha123!"),
-                nome_completo="Admin de Souza",
-                matricula="ADM001",
-                cpf="000.000.000-00",
-                estabelecimento_id=cel1.estabelecimento_id,
-                setor_id=cel1.setor_id,
-                celula_id=cel1.id,
-            )
-            func_admin = Funcao.query.filter_by(codigo="admin").first()
-            if func_admin:
-                admin.permissoes_personalizadas.append(func_admin)
-            db.session.add(admin)
+        admin = get_or_create(
+            User,
+            defaults={
+                "email": "admin@seudominio.com",
+                "password_hash": generate_password_hash("Senha123!"),
+                "nome_completo": "Admin de Souza",
+                "matricula": "ADM001",
+                "cpf": "000.000.000-00",
+                "estabelecimento_id": cel1.estabelecimento_id,
+                "setor_id": cel1.setor_id,
+                "celula_id": cel1.id,
+            },
+            username="admin",
+        )
+        func_admin = Funcao.query.filter_by(codigo="admin").first()
+        if func_admin and func_admin not in admin.permissoes_personalizadas:
+            admin.permissoes_personalizadas.append(func_admin)
 
         db.session.commit()
 
