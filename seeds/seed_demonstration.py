@@ -39,7 +39,9 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
+
 from sqlalchemy import Text, func
+
 from app import app
 
 try:
@@ -58,8 +60,10 @@ def get_or_create(model, defaults=None, **kwargs):
     ``CLOB`` comparison errors. Any excluded fields are instead applied only
     when creating a new instance.
 
+
     When creating a new row, a manual incremental ``id`` is assigned for
     databases (like Oracle) that don't auto-generate integer primary keys.
+
     """
 
     params = defaults.copy() if defaults else {}
