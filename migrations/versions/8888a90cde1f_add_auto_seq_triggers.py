@@ -19,56 +19,62 @@ depends_on = None
 def _ensure_sequence_and_trigger(bind, table, logger):
     seq = f"{table}_seq"
     trig = f"{table}_before_insert"
+    q_table = table.replace('"', '""')
     try:
         start_id = bind.execute(
-            sa.text(f"SELECT NVL(MAX(id), 0) + 1 FROM {table}")
+            sa.text(f'SELECT NVL(MAX(id), 0) + 1 FROM "{q_table}"')
         ).scalar()
     except exc.DatabaseError as e:
         logger.warning(
-            "Skipping table %s: unable to compute MAX(id) (%s)", table, e
+            "Skipping table %s: unable to compute MAX(id) (%s)", table, e,
+            exc_info=True,
         )
         return
-    # Remove any legacy default first
-    bind.exec_driver_sql(f"ALTER TABLE {table} MODIFY (id DEFAULT NULL)")
+    try:
+        # Remove any legacy default first
+        bind.exec_driver_sql(f'ALTER TABLE "{q_table}" MODIFY (id DEFAULT NULL)')
 
-    seq_exists = bind.execute(
-        sa.text(
-            "SELECT COUNT(*) FROM user_sequences WHERE sequence_name = :name"
-        ),
-        {"name": seq.upper()},
-    ).scalar()
-    if not seq_exists:
-        try:
-            bind.exec_driver_sql(
-                f"CREATE SEQUENCE {seq} START WITH {start_id} INCREMENT BY 1"
-            )
-        except exc.DatabaseError as e:
-            if "ORA-01031" not in str(e):
-                raise
+        seq_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_sequences WHERE sequence_name = :name"
+            ),
+            {"name": seq.upper()},
+        ).scalar()
+        if not seq_exists:
+            try:
+                bind.exec_driver_sql(
+                    f"CREATE SEQUENCE {seq} START WITH {start_id} INCREMENT BY 1"
+                )
+            except exc.DatabaseError as e:
+                if "ORA-01031" not in str(e):
+                    raise
 
-    trig_exists = bind.execute(
-        sa.text(
-            "SELECT COUNT(*) FROM user_triggers WHERE trigger_name = :name"
-        ),
-        {"name": trig.upper()},
-    ).scalar()
-    if not trig_exists:
-        try:
-            bind.exec_driver_sql(
-                f"""
-                CREATE OR REPLACE TRIGGER {trig}
-                BEFORE INSERT ON {table}
-                FOR EACH ROW
-                BEGIN
-                  IF :new.id IS NULL THEN
-                    SELECT {seq}.NEXTVAL INTO :new.id FROM dual;
-                  END IF;
-                END;
-                """
-            )
-        except exc.DatabaseError as e:
-            if "ORA-01031" not in str(e):
-                raise
+        trig_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_triggers WHERE trigger_name = :name"
+            ),
+            {"name": trig.upper()},
+        ).scalar()
+        if not trig_exists:
+            try:
+                bind.exec_driver_sql(
+                    f"""
+                    CREATE OR REPLACE TRIGGER {trig}
+                    BEFORE INSERT ON "{q_table}"
+                    FOR EACH ROW
+                    BEGIN
+                      IF :new.id IS NULL THEN
+                        SELECT {seq}.NEXTVAL INTO :new.id FROM dual;
+                      END IF;
+                    END;
+                    """
+                )
+            except exc.DatabaseError as e:
+                if "ORA-01031" not in str(e):
+                    raise
+    except exc.DatabaseError as e:
+        logger.warning("Skipping table %s: %s", table, e, exc_info=True)
+        return
 
 
 logger = logging.getLogger("alembic.runtime.migration")
@@ -96,6 +102,11 @@ def upgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
+            if table != table.upper():
+                logger.info(
+                    "Table %s has case-sensitive name; using quoted identifiers",
+                    table,
+                )
             _ensure_sequence_and_trigger(bind, table, logger)
 
 
@@ -121,6 +132,11 @@ def downgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
+            if table != table.upper():
+                logger.info(
+                    "Table %s has case-sensitive name; using quoted identifiers",
+                    table,
+                )
             seq = f"{table}_seq"
             trig = f"{table}_before_insert"
             trig_exists = bind.execute(
