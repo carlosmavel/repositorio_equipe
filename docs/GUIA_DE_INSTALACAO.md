@@ -246,6 +246,13 @@ flask db upgrade
 ```
 Este comando executará todos os scripts de migração na pasta migrations/versions/ e criará todas as tabelas e estruturas necessárias no seu banco de dados repositorio_equipe_db (ou o nome que você configurou na sua DATABASE_URI).
 
+> **Oracle:** as migrações também verificam se cada tabela com coluna `id` possui uma *sequence* e um *trigger* para gerar valores automaticamente. Caso o usuário do banco não tenha permissão para criar esses objetos, conceda os privilégios abaixo antes de rodar o comando:
+>
+> ```sql
+> GRANT CREATE SEQUENCE, CREATE TRIGGER TO <USUARIO>;
+> ```
+> Após executar `flask db upgrade`, confirme que foram criadas as sequences como `NOTIFICATION_SEQ` e os triggers correspondentes (`*_BEFORE_INSERT`).
+
 > **Observação:** se você adicionar uma nova coluna marcada como `nullable=True` em modelos existentes (como o `User`), remova previamente os registros ou deixe o campo temporariamente como `nullable=False` para rodar o `flask db upgrade`. Após a migração, altere o campo no banco para aceitar valores nulos, se desejar.
 
 ## 12. (Opcional, mas Recomendado) Popular Dados de Exemplo
