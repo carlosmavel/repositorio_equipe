@@ -17,9 +17,19 @@ depends_on = None
 
 
 def _ensure_sequence_and_trigger(bind, table, logger):
+    """Create sequence/trigger pair for a table if missing.
+
+    ``table`` may be provided in lower case to force creation of
+    objects such as ``comment_seq`` instead of ``COMMENT_seq``.
+    The underlying table is always referenced using its upper-case
+    identifier to avoid issues with reserved words like ``COMMENT``.
+    """
+
     seq = f"{table}_seq"
     trig = f"{table}_before_insert"
-    q_table = table.replace('"', '""')
+    # Use the upper-case table name when referencing the actual table,
+    # but keep the original casing for sequence/trigger names.
+    q_table = table.upper().replace('"', '""')
     try:
         start_id = bind.execute(
             sa.text(f'SELECT NVL(MAX(id), 0) + 1 FROM "{q_table}"')
@@ -83,6 +93,9 @@ logger = logging.getLogger("alembic.runtime.migration")
 def upgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
+        # Explicitly ensure comment table gets lowercase sequence/trigger
+        _ensure_sequence_and_trigger(bind, 'comment', logger)
+
         numeric_tables = bind.execute(
             sa.text(
                 "SELECT table_name FROM user_tab_columns "
@@ -102,6 +115,9 @@ def upgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
+            if table.lower() == 'comment':
+                # Already handled explicitly with lowercase name above
+                continue
             if table != table.upper():
                 logger.info(
                     "Table %s has case-sensitive name; using quoted identifiers",
@@ -113,6 +129,25 @@ def upgrade():
 def downgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
+        # Drop explicitly created objects for comment table
+        trig_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_triggers "
+                "WHERE trigger_name = 'COMMENT_BEFORE_INSERT'"
+            )
+        ).scalar()
+        if trig_exists:
+            bind.exec_driver_sql("DROP TRIGGER comment_before_insert")
+
+        seq_exists = bind.execute(
+            sa.text(
+                "SELECT COUNT(*) FROM user_sequences "
+                "WHERE sequence_name = 'COMMENT_SEQ'"
+            )
+        ).scalar()
+        if seq_exists:
+            bind.exec_driver_sql("DROP SEQUENCE comment_seq")
+
         numeric_tables = bind.execute(
             sa.text(
                 "SELECT table_name FROM user_tab_columns "
@@ -132,6 +167,9 @@ def downgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
+            if table.lower() == 'comment':
+                # Comment sequence/trigger handled explicitly above
+                continue
             if table != table.upper():
                 logger.info(
                     "Table %s has case-sensitive name; using quoted identifiers",
