@@ -113,14 +113,14 @@ def create_articles():
                 title = f"Artigo {vis.value.title()} - {usuario.username}"
                 with db.session.no_autoflush:
                     exists = Article.query.filter_by(
-                        titulo=title, usuario_id=usuario.id
+                        titulo=title, user_id=usuario.id
                     ).first()
                 if exists:
                     continue
                 data = {
                     "titulo": title,
                     "texto": f"Conteúdo visível por {vis.label}.",
-                    "usuario_id": usuario.id,
+                    "user_id": usuario.id,
                     "celula_id": usuario.celula_id,
                     "visibility": vis,
                     "status": ArticleStatus.APROVADO,
