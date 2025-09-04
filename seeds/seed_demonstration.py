@@ -17,7 +17,7 @@ try:
         Celula,
         Cargo,
         Funcao,
-        User,
+        Usuario,
         Article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
@@ -28,7 +28,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Celula,
         Cargo,
         Funcao,
-        User,
+        Usuario,
         Article,
     )
 
@@ -104,44 +104,44 @@ def create_articles():
     """Cria artigos de exemplo para todos os usuários."""
     with app.app_context():
         print("Criando artigos de exemplo...")
-        users = User.query.all()
+        usuarios = Usuario.query.all()
         visibilities = list(ArticleVisibility)
-        for user in users:
-            if not user.celula_id:
+        for usuario in usuarios:
+            if not usuario.celula_id:
                 continue
             for vis in visibilities:
-                title = f"Artigo {vis.value.title()} - {user.username}"
+                title = f"Artigo {vis.value.title()} - {usuario.username}"
                 with db.session.no_autoflush:
                     exists = Article.query.filter_by(
-                        titulo=title, user_id=user.id
+                        titulo=title, usuario_id=usuario.id
                     ).first()
                 if exists:
                     continue
                 data = {
                     "titulo": title,
                     "texto": f"Conteúdo visível por {vis.label}.",
-                    "user_id": user.id,
-                    "celula_id": user.celula_id,
+                    "usuario_id": usuario.id,
+                    "celula_id": usuario.celula_id,
                     "visibility": vis,
                     "status": ArticleStatus.APROVADO,
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
                 }
                 if vis is ArticleVisibility.INSTITUICAO:
-                    inst_id = getattr(user.estabelecimento, "instituicao_id", None)
+                    inst_id = getattr(usuario.estabelecimento, "instituicao_id", None)
                     if not inst_id:
                         continue
                     data["instituicao_id"] = inst_id
                 elif vis is ArticleVisibility.ESTABELECIMENTO:
-                    if not user.estabelecimento_id:
+                    if not usuario.estabelecimento_id:
                         continue
-                    data["estabelecimento_id"] = user.estabelecimento_id
+                    data["estabelecimento_id"] = usuario.estabelecimento_id
                 elif vis is ArticleVisibility.SETOR:
-                    if not user.setor_id:
+                    if not usuario.setor_id:
                         continue
-                    data["setor_id"] = user.setor_id
+                    data["setor_id"] = usuario.setor_id
                 elif vis is ArticleVisibility.CELULA:
-                    data["vis_celula_id"] = user.celula_id
+                    data["vis_celula_id"] = usuario.celula_id
 
                 article = Article(**data)
                 if hasattr(Article, "id") and getattr(article, "id", None) is None:
@@ -354,7 +354,7 @@ def run():
             add_permissions(cargo, perms)
             cargo_objs[nome] = cargo
 
-        users = [
+        usuarios = [
             (
                 "analista_ti_regras_jr",
                 f"Analista {cel1.nome} JR",
@@ -412,9 +412,9 @@ def run():
             ),
         ]
 
-        for username, cargo_nome, cel in users:
+        for username, cargo_nome, cel in usuarios:
             get_or_create(
-                User,
+                Usuario,
                 defaults={
                     "email": f"{username}@example.com",
                     "password_hash": generate_password_hash("Senha123!"),
@@ -428,7 +428,7 @@ def run():
 
         # Usuário administrador padrao
         admin = get_or_create(
-            User,
+            Usuario,
             defaults={
                 "email": "admin@seudominio.com",
                 "password_hash": generate_password_hash("Senha123!"),
