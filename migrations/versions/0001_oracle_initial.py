@@ -469,13 +469,19 @@ def upgrade():
         op.execute(f"CREATE SEQUENCE {table}_seq START WITH 1 INCREMENT BY 1")
         op.execute(
             f"""
-CREATE OR REPLACE TRIGGER {table}_before_insert
-BEFORE INSERT ON {table}
-FOR EACH ROW
+DECLARE
+    dummy NUMBER;
 BEGIN
-  IF :new.id IS NULL THEN
-    SELECT {table}_seq.NEXTVAL INTO :new.id FROM dual;
-  END IF;
+    EXECUTE IMMEDIATE '
+        CREATE OR REPLACE TRIGGER {table}_before_insert
+        BEFORE INSERT ON {table}
+        FOR EACH ROW
+        BEGIN
+            IF :new.id IS NULL THEN
+                SELECT {table}_seq.NEXTVAL INTO :new.id FROM dual;
+            END IF;
+        END;
+    ';
 END;
 """
         )
