@@ -27,12 +27,14 @@ def _ensure_sequence_and_trigger(bind, table, logger):
 
     seq = f"{table}_seq"
     trig = f"{table}_before_insert"
-    # Use the upper-case table name when referencing the actual table,
-    # but keep the original casing for sequence/trigger names.
+    # Always reference the table using an upper-case quoted identifier.
+    # Quoting avoids conflicts when the table name is a reserved word
+    # (e.g. COMMENT, USER, ORDER).
     q_table = table.upper().replace('"', '""')
+    q_table_sql = f'"{q_table}"'
     try:
         start_id = bind.execute(
-            sa.text(f'SELECT NVL(MAX(id), 0) + 1 FROM "{q_table}"')
+            sa.text(f"SELECT NVL(MAX(id), 0) + 1 FROM {q_table_sql}")
         ).scalar()
     except exc.DatabaseError as e:
         logger.warning(
@@ -42,7 +44,9 @@ def _ensure_sequence_and_trigger(bind, table, logger):
         return
     try:
         # Remove any legacy default first
-        bind.exec_driver_sql(f'ALTER TABLE "{q_table}" MODIFY (id DEFAULT NULL)')
+        bind.exec_driver_sql(
+            f"ALTER TABLE {q_table_sql} MODIFY (id DEFAULT NULL)"
+        )
 
         seq_exists = bind.execute(
             sa.text(
@@ -70,7 +74,7 @@ def _ensure_sequence_and_trigger(bind, table, logger):
                 bind.exec_driver_sql(
                     f"""
                     CREATE OR REPLACE TRIGGER {trig}
-                    BEFORE INSERT ON "{q_table}"
+                    BEFORE INSERT ON {q_table_sql}
                     FOR EACH ROW
                     BEGIN
                       IF :new.id IS NULL THEN
@@ -93,8 +97,10 @@ logger = logging.getLogger("alembic.runtime.migration")
 def upgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
-        # Explicitly ensure comment table gets lowercase sequence/trigger
-        _ensure_sequence_and_trigger(bind, 'comment', logger)
+        reserved_tables = {"comment", "user", "order"}
+        # Ensure reserved-word tables get handled explicitly using lowercase
+        for rtable in reserved_tables:
+            _ensure_sequence_and_trigger(bind, rtable, logger)
 
         numeric_tables = bind.execute(
             sa.text(
@@ -115,8 +121,8 @@ def upgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
-            if table.lower() == 'comment':
-                # Already handled explicitly with lowercase name above
+            if table.lower() in reserved_tables:
+                # Already handled explicitly above
                 continue
             if table != table.upper():
                 logger.info(
@@ -129,24 +135,30 @@ def upgrade():
 def downgrade():
     bind = op.get_bind()
     if bind.dialect.name == 'oracle':
-        # Drop explicitly created objects for comment table
-        trig_exists = bind.execute(
-            sa.text(
-                "SELECT COUNT(*) FROM user_triggers "
-                "WHERE trigger_name = 'COMMENT_BEFORE_INSERT'"
-            )
-        ).scalar()
-        if trig_exists:
-            bind.exec_driver_sql("DROP TRIGGER comment_before_insert")
+        reserved_tables = {"comment", "user", "order"}
+        # Drop explicitly created objects for reserved-word tables
+        for rtable in reserved_tables:
+            trig = f"{rtable}_before_insert"
+            seq = f"{rtable}_seq"
+            trig_exists = bind.execute(
+                sa.text(
+                    "SELECT COUNT(*) FROM user_triggers "
+                    "WHERE trigger_name = :name"
+                ),
+                {"name": trig.upper()},
+            ).scalar()
+            if trig_exists:
+                bind.exec_driver_sql(f"DROP TRIGGER {trig}")
 
-        seq_exists = bind.execute(
-            sa.text(
-                "SELECT COUNT(*) FROM user_sequences "
-                "WHERE sequence_name = 'COMMENT_SEQ'"
-            )
-        ).scalar()
-        if seq_exists:
-            bind.exec_driver_sql("DROP SEQUENCE comment_seq")
+            seq_exists = bind.execute(
+                sa.text(
+                    "SELECT COUNT(*) FROM user_sequences "
+                    "WHERE sequence_name = :name"
+                ),
+                {"name": seq.upper()},
+            ).scalar()
+            if seq_exists:
+                bind.exec_driver_sql(f"DROP SEQUENCE {seq}")
 
         numeric_tables = bind.execute(
             sa.text(
@@ -167,8 +179,8 @@ def downgrade():
                 "Skipping table %s: ID column type %s is not numeric", table, data_type
             )
         for table in numeric_tables:
-            if table.lower() == 'comment':
-                # Comment sequence/trigger handled explicitly above
+            if table.lower() in reserved_tables:
+                # Reserved tables handled explicitly above
                 continue
             if table != table.upper():
                 logger.info(
