@@ -63,29 +63,24 @@ def _ensure_sequence_and_trigger(bind, table, logger):
                 if "ORA-01031" not in str(e):
                     raise
 
-        trig_exists = bind.execute(
-            sa.text(
-                "SELECT COUNT(*) FROM user_triggers WHERE trigger_name = :name"
-            ),
-            {"name": trig.upper()},
-        ).scalar()
-        if not trig_exists:
-            try:
-                bind.exec_driver_sql(
-                    f"""
-                    CREATE OR REPLACE TRIGGER {trig}
-                    BEFORE INSERT ON {q_table_sql}
-                    FOR EACH ROW
-                    BEGIN
-                      IF :new.id IS NULL THEN
-                        SELECT {seq}.NEXTVAL INTO :new.id FROM dual;
-                      END IF;
-                    END;
-                    """
-                )
-            except exc.DatabaseError as e:
-                if "ORA-01031" not in str(e):
-                    raise
+        # Always (re)create the trigger so a previously broken definition
+        # (e.g. missing quotes around a reserved table name) is replaced.
+        try:
+            bind.exec_driver_sql(
+                f"""
+                CREATE OR REPLACE TRIGGER {trig}
+                BEFORE INSERT ON {q_table_sql}
+                FOR EACH ROW
+                BEGIN
+                  IF :new.id IS NULL THEN
+                    SELECT {seq}.NEXTVAL INTO :new.id FROM dual;
+                  END IF;
+                END;
+                """
+            )
+        except exc.DatabaseError as e:
+            if "ORA-01031" not in str(e):
+                raise
     except exc.DatabaseError as e:
         logger.warning("Skipping table %s: %s", table, e, exc_info=True)
         return
