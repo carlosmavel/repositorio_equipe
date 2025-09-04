@@ -468,7 +468,7 @@ def upgrade():
     for table in tables:
         op.execute(f"CREATE SEQUENCE {table}_seq START WITH 1 INCREMENT BY 1")
         op.execute(
-            f"""
+            fr"""
 DECLARE
     dummy NUMBER;
 BEGIN
@@ -477,8 +477,8 @@ BEGIN
         BEFORE INSERT ON {table}
         FOR EACH ROW
         BEGIN
-            IF :new.id IS NULL THEN
-                SELECT {table}_seq.NEXTVAL INTO :new.id FROM dual;
+            IF \:new.id IS NULL THEN
+                SELECT {table}_seq.NEXTVAL INTO \:new.id FROM dual;
             END IF;
         END;
     ';
