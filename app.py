@@ -19,7 +19,7 @@ import logging
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
-#from models import user_funcoes
+#from models import usuario_funcoes
 
 try:
     from .core.database import db
@@ -45,7 +45,7 @@ try:
         Cargo,
         Instituicao,
         Funcao,
-        user_funcoes,
+        usuario_funcoes,
         OrdemServico,
         Formulario,
         CampoFormulario,
@@ -65,7 +65,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Cargo,
         Instituicao,
         Funcao,
-        user_funcoes,
+        usuario_funcoes,
         OrdemServico,
         Formulario,
         CampoFormulario,

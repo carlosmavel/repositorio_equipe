@@ -26,22 +26,23 @@ article_extra_celulas = db.Table(
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True)
 )
 
-article_extra_users = db.Table(
-    'article_extra_users',
+# Relacionamento extra entre artigos e usuários com acesso
+article_extra_usuarios = db.Table(
+    'article_extra_usuarios',
     db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True)
 )
 
 # Association tables for users responsible for multiple setores/células
-user_extra_celulas = db.Table(
-    'user_extra_celulas',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+usuario_extra_celulas = db.Table(
+    'usuario_extra_celulas',
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
 )
 
-user_extra_setores = db.Table(
-    'user_extra_setores',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+usuario_extra_setores = db.Table(
+    'usuario_extra_setores',
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
@@ -65,9 +66,9 @@ cargo_funcoes = db.Table(
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
-user_funcoes = db.Table(
-    'user_funcoes',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+usuario_funcoes = db.Table(
+    'usuario_funcoes',
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
@@ -243,7 +244,7 @@ class Cargo(db.Model):
 # --- MODELO USER ATUALIZADO ---
 
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = 'usuario'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False) # Campo importante
@@ -278,11 +279,11 @@ class User(db.Model):
 
     # Relações de múltiplas células e setores
     extra_celulas = db.relationship(
-        'Celula', secondary=user_extra_celulas, lazy='dynamic')
+        'Celula', secondary=usuario_extra_celulas, lazy='dynamic')
     extra_setores = db.relationship(
-        'Setor', secondary=user_extra_setores, lazy='dynamic')
+        'Setor', secondary=usuario_extra_setores, lazy='dynamic')
     permissoes_personalizadas = db.relationship(
-        'Funcao', secondary=user_funcoes, lazy='dynamic')
+        'Funcao', secondary=usuario_funcoes, lazy='dynamic')
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
@@ -380,7 +381,7 @@ class Article(db.Model):
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
     review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão
     
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     author = db.relationship('User', back_populates='articles')
 
     instituicao = db.relationship('Instituicao', foreign_keys=[instituicao_id])
@@ -390,7 +391,7 @@ class Article(db.Model):
     celula = db.relationship('Celula', foreign_keys=[celula_id])
 
     extra_celulas = db.relationship('Celula', secondary=article_extra_celulas, lazy='dynamic')
-    extra_users = db.relationship('User', secondary=article_extra_users, lazy='dynamic')
+    extra_users = db.relationship('User', secondary=article_extra_usuarios, lazy='dynamic')
     
     revision_requests = db.relationship('RevisionRequest', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
@@ -403,7 +404,7 @@ class RevisionRequest(db.Model):
     __tablename__ = 'revision_request'
     id = db.Column(db.Integer, primary_key=True)
     artigo_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Usuário que solicitou a revisão
+    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False) # Usuário que solicitou a revisão
     comentario = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
@@ -414,14 +415,14 @@ class RevisionRequest(db.Model):
         return f"<RevisionRequest artigo={self.artigo_id} user={self.user_id}>"
 
 class Comment(db.Model):
-    __tablename__ = "comment" # Comentários feitos durante o fluxo de aprovação
+    __tablename__ = 'comentario'  # Comentários feitos durante o fluxo de aprovação
     id = db.Column(db.Integer, primary_key=True)
     artigo_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False) # Usuário responsável pelo comentário
+    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey("usuario.id"), nullable=False)  # Usuário responsável pelo comentário
     texto = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
-    autor = db.relationship("User", foreign_keys=[user_id], back_populates="comments")
+    autor = db.relationship('User', foreign_keys=[user_id], back_populates='comments')
     artigo = db.relationship("Article", back_populates="comments")
 
     def __repr__(self):
@@ -445,7 +446,7 @@ class Attachment(db.Model):
 class Notification(db.Model):
     __tablename__ = 'notification'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Para quem é a notificação
+    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False) # Para quem é a notificação
     message = db.Column(db.String(255), nullable=False)
     url = db.Column(db.String(255), nullable=False) # nullable=False conforme última migration
 
@@ -591,7 +592,7 @@ class Sistema(db.Model):
 ordem_servico_participante = db.Table(
     'ordem_servico_participante',
     db.Column('ordem_servico_id', db.String(36), db.ForeignKey('ordem_servico.id'), primary_key=True),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
 )
 
 
@@ -608,8 +609,8 @@ class OrdemServico(db.Model):
         default=OSStatus.RASCUNHO.value,
         server_default=OSStatus.RASCUNHO.value,
     )
-    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    atribuido_para_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    atribuido_para_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
     equipe_responsavel_id = db.Column(db.Integer, nullable=True)
     data_criacao = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     data_conclusao = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -641,7 +642,7 @@ class OrdemServicoLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     acao = db.Column(db.String(255), nullable=False)
     origem_status = db.Column(db.String(50), nullable=True)
     destino_status = db.Column(db.String(50), nullable=True)
@@ -656,7 +657,7 @@ class OrdemServicoComentario(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     mensagem = db.Column(db.Text, nullable=False)
     anexo = db.Column(db.String(255), nullable=True)
@@ -672,7 +673,7 @@ class RespostaEtapaOS(db.Model):
     ordem_servico_id = db.Column(db.String(36), nullable=False)
     campo_etapa_id = db.Column(db.String(36), db.ForeignKey('campo_etapa.id'), nullable=False)
     valor = db.Column(db.Text, nullable=True)
-    preenchido_por = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    preenchido_por = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     campo = db.relationship('CampoEtapa')
@@ -713,7 +714,7 @@ class Formulario(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
-    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
 
     criado_por = db.relationship('User')
