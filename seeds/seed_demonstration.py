@@ -17,7 +17,7 @@ try:
         Celula,
         Cargo,
         Funcao,
-        Usuario,
+        User,
         Article,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
@@ -28,7 +28,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Celula,
         Cargo,
         Funcao,
-        Usuario,
+        User,
         Article,
     )
 
@@ -104,7 +104,7 @@ def create_articles():
     """Cria artigos de exemplo para todos os usuários."""
     with app.app_context():
         print("Criando artigos de exemplo...")
-        usuarios = Usuario.query.all()
+        usuarios = User.query.all()
         visibilities = list(ArticleVisibility)
         for usuario in usuarios:
             if not usuario.celula_id:
@@ -414,7 +414,7 @@ def run():
 
         for username, cargo_nome, cel in usuarios:
             get_or_create(
-                Usuario,
+                User,
                 defaults={
                     "email": f"{username}@example.com",
                     "password_hash": generate_password_hash("Senha123!"),
@@ -428,7 +428,7 @@ def run():
 
         # Usuário administrador padrao
         admin = get_or_create(
-            Usuario,
+            User,
             defaults={
                 "email": "admin@seudominio.com",
                 "password_hash": generate_password_hash("Senha123!"),
