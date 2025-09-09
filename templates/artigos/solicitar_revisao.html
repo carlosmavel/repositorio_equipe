@@ -1,14 +1,29 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h2>Solicitar revisão: “{{ artigo.titulo }}”</h2>
-  <form method="post" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
-    <div class="mb-3">
-      <label for="comentario" class="form-label">Comentário</label>
-      <textarea id="comentario" name="comentario" class="form-control no-quill" rows="4" required></textarea>
+<style>
+  .article-content {
+    scroll-margin-top: 6rem;
+  }
+</style>
+<div class="container-fluid">
+  <div class="sticky-top bg-white shadow-sm p-3 mb-4 rounded">
+    <h4>Solicitação de Revisão para o Artigo "{{ artigo.titulo }}"</h4>
+    <form method="POST" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
+      <div class="form-group">
+        <label for="comentario">Comentário</label>
+        <textarea class="form-control no-quill" name="comentario" rows="4" required></textarea>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="submit" class="btn btn-warning">Enviar pedido</button>
+        <a href="{{ url_for('pesquisar') }}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card article-content">
+    <div class="card-body">
+      {{ artigo.texto | safe }}
     </div>
-    <button type="submit" class="btn btn-warning">Enviar pedido</button>
-    <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">Cancelar</a>
-  </form>
+  </div>
 </div>
 {% endblock %}
