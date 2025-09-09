@@ -297,6 +297,14 @@ def artigo(artigo_id):
             'created_at': dt,
         })
     historicos.sort(key=lambda x: x['created_at'])
+    dt = artigo.created_at or datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+    dt2 = artigo.updated_at or dt
+    if dt2.tzinfo is None:
+        dt2 = dt2.replace(tzinfo=timezone.utc)
+    artigo.local_updated = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
 
     return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
 
@@ -414,6 +422,10 @@ def editar_artigo(artigo_id):
 
     # GET
     arquivos = json.loads(artigo.arquivos or "[]")
+    dt = artigo.created_at or datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
@@ -603,6 +615,10 @@ def aprovacao_detail(artigo_id):
 
     # GET → renderiza detalhes e histórico
     arquivos = json.loads(artigo.arquivos or '[]')
+    dt = artigo.created_at or datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template(
         'artigos/aprovacao_detail.html',
         artigo   = artigo,
@@ -646,6 +662,10 @@ def solicitar_revisao(artigo_id):
         flash('Pedido de revisão enviado!', 'success')
         return redirect(url_for('artigo', artigo_id=artigo.id))
 
+    dt = artigo.created_at or datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template('artigos/solicitar_revisao.html', artigo=artigo)
 
 @articles_bp.route('/pesquisar', endpoint='pesquisar')
