@@ -270,7 +270,6 @@ def artigo(artigo_id):
             'autor': rr.user.nome_completo if rr.user.nome_completo else rr.user.username,
             'created_at': dt,
         })
-    historicos.sort(key=lambda x: x['created_at'])
 
     return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
 
