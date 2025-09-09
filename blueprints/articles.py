@@ -248,7 +248,31 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
-    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos)
+
+    historicos = []
+    for c in artigo.comments.order_by(Comment.created_at.asc()).all():
+        dt = c.created_at or datetime.now(timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        historicos.append({
+            'tipo': c.tipo,
+            'texto': c.texto,
+            'autor': c.autor.nome_completo if c.autor.nome_completo else c.autor.username,
+            'created_at': dt,
+        })
+    for rr in artigo.revision_requests.order_by(RevisionRequest.created_at.asc()).all():
+        dt = rr.created_at or datetime.now(timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        historicos.append({
+            'tipo': 'Revisão',
+            'texto': rr.comentario,
+            'autor': rr.user.nome_completo if rr.user.nome_completo else rr.user.username,
+            'created_at': dt,
+        })
+    historicos.sort(key=lambda x: x['created_at'], reverse=True)
+
+    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
@@ -512,7 +536,12 @@ def aprovacao_detail(artigo_id):
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
-            texto     = comentario
+            texto     = comentario,
+            tipo     = {
+                'aprovar': 'Aprovação',
+                'ajustar': 'Solicitação de Ajuste',
+                'rejeitar': 'Rejeitado'
+            }.get(acao, 'Aprovação')
         )
         db.session.add(novo_comment)
         db.session.commit()
