@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 from sqlalchemy.exc import DatabaseError
 import re
 
@@ -570,7 +570,21 @@ def aprovacao_detail(artigo_id):
             }.get(acao, 'Aprovação')
         )
         db.session.add(novo_comment)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except DatabaseError as e:  # pragma: no cover - legacy Oracle without coluna tipo
+            db.session.rollback()
+            if "ORA-00904" in str(e).upper() and "TIPO" in str(e).upper():
+                db.session.execute(
+                    text(
+                        "INSERT INTO comentario (artigo_id, usuario_id, texto) "
+                        "VALUES (:artigo_id, :usuario_id, :texto)"
+                    ),
+                    {"artigo_id": artigo.id, "usuario_id": user.id, "texto": comentario},
+                )
+                db.session.commit()
+            else:
+                raise
 
         # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
