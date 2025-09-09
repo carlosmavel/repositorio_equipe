@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
 from sqlalchemy import or_, func
+from sqlalchemy.exc import DatabaseError
 import re
 
 try:
@@ -250,16 +251,41 @@ def artigo(artigo_id):
     arquivos = json.loads(artigo.arquivos or '[]')
 
     historicos = []
-    for c in artigo.comments.order_by(Comment.created_at.asc()).all():
-        dt = c.created_at or datetime.now(timezone.utc)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        historicos.append({
-            'tipo': c.tipo,
-            'texto': c.texto,
-            'autor': c.autor.nome_completo if c.autor.nome_completo else c.autor.username,
-            'created_at': dt,
-        })
+    try:
+        comments = artigo.comments.order_by(Comment.created_at.asc()).all()
+        for c in comments:
+            dt = c.created_at or datetime.now(timezone.utc)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            historicos.append({
+                'tipo': c.tipo,
+                'texto': c.texto,
+                'autor': c.autor.nome_completo if c.autor.nome_completo else c.autor.username,
+                'created_at': dt,
+            })
+    except DatabaseError:
+        rows = (
+            db.session.query(
+                Comment.texto,
+                Comment.created_at,
+                User.nome_completo,
+                User.username,
+            )
+            .join(User, Comment.user_id == User.id)
+            .filter(Comment.artigo_id == artigo.id)
+            .order_by(Comment.created_at.asc())
+            .all()
+        )
+        for texto, created_at, nome, username in rows:
+            dt = created_at or datetime.now(timezone.utc)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            historicos.append({
+                'tipo': 'Aprovação',
+                'texto': texto,
+                'autor': nome if nome else username,
+                'created_at': dt,
+            })
     for rr in artigo.revision_requests.order_by(RevisionRequest.created_at.asc()).all():
         dt = rr.created_at or datetime.now(timezone.utc)
         if dt.tzinfo is None:
@@ -270,6 +296,7 @@ def artigo(artigo_id):
             'autor': rr.user.nome_completo if rr.user.nome_completo else rr.user.username,
             'created_at': dt,
         })
+    historicos.sort(key=lambda x: x['created_at'])
 
     return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
 
