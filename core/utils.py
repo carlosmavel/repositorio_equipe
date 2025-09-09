@@ -515,9 +515,10 @@ def user_can_approve_article(user, article):
             return True
 
     if user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value):
-        if article.celula_id == user.celula_id:
+        cel_id = article.vis_celula_id or article.celula_id
+        if cel_id == user.celula_id:
             return True
-        if user.extra_celulas.filter_by(id=article.celula_id).count():
+        if user.extra_celulas.filter_by(id=cel_id).count():
             return True
 
     return False
@@ -553,9 +554,10 @@ def user_can_review_article(user, article):
             return True
 
     if user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value):
-        if article.celula_id == user.celula_id:
+        cel_id = article.vis_celula_id or article.celula_id
+        if cel_id == user.celula_id:
             return True
-        if user.extra_celulas.filter_by(id=article.celula_id).count():
+        if user.extra_celulas.filter_by(id=cel_id).count():
             return True
 
     return False
