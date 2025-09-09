@@ -17,7 +17,7 @@
               <strong>Autor:</strong>
               {{ artigo.author.nome_completo or artigo.author.username }}
               <strong class="ms-2">Criado em:</strong>
-              {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+              {{ artigo.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M') }}
               <strong class="ms-2">Visibilidade:</strong>
               {{ artigo.visibility.label }}
             </p>

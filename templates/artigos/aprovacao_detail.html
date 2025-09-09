@@ -11,7 +11,7 @@
         <h3>{{ artigo.titulo }}</h3>
         <p class="text-muted">
           Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
-          Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }} |
+          Criado em: {{ artigo.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M') }} |
           Visibilidade: {{ artigo.visibility.label }}
         </p>
         <hr>
