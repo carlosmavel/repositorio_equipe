@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
+from sqlalchemy.exc import DatabaseError
 import re
 
 try:
@@ -248,7 +249,56 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
-    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos)
+
+    historicos = []
+    try:
+        comments = artigo.comments.order_by(Comment.created_at.asc()).all()
+        for c in comments:
+            dt = c.created_at or datetime.now(timezone.utc)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            historicos.append({
+                'tipo': c.tipo,
+                'texto': c.texto,
+                'autor': c.autor.nome_completo if c.autor.nome_completo else c.autor.username,
+                'created_at': dt,
+            })
+    except DatabaseError:
+        rows = (
+            db.session.query(
+                Comment.texto,
+                Comment.created_at,
+                User.nome_completo,
+                User.username,
+            )
+            .join(User, Comment.user_id == User.id)
+            .filter(Comment.artigo_id == artigo.id)
+            .order_by(Comment.created_at.asc())
+            .all()
+        )
+        for texto, created_at, nome, username in rows:
+            dt = created_at or datetime.now(timezone.utc)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            historicos.append({
+                'tipo': 'Aprovação',
+                'texto': texto,
+                'autor': nome if nome else username,
+                'created_at': dt,
+            })
+    for rr in artigo.revision_requests.order_by(RevisionRequest.created_at.asc()).all():
+        dt = rr.created_at or datetime.now(timezone.utc)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        historicos.append({
+            'tipo': 'Revisão',
+            'texto': rr.comentario,
+            'autor': rr.user.nome_completo if rr.user.nome_completo else rr.user.username,
+            'created_at': dt,
+        })
+    historicos.sort(key=lambda x: x['created_at'])
+
+    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
@@ -512,10 +562,29 @@ def aprovacao_detail(artigo_id):
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
-            texto     = comentario
+            texto     = comentario,
+            tipo     = {
+                'aprovar': 'Aprovação',
+                'ajustar': 'Solicitação de Ajuste',
+                'rejeitar': 'Rejeitado'
+            }.get(acao, 'Aprovação')
         )
         db.session.add(novo_comment)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except DatabaseError as e:  # pragma: no cover - legacy Oracle without coluna tipo
+            db.session.rollback()
+            if "ORA-00904" in str(e).upper() and "TIPO" in str(e).upper():
+                db.session.execute(
+                    text(
+                        "INSERT INTO comentario (artigo_id, usuario_id, texto) "
+                        "VALUES (:artigo_id, :usuario_id, :texto)"
+                    ),
+                    {"artigo_id": artigo.id, "usuario_id": user.id, "texto": comentario},
+                )
+                db.session.commit()
+            else:
+                raise
 
         # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
