@@ -3,18 +3,22 @@
 
 {% block content %}
 <div class="container px-5">
-  <div class="sticky-top bg-white shadow-sm p-3 mb-4 rounded" style="z-index: 1020;">
-    <h4>Solicitação de Revisão para o Artigo "{{ artigo.titulo }}"</h4>
-    <form method="POST" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
-      <div class="mb-3">
-        <label for="comentario" class="form-label">Comentário</label>
-        <textarea class="form-control no-quill" name="comentario" rows="4" required></textarea>
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="sticky-top bg-white shadow-sm p-3 mb-4 rounded" style="z-index: 1020;">
+        <h4>Solicitação de Revisão para o Artigo "{{ artigo.titulo }}"</h4>
+        <form method="POST" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
+          <div class="mb-3">
+            <label for="comentario" class="form-label">Comentário</label>
+            <textarea class="form-control no-quill" name="comentario" rows="4" required></textarea>
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-warning">Enviar pedido</button>
+            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">Cancelar</a>
+          </div>
+        </form>
       </div>
-      <div class="text-end">
-        <button type="submit" class="btn btn-warning">Enviar pedido</button>
-        <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">Cancelar</a>
-      </div>
-    </form>
+    </div>
   </div>
 
   <div class="row">
