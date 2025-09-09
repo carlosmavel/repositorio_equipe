@@ -11,8 +11,10 @@ from core.models import (
     User,
     Funcao,
     Notification,
+    Article,
 )
-from core.enums import Permissao
+from core.utils import eligible_review_notification_users
+from core.enums import Permissao, ArticleStatus, ArticleVisibility
 
 
 def add_perm(user, code):
@@ -78,3 +80,37 @@ def test_notification_only_for_allowed_users(client_with_users):
     n2 = Notification.query.filter_by(user_id=data['ap2'].id).count()
     assert n1 == 1
     assert n2 == 0
+
+
+def test_notification_respects_vis_celula(client_with_users):
+    client, data = client_with_users
+    author = data['author']
+
+    inst = Instituicao.query.first()
+    est = Estabelecimento.query.first()
+    setor = Setor.query.first()
+
+    art = Article(
+        titulo='T2',
+        texto='x',
+        status=ArticleStatus.PENDENTE,
+        user_id=author.id,
+        celula_id=author.celula_id,
+        instituicao_id=inst.id,
+        estabelecimento_id=est.id,
+        setor_id=setor.id,
+        visibility=ArticleVisibility.CELULA,
+        vis_celula_id=data['ap2'].celula_id,
+    )
+    db.session.add(art)
+    db.session.commit()
+
+    for dest in eligible_review_notification_users(art):
+        n = Notification(user_id=dest.id, message='x', url='/')
+        db.session.add(n)
+    db.session.commit()
+
+    n1 = Notification.query.filter_by(user_id=data['ap1'].id).count()
+    n2 = Notification.query.filter_by(user_id=data['ap2'].id).count()
+    assert n1 == 0
+    assert n2 == 1
