@@ -558,6 +558,8 @@ def aprovacao_detail(artigo_id):
             flash('Ação desconhecida.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
+        artigo.updated_at = datetime.now(timezone.utc)
+
         # 2) Registra comentário de ajuste/aprovação/rejeição ------------------
         novo_comment = Comment(
             artigo_id = artigo.id,
@@ -628,6 +630,7 @@ def solicitar_revisao(artigo_id):
         db.session.add(rr)
 
         artigo.status = ArticleStatus.EM_REVISAO
+        artigo.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         destinatarios = [artigo.author] + [u for u in User.query.all() if u.has_permissao('admin')]
