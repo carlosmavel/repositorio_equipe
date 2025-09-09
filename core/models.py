@@ -420,6 +420,7 @@ class Comment(db.Model):
     artigo_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
     user_id = db.Column('usuario_id', db.Integer, db.ForeignKey("usuario.id"), nullable=False)  # Usuário responsável pelo comentário
     texto = db.Column(db.Text, nullable=False)
+    tipo = db.Column(db.String(30), nullable=False, default='Aprovação', server_default='Aprovação')
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
     autor = db.relationship('User', foreign_keys=[user_id], back_populates='comments')
