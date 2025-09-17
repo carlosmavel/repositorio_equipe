@@ -22,6 +22,10 @@ from sqlalchemy import or_, func
 #from models import user_funcoes
 
 try:
+    from .config import Config
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from config import Config
+try:
     from .core.database import db
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.database import db
@@ -135,44 +139,25 @@ NOME_NIVEL_CARGO = {valor: nome for valor, nome in NIVEIS_HIERARQUICOS}
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 app.logger.setLevel(logging.DEBUG)
+app.config.from_object(Config)
 
-# SECRET_KEY - Agora obrigatória via variável de ambiente
-SECRET_KEY_FROM_ENV = os.environ.get('SECRET_KEY')
-if not SECRET_KEY_FROM_ENV or SECRET_KEY_FROM_ENV == 'chave_de_desenvolvimento_muito_segura_trocar_em_prod':
-    # Você pode ser ainda mais estrito e só checar "if not SECRET_KEY_FROM_ENV:"
-    # se quiser que QUALQUER valor no fallback do código seja um erro.
-    raise ValueError("ERRO CRÍTICO: SECRET_KEY não está definida corretamente no ambiente ou está usando o valor padrão inseguro!")
-app.secret_key = SECRET_KEY_FROM_ENV
+app.secret_key = app.config['SECRET_KEY']
 app.logger.info(
     "SECRET_KEY carregada do ambiente: %s...%s",
     app.secret_key[:5],
     app.secret_key[-5:],
 )
 
-# DATABASE_URI - Agora obrigatória via variável de ambiente
-DATABASE_URI_FROM_ENV = os.environ.get('DATABASE_URI')
-if not DATABASE_URI_FROM_ENV:
-    # Se você quer que o fallback NUNCA seja usado e sempre exija a variável de ambiente:
-    raise ValueError("ERRO CRÍTICO: DATABASE_URI não está definida nas variáveis de ambiente!")
-# Se você ainda quisesse manter o fallback como uma opção, mas ser avisado (como no passo 1):
-# elif DATABASE_URI_FROM_ENV == 'postgresql://appuser:AppUser2025%21@localhost:5432/repositorio_equipe_db':
-# print("AVISO: DATABASE_URI está usando o valor padrão do código. Considere definir no ambiente.")
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI_FROM_ENV
-
-# Para não expor a senha no print, vamos mostrar uma versão modificada
-uri_parts_test = app.config['SQLALCHEMY_DATABASE_URI'].split('@')
+database_uri = app.config['SQLALCHEMY_DATABASE_URI']
+uri_parts_test = database_uri.split('@')
 if len(uri_parts_test) == 2:
+    scheme = database_uri.split('://')[0]
     creds_part_test = uri_parts_test[0].split(':')
     user_part_test = creds_part_test[0].split('//')[-1]
-    printed_uri_test = f"postgresql://{user_part_test}:[SENHA_OCULTA]@{uri_parts_test[1]}"
+    printed_uri_test = f"{scheme}://{user_part_test}:[SENHA_OCULTA]@{uri_parts_test[1]}"
     app.logger.info("DATABASE_URI carregada do ambiente: %s", printed_uri_test)
 else:
-    app.logger.info(
-        "DATABASE_URI carregada do ambiente: %s",
-        app.config['SQLALCHEMY_DATABASE_URI'],
-    )
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.logger.info("DATABASE_URI carregada do ambiente: %s", database_uri)
 
 db.init_app(app)
 migrate = Migrate(app, db)
