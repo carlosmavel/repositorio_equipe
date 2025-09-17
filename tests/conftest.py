@@ -8,6 +8,7 @@ if ROOT_DIR not in sys.path:
 
 
 os.environ['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'test_secret')
+os.environ['ALLOW_SQLITE_FOR_TESTS'] = '1'
 os.environ['DATABASE_URI'] = 'sqlite:///:memory:'
 
 
