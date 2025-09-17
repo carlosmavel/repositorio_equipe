@@ -17,7 +17,7 @@
               <strong>Autor:</strong>
               {{ artigo.author.nome_completo or artigo.author.username }}
               <strong class="ms-2">Criado em:</strong>
-              {{ artigo.local_created.strftime('%d/%m/%Y %H:%M') }}
+              {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
               <strong class="ms-2">Visibilidade:</strong>
               {{ artigo.visibility.label }}
             </p>
@@ -84,27 +84,40 @@
         {% endif %}
         <hr>
 
-        {# Históricos unificados #}
-        {% if historicos %}
-        <h5 class="mt-4">Históricos</h5>
-        <div class="list-group mb-3">
-          {% for h in historicos %}
-          {% set p = h.autor.split() %}
-          {% set cores = {'Aprovação':'success','Solicitação de Ajuste':'warning','Rejeitado':'danger','Revisão':'info'} %}
-          <div class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">
-                {{ p[0] }} {{ p[-1] }}
-                <small class="text-muted">
-                  {{ h.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
-                </small>
-              </div>
-              {{ h.texto }}
-            </div>
-            <span class="badge rounded-pill bg-{{ cores.get(h.tipo, 'secondary') }}">{{ h.tipo }}</span>
-          </div>
+        {# Histórico de Ajustes #}
+        {% if artigo.comments %}
+        <h5 class="mt-4">Histórico de Ajustes</h5>
+        <ul class="list-group mb-3">
+          {% for c in artigo.comments|sort(attribute='created_at') %}
+          {% set nome = c.autor.nome_completo if c.autor.nome_completo else c.autor.username %}
+          {% set parts = nome.split() %}
+          <li class="list-group-item">
+            <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
+            <small class="text-muted">
+              {{ c.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+            </small><br>
+            {{ c.texto }}
+          </li>
           {% endfor %}
-        </div>
+        </ul>
+        {% endif %}
+
+        {# Histórico de Solicitações de Revisão #}
+        {% if artigo.revision_requests %}
+        <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
+        <ul class="list-group mb-3">
+          {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
+          {% set nome = rr.user.nome_completo if rr.user.nome_completo else rr.user.username %}
+          {% set p = nome.split() %}
+          <li class="list-group-item">
+            <strong>{{ p[0] }} {{ p[-1] }}</strong>
+            <small class="text-muted">
+              {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+            </small><br>
+            {{ rr.comentario }}
+          </li>
+          {% endfor %}
+        </ul>
         {% endif %}
         <hr>
 

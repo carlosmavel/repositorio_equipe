@@ -33,35 +33,14 @@ except Exception:  # pragma: no cover
 
 try:
     from .database import db  # type: ignore  # pragma: no cover
+    from .models import OrdemServico  # type: ignore  # pragma: no cover
 except ImportError:  # pragma: no cover
     from core.database import db  # type: ignore
+    from core.models import OrdemServico  # type: ignore
 
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
-
-
-def serialize_json(value):
-    """Serializa objetos Python para armazenamento em bancos sem suporte a JSON."""
-    if value is None:
-        return None
-    data = json.dumps(value)
-    try:  # Oracle pode usar campos binários
-        dialect = db.engine.dialect.name
-    except Exception:  # pragma: no cover
-        dialect = ''
-    if dialect == 'oracle':
-        return data.encode('utf-8')
-    return data
-
-
-def deserialize_json(value):
-    """Desserializa strings/bytes em objetos Python."""
-    if value is None:
-        return None
-    if isinstance(value, (bytes, bytearray)):
-        value = value.decode('utf-8')
-    return json.loads(value)
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
 #-------------------------------------------------------------------------------------------
@@ -348,11 +327,6 @@ def gerar_codigo_os() -> str:
     dentro de uma transação ativa.
     """
 
-    try:  # import local para evitar importações circulares
-        from .models import OrdemServico  # type: ignore
-    except ImportError:  # pragma: no cover
-        from core.models import OrdemServico  # type: ignore
-
     stmt = (
         select(OrdemServico.codigo)
         .order_by(OrdemServico.codigo.desc())
@@ -515,10 +489,9 @@ def user_can_approve_article(user, article):
             return True
 
     if user.has_permissao(Permissao.ARTIGO_APROVAR_CELULA.value):
-        cel_id = article.vis_celula_id or article.celula_id
-        if cel_id == user.celula_id:
+        if article.celula_id == user.celula_id:
             return True
-        if user.extra_celulas.filter_by(id=cel_id).count():
+        if user.extra_celulas.filter_by(id=article.celula_id).count():
             return True
 
     return False
@@ -554,10 +527,9 @@ def user_can_review_article(user, article):
             return True
 
     if user.has_permissao(Permissao.ARTIGO_REVISAR_CELULA.value):
-        cel_id = article.vis_celula_id or article.celula_id
-        if cel_id == user.celula_id:
+        if article.celula_id == user.celula_id:
             return True
-        if user.extra_celulas.filter_by(id=cel_id).count():
+        if user.extra_celulas.filter_by(id=article.celula_id).count():
             return True
 
     return False

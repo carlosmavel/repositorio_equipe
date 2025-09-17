@@ -2,7 +2,6 @@
 from sqlalchemy.sql import func
 from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey, Date, Boolean, Integer, String, DateTime
 from sqlalchemy.orm import relationship, synonym
-import sqlalchemy as sa
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
 import uuid
 
@@ -14,10 +13,6 @@ try:
     from .enums import ArticleStatus, ArticleVisibility, OSStatus
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.enums import ArticleStatus, ArticleVisibility, OSStatus
-try:  # pragma: no cover - utils import
-    from .utils import serialize_json, deserialize_json
-except ImportError:  # pragma: no cover
-    from core.utils import serialize_json, deserialize_json
 
 # --- association tables for article visibility ---
 article_extra_celulas = db.Table(
@@ -26,23 +21,22 @@ article_extra_celulas = db.Table(
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True)
 )
 
-# Relacionamento extra entre artigos e usuários com acesso
-article_extra_usuarios = db.Table(
-    'article_extra_usuarios',
+article_extra_users = db.Table(
+    'article_extra_users',
     db.Column('article_id', db.Integer, db.ForeignKey('article.id'), primary_key=True),
-    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True)
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
 )
 
 # Association tables for users responsible for multiple setores/células
-usuario_extra_celulas = db.Table(
-    'usuario_extra_celulas',
-    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
+user_extra_celulas = db.Table(
+    'user_extra_celulas',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('celula_id', db.Integer, db.ForeignKey('celula.id'), primary_key=True),
 )
 
-usuario_extra_setores = db.Table(
-    'usuario_extra_setores',
-    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
+user_extra_setores = db.Table(
+    'user_extra_setores',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
@@ -66,9 +60,9 @@ cargo_funcoes = db.Table(
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
-usuario_funcoes = db.Table(
-    'usuario_funcoes',
-    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
+user_funcoes = db.Table(
+    'user_funcoes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('funcao_id', db.Integer, db.ForeignKey('funcao.id'), primary_key=True),
 )
 
@@ -117,7 +111,7 @@ class Instituicao(db.Model):
     codigo = db.Column(db.String(7), unique=True, nullable=False)
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     estabelecimentos = db.relationship('Estabelecimento', back_populates='instituicao', lazy='dynamic')
 
@@ -162,7 +156,7 @@ class Estabelecimento(db.Model):
     observacoes = db.Column(db.Text, nullable=True)              # Campo para notas diversas
 
     # Status Ativo/Inativo (como discutimos)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
     
     # Timestamps (opcional, mas útil)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
@@ -182,7 +176,7 @@ class Setor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
     
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='setores')
@@ -200,7 +194,7 @@ class Celula(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(200), unique=True, nullable=False)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
     estabelecimento = db.relationship('Estabelecimento', back_populates='celulas')
@@ -218,8 +212,8 @@ class Cargo(db.Model):
     nome = db.Column(db.String(200), unique=True, nullable=False)
     descricao = db.Column(db.Text, nullable=True)
     nivel_hierarquico = db.Column(db.Integer, nullable=True) # Para lógica de hierarquia (ex: 1=Alto, 10=Baixo)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
-    pode_atender_os = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    pode_atender_os = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     # Compatibilidade com nome antigo
     atende_ordem_servico = synonym('pode_atender_os')
 
@@ -244,7 +238,7 @@ class Cargo(db.Model):
 # --- MODELO USER ATUALIZADO ---
 
 class User(db.Model):
-    __tablename__ = 'usuario'
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False) # Campo importante
@@ -260,7 +254,7 @@ class User(db.Model):
     data_nascimento = db.Column(db.Date, nullable=True)
     data_admissao = db.Column(db.Date, nullable=True)
     telefone_contato = db.Column(db.String(20), nullable=True) # Pode ser o celular ou outro contato
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     # Novas Chaves Estrangeiras e Relacionamentos (Fase 1)
     # Um usuário pertence a um estabelecimento, um setor e tem um cargo.
@@ -279,11 +273,11 @@ class User(db.Model):
 
     # Relações de múltiplas células e setores
     extra_celulas = db.relationship(
-        'Celula', secondary=usuario_extra_celulas, lazy='dynamic')
+        'Celula', secondary=user_extra_celulas, lazy='dynamic')
     extra_setores = db.relationship(
-        'Setor', secondary=usuario_extra_setores, lazy='dynamic')
+        'Setor', secondary=user_extra_setores, lazy='dynamic')
     permissoes_personalizadas = db.relationship(
-        'Funcao', secondary=usuario_funcoes, lazy='dynamic')
+        'Funcao', secondary=user_funcoes, lazy='dynamic')
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
@@ -339,11 +333,7 @@ class User(db.Model):
 
 class Article(db.Model):
     __tablename__ = 'article'
-    id = db.Column(
-        db.Integer,
-        sa.Sequence('article_id_seq'),
-        primary_key=True
-    )
+    id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(200), nullable=False)
     texto = db.Column(db.Text, nullable=False)
     status = db.Column(
@@ -381,7 +371,7 @@ class Article(db.Model):
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
     review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão
     
-    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     author = db.relationship('User', back_populates='articles')
 
     instituicao = db.relationship('Instituicao', foreign_keys=[instituicao_id])
@@ -391,7 +381,7 @@ class Article(db.Model):
     celula = db.relationship('Celula', foreign_keys=[celula_id])
 
     extra_celulas = db.relationship('Celula', secondary=article_extra_celulas, lazy='dynamic')
-    extra_users = db.relationship('User', secondary=article_extra_usuarios, lazy='dynamic')
+    extra_users = db.relationship('User', secondary=article_extra_users, lazy='dynamic')
     
     revision_requests = db.relationship('RevisionRequest', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
@@ -404,7 +394,7 @@ class RevisionRequest(db.Model):
     __tablename__ = 'revision_request'
     id = db.Column(db.Integer, primary_key=True)
     artigo_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
-    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False) # Usuário que solicitou a revisão
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Usuário que solicitou a revisão
     comentario = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
@@ -415,15 +405,14 @@ class RevisionRequest(db.Model):
         return f"<RevisionRequest artigo={self.artigo_id} user={self.user_id}>"
 
 class Comment(db.Model):
-    __tablename__ = 'comentario'  # Comentários feitos durante o fluxo de aprovação
+    __tablename__ = "comment" # Comentários feitos durante o fluxo de aprovação
     id = db.Column(db.Integer, primary_key=True)
     artigo_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
-    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey("usuario.id"), nullable=False)  # Usuário responsável pelo comentário
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False) # Usuário responsável pelo comentário
     texto = db.Column(db.Text, nullable=False)
-    tipo = db.Column(db.String(30), nullable=False, default='Aprovação', server_default='Aprovação')
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
 
-    autor = db.relationship('User', foreign_keys=[user_id], back_populates='comments')
+    autor = db.relationship("User", foreign_keys=[user_id], back_populates="comments")
     artigo = db.relationship("Article", back_populates="comments")
 
     def __repr__(self):
@@ -447,13 +436,13 @@ class Attachment(db.Model):
 class Notification(db.Model):
     __tablename__ = 'notification'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), nullable=False) # Para quem é a notificação
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Para quem é a notificação
     message = db.Column(db.String(255), nullable=False)
     url = db.Column(db.String(255), nullable=False) # nullable=False conforme última migration
 
     tipo = db.Column(db.String(20), nullable=False, default='geral', server_default='geral')
 
-    lido = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
+    lido = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user = db.relationship('User', back_populates='notifications')
@@ -469,7 +458,7 @@ class Processo(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     nome = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text, nullable=True)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
 
     etapas = db.relationship('ProcessoEtapa', back_populates='processo', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -485,7 +474,7 @@ class TipoOS(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     equipe_responsavel_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
     formulario_vinculado_id = db.Column(db.Integer, nullable=True)
-    obrigatorio_preenchimento = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
+    obrigatorio_preenchimento = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     equipe_responsavel = db.relationship('Celula')
 
     etapas = db.relationship(
@@ -538,22 +527,14 @@ class CampoEtapa(db.Model):
     etapa_id = db.Column(db.String(36), db.ForeignKey('processo_etapa.id'), nullable=False)
     nome = db.Column(db.String(255), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)
-    obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    _opcoes = db.Column('opcoes', db.Text, nullable=True)
+    obrigatorio = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    opcoes = db.Column(db.JSON, nullable=True)
     dica = db.Column(db.String(255), nullable=True)
 
     etapa = db.relationship('ProcessoEtapa', back_populates='campos')
 
     def __repr__(self):
         return f"<CampoEtapa {self.nome} ({self.tipo})>"
-
-    @property
-    def opcoes(self):
-        return deserialize_json(self._opcoes)
-
-    @opcoes.setter
-    def opcoes(self, value):
-        self._opcoes = serialize_json(value)
 
 
 # --- Novos modelos para Equipamento e Sistema ---
@@ -593,7 +574,7 @@ class Sistema(db.Model):
 ordem_servico_participante = db.Table(
     'ordem_servico_participante',
     db.Column('ordem_servico_id', db.String(36), db.ForeignKey('ordem_servico.id'), primary_key=True),
-    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
 )
 
 
@@ -610,8 +591,8 @@ class OrdemServico(db.Model):
         default=OSStatus.RASCUNHO.value,
         server_default=OSStatus.RASCUNHO.value,
     )
-    criado_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    atribuido_para_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    atribuido_para_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     equipe_responsavel_id = db.Column(db.Integer, nullable=True)
     data_criacao = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     data_conclusao = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -643,7 +624,7 @@ class OrdemServicoLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     acao = db.Column(db.String(255), nullable=False)
     origem_status = db.Column(db.String(50), nullable=True)
     destino_status = db.Column(db.String(50), nullable=True)
@@ -658,7 +639,7 @@ class OrdemServicoComentario(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     os_id = db.Column(db.String(36), db.ForeignKey('ordem_servico.id'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     mensagem = db.Column(db.Text, nullable=False)
     anexo = db.Column(db.String(255), nullable=True)
@@ -674,7 +655,7 @@ class RespostaEtapaOS(db.Model):
     ordem_servico_id = db.Column(db.String(36), nullable=False)
     campo_etapa_id = db.Column(db.String(36), db.ForeignKey('campo_etapa.id'), nullable=False)
     valor = db.Column(db.Text, nullable=True)
-    preenchido_por = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    preenchido_por = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     data_hora = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     campo = db.relationship('CampoEtapa')
@@ -691,18 +672,10 @@ class FormularioResposta(db.Model):
     __tablename__ = 'formulario_respostas'
 
     id = db.Column(db.Integer, primary_key=True)
-    _dados = db.Column('dados', db.Text, nullable=True)
+    dados = db.Column(db.JSON, nullable=True)
 
     def __repr__(self):  # pragma: no cover
         return f"<FormularioResposta {self.id}>"
-
-    @property
-    def dados(self):
-        return deserialize_json(self._dados)
-
-    @dados.setter
-    def dados(self, value):
-        self._dados = serialize_json(value)
 
 
 class Formulario(db.Model):
@@ -714,8 +687,8 @@ class Formulario(db.Model):
     estrutura = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.text('1'))
-    criado_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
 
     criado_por = db.relationship('User')
@@ -743,12 +716,12 @@ class CampoFormulario(db.Model):
     label = db.Column(db.String(200), nullable=False)
     subtitulo = db.Column(db.String(200), nullable=True)
     midia_url = db.Column(db.String(255), nullable=True)
-    obrigatoria = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    permite_multipla_escolha = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    usar_menu_suspenso = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    embaralhar_opcoes = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    tem_opcao_outra = db.Column(db.Boolean, nullable=False, default=False, server_default=sa.text('0'))
-    _ramificacoes = db.Column('ramificacoes', db.Text, nullable=True)
+    obrigatoria = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    permite_multipla_escolha = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    usar_menu_suspenso = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    embaralhar_opcoes = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    tem_opcao_outra = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    ramificacoes = db.Column(db.JSON, nullable=True)
     ordem = db.Column(db.Integer, nullable=False)
     opcoes = db.Column(db.Text, nullable=True)
     condicional = db.Column(db.Text, nullable=True)
@@ -767,14 +740,6 @@ class CampoFormulario(db.Model):
 
     def __repr__(self):
         return f"<CampoFormulario {self.label} ({self.tipo})>"
-
-    @property
-    def ramificacoes(self):
-        return deserialize_json(self._ramificacoes)
-
-    @ramificacoes.setter
-    def ramificacoes(self, value):
-        self._ramificacoes = serialize_json(value)
 
 
 class Secao(db.Model):

@@ -27,7 +27,7 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
 
 * **Backend:** Python 3, Flask
 * **Frontend:** HTML5, CSS3 (Bootstrap 5), JavaScript (Vanilla JS), Quill.js
-* **Banco de Dados:** Oracle (padrão via `oracledb`) / PostgreSQL (opcional via `psycopg2`)
+* **Banco de Dados:** PostgreSQL
 * **ORM / Migrations:** SQLAlchemy, Alembic (via Flask-SQLAlchemy, Flask-Migrate)
 * **Principais Bibliotecas:** Werkzeug, Jinja2, psycopg2-binary, python-docx, openpyxl, xlrd, odfpy, pdf2image, pytesseract, Pillow, opencv-python, Bleach, python-dotenv.
 
@@ -36,8 +36,8 @@ Orquetask é um sistema web integrado construído com Flask e Python, projetado 
 Para rodar este projeto em um ambiente de desenvolvimento, você precisará ter instalado:
 * Python (versão 3.11 recomendada – 3.10 também é compatível)
 * Git
-* Oracle Database (por exemplo, Oracle Database XE 21c ou superior)
-* (Opcional) Oracle SQL Developer para administração do banco
+* PostgreSQL (versão 12 ou superior)
+* (Opcional, mas recomendado para gerenciamento do DB) pgAdmin 4
 * Poppler (utilitário para conversão de PDFs) – [download](https://github.com/oschwartz10612/poppler-windows/releases)
 * Tesseract OCR – [download](https://github.com/UB-Mannheim/tesseract/wiki)
 
@@ -80,12 +80,9 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
     ```
 
-4.  **Configure o Banco de Dados e Variáveis de Ambiente:**
+4.  **Configure o Banco de Dados PostgreSQL e Variáveis de Ambiente:**
 
     * Siga as instruções detalhadas no nosso **[Guia de Instalação e Configuração](./GUIA_DE_INSTALACAO.md)** para criar o banco de dados, o usuário do banco com as permissões corretas, e para configurar as variáveis de ambiente essenciais (`FLASK_APP`, `FLASK_DEBUG`, `SECRET_KEY`, `DATABASE_URI`).
-    * A variável `DATABASE_URI` também define o **driver** do SQLAlchemy. Exemplos:
-        * `oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL` (padrão, requer o pacote `oracledb`).
-        * `postgresql+psycopg2://usuario:senha@localhost:5432/repositorio_equipe_db` (opcional, usa `psycopg2-binary`).
     * Para habilitar o envio de e-mails, consulte a seção [Configurar Envio de E-mails com SendGrid](./GUIA_DE_INSTALACAO.md#14-configurar-envio-de-e-mails-com-sendgrid-opcional) e defina `SENDGRID_API_KEY` e `EMAIL_FROM` no seu ambiente.
 
 5.  **Aplique as migrações do banco de dados:**

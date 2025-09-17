@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
-from sqlalchemy import or_, func, text
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy import or_, func
 import re
 
 try:
@@ -249,64 +248,7 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
-
-    historicos = []
-    try:
-        comments = artigo.comments.order_by(Comment.created_at.asc()).all()
-        for c in comments:
-            dt = c.created_at or datetime.now(timezone.utc)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            historicos.append({
-                'tipo': c.tipo,
-                'texto': c.texto,
-                'autor': c.autor.nome_completo if c.autor.nome_completo else c.autor.username,
-                'created_at': dt,
-            })
-    except DatabaseError:
-        rows = (
-            db.session.query(
-                Comment.texto,
-                Comment.created_at,
-                User.nome_completo,
-                User.username,
-            )
-            .join(User, Comment.user_id == User.id)
-            .filter(Comment.artigo_id == artigo.id)
-            .order_by(Comment.created_at.asc())
-            .all()
-        )
-        for texto, created_at, nome, username in rows:
-            dt = created_at or datetime.now(timezone.utc)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            historicos.append({
-                'tipo': 'Aprovação',
-                'texto': texto,
-                'autor': nome if nome else username,
-                'created_at': dt,
-            })
-    for rr in artigo.revision_requests.order_by(RevisionRequest.created_at.asc()).all():
-        dt = rr.created_at or datetime.now(timezone.utc)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        historicos.append({
-            'tipo': 'Revisão',
-            'texto': rr.comentario,
-            'autor': rr.user.nome_completo if rr.user.nome_completo else rr.user.username,
-            'created_at': dt,
-        })
-    historicos.sort(key=lambda x: x['created_at'])
-    dt = artigo.created_at or datetime.now(timezone.utc)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
-    dt2 = artigo.updated_at or dt
-    if dt2.tzinfo is None:
-        dt2 = dt2.replace(tzinfo=timezone.utc)
-    artigo.local_updated = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
-
-    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos, historicos=historicos)
+    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos)
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
@@ -422,10 +364,6 @@ def editar_artigo(artigo_id):
 
     # GET
     arquivos = json.loads(artigo.arquivos or "[]")
-    dt = artigo.created_at or datetime.now(timezone.utc)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
@@ -461,27 +399,19 @@ def aprovacao():
     ]
 
     uid = user.id
-
-    # Subconsulta para obter a data do último comentário de cada artigo
-    comment_dates_subq = (
-        db.session.query(
-            Comment.artigo_id.label("artigo_id"),
-            func.max(Comment.created_at).label("max_created_at"),
-        )
-        .filter(Comment.user_id == uid)
-        .group_by(Comment.artigo_id)
-        .subquery()
-    )
-
     revisados_query = (
         Article.query
-        .join(comment_dates_subq, comment_dates_subq.c.artigo_id == Article.id)
+        .join(Comment, Comment.artigo_id == Article.id)
+        .filter(Comment.user_id == uid)
         .filter(Article.status != ArticleStatus.PENDENTE)
-        .order_by(comment_dates_subq.c.max_created_at.desc())
     )
-
     revisados = [
-        a for a in revisados_query.all()
+        a for a in (
+            revisados_query
+            .group_by(Article.id)
+            .order_by(func.max(Comment.created_at).desc())
+            .all()
+        )
         if user_can_approve_article(user, a) or user_can_review_article(user, a)
     ]
 
@@ -570,35 +500,14 @@ def aprovacao_detail(artigo_id):
             flash('Ação desconhecida.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
-        artigo.updated_at = datetime.now(timezone.utc)
-
         # 2) Registra comentário de ajuste/aprovação/rejeição ------------------
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
-            texto     = comentario,
-            tipo     = {
-                'aprovar': 'Aprovação',
-                'ajustar': 'Solicitação de Ajuste',
-                'rejeitar': 'Rejeitado'
-            }.get(acao, 'Aprovação')
+            texto     = comentario
         )
         db.session.add(novo_comment)
-        try:
-            db.session.commit()
-        except DatabaseError as e:  # pragma: no cover - legacy Oracle without coluna tipo
-            db.session.rollback()
-            if "ORA-00904" in str(e).upper() and "TIPO" in str(e).upper():
-                db.session.execute(
-                    text(
-                        "INSERT INTO comentario (artigo_id, usuario_id, texto) "
-                        "VALUES (:artigo_id, :usuario_id, :texto)"
-                    ),
-                    {"artigo_id": artigo.id, "usuario_id": user.id, "texto": comentario},
-                )
-                db.session.commit()
-            else:
-                raise
+        db.session.commit()
 
         # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
@@ -615,10 +524,6 @@ def aprovacao_detail(artigo_id):
 
     # GET → renderiza detalhes e histórico
     arquivos = json.loads(artigo.arquivos or '[]')
-    dt = artigo.created_at or datetime.now(timezone.utc)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template(
         'artigos/aprovacao_detail.html',
         artigo   = artigo,
@@ -646,7 +551,6 @@ def solicitar_revisao(artigo_id):
         db.session.add(rr)
 
         artigo.status = ArticleStatus.EM_REVISAO
-        artigo.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         destinatarios = [artigo.author] + [u for u in User.query.all() if u.has_permissao('admin')]
@@ -662,10 +566,6 @@ def solicitar_revisao(artigo_id):
         flash('Pedido de revisão enviado!', 'success')
         return redirect(url_for('artigo', artigo_id=artigo.id))
 
-    dt = artigo.created_at or datetime.now(timezone.utc)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    artigo.local_created = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
     return render_template('artigos/solicitar_revisao.html', artigo=artigo)
 
 @articles_bp.route('/pesquisar', endpoint='pesquisar')

@@ -1,6 +1,5 @@
 import os
 import sys
-from sqlalchemy import func
 
 # Garante que o diretório raiz do projeto esteja no PYTHONPATH quando executado diretamente
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,11 +30,9 @@ def run():
     funcoes = [(p.value, p.value.replace("_", " ").capitalize()) for p in Permissao]
     funcoes.extend(EXTRA_FUNCOES)
     with app.app_context():
-        max_id = db.session.query(func.max(Funcao.id)).scalar() or 0
         for codigo, nome in funcoes:
             if not Funcao.query.filter_by(codigo=codigo).first():
-                max_id += 1
-                db.session.add(Funcao(id=max_id, codigo=codigo, nome=nome))
+                db.session.add(Funcao(codigo=codigo, nome=nome))
         db.session.commit()
         print("Funções criadas/atualizadas.")
 

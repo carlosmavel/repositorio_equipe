@@ -7,7 +7,7 @@ Esta versão inclui o módulo **Processos**, que define fluxos compostos por eta
 ## 1. Pré-requisitos
  - Python 3.11 (ou 3.10) instalado
 - Git
- - Oracle Database (ex.: Oracle Database XE 21c)
+- PostgreSQL 12 ou superior (recomenda-se o uso do pgAdmin para administração)
 - Poppler para conversão de PDFs
 - Tesseract OCR
 
@@ -38,9 +38,7 @@ Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `S
 SENDGRID_API_KEY=seu_token_sendgrid
 EMAIL_FROM=notificacoes@exemplo.com
 SECRET_KEY=<sua_chave_aleatoria>
-DATABASE_URI=oracle+oracledb://usuario:senha@host:1521/?service_name=ORCL
-# Para usar PostgreSQL, instale `psycopg2-binary` e utilize:
-# DATABASE_URI=postgresql+psycopg2://usuario:senha@localhost:5432/repositorio_equipe_db
+DATABASE_URI=postgresql://usuario:senha@localhost:5432/repositorio_equipe_db
 ```
 Garanta também que `FLASK_APP=app.py` e `FLASK_DEBUG=0` estejam configurados para execução em produção.
 
@@ -54,7 +52,7 @@ Crie um serviço systemd para iniciar automaticamente o Gunicorn após a inicial
 
 ## 5. Configuração de firewall
 - Abra a porta utilizada pelo Gunicorn/Nginx (ex.: 80 ou 8000) para tráfego HTTP.
-- Caso o banco de dados esteja em outro servidor, libere a porta 1521 (ou a configurada) apenas para o IP da aplicação. A documentação do projeto alerta para verificar se o firewall não bloqueia essa porta【F:docs/GUIA_DE_INSTALACAO.md†L268-L274】.
+- Caso o banco de dados PostgreSQL esteja em outro servidor, libere a porta 5432 apenas para o IP da aplicação. A documentação do projeto alerta para verificar se o firewall não bloqueia essa porta【F:docs/GUIA_DE_INSTALACAO.md†L268-L274】.
 
 ## 6. Logs da aplicação
 A aplicação utiliza o módulo `logging` do Python e envia as saídas para o `stdout`. Ao executar com Gunicorn ou systemd, redirecione essas saídas para arquivos ou use `journalctl` para visualizá-las. Monitore erros e avisos durante a inicialização, principalmente mensagens referentes às variáveis de ambiente obrigatórias mostradas em `app.py`【F:app.py†L118-L159】.
@@ -65,18 +63,18 @@ Não há jobs definidos no repositório, mas recomenda-se criar tarefas cron par
 - Executar rotinas de backup.
 
 ## 8. Backup do banco de dados
-Realize backups periódicos utilizando as ferramentas do Oracle, como `expdp`:
+Realize backups periódicos utilizando o `pg_dump`:
 ```bash
-expdp usuario/senha DIRECTORY=backup_dir DUMPFILE=repositorio_equipe.dmp LOGFILE=repositorio_equipe.log
+pg_dump -U usuario -h localhost repositorio_equipe_db > /caminho/para/backup.sql
 ```
-Agende a execução periódica desse comando e garanta cópias externas em local seguro.
+Agende a execução diária desse comando e garanta cópias externas em local seguro.
 
 ## 9. FAQ – Dúvidas Frequentes
 **Q1: A aplicação não inicia e exibe erro sobre SECRET_KEY ou DATABASE_URI.**
 - Certifique-se de que o arquivo `.env` está correto e que as variáveis foram exportadas, conforme descrito na seção de configuração.
 
 **Q2: Não consigo conectar ao banco de dados.**
-- Verifique se o serviço do banco está ativo e se a `DATABASE_URI` contém usuário, senha, host e porta corretos【F:docs/GUIA_DE_INSTALACAO.md†L268-L274】.
+- Verifique se o serviço PostgreSQL está ativo e se a `DATABASE_URI` contém usuário, senha, host e porta corretos【F:docs/GUIA_DE_INSTALACAO.md†L268-L274】.
 
 **Q3: Falha ao enviar e-mails.**
 - Confira se `SENDGRID_API_KEY` e `EMAIL_FROM` estão preenchidos e válidos. Consulte o guia de instalação para detalhes de configuração do SendGrid【F:docs/GUIA_DE_INSTALACAO.md†L268-L320】.
