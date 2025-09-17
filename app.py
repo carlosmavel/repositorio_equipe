@@ -19,7 +19,7 @@ import logging
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
-#from models import user_funcoes
+#from models import usuario_funcoes
 
 try:
     from .core.database import db
@@ -45,7 +45,7 @@ try:
         Cargo,
         Instituicao,
         Funcao,
-        user_funcoes,
+        usuario_funcoes,
         OrdemServico,
         Formulario,
         CampoFormulario,
@@ -65,7 +65,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Cargo,
         Instituicao,
         Funcao,
-        user_funcoes,
+        usuario_funcoes,
         OrdemServico,
         Formulario,
         CampoFormulario,
@@ -155,17 +155,18 @@ if not DATABASE_URI_FROM_ENV:
     # Se você quer que o fallback NUNCA seja usado e sempre exija a variável de ambiente:
     raise ValueError("ERRO CRÍTICO: DATABASE_URI não está definida nas variáveis de ambiente!")
 # Se você ainda quisesse manter o fallback como uma opção, mas ser avisado (como no passo 1):
-# elif DATABASE_URI_FROM_ENV == 'postgresql://appuser:AppUser2025%21@localhost:5432/repositorio_equipe_db':
-# print("AVISO: DATABASE_URI está usando o valor padrão do código. Considere definir no ambiente.")
+# elif DATABASE_URI_FROM_ENV == 'oracle+oracledb://appuser:AppUser2025%21@localhost:1521/?service_name=XEPDB1':
+#     print("AVISO: DATABASE_URI está usando o valor padrão do código. Considere definir no ambiente.")
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI_FROM_ENV
 
 # Para não expor a senha no print, vamos mostrar uma versão modificada
-uri_parts_test = app.config['SQLALCHEMY_DATABASE_URI'].split('@')
-if len(uri_parts_test) == 2:
-    creds_part_test = uri_parts_test[0].split(':')
-    user_part_test = creds_part_test[0].split('//')[-1]
-    printed_uri_test = f"postgresql://{user_part_test}:[SENHA_OCULTA]@{uri_parts_test[1]}"
-    app.logger.info("DATABASE_URI carregada do ambiente: %s", printed_uri_test)
+uri = app.config['SQLALCHEMY_DATABASE_URI']
+if '://' in uri and '@' in uri:
+    scheme, rest = uri.split('://', 1)
+    creds, host = rest.split('@', 1)
+    user = creds.split(':', 1)[0]
+    printed_uri = f"{scheme}://{user}:[SENHA_OCULTA]@{host}"
+    app.logger.info("DATABASE_URI carregada do ambiente: %s", printed_uri)
 else:
     app.logger.info(
         "DATABASE_URI carregada do ambiente: %s",
