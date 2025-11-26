@@ -24,10 +24,10 @@
           {% for fname in arquivos %}
           {% set ext = fname.split('.')[-1].lower() %}
           <div class="col-4 col-md-3">
-            <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank" class="text-decoration-none">
+            <a href="{{ url_for('auth_bp.uploaded_file', filename=fname) }}" target="_blank" class="text-decoration-none">
               <div class="card h-100">
                 {% if ext in ['jpg','jpeg','png','gif'] %}
-                <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top"
+                <img src="{{ url_for('auth_bp.uploaded_file', filename=fname) }}" class="card-img-top"
                   style="height:100px; object-fit:cover;" alt="{{ fname }}">
                 {% elif ext == 'pdf' %}
                 <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}" class="card-img-top p-3"
@@ -77,7 +77,7 @@
             <button type="submit" name="acao" value="rejeitar" class="btn btn-danger">
               <i class="bi bi-x-circle"></i> Rejeitar
             </button>
-            <a href="{{ url_for('aprovacao') }}" class="btn btn-secondary ms-auto">
+            <a href="{{ url_for('articles_bp.aprovacao') }}" class="btn btn-secondary ms-auto">
               Voltar
             </a>
           </div>
@@ -119,7 +119,7 @@
 
   // Nosso novo script para marcar a notificação como lida
   document.addEventListener('DOMContentLoaded', function () {
-    const currentPageUrl = "{{ url_for('aprovacao_detail', artigo_id=artigo.id) }}";
+    const currentPageUrl = "{{ url_for('articles_bp.aprovacao_detail', artigo_id=artigo.id) }}";
 
     if (typeof window.markNotificationAsReadMatchingUrl === 'function') {
       window.markNotificationAsReadMatchingUrl(currentPageUrl);

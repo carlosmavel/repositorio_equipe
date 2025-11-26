@@ -63,7 +63,7 @@
                 <button type="button" class="btn-close remove-existing position-absolute top-0 end-0 m-1 p-1"
                   style="z-index:10; background-color: rgba(255,255,255,0.7);" aria-label="Remover"></button>
                 {% if f.endswith(('.png','.jpg','.jpeg','.gif','.webp')) %}
-                <img src="{{ url_for('uploaded_file', filename=f) }}" class="card-img-top"
+                <img src="{{ url_for('auth_bp.uploaded_file', filename=f) }}" class="card-img-top"
                   style="height:100px; object-fit:cover; width:100%;" alt="{{ f }}">
                 {% else %}
                 <div class="card-body d-flex align-items-center justify-content-center" style="height:100px;">
@@ -93,7 +93,7 @@
             <button type="submit" name="acao" value="salvar" class="btn btn-outline-primary me-2">Salvar</button>
             <button type="submit" name="acao" value="enviar" class="btn btn-success">Enviar para revisão</button>
             {% endif %}
-            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+            <a href="{{ url_for('articles_bp.artigo', artigo_id=artigo.id) }}" class="btn btn-outline-secondary ms-2">Cancelar</a>
           </div>
 
           {# Campos escondidos para exclusão #}

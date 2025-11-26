@@ -4,7 +4,7 @@
     <div class="list-group">
       {% for art in items %}
         {% set st = art.status %}
-        <a href="{% if st.value == 'pendente' %}{{ url_for('aprovacao_detail', artigo_id=art.id) }}{% else %}{{ url_for('artigo', artigo_id=art.id) }}{% endif %}"
+        <a href="{% if st.value == 'pendente' %}{{ url_for('articles_bp.aprovacao_detail', artigo_id=art.id) }}{% else %}{{ url_for('articles_bp.artigo', artigo_id=art.id) }}{% endif %}"
            class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
           <div>
             <div class="fw-bold">{{ art.titulo }}</div>
