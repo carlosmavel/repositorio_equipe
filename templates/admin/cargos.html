@@ -58,11 +58,11 @@
                                                                             {% for cargo in setor.cargos %}
                                                                                 <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
                                                                                     <div class="linha-cargo">
-                                                                                        <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                        <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_bp.admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
                                                                                         <div class="acoes-cargo">
                                                                                         {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                         {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                        <form action="{{ url_for('admin_bp.admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
                                                                                             {% if cargo.ativo %}
                                                                                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
                                                                                                     <i class="bi bi-toggle-on"></i>
@@ -91,11 +91,11 @@
                                                                                         {% for cargo in cel.cargos %}
                                                                                             <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
                                                                                                 <div class="linha-cargo">
-                                                                                                    <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                    <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_bp.admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
                                                                                                     <div class="acoes-cargo">
                                                                                                         {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                                         {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                        <form action="{{ url_for('admin_bp.admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
                                                                                                             {% if cargo.ativo %}
                                                                                                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
                                                                                                                     <i class="bi bi-toggle-on"></i>
@@ -154,7 +154,7 @@
                         <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Cargo
                     </h5>
 
-                    <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form">
+                    <form method="POST" action="{{ url_for('admin_bp.admin_cargos') }}" novalidate class="compact-form">
                         <div class="row">
                             <div class="col-md-8 mb-1">
                                 <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
@@ -315,7 +315,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form">
+                <form method="POST" action="{{ url_for('admin_bp.admin_cargos') }}" novalidate class="compact-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ cargo_editar.id }}">
                     <div class="row">
                         <div class="col-md-8 mb-1">

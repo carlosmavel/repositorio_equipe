@@ -8,7 +8,7 @@
     <div class="col-md-10 mx-auto">
       <div class="card shadow-sm mb-4">
         <div class="card-body">
-          <form method="get" action="{{ url_for('pesquisar') }}" class="d-flex">
+          <form method="get" action="{{ url_for('articles_bp.pesquisar') }}" class="d-flex">
             <input name="q" value="{{ q }}" class="form-control me-2" placeholder="Buscar por título ou texto…">
             <button class="btn btn-outline-primary">Pesquisar</button>
           </form>
@@ -20,7 +20,7 @@
         <div class="card-body">
         <div class="list-group">
           {% for artigo in artigos %}
-          <a href="{{ url_for('artigo', artigo_id=artigo.id) }}"
+          <a href="{{ url_for('articles_bp.artigo', artigo_id=artigo.id) }}"
             class="list-group-item list-group-item-action d-flex justify-content-between align-items-start position-relative">
             <div>
             <div class="fw-bold">{{ artigo.titulo }}</div>
@@ -43,7 +43,7 @@
           </span>
 
           <i class="bi bi-copy text-secondary copy-link-icon"
-            data-url="{{ url_for('artigo', artigo_id=artigo.id, _external=True) }}"
+            data-url="{{ url_for('articles_bp.artigo', artigo_id=artigo.id, _external=True) }}"
             style="position:absolute; bottom:5px; right:10px; cursor:pointer; font-size:1.2rem;"></i>
           </a>
           {% endfor %}

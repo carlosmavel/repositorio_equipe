@@ -33,10 +33,8 @@ except Exception:  # pragma: no cover
 
 try:
     from .database import db  # type: ignore  # pragma: no cover
-    from .models import OrdemServico  # type: ignore  # pragma: no cover
 except ImportError:  # pragma: no cover
     from core.database import db  # type: ignore
-    from core.models import OrdemServico  # type: ignore
 
 from sqlalchemy import select
 
@@ -317,53 +315,6 @@ import string
 DEFAULT_NEW_USER_PASSWORD = 'Mudanca123!'
 
 
-def gerar_codigo_os() -> str:
-    """Gera um código sequencial para Ordem de Serviço.
-
-    O código possui um prefixo alfabético seguido de seis dígitos. Exemplo:
-    ``A000001``. Quando o número atinge ``999999`` o prefixo é avançado para a
-    próxima letra. A consulta utiliza ``SELECT ... FOR UPDATE`` para evitar
-    condições de corrida; portanto, é esperado que esta função seja chamada
-    dentro de uma transação ativa.
-    """
-
-    stmt = (
-        select(OrdemServico.codigo)
-        .order_by(OrdemServico.codigo.desc())
-        .limit(1)
-        .with_for_update()
-    )
-    ultimo_codigo = db.session.execute(stmt).scalar()
-
-    if ultimo_codigo:
-        prefixo = ultimo_codigo[0]
-        numero = int(ultimo_codigo[1:]) + 1
-        if numero > 999999:
-            prefixo = chr(ord(prefixo) + 1)
-            numero = 1
-    else:
-        prefixo, numero = 'A', 1
-
-    if ord(prefixo) > ord('Z'):
-        raise ValueError('Limite de códigos atingido')
-
-    codigo = f"{prefixo}{numero:06d}"
-
-    # Garantia adicional de unicidade
-    while db.session.execute(
-        select(OrdemServico.id).filter_by(codigo=codigo)
-    ).scalar():
-        numero += 1
-        if numero > 999999:
-            prefixo = chr(ord(prefixo) + 1)
-            numero = 1
-            if ord(prefixo) > ord('Z'):
-                raise ValueError('Limite de códigos atingido')
-        codigo = f"{prefixo}{numero:06d}"
-
-    return codigo
-
-
 def password_meets_requirements(password: str) -> bool:
     return (
         len(password) >= 8
@@ -637,59 +588,3 @@ def eligible_review_notification_users(article):
     ]
 
 
-def user_can_access_form_builder(user):
-    """Verifica se o usuário tem acesso ao criador de formulários."""
-    return bool(
-        user
-        and (
-            getattr(user, 'pode_atender_os', False)
-            or getattr(user, 'has_permissao', lambda _p: False)('admin')
-        )
-    )
-
-
-def validar_fluxo_ramificacoes(estrutura):
-    """Valida ramificações de formulários para evitar ciclos e destinos inválidos.
-
-    Estrutura pode ser uma string JSON ou uma lista de blocos. Retorna
-    ``(True, '')`` se estiver tudo correto ou ``(False, mensagem)`` em caso de
-    conflito.
-    """
-    if isinstance(estrutura, str):
-        try:
-            data = json.loads(estrutura)
-        except ValueError:
-            return False, "Estrutura do formulário inválida."
-    else:
-        data = estrutura
-
-    perguntas = []
-
-    def coletar(itens):
-        for item in itens:
-            if item.get('tipo') == 'section':
-                coletar(item.get('campos', []))
-            else:
-                perguntas.append(item)
-
-    coletar(data)
-    id_para_indice = {str(p['id']): idx for idx, p in enumerate(perguntas)}
-
-    for idx, pergunta in enumerate(perguntas):
-        for regra in pergunta.get('ramificacoes') or []:
-            destino = regra.get('destino')
-            if not destino or destino in ('next', 'end'):
-                continue
-            if destino not in id_para_indice:
-                return False, (
-                    f"Não é possível criar uma ramificação para a pergunta {destino}, "
-                    "pois ela está inativa ou não existe."
-                )
-            dest_idx = id_para_indice[destino]
-            if dest_idx <= idx:
-                return False, (
-                    f"Não é possível criar uma ramificação que retorna à Pergunta {dest_idx + 1}, "
-                    "pois isso geraria um ciclo no formulário."
-                )
-
-    return True, ''
