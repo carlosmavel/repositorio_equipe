@@ -169,9 +169,82 @@ body > .container {
   gap: 1rem;
 }
 
+/* Remove spacing from empty flash container (e.g., on login) */
+#flash-container:empty {
+  margin: 0;
+  padding: 0;
+  height: 0;
+}
+
 /* Logo da página de login */
 .login-logo {
   max-width: 120px;
+}
+
+.login-page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, var(--page-bg) 0%, rgba(13, 110, 253, 0.08) 100%);
+  color: var(--text-default);
+}
+
+.login-card {
+  max-width: 450px;
+  width: 100%;
+  border-radius: 1.25rem;
+  background-color: var(--content-bg);
+  box-shadow: 0 20px 55px var(--shadow-soft);
+}
+
+.login-brand img {
+  max-height: 80px;
+}
+
+.login-brand h1 {
+  color: var(--text-default);
+}
+
+.login-avatar i {
+  font-size: 64px;
+  color: var(--primary);
+}
+
+.login-input .input-group-text {
+  background-color: transparent;
+  border-right: none;
+  color: var(--text-default);
+}
+
+.login-input .form-control {
+  border-left: none;
+  padding-left: 0.25rem;
+}
+
+.login-input .form-control:focus {
+  box-shadow: none;
+}
+
+.login-forgot {
+  color: var(--primary);
+}
+
+.login-forgot:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+@media (max-width: 576px) {
+  .login-page {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .login-card {
+    border-radius: 1rem;
+  }
+
+  .login-brand img {
+    max-height: 64px;
+  }
 }
 
 /* Formulários mais compactos */
