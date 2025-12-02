@@ -206,6 +206,31 @@
                             <div class="collapse {{ 'show' if 'admin_' in request.endpoint }}" id="collapseAdministracao">
                                 <ul class="nav flex-column ps-3">
                                     <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
+                                    {% set cadastros_active = (
+                                        'admin_instituicoes' in request.endpoint or
+                                        'admin_estabelecimentos' in request.endpoint or
+                                        'admin_setores' in request.endpoint or
+                                        'admin_celulas' in request.endpoint or
+                                        'admin_cargos' in request.endpoint
+                                    ) %}
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if cadastros_active else '' }} {{ 'collapsed' if not cadastros_active }}"
+                                        data-bs-toggle="collapse" href="#collapseCadastros" role="button"
+                                        aria-expanded="{{ 'true' if cadastros_active else 'false' }}"
+                                        aria-controls="collapseCadastros">
+                                            <i class="bi bi-building-fill-gear me-2"></i> Cadastros
+                                            <i class="bi bi-chevron-down small ms-auto"></i>
+                                        </a>
+                                        <div class="collapse {{ 'show' if cadastros_active else '' }}" id="collapseCadastros">
+                                            <ul class="nav flex-column ps-3">
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_instituicoes' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_instituicoes') }}"><i class="bi bi-bank2 me-2"></i> Instituições</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_estabelecimentos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_estabelecimentos') }}"><i class="bi bi-buildings-fill me-2"></i> Estabelecimentos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_setores') }}"><i class="bi bi-diagram-3-fill me-2"></i> Setores</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_celulas') }}"><i class="bi bi-grid-1x2-fill me-2"></i> Células</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
+                                            </ul>
+                                        </div>
+                                    </li>
                                     <li class="nav-item">
                                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_usuarios' in request.endpoint else '' }} {{ 'collapsed' if 'admin_usuarios' not in request.endpoint }}"
                                         data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button"
