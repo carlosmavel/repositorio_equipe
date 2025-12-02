@@ -1,4 +1,10 @@
+import os
+import re
+import uuid
+from datetime import datetime
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app, send_from_directory, abort
+from werkzeug.utils import secure_filename
 try:
     from ..core.database import db
 except ImportError:
@@ -13,6 +19,18 @@ try:
     from ..core.utils import generate_token, confirm_token, send_email, password_meets_requirements
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import generate_token, confirm_token, send_email, password_meets_requirements
+
+
+def send_password_email(user, action):
+    token = generate_token(user.id, action)
+    if action == 'reset':
+        url = url_for('reset_password_token', token=token, _external=True)
+        action_text = 'redefinir'
+    else:
+        url = url_for('set_password_token', token=token, _external=True)
+        action_text = 'criar'
+    html = render_template('email/password_email.html', user=user, url=url, action=action_text)
+    send_email(user.email, 'Definição de Senha', html)
 
 auth_bp = Blueprint('auth_bp', __name__)
 
