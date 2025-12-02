@@ -20,7 +20,6 @@ try:
         Setor,
         Cargo,
         Funcao,
-        OrdemServico,
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -36,7 +35,6 @@ except ImportError:  # pragma: no cover
         Setor,
         Cargo,
         Funcao,
-        OrdemServico,
     )
 
 try:
@@ -103,10 +101,11 @@ def admin_dashboard():
 
     notifications_unread = Notification.query.filter_by(lido=False).count()
     notifications_read = Notification.query.filter_by(lido=True).count()
-    os_por_celula = dict(
-        db.session.query(Celula.nome, func.count(OrdemServico.id))
-        .join(OrdemServico, OrdemServico.equipe_responsavel_id == Celula.id)
-        .group_by(Celula.nome)
+    user_sector_counts = dict(
+        db.session.query(Setor.nome, func.count(User.id))
+        .outerjoin(User, User.setor_id == Setor.id)
+        .group_by(Setor.id, Setor.nome)
+        .order_by(Setor.nome)
         .all()
     )
 
@@ -118,7 +117,7 @@ def admin_dashboard():
         article_status_counts=status_counts,
         notifications_unread=notifications_unread,
         notifications_read=notifications_read,
-        os_por_celula=os_por_celula,
+        user_sector_counts=user_sector_counts,
     )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])
