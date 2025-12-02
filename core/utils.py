@@ -1,7 +1,6 @@
 # utils.py
 
 import bleach
-from bleach.css_sanitizer import CSSSanitizer
 import re
 
 import os
@@ -51,35 +50,19 @@ logger = logging.getLogger(__name__)
 def sanitize_html(text: str) -> str:
     allowed_tags = [
         'p', 'br', 'strong', 'em', 'u', 's', 'sub', 'sup',
-        'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
-        'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td'
+        'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a'
     ]
     allowed_attrs = {
-        '*': ['class', 'style'],
-        'a': ['href', 'title', 'target'],
-        'img': ['src', 'alt', 'title', 'width', 'height'],
-        'td': ['colspan', 'rowspan'],
-        'th': ['colspan', 'rowspan']
+        '*': ['class'],
+        'a': ['href', 'title'],
     }
-    # Configura quais propriedades CSS permitimos
-    css_sanitizer = CSSSanitizer(
-        allowed_css_properties=[
-            'color',
-            'background-color',
-            'text-align',
-            'width',
-            'height',
-            'border'
-        ]
-    )
 
     return bleach.clean(
         text,
         tags=allowed_tags,
         attributes=allowed_attrs,
         strip=True,
-        css_sanitizer=css_sanitizer
+        protocols=['http', 'https', 'mailto']
     )
 
 """
@@ -443,14 +426,19 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.enums import Permissao
 
+def _password_token_serializer():
+    secret = current_app.config.get("PASSWORD_RESET_SECRET") or current_app.secret_key
+    return URLSafeTimedSerializer(secret)
+
+
 def generate_token(user_id: int, action: str, expires_sec: int = 3600) -> str:
     """Gera um token seguro para ações como reset ou criação de senha."""
-    serializer = URLSafeTimedSerializer(current_app.secret_key)
+    serializer = _password_token_serializer()
     return serializer.dumps({'user_id': user_id, 'action': action})
 
 def confirm_token(token: str, expiration: int = 3600):
     """Valida e decodifica o token, retornando o payload ou None."""
-    serializer = URLSafeTimedSerializer(current_app.secret_key)
+    serializer = _password_token_serializer()
     try:
         return serializer.loads(token, max_age=expiration)
     except Exception:
@@ -461,8 +449,8 @@ def send_email(to_email: str, subject: str, html_content: str) -> None:
     api_key = os.environ.get('SENDGRID_API_KEY')
     from_email = os.environ.get('EMAIL_FROM', 'no-reply@example.com')
     if not api_key:
-        current_app.logger.warning('SendGrid API key não configurada.')
-        return
+        current_app.logger.error('SendGrid API key não configurada.', exc_info=False)
+        raise RuntimeError('SENDGRID_API_KEY ausente; envio de e-mail bloqueado.')
     try:
         sg = SendGridAPIClient(api_key)
         message = Mail(from_email=from_email, to_emails=to_email,
