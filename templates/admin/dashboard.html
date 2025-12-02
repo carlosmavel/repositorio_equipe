@@ -37,9 +37,9 @@
             </div>
             <div class="col-md-6 mb-4">
                 <div class="card futuristic-card">
-                    <div class="card-header">OS por Célula</div>
+                    <div class="card-header">Usuários por Setor</div>
                     <div class="card-body">
-                        <canvas id="osCellChart" class="dashboard-chart"></canvas>
+                        <canvas id="userSectorChart" class="dashboard-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -111,18 +111,28 @@
             options: baseOptions
         });
 
-        const osCellData = {{ os_por_celula|tojson }};
-        new Chart(document.getElementById('osCellChart'), {
+        const userSectorData = {{ user_sector_counts|tojson }};
+        new Chart(document.getElementById('userSectorChart'), {
             type: 'bar',
             data: {
-                labels: Object.keys(osCellData),
+                labels: Object.keys(userSectorData),
                 datasets: [{
-                    label: 'OS',
-                    data: Object.values(osCellData),
-                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    label: 'Usuários por Setor',
+                    data: Object.values(userSectorData),
+                    backgroundColor: [
+                        '#0d6efd', '#6c757d', '#ffc107', '#20c997', '#6610f2',
+                        '#dc3545', '#198754', '#0dcaf0', '#fd7e14'
+                    ]
                 }]
             },
-            options: baseOptions
+            options: {
+                ...baseOptions,
+                indexAxis: 'y',
+                scales: {
+                    x: { ticks: { color: '#fff' }, grid: { color: '#333' }, beginAtZero: true },
+                    y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
+                }
+            }
         });
     </script>
 {% endblock %}
