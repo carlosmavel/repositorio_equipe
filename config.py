@@ -31,12 +31,25 @@ class Config:
     """Default configuration using PostgreSQL as the database backend."""
 
     SECRET_KEY = os.getenv("SECRET_KEY")
+    PASSWORD_RESET_SECRET = os.getenv("PASSWORD_RESET_SECRET") or (
+        f"{SECRET_KEY}_password_resets" if os.getenv("SECRET_KEY") else None
+    )
     DATABASE_URI = os.getenv("DATABASE_URI")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Cookies de sessão endurecidos para evitar vazamentos em produção.
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
 
     if not SECRET_KEY or SECRET_KEY == "replace_with_your_secret_key":
         raise ValueError(
             "SECRET_KEY precisa ser definido no ambiente e não pode usar o valor padrão inseguro."
+        )
+
+    if not PASSWORD_RESET_SECRET:
+        raise ValueError(
+            "PASSWORD_RESET_SECRET precisa ser definido para geração de tokens de senha."
         )
 
     if not DATABASE_URI:

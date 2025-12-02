@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app, send_from_directory, abort
 try:
     from ..core.database import db
 except ImportError:
@@ -27,26 +27,12 @@ def index():
 @auth_bp.route("/login", methods=["GET", "POST"], endpoint='login')
 def login():
     """
-    Manipula a autenticação do usuário e exibe o preview de fotos na página de login.
+    Manipula a autenticação do usuário.
     Para requisições GET, exibe o formulário de login.
     Para requisições POST, valida as credenciais. Se corretas, estabelece a sessão
     e redireciona para a página inicial do usuário. Em caso de falha no POST,
-    re-renderiza o formulário de login com mensagem de erro, mantendo o preview de fotos.
+    re-renderiza o formulário de login com mensagem de erro.
     """
-    
-    # Prepara users_json para o preview de fotos.
-    # Esta variável estará disponível tanto para o GET quanto para o POST com erro.
-    users_data_for_preview = {}
-    try:
-        # Tenta buscar todos os usuários para o preview.
-        # Envolve em try-except para o caso da tabela User não existir ou outro erro de DB.
-        all_users = User.query.all()
-        users_data_for_preview = {
-            user.username: {"foto": user.foto or ""} for user in all_users
-        }
-    except Exception as e:
-        app.logger.error(f"Erro ao buscar usuários para preview de foto no login: {str(e)}")
-        # Em caso de erro, users_data_for_preview continuará como um dicionário vazio.
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -55,18 +41,20 @@ def login():
         # Validação simples de campos vazios no backend
         if not username or not password:
             flash("Nome de usuário e senha são obrigatórios.", "danger")
-            # Re-renderiza o formulário com users_data_for_preview para manter o preview de fotos
-            return render_template("auth/login.html", users_json=users_data_for_preview)
+            return render_template("auth/login.html", users_json={})
 
         user = User.query.filter_by(username=username).first()
 
         # Verifica as credenciais
         if user and user.check_password(password):  # Assume que o modelo User tem o método check_password
             # Credenciais corretas: estabelece a sessão
+            session.clear()
+            if hasattr(session, "regenerate"):
+                session.regenerate()
             session["user_id"] = user.id
             session["username"] = user.username
             session["permissoes"] = [p.codigo for p in user.get_permissoes()]
-            
+
             # Redireciona para a página de destino após o login
             next_url = request.args.get('next')
             if next_url:
@@ -75,11 +63,10 @@ def login():
         else:
             # Credenciais inválidas
             flash("Usuário ou senha inválidos!", "danger")
-            # Re-renderiza o formulário com users_data_for_preview para manter o preview de fotos
-            return render_template("auth/login.html", users_json=users_data_for_preview)
-    
+            return render_template("auth/login.html", users_json={})
+
     # Para requisições GET (primeiro acesso à página de login)
-    return render_template("auth/login.html", users_json=users_data_for_preview)
+    return render_template("auth/login.html", users_json={})
 
 
 @auth_bp.route('/esqueci-senha', methods=['GET', 'POST'], endpoint='forgot_password')
@@ -160,10 +147,16 @@ def pagina_inicial():
 
 @auth_bp.route('/profile_pics/<filename>', endpoint='profile_pics')
 def profile_pics(filename):
+    if 'user_id' not in session:
+        app.logger.warning("Tentativa anônima de acesso a foto de perfil: %s", filename)
+        return abort(401)
     return send_from_directory(app.config['PROFILE_PICS_FOLDER'], filename)
 
 @auth_bp.route('/uploads/<filename>', endpoint='uploaded_file')
 def uploaded_file(filename):
+    if 'user_id' not in session:
+        app.logger.warning("Tentativa anônima de acesso a upload: %s", filename)
+        return abort(401)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @auth_bp.route('/perfil', methods=['GET','POST'], endpoint='perfil')

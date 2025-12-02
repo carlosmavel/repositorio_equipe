@@ -1,8 +1,6 @@
 {% extends "base.html" %}
 
-{% block body_attrs %}
-  data-users='{{ users_json|tojson }}'
-{% endblock %}
+{% block body_attrs %}{% endblock %}
 
 {% block title %}Login{% endblock %}
 
@@ -72,7 +70,8 @@
 {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const users      = JSON.parse(document.body.dataset.users);
+    const dataUsers  = document.body.dataset.users;
+    const users      = dataUsers ? JSON.parse(dataUsers) : {};
     const input      = document.getElementById("username");
     const photo      = document.getElementById("user-photo");
     const loginForm  = document.querySelector("form");
