@@ -50,9 +50,6 @@ try:
         Instituicao,
         Funcao,
         user_funcoes,
-        OrdemServico,
-        Formulario,
-        CampoFormulario,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.models import (
@@ -70,9 +67,6 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Instituicao,
         Funcao,
         user_funcoes,
-        OrdemServico,
-        Formulario,
-        CampoFormulario,
     )
 
 try:
@@ -89,7 +83,6 @@ try:
         user_can_approve_article,
         user_can_review_article,
         eligible_review_notification_users,
-        user_can_access_form_builder,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
@@ -105,12 +98,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_approve_article,
         user_can_review_article,
         eligible_review_notification_users,
-        user_can_access_form_builder,
     )
-try:
-    from .core.decorators import form_builder_required
-except ImportError:  # pragma: no cover - fallback for direct execution
-    from core.decorators import form_builder_required
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -166,27 +154,18 @@ try:
     from .blueprints.admin import admin_bp
     from .blueprints.auth import auth_bp
     from .blueprints.articles import articles_bp
-    from .blueprints.processos import processos_bp
-    from .blueprints.formularios import formularios_bp
-    from .blueprints.ordens_servico import ordens_servico_bp
 except ImportError:  # pragma: no cover - fallback for direct execution
     from blueprints.admin import admin_bp
     from blueprints.auth import auth_bp
     from blueprints.articles import articles_bp
-    from blueprints.processos import processos_bp
-    from blueprints.formularios import formularios_bp
-    from blueprints.ordens_servico import ordens_servico_bp
 
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(articles_bp)
-app.register_blueprint(processos_bp)
-app.register_blueprint(formularios_bp)
-app.register_blueprint(ordens_servico_bp)
 
 for rule in list(app.url_map.iter_rules()):
-    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.') or rule.endpoint.startswith('processos_bp.') or rule.endpoint.startswith('formularios_bp.') or rule.endpoint.startswith('ordens_servico_bp.'):
+    if rule.endpoint.startswith('admin_bp.') or rule.endpoint.startswith('auth_bp.') or rule.endpoint.startswith('articles_bp.'):
         app.add_url_rule(
             rule.rule,
             endpoint=rule.endpoint.split('.',1)[-1],
@@ -248,29 +227,6 @@ def api_notifications():
     ])
 
 
-@app.route('/api/os_notifications')
-def api_os_notifications():
-    """Retorna notificações de ordem de serviço paginadas."""
-    if 'user_id' not in session:
-        return jsonify({'error': 'unauthorized'}), 401
-
-    offset = int(request.args.get('offset', 0))
-    limit = int(request.args.get('limit', 10))
-    notifs = (
-        Notification.query
-        .filter_by(user_id=session['user_id'], lido=False, tipo='os')
-        .order_by(Notification.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-
-    return jsonify([
-        {'id': n.id, 'message': n.message, 'url': n.url}
-        for n in notifs
-    ])
-
-
 @app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
 def api_notification_mark_read(notif_id):
     """Marca uma notificação específica como lida."""
@@ -301,10 +257,7 @@ def inject_notificacoes():
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
             q_general = Notification.query.filter_by(user_id=user.id, lido=False, tipo='geral')
-            q_os = Notification.query.filter_by(user_id=user.id, lido=False, tipo='os')
-
             general_count = q_general.count()
-            os_count = q_os.count()
 
             general_list = (
                 q_general.order_by(Notification.created_at.desc())
@@ -312,37 +265,15 @@ def inject_notificacoes():
                         .all()
             )
 
-            os_list = (
-                q_os.order_by(Notification.created_at.desc())
-                     .limit(10)
-                     .all()
-            )
-
             return {
                 'notificacoes': general_count,
                 'notificacoes_list': general_list,
-                'os_notificacoes': os_count,
-                'os_notificacoes_list': os_list,
             }
     return {
         'notificacoes': 0,
         'notificacoes_list': [],
-        'os_notificacoes': 0,
-        'os_notificacoes_list': [],
     }
 
-
-@app.route("/formulario/reordenar_perguntas", methods=["POST"])
-@form_builder_required
-def reordenar_perguntas():
-    data = request.get_json(silent=True) or {}
-    ids = data.get("ids", [])
-    for ordem, campo_id in enumerate(ids):
-        campo = CampoFormulario.query.get(campo_id)
-        if campo:
-            campo.ordem = ordem
-    db.session.commit()
-    return jsonify({"status": "ok"})
 
 @app.context_processor
 def inject_enums():
@@ -362,9 +293,4 @@ def inject_zoneinfo():
 def inject_niveis_cargo():
     """Disponibiliza o mapeamento de níveis hierárquicos para todos os templates."""
     return dict(NOME_NIVEL_CARGO=NOME_NIVEL_CARGO, NIVEIS_HIERARQUICOS=NIVEIS_HIERARQUICOS)
-
-
-@app.context_processor
-def inject_form_builder_permission():
-    return dict(user_can_access_form_builder=user_can_access_form_builder)
 
