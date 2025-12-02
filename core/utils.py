@@ -523,6 +523,10 @@ def user_can_approve_article(user, article):
     if not isinstance(article, Article):
         return False
 
+    # Nunca permitir aprovação do próprio artigo
+    if user.id == getattr(article, "user_id", None):
+        return False
+
     if user.has_permissao("admin") or user.has_permissao(Permissao.ARTIGO_APROVAR_TODAS.value):
         return True
 
@@ -687,7 +691,8 @@ def eligible_review_notification_users(article):
 
     return [
         u for u in User.query.all()
-        if user_can_approve_article(u, article) or user_can_review_article(u, article)
+        if u.id != getattr(article, "user_id", None)
+        and user_can_approve_article(u, article)
     ]
 
 

@@ -395,7 +395,8 @@ def aprovacao():
     pendentes_query = Article.query.filter_by(status=ArticleStatus.PENDENTE)
     pendentes = [
         a for a in pendentes_query.order_by(Article.created_at.asc()).all()
-        if user_can_approve_article(user, a) or user_can_review_article(user, a)
+        if a.user_id != user.id
+        and (user_can_approve_article(user, a) or user_can_review_article(user, a))
     ]
 
     uid = user.id

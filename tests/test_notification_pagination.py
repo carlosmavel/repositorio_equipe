@@ -18,6 +18,11 @@ def client_with_notifications(app_ctx):
         for i in range(25):
             n = Notification(user_id=user.id, message=f'N{i}', url='#')
             db.session.add(n)
+        db.session.flush()
+        # Marca algumas notificações como lidas para garantir que elas
+        # continuem aparecendo na paginação de histórico
+        for n in Notification.query.limit(5).all():
+            n.lido = True
         db.session.commit()
         with app_ctx.test_client() as client:
             client.user = user
@@ -40,9 +45,13 @@ def test_notifications_pagination(client_with_notifications):
     assert resp.status_code == 200
     data = resp.get_json()
     assert len(data) == 10
+    assert all('lido' in item for item in data)
     resp2 = client.get('/api/notifications?offset=10&limit=10')
     data2 = resp2.get_json()
     assert len(data2) == 10
     resp3 = client.get('/api/notifications?offset=20&limit=10')
     data3 = resp3.get_json()
     assert len(data3) == 5
+
+    combined = data + data2 + data3
+    assert any(item['lido'] is True for item in combined)

@@ -241,3 +241,97 @@ def test_aprovacao_requer_comentario(app_ctx, client):
         art_db = Article.query.get(art_id)
         assert art_db.status == ArticleStatus.PENDENTE
         assert Comment.query.count() == 0
+
+
+def test_author_does_not_see_own_pending_article(app_ctx, client):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+        setor = Setor(nome='S', estabelecimento=est)
+        cel = Celula(nome='C', estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, cel])
+        db.session.flush()
+
+        autor = User(
+            username='autor', email='a@test', password_hash='x',
+            estabelecimento=est, setor=setor, celula=cel
+        )
+        db.session.add(autor)
+        db.session.flush()
+
+        f = Funcao(codigo=Permissao.ARTIGO_APROVAR_TODAS.value, nome='ap')
+        db.session.add(f)
+        db.session.flush()
+        autor.permissoes_personalizadas.append(f)
+
+        title = 'TituloUnico'
+        art = Article(
+            titulo=title, texto='C', status=ArticleStatus.PENDENTE,
+            user_id=autor.id, celula_id=cel.id,
+            estabelecimento_id=est.id, setor_id=setor.id,
+            instituicao_id=inst.id, visibility=ArticleVisibility.CELULA
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        art_id = art.id
+        autor_id = autor.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = autor_id
+        sess['username'] = 'autor'
+
+    resp = client.get('/aprovacao')
+    assert resp.status_code == 200
+    assert title.encode() not in resp.data
+
+
+def test_author_cannot_approve_own_article(app_ctx, client):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+        setor = Setor(nome='S', estabelecimento=est)
+        cel = Celula(nome='C', estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, cel])
+        db.session.flush()
+
+        autor = User(
+            username='autor', email='a@test', password_hash='x',
+            estabelecimento=est, setor=setor, celula=cel
+        )
+        db.session.add(autor)
+        db.session.flush()
+
+        f = Funcao(codigo=Permissao.ARTIGO_APROVAR_TODAS.value, nome='ap')
+        db.session.add(f)
+        db.session.flush()
+        autor.permissoes_personalizadas.append(f)
+
+        title = 'TituloProprio'
+        art = Article(
+            titulo=title, texto='C', status=ArticleStatus.PENDENTE,
+            user_id=autor.id, celula_id=cel.id,
+            estabelecimento_id=est.id, setor_id=setor.id,
+            instituicao_id=inst.id, visibility=ArticleVisibility.CELULA
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        art_id = art.id
+        autor_id = autor.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = autor_id
+        sess['username'] = 'autor'
+
+    resp = client.post(
+        f'/aprovacao/{art_id}',
+        data={'acao': 'aprovar', 'comentario': 'OK'},
+        follow_redirects=True
+    )
+    assert resp.status_code == 200
+
+    with app.app_context():
+        art_db = Article.query.get(art_id)
+        assert art_db.status == ArticleStatus.PENDENTE
+        assert Comment.query.count() == 0

@@ -214,7 +214,7 @@ def api_notifications():
     limit = int(request.args.get('limit', 10))
     notifs = (
         Notification.query
-        .filter_by(user_id=session['user_id'], lido=False, tipo='geral')
+        .filter_by(user_id=session['user_id'], tipo='geral')
         .order_by(Notification.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -222,7 +222,7 @@ def api_notifications():
     )
 
     return jsonify([
-        {'id': n.id, 'message': n.message, 'url': n.url}
+        {'id': n.id, 'message': n.message, 'url': n.url, 'lido': n.lido}
         for n in notifs
     ])
 
@@ -256,13 +256,15 @@ def inject_notificacoes():
     if 'user_id' in session: # Usar user_id é mais seguro que username para buscar no banco
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
-            q_general = Notification.query.filter_by(user_id=user.id, lido=False, tipo='geral')
-            general_count = q_general.count()
+            q_general_unread = Notification.query.filter_by(user_id=user.id, lido=False, tipo='geral')
+            general_count = q_general_unread.count()
 
             general_list = (
-                q_general.order_by(Notification.created_at.desc())
-                        .limit(10)
-                        .all()
+                Notification.query
+                .filter_by(user_id=user.id, tipo='geral')
+                .order_by(Notification.created_at.desc())
+                .limit(10)
+                .all()
             )
 
             return {
