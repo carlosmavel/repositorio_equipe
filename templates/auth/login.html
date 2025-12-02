@@ -90,6 +90,11 @@
 {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+    const flashContainer = document.getElementById("flash-container");
+    if (flashContainer && !flashContainer.textContent.trim()) {
+      flashContainer.remove();
+    }
+
     const dataUsers  = document.body.dataset.users;
     const users      = dataUsers ? JSON.parse(dataUsers) : {};
     const input      = document.getElementById("username");

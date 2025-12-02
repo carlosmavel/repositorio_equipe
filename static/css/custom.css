@@ -169,6 +169,13 @@ body > .container {
   gap: 1rem;
 }
 
+/* Remove spacing from empty flash container (e.g., on login) */
+#flash-container:empty {
+  margin: 0;
+  padding: 0;
+  height: 0;
+}
+
 /* Logo da página de login */
 .login-logo {
   max-width: 120px;
