@@ -23,6 +23,10 @@ try:
 except Exception:  # pragma: no cover
     convert_from_path = None
 try:
+    from pypdf import PdfReader
+except Exception:  # pragma: no cover
+    PdfReader = None
+try:
     import pytesseract
 except Exception:  # pragma: no cover
     pytesseract = None
@@ -277,13 +281,18 @@ def extract_text_from_pdf(
     clean: bool = False,
     detect_sparse: bool = False,
 ) -> str:
-    """Extrai texto de PDFs usando ``pdf2image`` + ``pytesseract``.
+    """Extrai texto de PDFs pesquisáveis ou via ``pdf2image`` + ``pytesseract``.
 
-    O reordenamento, a limpeza de texto e a detecção de layout esparso são
-    opcionais e aplicados apenas quando os parâmetros correspondentes são
-    habilitados. Com todos os parâmetros em ``False`` o comportamento é idêntico
-    ao anterior.
+    Primeiro tenta recuperar o conteúdo diretamente (PDF pesquisável) para
+    evitar OCR desnecessário. O reordenamento, a limpeza de texto e a detecção
+    de layout esparso são opcionais e aplicados apenas quando os parâmetros
+    correspondentes são habilitados. Com todos os parâmetros em ``False`` o
+    comportamento é idêntico ao anterior.
     """
+    direct_text = _extract_pdf_text_without_ocr(path)
+    if direct_text:
+        return direct_text
+
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         return ""
@@ -310,6 +319,51 @@ def extract_text_from_pdf(
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")
     return "\n".join(text_parts)
+
+
+def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
+    """Tenta extrair texto de PDFs pesquisáveis antes de acionar o OCR.
+
+    O objetivo é evitar o processamento custoso de OCR em arquivos que já
+    contêm texto acessível. Caso nenhuma página amostrada possua texto ou
+    ocorra qualquer erro, retorna uma string vazia para que o fluxo de OCR
+    seja acionado normalmente.
+    """
+    if not PdfReader:  # pragma: no cover - dependencias ausentes
+        return ""
+
+    try:
+        reader = PdfReader(path)
+    except Exception as e:  # pragma: no cover - falha ao abrir
+        logger.warning("Falha ao abrir PDF %s para leitura direta: %s", path, e)
+        return ""
+
+    has_text = False
+    for idx, page in enumerate(reader.pages):
+        try:
+            snippet = (page.extract_text() or "").strip()
+        except Exception as e:  # pragma: no cover - erro específico de página
+            logger.info("Erro ao ler pagina %s de %s sem OCR: %s", idx + 1, path, e)
+            snippet = ""
+        if snippet:
+            has_text = True
+            break
+        if idx + 1 >= sample_pages:
+            break
+
+    if not has_text:
+        return ""
+
+    pages_text: list[str] = []
+    for idx, page in enumerate(reader.pages):
+        try:
+            page_text = page.extract_text() or ""
+        except Exception as e:  # pragma: no cover
+            logger.info("Erro ao extrair texto da pagina %s de %s: %s", idx + 1, path, e)
+            page_text = ""
+        if page_text:
+            pages_text.append(page_text.strip())
+    return "\n".join(pages_text).strip()
 
 import secrets
 import string
