@@ -35,53 +35,60 @@
         </div>
         <hr>
 
-        {# Anexos com aviso para PDFs não pesquisáveis #}
-        {% if artigo.attachments %}
-        <h5 class="d-flex align-items-center">
-          Anexos
-          <i class="bi bi-info-circle ms-1 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="PDFs escaneados (sem texto incorporado) não podem ser pesquisados">
-          </i>
-        </h5>
-        <div class="row g-3">
-          {% for att in artigo.attachments %}
-          {% set fname = att.filename %}
-          {% set ext = fname.split('.')[-1].lower() %}
-          <div class="col-auto" style="max-width: 130px;"> {# col-auto para largura baseada no conteúdo, max-width para
-            limite #}
-            <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none d-block"
-              target="_blank" title="{{ fname }}">
-              <div class="card h-100 shadow-sm"> {# Card principal do anexo #}
-                {% if ext in ['jpg','jpeg','png','gif','webp'] %}
-                <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top"
-                  style="width:100%; height:100px; object-fit:cover;" {# Altura da imagem ajustada #} alt="{{ fname }}">
-                {% else %}
-                <div class="card-body d-flex align-items-center justify-content-center" style="height:100px;"> {# Altura
-                  do corpo do card ajustada #}
-                  <i class="bi bi-file-earmark-text display-4 text-secondary"></i>
-                </div>
+          {# Anexos com aviso para PDFs não pesquisáveis #}
+          {% if artigo.attachments %}
+          <h5 class="d-flex align-items-center">
+            Anexos
+            <i class="bi bi-info-circle ms-1 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="PDFs escaneados ou PDFs de imagem podem não ter o texto totalmente extraído, apenas algumas palavras-chave">
+            </i>
+          </h5>
+          <div class="row g-3">
+            {% for att in artigo.attachments %}
+            {% set fname = att.filename %}
+            {% set ext = fname.split('.')[-1].lower() %}
+            {% set original_name = fname.split('_', 1)[1] if '_' in fname else fname %}
+            <div class="col-6 col-md-3 attachment-card">
+              <div class="card h-100 shadow-sm position-relative">
+                <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
+                  target="_blank" title="{{ original_name }}">
+                  {% if ext in ['jpg','jpeg','png','gif','webp'] %}
+                  <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top attachment-thumb"
+                    alt="{{ original_name }}">
+                  {% else %}
+                  <div class="attachment-thumb-wrapper">
+                    {% if ext == 'pdf' %}
+                    <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}" class="attachment-icon-vertical"
+                      alt="PDF">
+                    {% elif ext in ['xls','xlsx'] %}
+                    <img src="{{ url_for('static', filename='icons/excel-icon.png') }}" class="attachment-icon-vertical"
+                      alt="Excel">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='icons/file-icon.png') }}" class="attachment-icon-vertical"
+                      alt="Arquivo">
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                  <div class="card-body p-2">
+                    <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">
+                      {{ original_name }}
+                    </p>
+                  </div>
+                </a>
+                {% if ext == 'pdf' and not att.content %}
+                <i class="bi bi-exclamation-circle-fill text-warning position-absolute"
+                  style="top: 8px; right: 8px; z-index: 5; font-size: 1.1rem;"
+                  data-bs-toggle="tooltip" data-bs-placement="top"
+                  title="PDFs escaneados ou PDFs de imagem podem não ter o texto totalmente extraído, apenas algumas palavras-chave">
+                </i>
                 {% endif %}
-                <div class="card-footer text-center small text-truncate py-1">
-                  {{ fname }}
-                </div>
               </div>
-            </a>
-            {# Posicionamento do ícone de alerta relativo à coluna do anexo, se necessário um ajuste fino #}
-            {# Esta parte é um pouco mais complexa de posicionar perfeitamente sem ver o resultado exato #}
-            {% if ext == 'pdf' and not att.content %}
-            <div style="position: relative; height: 0;"> {# Wrapper para posicionar o ícone sem ocupar espaço extra #}
-              <i class="bi bi-exclamation-circle-fill text-warning"
-                style="position:absolute; bottom: 5px; right: 5px; z-index:5; font-size: 1.2rem; background-color: rgba(255,255,255,0.7); border-radius:50%;"
-                data-bs-toggle="tooltip" data-bs-placement="top" title="Este PDF não contém texto pesquisável.">
-              </i>
             </div>
-            {% endif %}
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-muted mt-3">Sem anexos.</p>
-        {% endif %}
+          {% else %}
+          <p class="text-muted mt-3">Sem anexos.</p>
+          {% endif %}
         <hr>
 
         {# Histórico de Ajustes #}

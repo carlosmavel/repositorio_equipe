@@ -126,6 +126,35 @@
   max-width: 120px;
 }
 
+.attachment-card {
+  max-width: 140px;
+}
+
+.attachment-thumb-wrapper {
+  height: 120px;
+  background-color: var(--bg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-thumb {
+  height: 120px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.attachment-icon-vertical {
+  max-height: 110px;
+  width: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+}
+
+.attachment-name {
+  font-size: 0.9em;
+}
+
 /* Destaca perguntas já utilizadas como destino em ramificações */
 .branch-select option[data-used="1"] {
   color: var(--primary);
