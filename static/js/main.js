@@ -60,8 +60,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const dropdownToggle = document.getElementById("notificationDropdown"); // Deve corresponder ao ID no base.html
   let links = []; // será populado por refreshLinks
 
+  function syncReadIdsFromDom() {
+    links.forEach((link) => {
+      if (link.dataset.lido === "true") {
+        const id = link.dataset.id;
+        if (id && !readIds.includes(id)) {
+          readIds.push(id);
+        }
+      }
+    });
+    localStorage.setItem(READ_KEY, JSON.stringify(readIds));
+  }
+
   function refreshLinks() {
     links = Array.from(document.querySelectorAll(".notification-link"));
+    syncReadIdsFromDom();
   }
 
   function styleLinks() {
@@ -162,8 +175,10 @@ document.addEventListener("DOMContentLoaded", function () {
           const a = document.createElement("a");
           a.href = n.url;
           a.textContent = n.message;
-          a.className = "dropdown-item notification-link fw-bold";
+          const isRead = n.lido || readIds.includes(String(n.id));
+          a.className = `dropdown-item notification-link ${isRead ? "" : "fw-bold"}`;
           a.dataset.id = n.id;
+          a.dataset.lido = n.lido ? "true" : "false";
           li.appendChild(a);
           li.classList.add("is-new");
           li.addEventListener(
