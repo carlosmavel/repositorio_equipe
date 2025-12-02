@@ -7,6 +7,11 @@
 
 {% block content %}
 <div class="container-fluid px-5">
+  <div id="fileLoadingOverlay" class="file-loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
+  </div>
   <div class="row">
     <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
@@ -185,6 +190,10 @@
       if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
       }
+      const overlay = document.getElementById('fileLoadingOverlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+      }
       localStorage.removeItem(STORAGE_KEY);
     });
   }
@@ -215,6 +224,10 @@
   if (inputFile && preview) { // Verifica se os elementos existem
     const dt = new DataTransfer();
     inputFile.addEventListener('change', () => {
+      const overlay = document.getElementById('fileLoadingOverlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+      }
       Array.from(inputFile.files).forEach(file => {
         if (!Array.from(dt.files).some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
           dt.items.add(file);
@@ -237,6 +250,9 @@
         </div>`;
         preview.appendChild(col);
       });
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
     });
 
     preview.addEventListener('click', e => {
