@@ -315,6 +315,9 @@ def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
     if not PdfReader:  # pragma: no cover - dependencias ausentes
         return ""
 
+    def _has_meaningful_text(text: str) -> bool:
+        return len(re.sub(r"\s+", "", text)) >= 40
+
     try:
         reader = PdfReader(path)
     except Exception as e:  # pragma: no cover - falha ao abrir
@@ -328,7 +331,7 @@ def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
         except Exception as e:  # pragma: no cover - erro específico de página
             logger.info("Erro ao ler pagina %s de %s sem OCR: %s", idx + 1, path, e)
             snippet = ""
-        if snippet:
+        if _has_meaningful_text(snippet):
             has_text = True
             break
         if idx + 1 >= sample_pages:
@@ -344,9 +347,12 @@ def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
         except Exception as e:  # pragma: no cover
             logger.info("Erro ao extrair texto da pagina %s de %s: %s", idx + 1, path, e)
             page_text = ""
-        if page_text:
-            pages_text.append(page_text.strip())
-    return "\n".join(pages_text).strip()
+        pages_text.append(page_text.strip())
+    joined_text = "\n".join(pages_text).strip()
+    if not _has_meaningful_text(joined_text):
+        return ""
+
+    return "\n".join(text for text in pages_text if text)
 
 import secrets
 import string
