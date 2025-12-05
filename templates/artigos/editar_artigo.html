@@ -8,8 +8,14 @@
 {% block content %}
 <div class="container-fluid px-5">
   <div id="fileLoadingOverlay" class="file-loading-overlay">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Carregando...</span>
+    <div class="file-loading-content text-center shadow">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <div class="file-loading-text fw-semibold">Preparando anexos...</div>
+      <div class="progress mt-3" role="progressbar" aria-label="Progresso do upload" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar" style="width: 0%"></div>
+      </div>
     </div>
   </div>
   <div class="row">
@@ -192,6 +198,23 @@
   quill.on('text-change', saveDraft);
   visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 
+  const overlay = document.getElementById('fileLoadingOverlay');
+  const overlayText = overlay?.querySelector('.file-loading-text');
+  const overlayBar = overlay?.querySelector('.progress-bar');
+  const setOverlayState = (message, percent = null) => {
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    if (overlayText) overlayText.textContent = message;
+    if (overlayBar) {
+      const value = percent === null ? 100 : Math.min(100, Math.max(0, percent));
+      overlayBar.style.width = `${value}%`;
+      overlayBar.setAttribute('aria-valuenow', value);
+    }
+  };
+  const hideOverlay = () => {
+    if (overlay) overlay.style.display = 'none';
+  };
+
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
   if (form) {
@@ -200,10 +223,7 @@
       if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
       }
-      const overlay = document.getElementById('fileLoadingOverlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
-      }
+      setOverlayState('Salvando artigo e anexos...');
       localStorage.removeItem(STORAGE_KEY);
     });
   }
@@ -241,14 +261,20 @@
     if (inputFile && preview) { // Verifica se os elementos existem
     const dt = new DataTransfer();
     inputFile.addEventListener('change', () => {
-      const overlay = document.getElementById('fileLoadingOverlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
+      const incomingFiles = Array.from(inputFile.files || []);
+      if (!incomingFiles.length) {
+        hideOverlay();
+        return;
       }
-      Array.from(inputFile.files).forEach(file => {
+      setOverlayState('Preparando anexos...', 0);
+      incomingFiles.forEach((file, index) => {
         if (!Array.from(dt.files).some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
           dt.items.add(file);
         }
+
+        const percent = Math.round(((index + 1) / incomingFiles.length) * 100);
+        const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
+        setOverlayState(`Processando arquivo ${index + 1} de ${incomingFiles.length}: ${displayName}`, percent);
       });
       inputFile.files = dt.files;
       preview.innerHTML = '';
@@ -269,9 +295,8 @@
         </div>`;
         preview.appendChild(col);
       });
-      if (overlay) {
-        overlay.style.display = 'none';
-      }
+      setOverlayState('Pré-visualização pronta!', 100);
+      setTimeout(hideOverlay, 350);
     });
 
     preview.addEventListener('click', e => {

@@ -8,8 +8,14 @@
 {% block content %}
 <div class="container-fluid px-5">
 <div id="fileLoadingOverlay" class="file-loading-overlay">
-  <div class="spinner-border text-primary" role="status">
-    <span class="visually-hidden">Carregando...</span>
+  <div class="file-loading-content text-center shadow">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Carregando...</span>
+    </div>
+    <div class="file-loading-text fw-semibold">Preparando anexos...</div>
+    <div class="progress mt-3" role="progressbar" aria-label="Progresso do upload" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar" style="width: 0%"></div>
+    </div>
   </div>
 </div>
 <div class="row">
@@ -137,17 +143,33 @@ document.addEventListener('DOMContentLoaded', () => {
   visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 
   // Sincroniza conteúdo Quill no campo hidden antes de submeter
+  const overlay = document.getElementById('fileLoadingOverlay');
+  const overlayText = overlay?.querySelector('.file-loading-text');
+  const overlayBar = overlay?.querySelector('.progress-bar');
+  const setOverlayState = (message, percent = null) => {
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    if (overlayText) overlayText.textContent = message;
+    if (overlayBar) {
+      const value = percent === null ? 100 : Math.min(100, Math.max(0, percent));
+      overlayBar.style.width = `${value}%`;
+      overlayBar.setAttribute('aria-valuenow', value);
+    }
+  };
+  const hideOverlay = () => {
+    if (overlay) overlay.style.display = 'none';
+  };
+
   const form = document.querySelector('form');
   form.addEventListener('submit', () => {
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
-    overlay.style.display = 'flex';
+    setOverlayState('Enviando artigo e anexos...');
     localStorage.removeItem(STORAGE_KEY);
   });
 
   // Preview de anexos
   const input = document.getElementById('files');
   const preview = document.getElementById('preview');
-  const overlay = document.getElementById('fileLoadingOverlay');
   const resolveIcon = (filename) => {
     const ext = filename.split('.').pop().toLowerCase();
     if (ext === 'pdf') return "{{ url_for('static', filename='icons/pdf-icon.png') }}";
@@ -157,15 +179,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const dt = new DataTransfer();
 
   input.addEventListener('change', () => {
-    overlay.style.display = 'flex';
+    const incomingFiles = Array.from(input.files || []);
+    if (!incomingFiles.length) {
+      hideOverlay();
+      return;
+    }
+
+    setOverlayState('Preparando anexos...', 0);
     setTimeout(() => {
-      Array.from(input.files).forEach(file => {
+      incomingFiles.forEach((file, index) => {
         if (!Array.from(dt.files).some(
           f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
         )) {
           dt.items.add(file);
         }
+
+        const percent = Math.round(((index + 1) / incomingFiles.length) * 100);
+        const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
+        setOverlayState(`Processando arquivo ${index + 1} de ${incomingFiles.length}: ${displayName}`, percent);
       });
+
       input.files = dt.files;
       preview.innerHTML = '';
       Array.from(dt.files).forEach((file, idx) => {
@@ -185,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>`;
         preview.appendChild(col);
       });
-      overlay.style.display = 'none';
+
+      setOverlayState('Pré-visualização pronta!', 100);
+      setTimeout(hideOverlay, 350);
     });
   });
 
