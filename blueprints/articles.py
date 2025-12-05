@@ -71,6 +71,7 @@ def upload_progress(progress_id):
     payload = {
         "messages": state.messages,
         "done": state.done,
+        "percent": state.percent,
     }
     if state.done:
         clear_progress(progress_id)
@@ -116,8 +117,14 @@ def novo_artigo():
         progress_id = request.form.get("progress_id")
         init_progress(progress_id)
 
-        def emit_progress(msg: str) -> None:
-            add_progress_message(progress_id, msg)
+        def emit_progress(payload) -> None:
+            if isinstance(payload, dict):
+                msg = payload.get("message")
+                percent = payload.get("percent")
+            else:
+                msg = str(payload) if payload is not None else None
+                percent = None
+            add_progress_message(progress_id, msg, percent=percent)
 
         inst_id = est_id = setor_vis_id = vis_cel_id = None
         if vis is ArticleVisibility.INSTITUICAO and user.estabelecimento:
@@ -299,6 +306,17 @@ def editar_artigo(artigo_id):
 
     if request.method == "POST":
         acao = request.form.get("acao", "salvar")   # salvar | enviar
+        progress_id = request.form.get("progress_id")
+        init_progress(progress_id)
+
+        def emit_progress(payload) -> None:
+            if isinstance(payload, dict):
+                msg = payload.get("message")
+                percent = payload.get("percent")
+            else:
+                msg = str(payload) if payload is not None else None
+                percent = None
+            add_progress_message(progress_id, msg, percent=percent)
 
         # campos básicos
         titulo = request.form["titulo"].strip()

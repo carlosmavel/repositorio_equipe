@@ -16,6 +16,7 @@ from typing import Dict, List
 class ProgressState:
     messages: List[str] = field(default_factory=list)
     done: bool = False
+    percent: float = 0.0
 
 
 _progress_map: Dict[str, ProgressState] = {}
@@ -29,12 +30,22 @@ def init_progress(progress_id: str) -> None:
         _progress_map[progress_id] = ProgressState()
 
 
-def add_progress_message(progress_id: str, message: str) -> None:
+def add_progress_message(progress_id: str, message: str, *, percent: float | None = None) -> None:
     if not progress_id or not message:
         return
     with _lock:
         state = _progress_map.setdefault(progress_id, ProgressState())
         state.messages.append(message)
+        if percent is not None:
+            state.percent = max(state.percent, min(100.0, float(percent)))
+
+
+def set_progress_percent(progress_id: str, percent: float) -> None:
+    if not progress_id:
+        return
+    with _lock:
+        state = _progress_map.setdefault(progress_id, ProgressState())
+        state.percent = max(state.percent, min(100.0, float(percent)))
 
 
 def mark_progress_done(progress_id: str) -> None:
@@ -43,6 +54,7 @@ def mark_progress_done(progress_id: str) -> None:
     with _lock:
         state = _progress_map.setdefault(progress_id, ProgressState())
         state.done = True
+        state.percent = 100.0
 
 
 def get_progress(progress_id: str) -> ProgressState:

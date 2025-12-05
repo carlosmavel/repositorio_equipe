@@ -288,6 +288,7 @@ def extract_text_from_pdf(
         logger.error("Erro ao converter PDF %s: %s", path, e)
         return ""
     text_parts: list[str] = []
+    total_pages = len(images)
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, page_idx=i)
@@ -302,7 +303,11 @@ def extract_text_from_pdf(
             )
             logger.info("Pagina %s processada com sucesso", i)
             if progress_callback:
-                progress_callback(f"Página {i} processada com sucesso")
+                percent = (i / total_pages) * 100 if total_pages else None
+                progress_callback({
+                    "message": f"Página {i} processada com sucesso",
+                    "percent": percent,
+                })
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")

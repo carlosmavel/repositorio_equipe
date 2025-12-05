@@ -238,6 +238,8 @@
         if (!resp.ok) return;
         const data = await resp.json();
         appendMessages(data.messages || []);
+        const progressValue = typeof data.percent === 'number' ? data.percent : null;
+        setOverlayState(overlayText?.textContent || 'Processando anexos...', progressValue);
         if (data.done) {
           completeBar();
           stopProgressPolling();
