@@ -54,6 +54,7 @@ except ImportError:  # pragma: no cover
         mark_progress_done,
     )
 import time
+import unicodedata
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from mimetypes import guess_type
@@ -631,6 +632,10 @@ def pesquisar():
     q = request.args.get('q','').strip()
     query = Article.query.filter_by(status=ArticleStatus.APROVADO)
 
+    def strip_accents(value: str) -> str:
+        normalized = unicodedata.normalize("NFD", value or "")
+        return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+
     if q:
         exact = False
         term = q
@@ -642,12 +647,16 @@ def pesquisar():
 
         for token in tokens:
             like = f"%{token}%"
+            normalized_token = strip_accents(token)
+            like_unaccent = f"%{normalized_token}%"
             sub = (
                 db.session.query(Attachment.article_id)
                 .filter(
                     or_(
                         Attachment.filename.ilike(like),
-                        Attachment.content.ilike(like)
+                        Attachment.content.ilike(like),
+                        func.unaccent(Attachment.filename).ilike(like_unaccent),
+                        func.unaccent(Attachment.content).ilike(like_unaccent),
                     )
                 )
                 .scalar_subquery()
@@ -657,6 +666,8 @@ def pesquisar():
                 or_(
                     Article.titulo.ilike(like),
                     Article.texto.ilike(like),
+                    func.unaccent(Article.titulo).ilike(like_unaccent),
+                    func.unaccent(Article.texto).ilike(like_unaccent),
                     Article.id.in_(sub)
                 )
             )
