@@ -8,8 +8,15 @@
 {% block content %}
 <div class="container-fluid px-5">
   <div id="fileLoadingOverlay" class="file-loading-overlay">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Carregando...</span>
+    <div class="file-loading-content text-center shadow">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <div class="file-loading-text fw-semibold">Preparando anexos...</div>
+      <div class="progress mt-3" role="progressbar" aria-label="Progresso do upload" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar" style="width: 0%"></div>
+      </div>
+      <div class="processing-messages mt-3 text-start"></div>
     </div>
   </div>
   <div class="row">
@@ -22,6 +29,7 @@
           Visibilidade: {{ artigo.visibility.label }}
         </p>
         <form method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="progress_id" id="progress-id">
           <div class="mb-3">
             <label class="form-label">Título</label>
             <input name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
@@ -192,19 +200,156 @@
   quill.on('text-change', saveDraft);
   visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 
+  const overlay = document.getElementById('fileLoadingOverlay');
+  const overlayText = overlay?.querySelector('.file-loading-text');
+  const overlayBar = overlay?.querySelector('.progress-bar');
+  const progressMessages = overlay?.querySelector('.processing-messages');
+  const progressIdInput = document.getElementById('progress-id');
+  const seenMessages = new Set();
+  let progressPoll = null;
+  let overlaySimInterval = null;
+  let overlaySimProgress = 0;
+
+  const resetProgressMessages = () => {
+    seenMessages.clear();
+    if (progressMessages) {
+      progressMessages.innerHTML = '';
+    }
+  };
+
+  const appendMessages = (messages = []) => {
+    if (!progressMessages) return;
+    messages.forEach(msg => {
+      if (!msg || seenMessages.has(msg)) return;
+      seenMessages.add(msg);
+      const line = document.createElement('div');
+      line.className = 'message-line';
+      line.textContent = msg;
+      progressMessages.appendChild(line);
+      progressMessages.scrollTop = progressMessages.scrollHeight;
+    });
+  };
+
+  const startProgressPolling = (progressId) => {
+    if (!progressId || progressPoll) return;
+    progressPoll = setInterval(async () => {
+      try {
+        const resp = await fetch(`/upload-progress/${progressId}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        appendMessages(data.messages || []);
+        const progressValue = typeof data.percent === 'number' ? data.percent : null;
+        setOverlayState(overlayText?.textContent || 'Processando anexos...', progressValue);
+        if (data.done) {
+          completeBar();
+          stopProgressPolling();
+        }
+      } catch (e) {
+        console.warn('Falha ao consultar progresso', e);
+      }
+    }, 900);
+  };
+
+  const stopProgressPolling = () => {
+    if (progressPoll) {
+      clearInterval(progressPoll);
+      progressPoll = null;
+    }
+  };
+
+  const startSimulatedBar = () => {
+    if (!overlayBar || overlaySimInterval) return;
+    overlaySimProgress = 0;
+    overlayBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    overlayBar.style.width = '0%';
+    overlayBar.setAttribute('aria-valuenow', 0);
+
+    overlaySimInterval = setInterval(() => {
+      overlaySimProgress = Math.min(95, overlaySimProgress + (Math.random() * 5 + 3));
+      overlayBar.style.width = `${overlaySimProgress}%`;
+      overlayBar.setAttribute('aria-valuenow', Math.round(overlaySimProgress));
+    }, 550);
+  };
+
+  const stopSimulatedBar = () => {
+    if (overlaySimInterval) {
+      clearInterval(overlaySimInterval);
+      overlaySimInterval = null;
+    }
+  };
+
+  const completeBar = () => {
+    stopSimulatedBar();
+    if (!overlayBar) return;
+    overlayBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+    overlayBar.style.width = '100%';
+    overlayBar.setAttribute('aria-valuenow', 100);
+  };
+
+  const setOverlayState = (message, percent = null) => {
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    if (overlayText) overlayText.textContent = message;
+
+    if (!overlayBar) return;
+
+    if (percent === null) {
+      startSimulatedBar();
+    } else {
+      stopSimulatedBar();
+      overlayBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+      const current = Number(overlayBar.getAttribute('aria-valuenow')) || 0;
+      const value = Math.min(100, Math.max(current, percent));
+      overlayBar.style.width = `${value}%`;
+      overlayBar.setAttribute('aria-valuenow', value);
+    }
+  };
+  const hideOverlay = () => {
+    completeBar();
+    if (overlay) overlay.style.display = 'none';
+    if (overlayBar) {
+      overlayBar.style.width = '0%';
+      overlayBar.removeAttribute('aria-valuenow');
+    }
+    stopProgressPolling();
+    resetProgressMessages();
+  };
+
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
   if (form) {
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
       const hiddenTexto = document.getElementById('hidden-texto');
       if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
       }
-      const overlay = document.getElementById('fileLoadingOverlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
-      }
+      const progressId = progressIdInput?.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+      if (progressIdInput) progressIdInput.value = progressId;
+      resetProgressMessages();
+      setOverlayState('Salvando artigo e anexos...', 0);
+      startProgressPolling(progressId);
       localStorage.removeItem(STORAGE_KEY);
+
+      try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action || window.location.href, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.redirected) {
+          completeBar();
+          window.location.href = response.url;
+          return;
+        }
+      } catch (err) {
+        console.error('Falha ao salvar artigo', err);
+      }
+
+      completeBar();
+      stopProgressPolling();
+      setTimeout(() => window.location.reload(), 400);
     });
   }
 
@@ -241,14 +386,20 @@
     if (inputFile && preview) { // Verifica se os elementos existem
     const dt = new DataTransfer();
     inputFile.addEventListener('change', () => {
-      const overlay = document.getElementById('fileLoadingOverlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
+      const incomingFiles = Array.from(inputFile.files || []);
+      if (!incomingFiles.length) {
+        hideOverlay();
+        return;
       }
-      Array.from(inputFile.files).forEach(file => {
+      setOverlayState('Preparando anexos...', 0);
+      incomingFiles.forEach((file, index) => {
         if (!Array.from(dt.files).some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
           dt.items.add(file);
         }
+
+        const percent = Math.round(((index + 1) / incomingFiles.length) * 100);
+        const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
+        setOverlayState(`Processando arquivo ${index + 1} de ${incomingFiles.length}: ${displayName}`, percent);
       });
       inputFile.files = dt.files;
       preview.innerHTML = '';
@@ -269,9 +420,8 @@
         </div>`;
         preview.appendChild(col);
       });
-      if (overlay) {
-        overlay.style.display = 'none';
-      }
+      setOverlayState('Pré-visualização pronta!', 100);
+      setTimeout(hideOverlay, 350);
     });
 
     preview.addEventListener('click', e => {

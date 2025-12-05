@@ -193,6 +193,21 @@ body > .container {
   text-align: center;
 }
 
+.processing-messages {
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.processing-messages .message-line {
+  background: var(--bg-muted);
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0.35rem;
+  box-shadow: inset 0 1px 0 var(--shadow-soft);
+}
+
 /* espaçamento e responsividade dos botões de navegação do formulário */
 #navButtons {
   gap: 1rem;
@@ -293,6 +308,22 @@ body > .container {
   align-items: center;
   justify-content: center;
   z-index: 1055;
+}
+.file-loading-content {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem 1.75rem;
+  min-width: 280px;
+  max-width: 420px;
+}
+.file-loading-text {
+  color: #0d6efd;
+}
+.file-loading-overlay .progress {
+  height: 0.75rem;
+}
+.file-loading-overlay .progress-bar {
+  transition: width 0.2s ease;
 }
 
 /* Área de notificações com rolagem */

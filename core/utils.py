@@ -83,6 +83,8 @@ def extract_text(path: str, **ocr_options) -> str:
     arquivo é um PDF ou imagem. O comportamento padrão permanece idêntico ao
     anterior quando nenhum parâmetro extra é fornecido.
     """
+    progress_callback = ocr_options.pop("progress_callback", None)
+
     ext = os.path.splitext(path)[1].lower()
     text_parts: list[str] = []
 
@@ -129,7 +131,7 @@ def extract_text(path: str, **ocr_options) -> str:
 
     # PDF
     if ext == '.pdf':
-        return extract_text_from_pdf(path, **ocr_options)
+        return extract_text_from_pdf(path, progress_callback=progress_callback, **ocr_options)
 
     # outros formatos não suportados
     return ''
@@ -263,6 +265,7 @@ def extract_text_from_pdf(
     reorder: bool = False,
     clean: bool = False,
     detect_sparse: bool = False,
+    progress_callback=None,
 ) -> str:
     """Extrai texto de PDFs pesquisáveis ou via ``pdf2image`` + ``pytesseract``.
 
@@ -285,6 +288,7 @@ def extract_text_from_pdf(
         logger.error("Erro ao converter PDF %s: %s", path, e)
         return ""
     text_parts: list[str] = []
+    total_pages = len(images)
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, page_idx=i)
@@ -298,6 +302,12 @@ def extract_text_from_pdf(
                 )
             )
             logger.info("Pagina %s processada com sucesso", i)
+            if progress_callback:
+                percent = (i / total_pages) * 100 if total_pages else None
+                progress_callback({
+                    "message": f"Página {i} processada com sucesso",
+                    "percent": percent,
+                })
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")
