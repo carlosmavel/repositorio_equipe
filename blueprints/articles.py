@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app
 from sqlalchemy import or_, func
 import re
 
@@ -37,6 +37,22 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_approve_article,
         user_can_review_article,
     )
+try:
+    from ..core.progress import (
+        add_progress_message,
+        clear_progress,
+        get_progress,
+        init_progress,
+        mark_progress_done,
+    )
+except ImportError:  # pragma: no cover
+    from core.progress import (
+        add_progress_message,
+        clear_progress,
+        get_progress,
+        init_progress,
+        mark_progress_done,
+    )
 import time
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
@@ -47,6 +63,18 @@ import json
 import uuid
 
 articles_bp = Blueprint('articles_bp', __name__)
+
+
+@articles_bp.route('/upload-progress/<progress_id>', methods=['GET'])
+def upload_progress(progress_id):
+    state = get_progress(progress_id)
+    payload = {
+        "messages": state.messages,
+        "done": state.done,
+    }
+    if state.done:
+        clear_progress(progress_id)
+    return jsonify(payload)
 @articles_bp.route('/novo-artigo', methods=['GET', 'POST'], endpoint='novo_artigo')
 def novo_artigo():
     if 'user_id' not in session:
@@ -84,6 +112,12 @@ def novo_artigo():
         vis = ArticleVisibility.CELULA
         if vis_str in ArticleVisibility._value2member_map_:
             vis = ArticleVisibility(vis_str)
+
+        progress_id = request.form.get("progress_id")
+        init_progress(progress_id)
+
+        def emit_progress(msg: str) -> None:
+            add_progress_message(progress_id, msg)
 
         inst_id = est_id = setor_vis_id = vis_cel_id = None
         if vis is ArticleVisibility.INSTITUICAO and user.estabelecimento:
@@ -128,7 +162,7 @@ def novo_artigo():
                 filenames.append(unique_name)
 
                 # extrai texto e descobre MIME
-                texto_extraido = extract_text(dest)
+                texto_extraido = extract_text(dest, progress_callback=emit_progress)
                 mime_type, _   = guess_type(dest)
 
                 # cria o registro de attachment
@@ -145,6 +179,7 @@ def novo_artigo():
 
         # 5) Persiste tudo num único commit
         db.session.commit()
+        mark_progress_done(progress_id)
 
         # 6) Notifica responsáveis/admins, se necessário
         if status is ArticleStatus.PENDENTE:
@@ -329,7 +364,7 @@ def editar_artigo(artigo_id):
                 existing.append(unique_name)
 
                 # 1) extrai texto
-                texto_extraido = extract_text(dest)
+                texto_extraido = extract_text(dest, progress_callback=emit_progress)
                 # 2) descobre o MIME
                 mime_type, _ = guess_type(dest)
                 # 3) adiciona o attachment ao session
@@ -360,6 +395,7 @@ def editar_artigo(artigo_id):
             flash("Artigo salvo!", "success")
 
         db.session.commit()
+        mark_progress_done(progress_id)
         return redirect(url_for("artigo", artigo_id=artigo.id))
 
     # GET

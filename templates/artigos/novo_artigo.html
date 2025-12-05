@@ -7,23 +7,25 @@
 
 {% block content %}
 <div class="container-fluid px-5">
-<div id="fileLoadingOverlay" class="file-loading-overlay">
-  <div class="file-loading-content text-center shadow">
-    <div class="spinner-border text-primary mb-3" role="status">
-      <span class="visually-hidden">Carregando...</span>
-    </div>
-    <div class="file-loading-text fw-semibold">Preparando anexos...</div>
-    <div class="progress mt-3" role="progressbar" aria-label="Progresso do upload" aria-valuemin="0" aria-valuemax="100">
-      <div class="progress-bar" style="width: 0%"></div>
+  <div id="fileLoadingOverlay" class="file-loading-overlay">
+    <div class="file-loading-content text-center shadow">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <div class="file-loading-text fw-semibold">Preparando anexos...</div>
+      <div class="progress mt-3" role="progressbar" aria-label="Progresso do upload" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar" style="width: 0%"></div>
+      </div>
+      <div class="processing-messages mt-3 text-start"></div>
     </div>
   </div>
-</div>
 <div class="row">
   <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
       <div class="card-body">
         <h3>Criar Novo Artigo</h3>
         <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="progress_id" id="progress-id">
           <div class="mb-3">
             <label for="titulo" class="form-label">Título</label>
             <input type="text" class="form-control" id="titulo" name="titulo" required>
@@ -146,8 +148,57 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('fileLoadingOverlay');
   const overlayText = overlay?.querySelector('.file-loading-text');
   const overlayBar = overlay?.querySelector('.progress-bar');
+  const progressMessages = overlay?.querySelector('.processing-messages');
+  const progressIdInput = document.getElementById('progress-id');
+  const seenMessages = new Set();
+  let progressPoll = null;
   let overlaySimInterval = null;
   let overlaySimProgress = 0;
+
+  const resetProgressMessages = () => {
+    seenMessages.clear();
+    if (progressMessages) {
+      progressMessages.innerHTML = '';
+    }
+  };
+
+  const appendMessages = (messages = []) => {
+    if (!progressMessages) return;
+    messages.forEach(msg => {
+      if (!msg || seenMessages.has(msg)) return;
+      seenMessages.add(msg);
+      const line = document.createElement('div');
+      line.className = 'message-line';
+      line.textContent = msg;
+      progressMessages.appendChild(line);
+      progressMessages.scrollTop = progressMessages.scrollHeight;
+    });
+  };
+
+  const startProgressPolling = (progressId) => {
+    if (!progressId || progressPoll) return;
+    progressPoll = setInterval(async () => {
+      try {
+        const resp = await fetch(`/upload-progress/${progressId}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        appendMessages(data.messages || []);
+        if (data.done) {
+          completeBar();
+          stopProgressPolling();
+        }
+      } catch (e) {
+        console.warn('Falha ao consultar progresso', e);
+      }
+    }, 900);
+  };
+
+  const stopProgressPolling = () => {
+    if (progressPoll) {
+      clearInterval(progressPoll);
+      progressPoll = null;
+    }
+  };
 
   const startSimulatedBar = () => {
     if (!overlayBar || overlaySimInterval) return;
@@ -204,13 +255,40 @@ document.addEventListener('DOMContentLoaded', () => {
       overlayBar.style.width = '0%';
       overlayBar.removeAttribute('aria-valuenow');
     }
+    stopProgressPolling();
+    resetProgressMessages();
   };
 
   const form = document.querySelector('form');
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
-    setOverlayState('Enviando artigo e anexos...');
+    const progressId = progressIdInput?.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    if (progressIdInput) progressIdInput.value = progressId;
+    resetProgressMessages();
+    setOverlayState('Enviando artigo e anexos...', 0);
+    startProgressPolling(progressId);
     localStorage.removeItem(STORAGE_KEY);
+
+    try {
+      const formData = new FormData(form);
+      const response = await fetch(form.action || window.location.href, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.redirected) {
+        completeBar();
+        window.location.href = response.url;
+        return;
+      }
+    } catch (err) {
+      console.error('Falha ao enviar artigo', err);
+    }
+
+    completeBar();
+    stopProgressPolling();
+    setTimeout(() => window.location.reload(), 400);
   });
 
   // Preview de anexos
