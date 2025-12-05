@@ -201,31 +201,36 @@
   const overlay = document.getElementById('fileLoadingOverlay');
   const overlayText = overlay?.querySelector('.file-loading-text');
   const overlayBar = overlay?.querySelector('.progress-bar');
-  let overlayPulseInterval = null;
+  let overlaySimInterval = null;
+  let overlaySimProgress = 0;
 
-  const startIndeterminateBar = () => {
-    if (!overlayBar || overlayPulseInterval) return;
+  const startSimulatedBar = () => {
+    if (!overlayBar || overlaySimInterval) return;
+    overlaySimProgress = 0;
     overlayBar.classList.add('progress-bar-striped', 'progress-bar-animated');
-    let value = 20;
-    overlayBar.style.width = `${value}%`;
-    overlayBar.setAttribute('aria-valuenow', value);
+    overlayBar.style.width = '0%';
+    overlayBar.setAttribute('aria-valuenow', 0);
 
-    overlayPulseInterval = setInterval(() => {
-      value += (Math.random() * 15 + 10);
-      if (value > 90) value = 35; // reinicia para evitar travar em 100%
-      overlayBar.style.width = `${Math.round(value)}%`;
-      overlayBar.setAttribute('aria-valuenow', Math.round(value));
-    }, 650);
+    overlaySimInterval = setInterval(() => {
+      overlaySimProgress = Math.min(95, overlaySimProgress + (Math.random() * 5 + 3));
+      overlayBar.style.width = `${overlaySimProgress}%`;
+      overlayBar.setAttribute('aria-valuenow', Math.round(overlaySimProgress));
+    }, 550);
   };
 
-  const stopIndeterminateBar = () => {
-    if (overlayPulseInterval) {
-      clearInterval(overlayPulseInterval);
-      overlayPulseInterval = null;
+  const stopSimulatedBar = () => {
+    if (overlaySimInterval) {
+      clearInterval(overlaySimInterval);
+      overlaySimInterval = null;
     }
-    if (overlayBar) {
-      overlayBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
-    }
+  };
+
+  const completeBar = () => {
+    stopSimulatedBar();
+    if (!overlayBar) return;
+    overlayBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+    overlayBar.style.width = '100%';
+    overlayBar.setAttribute('aria-valuenow', 100);
   };
 
   const setOverlayState = (message, percent = null) => {
@@ -236,17 +241,19 @@
     if (!overlayBar) return;
 
     if (percent === null) {
-      startIndeterminateBar();
+      startSimulatedBar();
     } else {
-      stopIndeterminateBar();
-      const value = Math.min(100, Math.max(0, percent));
+      stopSimulatedBar();
+      overlayBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+      const current = Number(overlayBar.getAttribute('aria-valuenow')) || 0;
+      const value = Math.min(100, Math.max(current, percent));
       overlayBar.style.width = `${value}%`;
       overlayBar.setAttribute('aria-valuenow', value);
     }
   };
   const hideOverlay = () => {
+    completeBar();
     if (overlay) overlay.style.display = 'none';
-    stopIndeterminateBar();
     if (overlayBar) {
       overlayBar.style.width = '0%';
       overlayBar.removeAttribute('aria-valuenow');
