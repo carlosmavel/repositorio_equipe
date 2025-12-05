@@ -294,6 +294,22 @@ body > .container {
   justify-content: center;
   z-index: 1055;
 }
+.file-loading-content {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem 1.75rem;
+  min-width: 280px;
+  max-width: 420px;
+}
+.file-loading-text {
+  color: #0d6efd;
+}
+.file-loading-overlay .progress {
+  height: 0.75rem;
+}
+.file-loading-overlay .progress-bar {
+  transition: width 0.2s ease;
+}
 
 /* Área de notificações com rolagem */
 #notificationMenu,
