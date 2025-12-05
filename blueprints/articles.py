@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 import re
 
 try:
@@ -54,6 +54,7 @@ except ImportError:  # pragma: no cover
         mark_progress_done,
     )
 import time
+import unicodedata
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from mimetypes import guess_type
@@ -629,8 +630,24 @@ def pesquisar():
         return redirect(url_for('login'))
 
     q = request.args.get('q','').strip()
+    bind = db.session.get_bind()
+    supports_unaccent = False
+    if bind and bind.dialect.name == "postgresql":
+        try:
+            supports_unaccent = bool(
+                db.session.execute(
+                    text("SELECT 1 FROM pg_extension WHERE extname='unaccent'")
+                ).scalar()
+            )
+        except Exception:
+            supports_unaccent = False
     query = Article.query.filter_by(status=ArticleStatus.APROVADO)
 
+    def strip_accents(value: str) -> str:
+        normalized = unicodedata.normalize("NFD", value or "")
+        return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+
+    tokens = []
     if q:
         exact = False
         term = q
@@ -640,28 +657,51 @@ def pesquisar():
 
         tokens = [term] if exact else [t for t in term.split() if t]
 
-        for token in tokens:
-            like = f"%{token}%"
-            sub = (
-                db.session.query(Attachment.article_id)
-                .filter(
+        if supports_unaccent:
+            for token in tokens:
+                like = f"%{token}%"
+                normalized_token = strip_accents(token)
+                like_unaccent = f"%{normalized_token}%"
+                sub = (
+                    db.session.query(Attachment.article_id)
+                    .filter(
+                        or_(
+                            Attachment.filename.ilike(like),
+                            Attachment.content.ilike(like),
+                            func.unaccent(Attachment.filename).ilike(like_unaccent),
+                            func.unaccent(Attachment.content).ilike(like_unaccent),
+                        )
+                    )
+                    .scalar_subquery()
+                )
+
+                query = query.filter(
                     or_(
-                        Attachment.filename.ilike(like),
-                        Attachment.content.ilike(like)
+                        Article.titulo.ilike(like),
+                        Article.texto.ilike(like),
+                        func.unaccent(Article.titulo).ilike(like_unaccent),
+                        func.unaccent(Article.texto).ilike(like_unaccent),
+                        Article.id.in_(sub)
                     )
                 )
-                .scalar_subquery()
-            )
-
-            query = query.filter(
-                or_(
-                    Article.titulo.ilike(like),
-                    Article.texto.ilike(like),
-                    Article.id.in_(sub)
-                )
-            )
 
     artigos = query.order_by(Article.created_at.desc()).all()
+
+    if q and not supports_unaccent:
+        def matches(article):
+            def norm(value: str) -> str:
+                return strip_accents(value or "").lower()
+
+            def token_found(token: str) -> bool:
+                t = norm(token)
+                fields = [article.titulo, article.texto]
+                for att in getattr(article, 'attachments', []) or []:
+                    fields.extend([att.filename, att.content])
+                return any(t in norm(f) for f in fields if f is not None)
+
+            return all(token_found(tok) for tok in tokens)
+
+        artigos = [a for a in artigos if matches(a)]
 
     # Filtra conforme visibilidade
     user = User.query.filter_by(username=session['username']).first()
