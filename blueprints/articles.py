@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 import re
 
 try:
@@ -631,7 +631,16 @@ def pesquisar():
 
     q = request.args.get('q','').strip()
     bind = db.session.get_bind()
-    supports_unaccent = bool(bind and bind.dialect.name != "sqlite")
+    supports_unaccent = False
+    if bind and bind.dialect.name == "postgresql":
+        try:
+            supports_unaccent = bool(
+                db.session.execute(
+                    text("SELECT 1 FROM pg_extension WHERE extname='unaccent'")
+                ).scalar()
+            )
+        except Exception:
+            supports_unaccent = False
     query = Article.query.filter_by(status=ArticleStatus.APROVADO)
 
     def strip_accents(value: str) -> str:
