@@ -11,6 +11,16 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 import logging
+import warnings
+from cryptography.utils import CryptographyDeprecationWarning
+
+# Suprime avisos depreciação do ARC4 vindos do pypdf/cryptography durante o
+# bootstrap da aplicação para evitar ruído no console do Flask.
+warnings.filterwarnings(
+    "ignore",
+    category=CryptographyDeprecationWarning,
+    message=r"ARC4 has been moved to cryptography\.hazmat\.decrepit\.ciphers\.algorithms\.ARC4.*",
+)
 try:
     import cv2
     import numpy as np
