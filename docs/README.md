@@ -4,24 +4,22 @@
 
 ## Sobre o Projeto
 
-Orquetask é um sistema web integrado construído com Flask e Python, projetado para centralizar e otimizar a gestão de conhecimento técnico (através de um repositório de artigos com fluxo de aprovação), ordens de serviço (planejado) e comunicação interna em organizações. O objetivo é fornecer uma plataforma robusta, intuitiva e eficiente para diversas operações do dia a dia.
+Orquetask é um sistema web integrado construído com Flask e Python. A base atual concentra-se na gestão de conhecimento técnico (repositório de artigos com fluxo de revisão/aprovação) e em um módulo administrativo robusto para organizar usuários e permissões. O código já contém modelos e templates para Processos e Ordens de Serviço, mas esses módulos ainda não estão habilitados na aplicação (o blueprint `processos_bp` não é registrado em `app.py` e não há rotas de OS expostas).
 
-## Funcionalidades Principais (Atuais e Planejadas)
+## Funcionalidades Principais
 
 * **Biblioteca de Artigos:**
-    * Criação, revisão, aprovação e publicação de artigos.
-    * Busca Full-Text em conteúdo e anexos.
+    * Criação, revisão, aprovação e publicação de artigos com controle de visibilidade.
+    * Busca full-text em conteúdo e anexos.
 * **Módulo de Administração Global:**
-    * Gerenciamento de Usuários (com campos detalhados e status ativo/inativo).
-    * Gerenciamento de Estrutura Organizacional: CRUD de Estabelecimentos, Setores, Células e Cargos.
-    * Definição de permissões por meio de Funções associadas aos Cargos e ajustes individuais por usuário.
-* **Página Inicial Personalizada:** Dashboard do usuário pós-login.
-* **Perfil de Usuário Detalhado:** Visualização e edição de dados, foto e senha.
-* **Sistema de Notificações Contextuais.**
-* **Layout Responsivo com Sidebar Global.**
-* **(Planejado - Fase 3) Módulo de Ordens de Serviço (OS).**
-* **(Planejado - Fase 3) Kanban de OS.**
-* **(Planejado - Fase 4) Central de Comunicação Interna.**
+    * Gestão de usuários (campos completos, troca de senha e ativação/inativação).
+    * Estrutura Organizacional: CRUD de Estabelecimentos, Setores, Células e Cargos.
+    * Permissões: funções associadas a cargos e ajustes individuais por usuário.
+* **Página Inicial / Dashboard:** visão geral pós-login com estatísticas de artigos e usuários.
+* **Perfil de Usuário:** edição de dados pessoais, foto de perfil e senha.
+* **Notificações:** avisos relacionados a artigos e revisões.
+* **Temas Claro/Escuro e layout responsivo com sidebar.**
+* **Módulos em desenvolvimento:** Processos (modelos e telas administrativas já versionados, porém desativados por padrão) e Ordens de Serviço (modelos utilitários sem rotas ativas).
 
 ## Tecnologias Utilizadas
 
@@ -95,7 +93,7 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
 
 6.  **(Opcional) Popule dados de exemplo (funções, organização, usuários e artigos):**
     ```bash
-    python seed.py
+    python -m seeds.seed
     ```
 
 7.  **Rode a aplicação Flask:**
@@ -104,10 +102,8 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     ```
     Acesse em seu navegador: `http://127.0.0.1:5000`
 
-Para instruções de instalação e configuração **completas e detalhadas**, por favor, consulte nosso:
+Para instruções de instalação e configuração **completas e detalhadas**, consulte:
 * **[Guia de Instalação Completo](./GUIA_DE_INSTALACAO.md)**
-* **[Documentação Geral do Sistema](./DOCUMENTACAO_DO_SISTEMA.md)**
-* **[Tarefas de Revisão e Testes](./TAREFAS_REVISAO_SISTEMA.md)**
 * **[Guia de Implantação em Produção](./DEPLOY.md)**
 
 ## OCR de alta qualidade
@@ -149,22 +145,37 @@ padrão. Para habilitá-lo:
 
 ## Estrutura do Projeto (Simplificada)
 ```text
-/ORQUETASK_PROJECT_ROOT/
+/repositorio_equipe/
 ├── app.py
-├── models.py
-├── requirements.txt
+├── config.py
+├── core/
+│   ├── models.py
+│   ├── enums.py
+│   └── utils.py
+├── blueprints/
+│   ├── admin.py
+│   ├── articles.py
+│   └── auth.py
 ├── migrations/
 ├── static/
-└── templates/
-├── admin/
-└── base.html
+├── templates/
+│   ├── admin/
+│   ├── articles/
+│   └── auth/
+├── seeds/
+│   ├── seed.py
+│   ├── seed_demonstration.py
+│   └── seed_processos.py
+└── requirements.txt
 ```
 
 ## Módulo Processos
 
-O módulo **Processos** define fluxos operacionais reutilizáveis dentro do sistema.
-Um processo é composto por diversas etapas ligadas a cargos e setores, cada uma
-com campos personalizados que devem ser preenchidos quando a etapa é executada.
+O módulo **Processos** (em desenvolvimento) define fluxos operacionais
+reutilizáveis. Os modelos, seeds e templates estão versionados, mas o blueprint
+`processos_bp` não é registrado em `app.py`, portanto as rotas de gestão de
+processos ficam desativadas por padrão. Ative-o manualmente se precisar testar
+o fluxo em ambiente controlado.
 
 Diagrama simplificado:
 ```text
@@ -176,14 +187,11 @@ Exemplo de fluxo (`Onboarding de Novo Colaborador`):
 2. **TI - Acesso**
 3. **Gestor - Boas-vindas**
 
-Para cadastrar um processo, utilize a interface de administração ou scripts de
-seed. Cada etapa pode estar vinculada a um cargo e setor para controle de
-responsáveis. Uma Ordem de Serviço pode selecionar um `processo_id` e avançar
-entre as etapas conforme as permissões do usuário.
-
-Os processos se integram ao módulo de Ordem de Serviço, que está em constante
-construção, além de Artigos e permissões por meio das notificações e da
-atribuição de cargos responsáveis.
+Para cadastrar um processo, habilite o blueprint e use a interface de
+administração ou os scripts de seed (`python -m seeds.seed`). Cada etapa pode
+estar vinculada a um cargo e setor para controle de responsáveis. A integração
+com Ordens de Serviço ainda não possui rotas ativas; o relacionamento permanece
+no nível de modelo para evolução futura.
 
 ## Tema, Modo Escuro e Acessibilidade
 

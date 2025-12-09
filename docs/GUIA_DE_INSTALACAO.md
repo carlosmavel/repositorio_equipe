@@ -246,7 +246,7 @@ Este comando executará todos os scripts de migração na pasta migrations/versi
 ## 12. (Opcional, mas Recomendado) Popular Dados de Exemplo
 Execute o script abaixo para criar funções, organização, usuários e artigos básicos:
 ```bash
-python seed.py
+python -m seeds.seed
 ```
 
 ## 13. Rodar a Aplicação Flask

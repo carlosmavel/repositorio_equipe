@@ -2,7 +2,7 @@
 
 Este documento descreve os passos para implantar a aplicação **OrqueTask** em um ambiente de produção. Siga a ordem dos tópicos para garantir uma instalação segura e estável.
 
-Esta versão inclui o módulo **Processos**, que define fluxos compostos por etapas e campos dinâmicos. Certifique-se de aplicar as migrações mais recentes antes de executar o sistema.
+Os modelos e seeds do módulo **Processos** já estão versionados, mas o blueprint não é registrado em `app.py`, portanto as rotas administrativas ficam desativadas por padrão. Certifique-se de aplicar as migrações mais recentes antes de executar o sistema.
 
 ## 1. Pré-requisitos
  - Python 3.11 (ou 3.10) instalado
@@ -29,7 +29,7 @@ Estes itens são os mesmos listados na seção de pré-requisitos do projeto【F
 3. **Aplique as migrações do banco** e (opcionalmente) rode os seeds:
    ```bash
    flask db upgrade
-   python seed.py  # opcional - inclui exemplo do processo de onboarding
+   python -m seeds.seed  # opcional - inclui exemplo do processo de onboarding
    ```
 
 ## 3. Configuração do `.env`
