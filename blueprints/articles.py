@@ -641,7 +641,9 @@ def pesquisar():
             )
         except Exception:
             supports_unaccent = False
-    query = Article.query.filter_by(status=ArticleStatus.APROVADO)
+    query = Article.query.filter(
+        Article.status.in_([ArticleStatus.APROVADO, ArticleStatus.EM_REVISAO])
+    )
 
     def strip_accents(value: str) -> str:
         normalized = unicodedata.normalize("NFD", value or "")
@@ -717,6 +719,11 @@ def pesquisar():
         if dt2.tzinfo is None:
             dt2 = dt2.replace(tzinfo=timezone.utc)
         art.local_aprovado = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
+        art.latest_revision_request = (
+            art.revision_requests
+            .order_by(RevisionRequest.created_at.desc(), RevisionRequest.id.desc())
+            .first()
+        )
 
     return render_template(
         'artigos/pesquisar.html',
@@ -724,4 +731,3 @@ def pesquisar():
         q=q,
         now=datetime.now(ZoneInfo("America/Sao_Paulo"))
     )
-
