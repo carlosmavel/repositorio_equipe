@@ -68,6 +68,12 @@ except ImportError:  # pragma: no cover
         user_can_approve_article,
         user_can_review_article,
     )
+
+try:
+    from .auth import send_password_email
+except ImportError:  # pragma: no cover
+    from blueprints.auth import send_password_email
+
 import json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -874,5 +880,4 @@ def admin_toggle_ativo_cargo(id):
         flash(f'Erro ao alterar status do cargo: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do cargo {cargo.id}: {e}")
     return redirect(url_for('admin_bp.admin_cargos'))
-
 
