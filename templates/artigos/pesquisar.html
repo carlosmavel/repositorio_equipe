@@ -41,17 +41,6 @@
             </small>
           </div>
 
-          {% if artigo.status.value == 'em_revisao' and artigo.latest_revision_request %}
-          <div class="mt-2 small text-muted">
-            <strong>Solicitação de revisão:</strong>
-            {{ artigo.latest_revision_request.created_at.strftime('%d/%m/%Y %H:%M') if artigo.latest_revision_request.created_at else '-' }} |
-            <strong>Solicitado por:</strong>
-            {{ artigo.latest_revision_request.user.nome_completo or artigo.latest_revision_request.user.username }} |
-            <strong>Comentário:</strong>
-            {{ artigo.latest_revision_request.comentario }}
-          </div>
-          {% endif %}
-
           {# badge usando enum ArticleStatus diretamente #}
           {% set st = artigo.status %}
           <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">
