@@ -71,6 +71,33 @@ def test_create_user(client):
         assert user.extra_celulas.filter_by(id=ids['cel']).count() == 1
 
 
+def test_create_user_sends_password_email(client, monkeypatch):
+    login_admin(client)
+    ids = client.base_ids
+    called = {}
+
+    def fake_send_password_email(user, action):
+        called['user_email'] = user.email
+        called['action'] = action
+
+    monkeypatch.setattr('blueprints.admin.send_password_email', fake_send_password_email)
+
+    response = client.post('/admin/usuarios', data={
+        'username': 'emailuser',
+        'email': 'emailuser@example.com',
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert called == {
+        'user_email': 'emailuser@example.com',
+        'action': 'create',
+    }
+
+
 def test_toggle_user_active(client):
     ids = client.base_ids
     with app.app_context():
