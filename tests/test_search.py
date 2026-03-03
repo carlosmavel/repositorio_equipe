@@ -1,7 +1,7 @@
 import pytest
 
 from app import app, db
-from core.models import Instituicao, Estabelecimento, Setor, Celula, User, Article, Attachment, ArticleStatus
+from core.models import Instituicao, Estabelecimento, Setor, Celula, User, Article, Attachment, RevisionRequest, ArticleStatus
 
 @pytest.fixture
 def client(app_ctx):
@@ -46,3 +46,31 @@ def test_exact_phrase_search(client):
     resp = client.get('/pesquisar', query_string={'q': '"Dom Casmurro"'})
     assert resp.status_code == 200
     assert b'Art' in resp.data
+
+
+def test_search_includes_articles_in_review_with_revision_request_details(client):
+    with app.app_context():
+        art_review = Article(
+            titulo='Artigo em revisão',
+            texto='Texto revisão',
+            status=ArticleStatus.EM_REVISAO,
+            user_id=client.user.id,
+            celula_id=client.user.celula_id
+        )
+        db.session.add(art_review)
+        db.session.flush()
+
+        pedido = RevisionRequest(
+            artigo_id=art_review.id,
+            user_id=client.user.id,
+            comentario='Ajustar fluxo da seção 2'
+        )
+        db.session.add(pedido)
+        db.session.commit()
+
+    login(client)
+    resp = client.get('/pesquisar', query_string={'q': 'revisão'})
+    assert resp.status_code == 200
+    assert b'Artigo em revis' in resp.data
+    assert b'Solicita' in resp.data
+    assert b'Ajustar fluxo da se' in resp.data
