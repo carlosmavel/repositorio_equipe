@@ -719,6 +719,11 @@ def pesquisar():
         if dt2.tzinfo is None:
             dt2 = dt2.replace(tzinfo=timezone.utc)
         art.local_aprovado = dt2.astimezone(ZoneInfo("America/Sao_Paulo"))
+        art.latest_revision_request = (
+            art.revision_requests
+            .order_by(RevisionRequest.created_at.desc(), RevisionRequest.id.desc())
+            .first()
+        )
 
     return render_template(
         'artigos/pesquisar.html',
