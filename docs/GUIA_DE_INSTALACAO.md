@@ -180,7 +180,7 @@ pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
 ## 10. Configurar Variáveis de Ambiente Essenciais (no Windows)
 Para que o Orquetask funcione corretamente e de forma segura, é crucial configurar algumas **variáveis de ambiente** no seu sistema Windows. Essas variáveis permitem que a aplicação acesse configurações importantes sem que elas precisem estar escritas diretamente no código.
 
-Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha os valores de `SENDGRID_API_KEY`, `EMAIL_FROM`, `SECRET_KEY` e `DATABASE_URI` com suas próprias configurações. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
+Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha os valores de `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`, `SECRET_KEY` e `DATABASE_URI` com suas próprias configurações. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
 
 * **Por que usar Variáveis de Ambiente?**
     * **Segurança:** É a forma mais segura de gerenciar informações sensíveis como chaves secretas (`SECRET_KEY`) e credenciais de banco de dados (`DATABASE_URI`), mantendo-as fora do código-fonte que pode ser versionado no Git.
@@ -279,35 +279,26 @@ Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá 
 
 ---
 
-## 15. Configurar Envio de E-mails com SendGrid (Opcional)
+## 15. Configurar Envio de E-mails com SMTP Gmail
 
-Para que o Orquetask possa enviar notificações por e-mail é possível utilizar o
-serviço **SendGrid**. Os passos abaixo cobrem a configuração mínima para testes:
+Para que o Orquetask envie notificações por e-mail, configure o SMTP do Gmail.
 
-1. **Crie e verifique um remetente (Single Sender):**
-   1. Acesse o painel do SendGrid e navegue em
-      "**Settings > Sender Authentication**".
-   2. Escolha **"Create a Single Sender"** e informe nome e endereço de e-mail
-      que deseja usar. Um e-mail de verificação será enviado para confirmar o
-      remetente.
-2. **Gere uma chave de API (API Key):**
-   1. No painel do SendGrid, vá em **"Settings > API Keys"**.
-   2. Clique em **"Create API Key"**, dê um nome para identificação e selecione
-      ao menos a permissão **"Mail Send"**.
-   3. Copie o valor da chave gerada – ela será utilizada na variável de ambiente
-      `SENDGRID_API_KEY`.
-3. **Defina as variáveis de ambiente:**
-   * `SENDGRID_API_KEY` – chave gerada no passo anterior.
-   * `EMAIL_FROM` – o endereço de e-mail verificado que será usado como
-     remetente.
-   * Você pode adicioná-las seguindo o mesmo procedimento descrito na etapa 9
-     deste guia para variáveis permanentes no Windows.
-4. **(Opcional)** Configure a autenticação de domínio no SendGrid para melhorar
-   a entrega dos e-mails. Para os primeiros testes, a autenticação de domínio
-   não é obrigatória.
+1. **Use a conta de envio padrão do projeto:**
+   * `orquetask.noreply@gmail.com`
+2. **Ative uma senha de app no Gmail:**
+   * No Google, habilite verificação em duas etapas.
+   * Gere uma **App Password** para uso SMTP (não use a senha normal da conta).
+3. **Defina as variáveis de ambiente no `.env`:**
+   * `MAIL_PROVIDER=smtp`
+   * `SMTP_HOST=smtp.gmail.com`
+   * `SMTP_PORT=587`
+   * `SMTP_USERNAME=orquetask.noreply@gmail.com`
+   * `SMTP_PASSWORD=<senha_de_app_do_gmail>`
+   * `SMTP_USE_TLS=true` (obrigatório)
+   * `MAIL_DEFAULT_SENDER=orquetask.noreply@gmail.com`
+4. **Reinicie a aplicação** após alterar as variáveis para aplicar a nova configuração.
 
-Com essas configurações, a função de envio de e-mails presente em `utils.py`
-conseguirá utilizar o serviço do SendGrid sempre que necessário.
+Com essas configurações, o módulo central de e-mail continuará atendendo os envios de convite, redefinição de senha e notificações sem alterar as regras de negócio.
 
 ## 16. Implantação em Produção
 

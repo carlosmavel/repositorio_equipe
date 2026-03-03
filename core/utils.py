@@ -443,9 +443,7 @@ def generate_random_password(length=12):
 
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-import os
+from .email_service import send_email
 
 try:
     from .enums import Permissao  # type: ignore  # pragma: no cover
@@ -469,22 +467,6 @@ def confirm_token(token: str, expiration: int = 3600):
         return serializer.loads(token, max_age=expiration)
     except Exception:
         return None
-
-def send_email(to_email: str, subject: str, html_content: str) -> None:
-    """Envia um e-mail utilizando o serviço SendGrid se configurado."""
-    api_key = os.environ.get('SENDGRID_API_KEY')
-    from_email = os.environ.get('EMAIL_FROM', 'no-reply@example.com')
-    if not api_key:
-        current_app.logger.error('SendGrid API key não configurada.', exc_info=False)
-        raise RuntimeError('SENDGRID_API_KEY ausente; envio de e-mail bloqueado.')
-    try:
-        sg = SendGridAPIClient(api_key)
-        message = Mail(from_email=from_email, to_emails=to_email,
-                        subject=subject, html_content=html_content)
-        sg.send(message)
-    except Exception as e:
-        current_app.logger.error(f'Erro ao enviar e-mail: {e}')
-
 
 def user_can_edit_article(user, article):
     """Verifica se o usuário pode editar determinado artigo."""

@@ -1,34 +1,62 @@
-import os
 from flask import Flask
-from unittest.mock import MagicMock
-
-# Set environment variables required by send_email
 
 from core.utils import send_email
 
 
-def test_send_email_constructs_and_sends_message(monkeypatch):
-    os.environ['SENDGRID_API_KEY'] = 'test_key'
-    os.environ['EMAIL_FROM'] = 'from@example.com'
+class DummySMTP:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.started_tls = False
+        self.logged = None
+        self.sent_message = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def ehlo(self):
+        return None
+
+    def starttls(self):
+        self.started_tls = True
+
+    def login(self, username, password):
+        self.logged = (username, password)
+
+    def send_message(self, message):
+        self.sent_message = message
+
+
+def test_send_email_uses_smtp_tls_and_credentials(monkeypatch):
+    monkeypatch.setenv('MAIL_PROVIDER', 'smtp')
+    monkeypatch.setenv('SMTP_HOST', 'smtp.gmail.com')
+    monkeypatch.setenv('SMTP_PORT', '587')
+    monkeypatch.setenv('SMTP_USERNAME', 'orquetask.noreply@gmail.com')
+    monkeypatch.setenv('SMTP_PASSWORD', 'app-password')
+    monkeypatch.setenv('SMTP_USE_TLS', 'true')
+    monkeypatch.setenv('MAIL_DEFAULT_SENDER', 'orquetask.noreply@gmail.com')
+
     app = Flask(__name__)
+    captured = {}
+
+    def smtp_factory(host, port):
+        client = DummySMTP(host, port)
+        captured['client'] = client
+        return client
+
+    monkeypatch.setattr('core.email_service.smtplib.SMTP', smtp_factory)
+
     with app.app_context():
-        captured = {}
-
-        class DummyMail:
-            def __init__(self, from_email, to_emails, subject, html_content):
-                captured['from_email'] = from_email
-                captured['to_emails'] = to_emails
-                captured['subject'] = subject
-                captured['html_content'] = html_content
-
-        mock_client = MagicMock()
-        monkeypatch.setattr('core.utils.Mail', DummyMail)
-        monkeypatch.setattr('core.utils.SendGridAPIClient', lambda key: mock_client)
-
         send_email('to@example.com', 'Subject', '<p>Body</p>')
 
-        assert captured['from_email'] == 'from@example.com'
-        assert captured['to_emails'] == 'to@example.com'
-        assert captured['subject'] == 'Subject'
-        assert captured['html_content'] == '<p>Body</p>'
-        mock_client.send.assert_called_once()
+    smtp_client = captured['client']
+    assert smtp_client.host == 'smtp.gmail.com'
+    assert smtp_client.port == 587
+    assert smtp_client.started_tls is True
+    assert smtp_client.logged == ('orquetask.noreply@gmail.com', 'app-password')
+    assert smtp_client.sent_message['From'] == 'orquetask.noreply@gmail.com'
+    assert smtp_client.sent_message['To'] == 'to@example.com'
+    assert smtp_client.sent_message['Subject'] == 'Subject'

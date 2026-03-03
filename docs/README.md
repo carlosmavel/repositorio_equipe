@@ -81,7 +81,7 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
 4.  **Configure o Banco de Dados PostgreSQL e Variáveis de Ambiente:**
 
     * Siga as instruções detalhadas no nosso **[Guia de Instalação e Configuração](./GUIA_DE_INSTALACAO.md)** para criar o banco de dados, o usuário do banco com as permissões corretas, e para configurar as variáveis de ambiente essenciais (`FLASK_APP`, `FLASK_DEBUG`, `SECRET_KEY`, `DATABASE_URI`).
-    * Para habilitar o envio de e-mails, consulte a seção [Configurar Envio de E-mails com SendGrid](./GUIA_DE_INSTALACAO.md#14-configurar-envio-de-e-mails-com-sendgrid-opcional) e defina `SENDGRID_API_KEY` e `EMAIL_FROM` no seu ambiente.
+    * Para habilitar o envio de e-mails, consulte a seção [Configurar Envio de E-mails com SMTP Gmail](./GUIA_DE_INSTALACAO.md#15-configurar-envio-de-e-mails-com-smtp-gmail) e defina `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS` e `MAIL_DEFAULT_SENDER` no seu ambiente.
 
 5.  **Aplique as migrações do banco de dados:**
     ```bash
