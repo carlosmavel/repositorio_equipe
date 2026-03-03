@@ -98,6 +98,33 @@ def test_create_user_sends_password_email(client, monkeypatch):
     }
 
 
+
+
+def test_create_user_integrity_error_shows_friendly_message(client, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+
+    login_admin(client)
+    ids = client.base_ids
+
+    def raise_integrity_error():
+        raise IntegrityError('INSERT', {'email': 'duplicado@example.com'}, Exception('duplicate key value violates unique constraint'))
+
+    monkeypatch.setattr('blueprints.admin.db.session.commit', raise_integrity_error)
+
+    response = client.post('/admin/usuarios', data={
+        'username': 'dupuser',
+        'email': 'duplicado@example.com',
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Não foi possível salvar o usuário. Verifique os dados informados e tente novamente.' in html
+    assert 'duplicate key value violates unique constraint' not in html
+
 def test_toggle_user_active(client):
     ids = client.base_ids
     with app.app_context():
