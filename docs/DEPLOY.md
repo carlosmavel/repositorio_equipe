@@ -33,10 +33,15 @@ Estes itens são os mesmos listados na seção de pré-requisitos do projeto【F
    ```
 
 ## 3. Configuração do `.env`
-Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `SENDGRID_API_KEY`, `EMAIL_FROM`, `SECRET_KEY` e `DATABASE_URI`. Essas variáveis são obrigatórias para a aplicação【F:docs/GUIA_DE_INSTALACAO.md†L174-L188】【F:docs/GUIA_DE_INSTALACAO.md†L188-L230】. Um exemplo de `.env` pode ser visto abaixo:
+Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`, `SECRET_KEY` e `DATABASE_URI`. Essas variáveis são obrigatórias para a aplicação【F:docs/GUIA_DE_INSTALACAO.md†L174-L188】【F:docs/GUIA_DE_INSTALACAO.md†L188-L230】. Um exemplo de `.env` pode ser visto abaixo:
 ```bash
-SENDGRID_API_KEY=seu_token_sendgrid
-EMAIL_FROM=notificacoes@exemplo.com
+MAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=orquetask.noreply@gmail.com
+SMTP_PASSWORD=<senha_de_app_do_gmail>
+SMTP_USE_TLS=true
+MAIL_DEFAULT_SENDER=orquetask.noreply@gmail.com
 SECRET_KEY=<sua_chave_aleatoria>
 DATABASE_URI=postgresql://usuario:senha@localhost:5432/repositorio_equipe_db
 ```
@@ -77,6 +82,6 @@ Agende a execução diária desse comando e garanta cópias externas em local se
 - Verifique se o serviço PostgreSQL está ativo e se a `DATABASE_URI` contém usuário, senha, host e porta corretos【F:docs/GUIA_DE_INSTALACAO.md†L268-L274】.
 
 **Q3: Falha ao enviar e-mails.**
-- Confira se `SENDGRID_API_KEY` e `EMAIL_FROM` estão preenchidos e válidos. Consulte o guia de instalação para detalhes de configuração do SendGrid【F:docs/GUIA_DE_INSTALACAO.md†L268-L320】.
+- Confira se `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS` e `MAIL_DEFAULT_SENDER` estão preenchidos corretamente. Consulte o guia de instalação para detalhes da configuração SMTP Gmail.
 
 Com estas orientações, a equipe de infraestrutura poderá implantar o OrqueTask em produção com segurança.

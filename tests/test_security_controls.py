@@ -52,9 +52,13 @@ def test_secure_cookie_flags_present(app_ctx):
     assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
 
 
-def test_send_email_without_key_raises(monkeypatch):
-    monkeypatch.delenv("SENDGRID_API_KEY", raising=False)
-    monkeypatch.setenv("EMAIL_FROM", "from@example.com")
+def test_send_email_without_smtp_credentials_raises(monkeypatch):
+    monkeypatch.setenv("MAIL_PROVIDER", "smtp")
+    monkeypatch.setenv("SMTP_HOST", "smtp.gmail.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_USE_TLS", "true")
+    monkeypatch.delenv("SMTP_USERNAME", raising=False)
+    monkeypatch.delenv("SMTP_PASSWORD", raising=False)
     local_app = app
     with local_app.app_context():
         with pytest.raises(RuntimeError):
