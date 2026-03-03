@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 try:
     from ..core.database import db
@@ -524,9 +525,13 @@ def admin_usuarios():
                 try:
                     db.session.commit()
                     app.logger.info(f"Usuario {action_msg}: id={usr.id}")
+                except IntegrityError as e:
+                    db.session.rollback()
+                    flash('Não foi possível salvar o usuário. Verifique os dados informados e tente novamente.', 'danger')
+                    app.logger.error(f"Erro de integridade ao salvar usuário: {e}")
                 except Exception as e:
                     db.session.rollback()
-                    flash(f'Erro ao salvar usuário: {str(e)}', 'danger')
+                    flash('Ocorreu um erro ao salvar o usuário. Tente novamente em instantes.', 'danger')
                     app.logger.error(f"Erro DB User: {e}")
                 else:
                     if not id_para_atualizar:
@@ -880,4 +885,3 @@ def admin_toggle_ativo_cargo(id):
         flash(f'Erro ao alterar status do cargo: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do cargo {cargo.id}: {e}")
     return redirect(url_for('admin_bp.admin_cargos'))
-
