@@ -48,7 +48,7 @@ def test_exact_phrase_search(client):
     assert b'Art' in resp.data
 
 
-def test_search_includes_articles_in_review_with_revision_request_details(client):
+def test_search_includes_articles_in_review_without_revision_request_details(client):
     with app.app_context():
         art_review = Article(
             titulo='Artigo em revisão',
@@ -72,5 +72,5 @@ def test_search_includes_articles_in_review_with_revision_request_details(client
     resp = client.get('/pesquisar', query_string={'q': 'revisão'})
     assert resp.status_code == 200
     assert b'Artigo em revis' in resp.data
-    assert b'Solicita' in resp.data
-    assert b'Ajustar fluxo da se' in resp.data
+    assert b'Solicita' not in resp.data
+    assert b'Ajustar fluxo da se' not in resp.data
