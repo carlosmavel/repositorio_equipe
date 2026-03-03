@@ -641,7 +641,9 @@ def pesquisar():
             )
         except Exception:
             supports_unaccent = False
-    query = Article.query.filter_by(status=ArticleStatus.APROVADO)
+    query = Article.query.filter(
+        Article.status.in_([ArticleStatus.APROVADO, ArticleStatus.EM_REVISAO])
+    )
 
     def strip_accents(value: str) -> str:
         normalized = unicodedata.normalize("NFD", value or "")
@@ -724,4 +726,3 @@ def pesquisar():
         q=q,
         now=datetime.now(ZoneInfo("America/Sao_Paulo"))
     )
-

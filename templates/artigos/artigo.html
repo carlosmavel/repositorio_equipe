@@ -114,12 +114,15 @@
         <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
         <ul class="list-group mb-3">
           {% for rr in artigo.revision_requests|sort(attribute='created_at') %}
-          {% set nome = rr.user.nome_completo if rr.user.nome_completo else rr.user.username %}
-          {% set p = nome.split() %}
           <li class="list-group-item">
-            <strong>{{ p[0] }} {{ p[-1] }}</strong>
+            <strong>{{ rr.user.nome_completo or 'Nome não informado' }}</strong>
             <small class="text-muted">
-              {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
+              {% if rr.user.cargo %}
+              ({{ rr.user.cargo.nome }})
+              {% else %}
+              (Cargo não informado)
+              {% endif %}
+              • {{ rr.created_at.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m %H:%M') }}
             </small><br>
             {{ rr.comentario }}
           </li>
