@@ -181,6 +181,24 @@ for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROFILE_PICS_FOLDER'] = PROFILE_PICS_FOLDER
 
+
+def _is_auth_local_flash_path(path: str) -> bool:
+    if not path:
+        return False
+    return (
+        path in {'/login', '/esqueci-senha'}
+        or path.startswith('/reset-senha/')
+        or path.startswith('/criar-senha/')
+    )
+
+
+@app.context_processor
+def inject_layout_flags():
+    current_path = request.path if request else ''
+    return {
+        'is_auth_local_flash_page': _is_auth_local_flash_path(current_path),
+    }
+
 def password_meets_requirements(password: str) -> bool:
     return (
         len(password) >= 8

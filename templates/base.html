@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br" {% if session.get('user_id') and request.endpoint != 'login' %}class="has-sidebar-layout"{% endif %}>
+<html lang="pt-br" {% if session.get('user_id') and not is_auth_local_flash_page %}class="has-sidebar-layout"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> {# Importante para responsividade #}
@@ -120,10 +120,10 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body class="{% if session.get('user_id') and request.endpoint != 'login' %}layout-active-nav-sidebar{% endif %}" {% block body_attrs %}data-current-user="{{ session.get('username', '') }}"{% endblock %}>
+<body class="{% if session.get('user_id') and not is_auth_local_flash_page %}layout-active-nav-sidebar{% endif %}" {% block body_attrs %}data-current-user="{{ session.get('username', '') }}"{% endblock %}>
 
     {# Navbar e Sidebar só são renderizadas se o usuário estiver logado e não for a página de login #}
-    {% if session.get('user_id') and request.endpoint != 'login' %}
+    {% if session.get('user_id') and not is_auth_local_flash_page %}
         
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
             <div class="container-fluid">
@@ -321,14 +321,16 @@
                 </ul>
             </div>
         </div>
-    {% endif %} {# Fim do if session.get('user_id') and request.endpoint != 'login' #}
+    {% endif %} {# Fim do if de layout logado em páginas não-auth #}
 
     <div class="main-page-content-wrapper">
-        {# Flash messages movidas para cá #}
+        {% if not is_auth_local_flash_page %}
+        {# Flash messages globais exibidas fora do card apenas para páginas sem flash local #}
         <div id="flash-container" class="container-fluid">
              {% include 'partials/_flash_messages.html' ignore missing %}
         </div>
-        
+        {% endif %}
+
         {% block content %}{% endblock content %}
     </div>
 

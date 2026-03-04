@@ -43,3 +43,27 @@ def test_reset_password_token(client):
     with app.app_context():
         user = User.query.filter_by(username='temp').first()
         assert user.check_password('NovaPass1!')
+
+
+def test_invalid_reset_link_shows_single_flash_message(client):
+    response = client.get('/reset-senha/token-invalido', follow_redirects=True)
+    assert response.status_code == 200
+
+    html = response.get_data(as_text=True)
+    assert html.count('Link inválido ou expirado.') == 1
+
+
+def test_invalid_reset_link_does_not_render_logged_layout(client):
+    with app.app_context():
+        user = User.query.filter_by(username='temp').first()
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = user.id
+        sess['username'] = user.username
+
+    response = client.get('/reset-senha/token-invalido', follow_redirects=True)
+    assert response.status_code == 200
+
+    html = response.get_data(as_text=True)
+    assert 'class="has-sidebar-layout"' not in html
+    assert 'id="globalSidebarOffcanvas"' not in html
