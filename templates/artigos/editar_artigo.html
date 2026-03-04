@@ -99,7 +99,8 @@
             {% set ext = f.split('.')[-1].lower() %}
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card" data-filename="{{ f }}">
               <div class="card h-100 shadow-sm">
-                <div class="attachment-preview">
+                <div class="attachment-preview" title="{{ original_name }}">
+                  <span class="attachment-filename-hover" aria-hidden="true"></span>
                   {% if f.endswith(('.png','.jpg','.jpeg','.gif','.webp')) %}
                   <img src="{{ url_for('uploaded_file', filename=f) }}" class="card-img-top attachment-thumb"
                     alt="{{ original_name }}">
@@ -120,11 +121,9 @@
                   <button type="button" class="attachment-delete-btn remove-existing" aria-label="Remover">
                     <i class="bi bi-trash"></i>
                   </button>
-                  <span class="attachment-ext text-uppercase">{{ ext }}</span>
-                </div>
+                                  </div>
                 <div class="card-body p-2 attachment-meta">
-                  <p class="card-text text-truncate mb-1 attachment-name" title="{{ original_name }}">{{ original_name }}</p>
-                  <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span><span class="attachment-size">Tamanho indisponível</span></div>
+                                    <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
                 </div>
               </div>
             </div>
@@ -443,22 +442,19 @@
         const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
         const col = document.createElement('div');
         col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 attachment-card mx-auto';
-        const ext = (file.name.split('.').pop() || '').toUpperCase();
-        const sizeInKb = (file.size / 1024).toFixed(1);
         col.innerHTML = `
         <div class="card h-100 shadow-sm">
-          <div class="attachment-preview">
+          <div class="attachment-preview" title="${displayName}">
+                  <span class="attachment-filename-hover" aria-hidden="true"></span>
             ${file.type.startsWith('image/')
               ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
               : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
             <button type="button" class="attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
               <i class="bi bi-trash"></i>
             </button>
-            <span class="attachment-ext text-uppercase">${ext}</span>
-          </div>
+                      </div>
           <div class="card-body p-2 attachment-meta">
-            <p class="card-text text-truncate mb-1 attachment-name" title="${displayName}">${displayName}</p>
-            <div class="attachment-details"><span class="attachment-kind">${file.type.startsWith('image/') ? 'Imagem' : 'Documento'}</span><span class="attachment-size">${sizeInKb} KB</span></div>
+                        <div class="attachment-details"><span class="attachment-kind">${file.type.startsWith('image/') ? 'Imagem' : 'Documento'}</span></div>
           </div>
         </div>`;
         preview.appendChild(col);

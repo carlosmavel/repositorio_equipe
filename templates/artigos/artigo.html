@@ -54,7 +54,8 @@
               <div class="card h-100 shadow-sm position-relative">
                 <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
                   target="_blank" title="{{ original_name }}">
-                  <div class="attachment-preview">
+                  <div class="attachment-preview" title="{{ original_name }}">
+                  <span class="attachment-filename-hover" aria-hidden="true"></span>
                     {% if ext in ['jpg','jpeg','png','gif','webp'] %}
                     <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top attachment-thumb"
                       alt="{{ original_name }}">
@@ -72,13 +73,9 @@
                       {% endif %}
                     </div>
                     {% endif %}
-                    <span class="attachment-ext text-uppercase">{{ ext }}</span>
-                  </div>
+                                      </div>
                   <div class="card-body p-2 attachment-meta">
-                    <p class="card-text text-truncate mb-1 attachment-name" title="{{ original_name }}">
-                      {{ original_name }}
-                    </p>
-                    <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span><span class="attachment-size">Tamanho indisponível</span></div>
+                                        <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
                   </div>
                 </a>
                 {% if ext == 'pdf' and not att.content %}

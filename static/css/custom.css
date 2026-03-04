@@ -127,15 +127,15 @@
 }
 
 .attachment-card {
-  max-width: 250px;
+  max-width: 210px;
 }
 
 .attachment-card .card {
   border: 1px solid #d8dee6;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   overflow: hidden;
   background-color: var(--bs-body-bg);
-  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
@@ -146,9 +146,12 @@
 
 .attachment-preview {
   position: relative;
-  height: 150px;
+  height: 120px;
   background: linear-gradient(135deg, var(--bg-muted) 0%, var(--bg-default) 100%);
   overflow: hidden;
+  border: 1px solid #d8dee6;
+  border-radius: 0.85rem;
+  margin: 0.45rem 0.45rem 0;
 }
 
 .attachment-thumb-wrapper {
@@ -166,8 +169,8 @@
 }
 
 .attachment-icon-vertical {
-  max-height: 76px;
-  max-width: 76px;
+  max-height: 68px;
+  max-width: 68px;
   width: auto;
   object-fit: contain;
 }
@@ -179,48 +182,44 @@
 }
 
 .attachment-meta {
-  min-height: 72px;
+  min-height: 56px;
 }
 
 .attachment-details {
-  font-size: 0.74rem;
-  color: var(--bs-secondary-color);
-}
-
-.attachment-ext {
-  position: absolute;
-  left: 0.6rem;
-  bottom: 0.6rem;
-  margin: 0;
-  padding: 0.2rem 0.55rem;
+  display: inline-flex;
+  margin-top: 0.1rem;
+  padding: 0.08rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #fff;
-  background: rgba(15, 23, 42, 0.78);
-  backdrop-filter: blur(1.5px);
+  font-size: 0.76rem;
+  color: var(--bs-secondary-color);
+  background: #eef1f4;
 }
 
 .attachment-delete-btn {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 30px;
-  height: 30px;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 26px;
+  height: 26px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.75rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.92);
-  color: var(--bs-danger);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background-color: #cf3d2e;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   z-index: 3;
 }
 
 .attachment-delete-btn i {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
+}
+
+.attachment-filename-hover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 /* Destaca perguntas já utilizadas como destino em ramificações */
 .branch-select option[data-used="1"] {
