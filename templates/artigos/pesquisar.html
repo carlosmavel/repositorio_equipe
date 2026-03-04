@@ -8,9 +8,27 @@
     <div class="col-md-10 mx-auto">
       <div class="card shadow-sm mb-4">
         <div class="card-body">
-          <form method="get" action="{{ url_for('pesquisar') }}" class="d-flex">
-            <input name="q" value="{{ q }}" class="form-control me-2" placeholder="Buscar por título ou texto…">
+          <form method="get" action="{{ url_for('pesquisar') }}" class="row g-2">
+            <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="Buscar por título ou texto…"></div>
+            <div class="col-md-3">
+              <select name="tipo_id" class="form-select">
+                <option value="">Todos os tipos</option>
+                {% for tipo in tipos_artigo %}
+                <option value="{{ tipo.id }}" {% if tipo_id == tipo.id %}selected{% endif %}>{{ tipo.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select name="area_sistema_id" class="form-select">
+                <option value="">Todas áreas/sistemas</option>
+                {% for area in areas_sistema %}
+                <option value="{{ area.id }}" {% if area_sistema_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-1 d-grid">
             <button class="btn btn-outline-primary">Pesquisar</button>
+            </div>
           </form>
         </div>
       </div>
@@ -38,6 +56,8 @@
               {{ artigo.author.nome_completo or artigo.author.username }} |
               <strong>Setor:</strong>
               {{ artigo.author.setor.nome }}
+              {% if artigo.tipo %}| <strong>Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
+              {% if artigo.area_sistema %}| <strong>Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
             </small>
           </div>
 

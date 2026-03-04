@@ -239,6 +239,8 @@
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_setores') }}"><i class="bi bi-diagram-3-fill me-2"></i> Setores</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_celulas') }}"><i class="bi bi-grid-1x2-fill me-2"></i> Células</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas_sistemas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas/Sistemas</a></li>
                                             </ul>
                                         </div>
                                     </li>
@@ -306,6 +308,12 @@
                                 {% endif %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'meus_artigos' in request.endpoint else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'novo_artigo' in request.endpoint else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
+                                {% if current_user.has_permissao('admin') or current_user.has_permissao('artigo_tipo_gerenciar') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
+                                {% endif %}
+                                {% if current_user.has_permissao('admin') or current_user.has_permissao('artigo_area_gerenciar') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas_sistemas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas/Sistemas</a></li>
+                                {% endif %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'pesquisar' in request.endpoint else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
                             </ul>
                         </div>

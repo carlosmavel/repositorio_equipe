@@ -21,6 +21,8 @@ try:
         Setor,
         Cargo,
         Funcao,
+        ArtigoTipo,
+        ArtigoAreaSistema,
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -36,6 +38,8 @@ except ImportError:  # pragma: no cover
         Setor,
         Cargo,
         Funcao,
+        ArtigoTipo,
+        ArtigoAreaSistema,
     )
 
 try:
@@ -84,6 +88,15 @@ import uuid
 import os
 
 admin_bp = Blueprint('admin_bp', __name__)
+
+
+def _can_manage_taxonomy(user, permission_code: str) -> bool:
+    return bool(user and (user.has_permissao('admin') or user.has_permissao(permission_code)))
+
+
+def _current_user():
+    uid = session.get('user_id')
+    return User.query.get(uid) if uid else None
 
 # ROTAS DE ADMINISTRAÇÃO (NOVA SEÇÃO - ADICIONE AS ROTAS DO ADMIN AQUI)
 # -------------------------------------------------------------------------
@@ -885,3 +898,99 @@ def admin_toggle_ativo_cargo(id):
         flash(f'Erro ao alterar status do cargo: {str(e)}', 'danger')
         app.logger.error(f"Erro ao alterar status do cargo {cargo.id}: {e}")
     return redirect(url_for('admin_bp.admin_cargos'))
+
+
+@admin_bp.route('/admin/artigos/tipos', methods=['GET', 'POST'])
+def admin_artigo_tipos():
+    user = _current_user()
+    if not _can_manage_taxonomy(user, 'artigo_tipo_gerenciar'):
+        flash('Permissão negada.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    tipo_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            tipo_para_editar = ArtigoTipo.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome do tipo é obrigatório.', 'danger')
+        else:
+            query_nome = ArtigoTipo.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome = query_nome.filter(ArtigoTipo.id != int(id_para_atualizar))
+            if query_nome.first():
+                flash(f'O tipo "{nome}" já existe.', 'danger')
+            else:
+                if id_para_atualizar:
+                    tipo = ArtigoTipo.query.get_or_404(id_para_atualizar)
+                    tipo.nome = nome
+                    tipo.descricao = descricao
+                    tipo.ativo = ativo
+                else:
+                    tipo = ArtigoTipo(nome=nome, descricao=descricao, ativo=ativo)
+                    db.session.add(tipo)
+                try:
+                    db.session.commit()
+                    flash('Tipo salvo com sucesso!', 'success')
+                    return redirect(url_for('admin_bp.admin_artigo_tipos'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar tipo: {str(e)}', 'danger')
+
+    tipos = ArtigoTipo.query.order_by(ArtigoTipo.nome).all()
+    return render_template('admin/artigo_tipos.html', tipos=tipos, tipo_editar=tipo_para_editar)
+
+
+@admin_bp.route('/admin/artigos/areas-sistemas', methods=['GET', 'POST'])
+def admin_artigo_areas_sistemas():
+    user = _current_user()
+    if not _can_manage_taxonomy(user, 'artigo_area_gerenciar'):
+        flash('Permissão negada.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    area_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            area_para_editar = ArtigoAreaSistema.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome da área/sistema é obrigatório.', 'danger')
+        else:
+            query_nome = ArtigoAreaSistema.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome = query_nome.filter(ArtigoAreaSistema.id != int(id_para_atualizar))
+            if query_nome.first():
+                flash(f'A área/sistema "{nome}" já existe.', 'danger')
+            else:
+                if id_para_atualizar:
+                    area = ArtigoAreaSistema.query.get_or_404(id_para_atualizar)
+                    area.nome = nome
+                    area.descricao = descricao
+                    area.ativo = ativo
+                else:
+                    area = ArtigoAreaSistema(nome=nome, descricao=descricao, ativo=ativo)
+                    db.session.add(area)
+                try:
+                    db.session.commit()
+                    flash('Área/Sistema salvo com sucesso!', 'success')
+                    return redirect(url_for('admin_bp.admin_artigo_areas_sistemas'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar área/sistema: {str(e)}', 'danger')
+
+    areas = ArtigoAreaSistema.query.order_by(ArtigoAreaSistema.nome).all()
+    return render_template('admin/artigo_areas_sistemas.html', areas=areas, area_editar=area_para_editar)

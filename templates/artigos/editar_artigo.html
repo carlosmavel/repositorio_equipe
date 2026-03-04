@@ -35,6 +35,27 @@
             <input name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
           </div>
 
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tipo de artigo</label>
+              <select name="tipo_id" class="form-select">
+                <option value="">Selecione</option>
+                {% for tipo in tipos_artigo %}
+                <option value="{{ tipo.id }}" {% if artigo.tipo_id == tipo.id %}selected{% endif %}>{{ tipo.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Área/Sistema</label>
+              <select name="area_sistema_id" class="form-select">
+                <option value="">Selecione</option>
+                {% for area in areas_sistema %}
+                <option value="{{ area.id }}" {% if artigo.area_sistema_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
           <div class="mb-3">
             <label class="form-label">Texto</label>
             <!-- Quill Editor -->
