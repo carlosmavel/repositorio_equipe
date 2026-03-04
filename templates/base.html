@@ -327,7 +327,8 @@
     {% endif %} {# Fim do if de layout logado em páginas não-auth #}
 
     <div class="main-page-content-wrapper">
-        {% if not is_auth_local_flash_page %}
+        {% set auth_local_flash_endpoints = ['login', 'forgot_password', 'reset_password_token', 'set_password_token'] %}
+        {% if request.endpoint not in auth_local_flash_endpoints %}
         {# Flash messages globais exibidas fora do card apenas para páginas sem flash local #}
         <div id="flash-container" class="container-fluid">
              {% include 'partials/_flash_messages.html' ignore missing %}
