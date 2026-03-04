@@ -27,6 +27,8 @@
         <p class="text-muted">
           Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }} |
           Visibilidade: {{ artigo.visibility.label }}
+          {% if artigo.tipo %}| Tipo: {{ artigo.tipo.nome }}{% endif %}
+          {% if artigo.area_sistema %}| Área/Sistema: {{ artigo.area_sistema.nome }}{% endif %}
         </p>
         <form method="POST" enctype="multipart/form-data">
           <input type="hidden" name="progress_id" id="progress-id">
@@ -93,9 +95,7 @@
             {% for f in arquivos %}
             {% set original_name = f.split('_', 1)[1] if '_' in f else f %}
             <div class="col-6 col-md-3 attachment-card" data-filename="{{ f }}">
-              <div class="card h-100 position-relative shadow-sm">
-                <button type="button" class="btn-close remove-existing position-absolute top-0 end-0 m-1 p-1"
-                  style="z-index:10; background-color: rgba(255,255,255,0.7);" aria-label="Remover"></button>
+              <div class="card h-100 shadow-sm">
                 {% if f.endswith(('.png','.jpg','.jpeg','.gif','.webp')) %}
                 <img src="{{ url_for('uploaded_file', filename=f) }}" class="card-img-top attachment-thumb"
                   alt="{{ original_name }}">
@@ -114,9 +114,12 @@
                   {% endif %}
                 </div>
                 {% endif %}
-                <div class="card-body p-2">
+                <div class="card-body p-2 attachment-meta">
                   <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">{{ original_name }}</p>
                 </div>
+                <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-existing" aria-label="Remover">
+                  <i class="bi bi-trash"></i>
+                </button>
               </div>
             </div>
             {% endfor %}
@@ -383,8 +386,9 @@
   const deleteFields = document.getElementById('delete-fields');
   if (existingContainer && deleteFields) { // Verifica se os elementos existem
     existingContainer.addEventListener('click', e => {
-      if (e.target.classList.contains('remove-existing')) {
-        const wrapper = e.target.closest('[data-filename]');
+      const removeButton = e.target.closest('.remove-existing');
+      if (removeButton) {
+        const wrapper = removeButton.closest('[data-filename]');
         if (wrapper) { // Verifica se o wrapper foi encontrado
           const filename = wrapper.getAttribute('data-filename');
           const input = document.createElement('input');
@@ -432,16 +436,18 @@
         const url = URL.createObjectURL(file);
         const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
         const col = document.createElement('div');
-        col.className = 'col-6 col-md-3 attachment-card position-relative';
+        col.className = 'col-6 col-md-3 attachment-card';
         col.innerHTML = `
-        <div class="card h-100 shadow-sm position-relative">
+        <div class="card h-100 shadow-sm">
           ${file.type.startsWith('image/')
             ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
             : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
-          <div class="card-body p-2">
+          <div class="card-body p-2 attachment-meta">
             <p class="card-text text-truncate mb-0 attachment-name" title="${displayName}">${displayName}</p>
           </div>
-          <button type="button" class="btn-close remove-btn position-absolute top-0 end-0 m-2" data-index="${idx}" aria-label="Remover"></button>
+          <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
+            <i class="bi bi-trash"></i>
+          </button>
         </div>`;
         preview.appendChild(col);
       });
@@ -450,8 +456,9 @@
     });
 
     preview.addEventListener('click', e => {
-      if (!e.target.classList.contains('remove-btn')) return;
-      const idx = Number(e.target.dataset.index);
+      const removeButton = e.target.closest('.remove-btn');
+      if (!removeButton) return;
+      const idx = Number(removeButton.dataset.index);
       dt.items.remove(idx);
       inputFile.files = dt.files;
       inputFile.dispatchEvent(new Event('change')); // Força o re-render do preview

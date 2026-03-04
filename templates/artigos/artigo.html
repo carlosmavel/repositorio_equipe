@@ -20,6 +20,8 @@
               {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
               <strong class="ms-2">Visibilidade:</strong>
               {{ artigo.visibility.label }}
+              {% if artigo.tipo %}<strong class="ms-2">Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
+              {% if artigo.area_sistema %}<strong class="ms-2">Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
             </p>
           </div>
           {% set st = artigo.status %}
@@ -69,7 +71,7 @@
                     {% endif %}
                   </div>
                   {% endif %}
-                  <div class="card-body p-2">
+                  <div class="card-body p-2 attachment-meta">
                     <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">
                       {{ original_name }}
                     </p>

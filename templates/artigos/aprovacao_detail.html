@@ -13,6 +13,8 @@
           Autor: {{ artigo.author.nome_completo or artigo.author.username }} |
           Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }} |
           Visibilidade: {{ artigo.visibility.label }}
+          {% if artigo.tipo %}| Tipo: {{ artigo.tipo.nome }}{% endif %}
+          {% if artigo.area_sistema %}| Área/Sistema: {{ artigo.area_sistema.nome }}{% endif %}
         </p>
         <hr>
         {# escapa tudo que não for texto e só depois converte quebras em <br> #}
@@ -45,7 +47,7 @@
                   {% endif %}
                 </div>
                 {% endif %}
-                <div class="card-body p-2">
+                <div class="card-body p-2 attachment-meta">
                   <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">
                     {{ original_name }}
                   </p>
