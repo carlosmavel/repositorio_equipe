@@ -97,7 +97,7 @@
             {% for f in arquivos %}
             {% set original_name = f.split('_', 1)[1] if '_' in f else f %}
             {% set ext = f.split('.')[-1].lower() %}
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card mx-auto" data-filename="{{ f }}">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card" data-filename="{{ f }}">
               <div class="card h-100 shadow-sm">
                 <div class="attachment-preview">
                   {% if f.endswith(('.png','.jpg','.jpeg','.gif','.webp')) %}

@@ -146,10 +146,8 @@
 
 .attachment-preview {
   position: relative;
-  height: 170px;
-  margin: 0.55rem;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #f3f5f8 0%, #eef1f5 100%);
+  height: 150px;
+  background: linear-gradient(135deg, var(--bg-muted) 0%, var(--bg-default) 100%);
   overflow: hidden;
 }
 
@@ -168,43 +166,25 @@
 }
 
 .attachment-icon-vertical {
-  max-height: 90px;
-  max-width: 90px;
+  max-height: 76px;
+  max-width: 76px;
   width: auto;
   object-fit: contain;
 }
 
 .attachment-name {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.25;
   font-weight: 600;
 }
 
 .attachment-meta {
-  min-height: 90px;
-  padding: 0 .85rem .9rem !important;
+  min-height: 72px;
 }
 
 .attachment-details {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   color: var(--bs-secondary-color);
-}
-
-.attachment-kind {
-  display: inline-block;
-  padding: 0.16rem 0.6rem;
-  margin-bottom: 0.38rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #607080;
-  background-color: #eef1f4;
-}
-
-.attachment-size {
-  display: block;
-  font-size: 0.8rem;
-  letter-spacing: 0.01em;
 }
 
 .attachment-ext {
@@ -212,35 +192,31 @@
   left: 0.6rem;
   bottom: 0.6rem;
   margin: 0;
-  padding: 0.22rem 0.62rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #526173;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 6px rgba(16, 24, 40, 0.15);
+  color: #fff;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(1.5px);
 }
 
 .attachment-delete-btn {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 42px;
-  height: 42px;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 30px;
+  height: 30px;
   border: 0;
-  border-radius: 0.95rem;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #df4a35 0%, #c93929 100%);
-  color: #fff;
-  box-shadow: 0 7px 16px rgba(185, 49, 34, 0.35);
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--bs-danger);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 3;
-}
-
-.attachment-delete-btn:hover {
-  filter: brightness(1.04);
 }
 
 .attachment-delete-btn i {
