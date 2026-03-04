@@ -352,19 +352,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(file);
         const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
         const col = document.createElement('div');
-        col.className = 'col-6 col-md-3 attachment-card';
+        col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 attachment-card';
+        const ext = (file.name.split('.').pop() || '').toUpperCase();
+        const sizeInKb = (file.size / 1024).toFixed(1);
         col.innerHTML = `
           <div class="card h-100 shadow-sm">
-            ${file.type.startsWith('image/')
-              ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
-              : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
-            <div class="card-body p-2 attachment-meta">
-              <p class="card-text text-truncate mb-0 attachment-name" title="${displayName}">${displayName}</p>
-              <span class="attachment-ext text-uppercase">${file.name.split('.').pop()}</span>
+            <div class="attachment-preview">
+              ${file.type.startsWith('image/')
+                ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
+                : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
+              <button type="button" class="attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+              <span class="attachment-ext text-uppercase">${ext}</span>
             </div>
-            <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
-              <i class="bi bi-trash"></i>
-            </button>
+            <div class="card-body p-2 attachment-meta">
+              <p class="card-text text-truncate mb-1 attachment-name" title="${displayName}">${displayName}</p>
+              <p class="mb-0 attachment-details text-uppercase">${ext} • ${sizeInKb} KB</p>
+            </div>
           </div>`;
         preview.appendChild(col);
       });
