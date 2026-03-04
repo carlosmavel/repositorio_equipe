@@ -62,6 +62,10 @@ class Permissao(Enum):
     ARTIGO_ASSUMIR_REVISAO_INSTITUICAO = "artigo_assumir_revisao_instituicao"
     ARTIGO_ASSUMIR_REVISAO_TODAS = "artigo_assumir_revisao_todas"
 
+    # --- taxonomia de artigos ---
+    ARTIGO_TIPO_GERENCIAR = "artigo_tipo_gerenciar"
+    ARTIGO_AREA_GERENCIAR = "artigo_area_gerenciar"
+
 
 class OSStatus(Enum):
     """Status possíveis de uma Ordem de Serviço."""
@@ -113,4 +117,3 @@ class OSPrioridade(Enum):
     BAIXA = ("baixa", "Baixa")
     MEDIA = ("media", "Média")
     ALTA = ("alta", "Alta")
-

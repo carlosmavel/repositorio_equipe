@@ -8,9 +8,9 @@ except ImportError:
     from core.database import db
 
 try:
-    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest
+    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoAreaSistema
 except ImportError:
-    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest
+    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoAreaSistema
 
 try:
     from ..core.enums import ArticleStatus, ArticleVisibility, Permissao
@@ -95,6 +95,8 @@ def novo_artigo():
         texto_raw   = request.form['texto']
         texto_limpo = sanitize_html(texto_raw).strip()
         files       = request.files.getlist('files')
+        tipo_id = request.form.get('tipo_id', type=int)
+        area_sistema_id = request.form.get('area_sistema_id', type=int)
 
         # Campos obrigatórios
         if not titulo or not texto_limpo:
@@ -149,6 +151,8 @@ def novo_artigo():
             estabelecimento_id = est_id,
             setor_id = setor_vis_id,
             vis_celula_id = vis_cel_id,
+            tipo_id = tipo_id,
+            area_sistema_id = area_sistema_id,
             arquivos   = None,
             created_at = datetime.now(timezone.utc),
             updated_at = datetime.now(timezone.utc)
@@ -211,7 +215,9 @@ def novo_artigo():
         return redirect(url_for('meus_artigos'))
 
     # GET → exibe formulário
-    return render_template('artigos/novo_artigo.html')
+    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
+    areas_sistema = ArtigoAreaSistema.query.filter_by(ativo=True).order_by(ArtigoAreaSistema.nome).all()
+    return render_template('artigos/novo_artigo.html', tipos_artigo=tipos_artigo, areas_sistema=areas_sistema)
 
 @articles_bp.route('/meus-artigos', endpoint='meus_artigos')
 def meus_artigos():
@@ -328,6 +334,8 @@ def editar_artigo(artigo_id):
 
         artigo.titulo = titulo
         artigo.texto  = texto
+        artigo.tipo_id = request.form.get('tipo_id', type=int)
+        artigo.area_sistema_id = request.form.get('area_sistema_id', type=int)
         artigo.updated_at = datetime.now(timezone.utc)
 
         # visibilidade
@@ -419,7 +427,9 @@ def editar_artigo(artigo_id):
 
     # GET
     arquivos = json.loads(artigo.arquivos or "[]")
-    return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos)
+    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
+    areas_sistema = ArtigoAreaSistema.query.filter_by(ativo=True).order_by(ArtigoAreaSistema.nome).all()
+    return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos, tipos_artigo=tipos_artigo, areas_sistema=areas_sistema)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
 def aprovacao():
@@ -630,6 +640,8 @@ def pesquisar():
         return redirect(url_for('login'))
 
     q = request.args.get('q','').strip()
+    tipo_id = request.args.get('tipo_id', type=int)
+    area_sistema_id = request.args.get('area_sistema_id', type=int)
     bind = db.session.get_bind()
     supports_unaccent = False
     if bind and bind.dialect.name == "postgresql":
@@ -687,6 +699,11 @@ def pesquisar():
                     )
                 )
 
+    if tipo_id:
+        query = query.filter(Article.tipo_id == tipo_id)
+    if area_sistema_id:
+        query = query.filter(Article.area_sistema_id == area_sistema_id)
+
     artigos = query.order_by(Article.created_at.desc()).all()
 
     if q and not supports_unaccent:
@@ -729,5 +746,9 @@ def pesquisar():
         'artigos/pesquisar.html',
         artigos=artigos,
         q=q,
+        tipo_id=tipo_id,
+        area_sistema_id=area_sistema_id,
+        tipos_artigo=ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all(),
+        areas_sistema=ArtigoAreaSistema.query.filter_by(ativo=True).order_by(ArtigoAreaSistema.nome).all(),
         now=datetime.now(ZoneInfo("America/Sao_Paulo"))
     )

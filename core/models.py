@@ -370,6 +370,8 @@ class Article(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
     review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão
+    tipo_id = db.Column(db.Integer, db.ForeignKey('artigo_tipo.id'), nullable=True)
+    area_sistema_id = db.Column(db.Integer, db.ForeignKey('artigo_area_sistema.id'), nullable=True)
     
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     author = db.relationship('User', back_populates='articles')
@@ -386,6 +388,8 @@ class Article(db.Model):
     revision_requests = db.relationship('RevisionRequest', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='artigo', lazy='dynamic', cascade='all, delete-orphan')
+    tipo = db.relationship('ArtigoTipo')
+    area_sistema = db.relationship('ArtigoAreaSistema')
 
     def __repr__(self):
         return f"<Article {self.titulo}>"
@@ -569,6 +573,30 @@ class Sistema(db.Model):
 
     def __repr__(self):  # pragma: no cover
         return f"<Sistema {self.nome}>"
+
+
+class ArtigoTipo(db.Model):
+    __tablename__ = 'artigo_tipo'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), unique=True, nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+
+    def __repr__(self):  # pragma: no cover
+        return f"<ArtigoTipo {self.nome}>"
+
+
+class ArtigoAreaSistema(db.Model):
+    __tablename__ = 'artigo_area_sistema'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(150), unique=True, nullable=False)
+    descricao = db.Column(db.Text, nullable=True)
+    ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+
+    def __repr__(self):  # pragma: no cover
+        return f"<ArtigoAreaSistema {self.nome}>"
 
 
 ordem_servico_participante = db.Table(
