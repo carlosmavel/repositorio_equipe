@@ -50,7 +50,7 @@
             {% set fname = att.filename %}
             {% set ext = fname.split('.')[-1].lower() %}
             {% set original_name = fname.split('_', 1)[1] if '_' in fname else fname %}
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card mx-auto">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card">
               <div class="card h-100 shadow-sm position-relative">
                 <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
                   target="_blank" title="{{ original_name }}">
@@ -75,7 +75,8 @@
                     {% endif %}
                                       </div>
                   <div class="card-body p-2 attachment-meta">
-                                        <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
+                    <div class="attachment-name" title="{{ original_name }}">{{ original_name }}</div>
+                    <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
                   </div>
                 </a>
                 {% if ext == 'pdf' and not att.content %}
