@@ -24,11 +24,13 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <h3>Editar Artigo</h3>
-        <p class="text-muted">
-          Criado em: {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }} |
-          Visibilidade: {{ artigo.visibility.label }}
-          {% if artigo.tipo %}| Tipo: {{ artigo.tipo.nome }}{% endif %}
-          {% if artigo.area_sistema %}| Área/Sistema: {{ artigo.area_sistema.nome }}{% endif %}
+        <p class="text-muted mb-0">
+          <strong>Criado em:</strong>
+          {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
+          <strong class="ms-2">Visibilidade:</strong>
+          {{ artigo.visibility.label }}
+          {% if artigo.tipo %}<strong class="ms-2">Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
+          {% if artigo.area_sistema %}<strong class="ms-2">Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
         </p>
         <form method="POST" enctype="multipart/form-data">
           <input type="hidden" name="progress_id" id="progress-id">
@@ -94,6 +96,7 @@
           <div id="existing-preview" class="row g-3 mb-4"> {# Aumentei para mb-4 aqui também #}
             {% for f in arquivos %}
             {% set original_name = f.split('_', 1)[1] if '_' in f else f %}
+            {% set ext = f.split('.')[-1].lower() %}
             <div class="col-6 col-md-3 attachment-card" data-filename="{{ f }}">
               <div class="card h-100 shadow-sm">
                 {% if f.endswith(('.png','.jpg','.jpeg','.gif','.webp')) %}
@@ -101,7 +104,6 @@
                   alt="{{ original_name }}">
                 {% else %}
                 <div class="attachment-thumb-wrapper">
-                  {% set ext = f.split('.')[-1].lower() %}
                   {% if ext == 'pdf' %}
                   <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}" class="attachment-icon-vertical"
                     alt="PDF">
@@ -116,6 +118,7 @@
                 {% endif %}
                 <div class="card-body p-2 attachment-meta">
                   <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">{{ original_name }}</p>
+                  <span class="attachment-ext text-uppercase">{{ ext }}</span>
                 </div>
                 <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-existing" aria-label="Remover">
                   <i class="bi bi-trash"></i>
@@ -444,6 +447,7 @@
             : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
           <div class="card-body p-2 attachment-meta">
             <p class="card-text text-truncate mb-0 attachment-name" title="${displayName}">${displayName}</p>
+            <span class="attachment-ext text-uppercase">${file.name.split('.').pop()}</span>
           </div>
           <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
             <i class="bi bi-trash"></i>

@@ -360,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
               : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
             <div class="card-body p-2 attachment-meta">
               <p class="card-text text-truncate mb-0 attachment-name" title="${displayName}">${displayName}</p>
+              <span class="attachment-ext text-uppercase">${file.name.split('.').pop()}</span>
             </div>
             <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
               <i class="bi bi-trash"></i>
