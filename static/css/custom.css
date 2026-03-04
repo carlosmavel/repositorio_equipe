@@ -179,6 +179,10 @@
   font-size: 0.88rem;
   line-height: 1.25;
   font-weight: 600;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attachment-meta {
@@ -197,7 +201,7 @@
 
 .attachment-delete-btn {
   position: absolute;
-  top: 0.4rem;
+  bottom: 0.4rem;
   right: 0.4rem;
   width: 26px;
   height: 26px;
@@ -220,6 +224,7 @@
   position: absolute;
   inset: 0;
   z-index: 2;
+  pointer-events: none;
 }
 /* Destaca perguntas já utilizadas como destino em ramificações */
 .branch-select option[data-used="1"] {
