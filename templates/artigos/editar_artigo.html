@@ -422,6 +422,7 @@
     inputFile.addEventListener('change', () => {
       const incomingFiles = Array.from(inputFile.files || []);
       if (!incomingFiles.length) {
+        preview.innerHTML = '';
         hideOverlay();
         return;
       }
