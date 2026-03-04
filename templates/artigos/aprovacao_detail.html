@@ -29,32 +29,35 @@
           {% for fname in arquivos %}
           {% set ext = fname.split('.')[-1].lower() %}
           {% set original_name = fname.split('_', 1)[1] if '_' in fname else fname %}
-          <div class="col-6 col-md-3 attachment-card">
+          <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card">
             <div class="card h-100 shadow-sm">
               <a href="{{ url_for('uploaded_file', filename=fname) }}" target="_blank"
                 class="text-decoration-none text-reset" title="{{ original_name }}">
-                {% if ext in ['jpg','jpeg','png','gif','webp'] %}
-                <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top attachment-thumb"
-                  alt="{{ original_name }}">
-                {% else %}
-                <div class="attachment-thumb-wrapper">
-                  {% if ext == 'pdf' %}
-                  <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}" class="attachment-icon-vertical"
-                    alt="PDF">
-                  {% elif ext in ['xls','xlsx'] %}
-                  <img src="{{ url_for('static', filename='icons/excel-icon.png') }}" class="attachment-icon-vertical"
-                    alt="Excel">
+                <div class="attachment-preview">
+                  {% if ext in ['jpg','jpeg','png','gif','webp'] %}
+                  <img src="{{ url_for('uploaded_file', filename=fname) }}" class="card-img-top attachment-thumb"
+                    alt="{{ original_name }}">
                   {% else %}
-                  <img src="{{ url_for('static', filename='icons/file-icon.png') }}" class="attachment-icon-vertical"
-                    alt="Arquivo">
+                  <div class="attachment-thumb-wrapper">
+                    {% if ext == 'pdf' %}
+                    <img src="{{ url_for('static', filename='icons/pdf-icon.png') }}" class="attachment-icon-vertical"
+                      alt="PDF">
+                    {% elif ext in ['xls','xlsx'] %}
+                    <img src="{{ url_for('static', filename='icons/excel-icon.png') }}" class="attachment-icon-vertical"
+                      alt="Excel">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='icons/file-icon.png') }}" class="attachment-icon-vertical"
+                      alt="Arquivo">
+                    {% endif %}
+                  </div>
                   {% endif %}
+                  <span class="attachment-ext text-uppercase">{{ ext }}</span>
                 </div>
-                {% endif %}
                 <div class="card-body p-2 attachment-meta">
-                  <p class="card-text text-truncate mb-0 attachment-name" title="{{ original_name }}">
+                  <p class="card-text text-truncate mb-1 attachment-name" title="{{ original_name }}">
                     {{ original_name }}
                   </p>
-                  <span class="attachment-ext text-uppercase">{{ ext }}</span>
+                  <p class="mb-0 attachment-details text-uppercase">{{ ext }} • Tamanho indisponível</p>
                 </div>
               </a>
             </div>
