@@ -352,16 +352,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(file);
         const displayName = file.name.replace(/^[0-9a-f]{32}_/, '');
         const col = document.createElement('div');
-        col.className = 'col-6 col-md-3 attachment-card position-relative';
+        col.className = 'col-6 col-md-3 attachment-card';
         col.innerHTML = `
-          <div class="card h-100 shadow-sm position-relative">
+          <div class="card h-100 shadow-sm">
             ${file.type.startsWith('image/')
               ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
               : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
-            <div class="card-body p-2">
+            <div class="card-body p-2 attachment-meta">
               <p class="card-text text-truncate mb-0 attachment-name" title="${displayName}">${displayName}</p>
             </div>
-            <button type="button" class="btn-close remove-btn position-absolute top-0 end-0 m-2" data-index="${idx}" aria-label="Remover"></button>
+            <button type="button" class="btn btn-light text-danger attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>`;
         preview.appendChild(col);
       });
@@ -372,8 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   preview.addEventListener('click', e => {
-    if (!e.target.classList.contains('remove-btn')) return;
-    const idx = Number(e.target.dataset.index);
+    const removeButton = e.target.closest('.remove-btn');
+    if (!removeButton) return;
+    const idx = Number(removeButton.dataset.index);
     dt.items.remove(idx);
     input.files = dt.files;
     input.dispatchEvent(new Event('change'));

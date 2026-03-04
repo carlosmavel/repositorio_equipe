@@ -9,7 +9,7 @@
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <form method="get" action="{{ url_for('pesquisar') }}" class="row g-2">
-            <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="Buscar por título ou texto…"></div>
+            <div class="col-md-4"><input name="q" value="{{ q }}" class="form-control" placeholder="Buscar por título ou texto…"></div>
             <div class="col-md-3">
               <select name="tipo_id" class="form-select">
                 <option value="">Todos os tipos</option>
@@ -26,7 +26,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-1 d-grid">
+            <div class="col-md-2 d-grid">
             <button class="btn btn-outline-primary">Pesquisar</button>
             </div>
           </form>
