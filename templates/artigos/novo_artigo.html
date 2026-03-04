@@ -328,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
   input.addEventListener('change', () => {
     const incomingFiles = Array.from(input.files || []);
     if (!incomingFiles.length) {
+      preview.innerHTML = '';
       hideOverlay();
       return;
     }
