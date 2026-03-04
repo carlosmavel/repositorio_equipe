@@ -118,14 +118,13 @@
                     {% endif %}
                   </div>
                   {% endif %}
-                  <button type="button" class="attachment-delete-btn remove-existing" aria-label="Remover">
-                    <i class="bi bi-trash"></i>
-                  </button>
                                   </div>
+                <button type="button" class="attachment-delete-btn remove-existing" aria-label="Remover">
+                  <i class="bi bi-trash"></i>
+                </button>
                 <div class="card-body p-2 attachment-meta">
                   <div class="attachment-name" title="{{ original_name }}">{{ original_name }}</div>
-                  <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
-                </div>
+                                  </div>
               </div>
             </div>
             {% endfor %}
@@ -450,14 +449,13 @@
             ${file.type.startsWith('image/')
               ? `<img src="${url}" class="card-img-top attachment-thumb" alt="${displayName}">`
               : `<div class="attachment-thumb-wrapper"><img src="${resolveIcon(file.name)}" class="attachment-icon-vertical" alt="Arquivo"></div>`}
-            <button type="button" class="attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
-              <i class="bi bi-trash"></i>
-            </button>
                       </div>
+          <button type="button" class="attachment-delete-btn remove-btn" data-index="${idx}" aria-label="Remover">
+            <i class="bi bi-trash"></i>
+          </button>
           <div class="card-body p-2 attachment-meta">
             <div class="attachment-name" title="${displayName}">${displayName}</div>
-            <div class="attachment-details"><span class="attachment-kind">${file.type.startsWith('image/') ? 'Imagem' : 'Documento'}</span></div>
-          </div>
+                      </div>
         </div>`;
         preview.appendChild(col);
       });

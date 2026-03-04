@@ -131,6 +131,7 @@
 }
 
 .attachment-card .card {
+  position: relative;
   border: 1px solid #d8dee6;
   border-radius: 1rem;
   overflow: hidden;
@@ -186,23 +187,14 @@
 }
 
 .attachment-meta {
-  min-height: 56px;
-}
-
-.attachment-details {
-  display: inline-flex;
-  margin-top: 0.1rem;
-  padding: 0.08rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  color: var(--bs-secondary-color);
-  background: #eef1f4;
+  min-height: 44px;
+  padding-right: 2.1rem !important;
 }
 
 .attachment-delete-btn {
   position: absolute;
-  bottom: 0.4rem;
-  right: 0.4rem;
+  bottom: 0.55rem;
+  right: 0.55rem;
   width: 26px;
   height: 26px;
   border: 0;
