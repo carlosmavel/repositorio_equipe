@@ -206,15 +206,20 @@
 
                     {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
                     {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
+                        {% set admin_menu_active = (
+                            'admin_' in request.endpoint and
+                            'admin_artigo_tipos' not in request.endpoint and
+                            'admin_artigo_areas_sistemas' not in request.endpoint
+                        ) %}
                         <li class="nav-item">
-                            <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_' in request.endpoint else '' }} {{ 'collapsed' if 'admin_' not in request.endpoint }}"
+                            <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if admin_menu_active else '' }} {{ 'collapsed' if not admin_menu_active }}"
                             data-bs-toggle="collapse" href="#collapseAdministracao" role="button"
-                            aria-expanded="{{ 'true' if 'admin_' in request.endpoint else 'false' }}"
+                            aria-expanded="{{ 'true' if admin_menu_active else 'false' }}"
                             aria-controls="collapseAdministracao">
                                 <span><i class="bi bi-gear-fill me-2"></i> Administração</span>
                                 <i class="bi bi-chevron-down small"></i>
                             </a>
-                            <div class="collapse {{ 'show' if 'admin_' in request.endpoint }}" id="collapseAdministracao">
+                            <div class="collapse {{ 'show' if admin_menu_active }}" id="collapseAdministracao">
                                 <ul class="nav flex-column ps-3">
                                     <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
                                     {% set cadastros_active = (
