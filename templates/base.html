@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-{% set auth_local_flash_paths = ['/login', '/esqueci-senha'] %}
-{% set current_path = request.path if request and request.path else '' %}
-{% set is_auth_local_flash_page = (current_path in auth_local_flash_paths) or current_path.startswith('/reset-senha/') or current_path.startswith('/criar-senha/') %}
 <html lang="pt-br" {% if session.get('user_id') and not is_auth_local_flash_page %}class="has-sidebar-layout"{% endif %}>
 <head>
     <meta charset="UTF-8">
