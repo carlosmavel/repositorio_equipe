@@ -127,76 +127,125 @@
 }
 
 .attachment-card {
-  max-width: 190px;
+  max-width: 250px;
 }
 
 .attachment-card .card {
-  border: 1px solid var(--border-light);
-  border-radius: 0.85rem;
+  border: 1px solid #d8dee6;
+  border-radius: 1.25rem;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--bg-default) 0%, var(--bg-muted) 100%);
-  box-shadow: 0 8px 18px var(--shadow-muted);
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  background-color: var(--bs-body-bg);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+  transition: transform .2s ease, box-shadow .2s ease;
 }
 
 .attachment-card .card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px var(--shadow-soft);
-  border-color: var(--border-darker);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 26px rgba(16, 24, 40, 0.14);
+}
+
+.attachment-preview {
+  position: relative;
+  height: 170px;
+  margin: 0.55rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f3f5f8 0%, #eef1f5 100%);
+  overflow: hidden;
 }
 
 .attachment-thumb-wrapper {
-  height: 110px;
-  background-color: var(--bg-muted);
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 1rem;
 }
 
 .attachment-thumb {
-  height: 110px;
+  height: 100%;
   width: 100%;
   object-fit: cover;
 }
 
 .attachment-icon-vertical {
-  max-height: 64px;
-  max-width: 64px;
+  max-height: 90px;
+  max-width: 90px;
   width: auto;
   object-fit: contain;
 }
 
 .attachment-name {
-  font-size: 0.85rem;
-  line-height: 1.2;
+  font-size: 0.9rem;
+  line-height: 1.25;
   font-weight: 600;
 }
 
 .attachment-meta {
-  background-color: var(--bs-body-bg);
-  min-height: 62px;
+  min-height: 90px;
+  padding: 0 .85rem .9rem !important;
+}
+
+.attachment-details {
+  font-size: 0.76rem;
+  color: var(--bs-secondary-color);
+}
+
+.attachment-kind {
+  display: inline-block;
+  padding: 0.16rem 0.6rem;
+  margin-bottom: 0.38rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #607080;
+  background-color: #eef1f4;
+}
+
+.attachment-size {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
 }
 
 .attachment-ext {
-  display: inline-block;
-  margin-top: 0.25rem;
-  padding: 0.1rem 0.45rem;
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  margin: 0;
+  padding: 0.22rem 0.62rem;
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--bs-secondary-color);
-  background-color: var(--bg-hover);
+  color: #526173;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 6px rgba(16, 24, 40, 0.15);
 }
 
 .attachment-delete-btn {
-  width: 100%;
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 42px;
+  height: 42px;
   border: 0;
-  border-top: 1px solid var(--border-default);
-  border-radius: 0;
+  border-radius: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #df4a35 0%, #c93929 100%);
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(185, 49, 34, 0.35);
+  z-index: 3;
 }
 
+.attachment-delete-btn:hover {
+  filter: brightness(1.04);
+}
+
+.attachment-delete-btn i {
+  font-size: 1.15rem;
+}
 /* Destaca perguntas já utilizadas como destino em ramificações */
 .branch-select option[data-used="1"] {
   color: var(--primary);
