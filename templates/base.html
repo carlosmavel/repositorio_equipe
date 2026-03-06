@@ -206,11 +206,7 @@
 
                     {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
                     {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
-                        {% set admin_menu_active = (
-                            'admin_' in request.endpoint and
-                            'admin_artigo_tipos' not in request.endpoint and
-                            'admin_artigo_areas' not in request.endpoint and 'admin_artigo_sistemas' not in request.endpoint
-                        ) %}
+                        {% set admin_menu_active = 'admin_' in request.endpoint %}
                         <li class="nav-item">
                             <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if admin_menu_active else '' }} {{ 'collapsed' if not admin_menu_active }}"
                             data-bs-toggle="collapse" href="#collapseAdministracao" role="button"
@@ -227,7 +223,15 @@
                                         'admin_estabelecimentos' in request.endpoint or
                                         'admin_setores' in request.endpoint or
                                         'admin_celulas' in request.endpoint or
-                                        'admin_cargos' in request.endpoint
+                                        'admin_cargos' in request.endpoint or
+                                        'admin_artigo_tipos' in request.endpoint or
+                                        'admin_artigo_areas' in request.endpoint or
+                                        'admin_artigo_sistemas' in request.endpoint
+                                    ) %}
+                                    {% set cadastros_artigos_active = (
+                                        'admin_artigo_tipos' in request.endpoint or
+                                        'admin_artigo_areas' in request.endpoint or
+                                        'admin_artigo_sistemas' in request.endpoint
                                     ) %}
                                     <li class="nav-item">
                                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if cadastros_active else '' }} {{ 'collapsed' if not cadastros_active }}"
@@ -244,9 +248,22 @@
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_setores') }}"><i class="bi bi-diagram-3-fill me-2"></i> Setores</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_celulas') }}"><i class="bi bi-grid-1x2-fill me-2"></i> Células</a></li>
                                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}"><i class="bi bi-cpu-fill me-2"></i> Sistemas</a></li>
+                                                <li class="nav-item">
+                                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if cadastros_artigos_active else '' }} {{ 'collapsed' if not cadastros_artigos_active else '' }}"
+                                                    data-bs-toggle="collapse" href="#collapseCadastrosArtigosSub" role="button"
+                                                    aria-expanded="{{ 'true' if cadastros_artigos_active else 'false' }}"
+                                                    aria-controls="collapseCadastrosArtigosSub">
+                                                        <i class="bi bi-journal-text me-2"></i> Cadastros Artigos
+                                                        <i class="bi bi-chevron-down small ms-auto"></i>
+                                                    </a>
+                                                    <div class="collapse {{ 'show' if cadastros_artigos_active else '' }}" id="collapseCadastrosArtigosSub">
+                                                        <ul class="nav flex-column ps-3">
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas</a></li>
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}"><i class="bi bi-cpu-fill me-2"></i> Sistemas</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </li>
                                             </ul>
                                         </div>
                                     </li>
@@ -277,9 +294,7 @@
                         'pesquisar' in request.endpoint or
                         'aprovacao' in request.endpoint or
                         'artigo' in request.endpoint or
-                        'editar_artigo' in request.endpoint or
-                        'admin_artigo_tipos' in request.endpoint or
-                        'admin_artigo_areas' in request.endpoint or 'admin_artigo_sistemas' in request.endpoint
+                        'editar_artigo' in request.endpoint
                     ) %}
                     <li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if biblioteca_active else '' }} {{ 'collapsed' if not biblioteca_active }}"
@@ -316,13 +331,6 @@
                                 {% endif %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'meus_artigos' in request.endpoint else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'novo_artigo' in request.endpoint else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
-                                {% if current_user.has_permissao('admin') or current_user.has_permissao('artigo_tipo_gerenciar') %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
-                                {% endif %}
-                                {% if current_user.has_permissao('admin') or current_user.has_permissao('artigo_area_gerenciar') %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}"><i class="bi bi-cpu-fill me-2"></i> Sistemas</a></li>
-                                {% endif %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if 'pesquisar' in request.endpoint else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
                             </ul>
                         </div>
