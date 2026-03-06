@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Política de Cookies e Privacidade - Orquetask{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9 col-xl-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
+                    <h1 class="h3 mb-3">Política de Cookies e Privacidade</h1>
+                    <p class="text-muted mb-4">Última atualização: 06/03/2026</p>
+
+                    <p>
+                        Esta aplicação utiliza apenas cookie essencial para funcionamento da autenticação e da sessão do usuário.
+                        Não utilizamos cookie de marketing ou rastreamento comportamental nesta versão.
+                    </p>
+
+                    <h2 class="h5 mt-4">1. Nome do cookie de sessão</h2>
+                    <p class="mb-0"><strong>Cookie:</strong> cookie de sessão do Flask (normalmente identificado no navegador como <code>session</code>).</p>
+
+                    <h2 class="h5 mt-4">2. Finalidade</h2>
+                    <ul>
+                        <li>Manter o usuário autenticado durante a navegação.</li>
+                        <li>Preservar dados mínimos de sessão para segurança da aplicação.</li>
+                        <li>Permitir controles de acesso por perfil/permissão.</li>
+                    </ul>
+
+                    <h2 class="h5 mt-4">3. Base legal</h2>
+                    <p>
+                        O tratamento é realizado com base na execução de funcionalidades essenciais do sistema e em legítimo interesse
+                        de segurança da informação, sem dependência de cookies não essenciais.
+                    </p>
+
+                    <h2 class="h5 mt-4">4. Retenção</h2>
+                    <p>
+                        O cookie de sessão permanece ativo enquanto a sessão do navegador estiver válida e pode ser invalidado
+                        em logout, expiração configurada pelo servidor ou limpeza manual pelo usuário.
+                    </p>
+
+                    <h2 class="h5 mt-4">5. Contato</h2>
+                    <p class="mb-0">
+                        Para dúvidas sobre privacidade e tratamento de dados, entre em contato com a administração do sistema
+                        pelo canal institucional de suporte da sua organização.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
