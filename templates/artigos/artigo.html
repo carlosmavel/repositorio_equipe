@@ -21,7 +21,7 @@
               <strong class="ms-2">Visibilidade:</strong>
               {{ artigo.visibility.label }}
               {% if artigo.tipo %}<strong class="ms-2">Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
-              {% if artigo.area_sistema %}<strong class="ms-2">Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
+              {% if artigo.area %}<strong class="ms-2">Área:</strong> {{ artigo.area.nome }}{% endif %}{% if artigo.sistema %}<strong class="ms-2">Sistema:</strong> {{ artigo.sistema.nome }}{% endif %}
             </p>
           </div>
           {% set st = artigo.status %}

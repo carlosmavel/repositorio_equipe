@@ -22,7 +22,8 @@ try:
         Cargo,
         Funcao,
         ArtigoTipo,
-        ArtigoAreaSistema,
+        ArtigoArea,
+        ArtigoSistema,
     )
 except ImportError:  # pragma: no cover
     from core.models import (
@@ -39,7 +40,8 @@ except ImportError:  # pragma: no cover
         Cargo,
         Funcao,
         ArtigoTipo,
-        ArtigoAreaSistema,
+        ArtigoArea,
+        ArtigoSistema,
     )
 
 try:
@@ -948,8 +950,8 @@ def admin_artigo_tipos():
     return render_template('admin/artigo_tipos.html', tipos=tipos, tipo_editar=tipo_para_editar)
 
 
-@admin_bp.route('/admin/artigos/areas-sistemas', methods=['GET', 'POST'])
-def admin_artigo_areas_sistemas():
+@admin_bp.route('/admin/artigos/areas', methods=['GET', 'POST'])
+def admin_artigo_areas():
     user = _current_user()
     if not _can_manage_taxonomy(user, 'artigo_area_gerenciar'):
         flash('Permissão negada.', 'danger')
@@ -959,7 +961,7 @@ def admin_artigo_areas_sistemas():
     if request.method == 'GET':
         edit_id = request.args.get('edit_id', type=int)
         if edit_id:
-            area_para_editar = ArtigoAreaSistema.query.get_or_404(edit_id)
+            area_para_editar = ArtigoArea.query.get_or_404(edit_id)
 
     if request.method == 'POST':
         id_para_atualizar = request.form.get('id_para_atualizar')
@@ -968,29 +970,77 @@ def admin_artigo_areas_sistemas():
         ativo = request.form.get('ativo_check') == 'on'
 
         if not nome:
-            flash('Nome da área/sistema é obrigatório.', 'danger')
+            flash('Nome da área é obrigatório.', 'danger')
         else:
-            query_nome = ArtigoAreaSistema.query.filter_by(nome=nome)
+            query_nome = ArtigoArea.query.filter_by(nome=nome)
             if id_para_atualizar:
-                query_nome = query_nome.filter(ArtigoAreaSistema.id != int(id_para_atualizar))
+                query_nome = query_nome.filter(ArtigoArea.id != int(id_para_atualizar))
             if query_nome.first():
-                flash(f'A área/sistema "{nome}" já existe.', 'danger')
+                flash(f'A área "{nome}" já existe.', 'danger')
             else:
                 if id_para_atualizar:
-                    area = ArtigoAreaSistema.query.get_or_404(id_para_atualizar)
+                    area = ArtigoArea.query.get_or_404(id_para_atualizar)
                     area.nome = nome
                     area.descricao = descricao
                     area.ativo = ativo
                 else:
-                    area = ArtigoAreaSistema(nome=nome, descricao=descricao, ativo=ativo)
+                    area = ArtigoArea(nome=nome, descricao=descricao, ativo=ativo)
                     db.session.add(area)
                 try:
                     db.session.commit()
-                    flash('Área/Sistema salvo com sucesso!', 'success')
-                    return redirect(url_for('admin_bp.admin_artigo_areas_sistemas'))
+                    flash('Área salva com sucesso!', 'success')
+                    return redirect(url_for('admin_bp.admin_artigo_areas'))
                 except Exception as e:
                     db.session.rollback()
-                    flash(f'Erro ao salvar área/sistema: {str(e)}', 'danger')
+                    flash(f'Erro ao salvar área: {str(e)}', 'danger')
 
-    areas = ArtigoAreaSistema.query.order_by(ArtigoAreaSistema.nome).all()
-    return render_template('admin/artigo_areas_sistemas.html', areas=areas, area_editar=area_para_editar)
+    areas = ArtigoArea.query.order_by(ArtigoArea.nome).all()
+    return render_template('admin/artigo_areas.html', areas=areas, area_editar=area_para_editar)
+
+
+@admin_bp.route('/admin/artigos/sistemas', methods=['GET', 'POST'])
+def admin_artigo_sistemas():
+    user = _current_user()
+    if not _can_manage_taxonomy(user, 'artigo_area_gerenciar'):
+        flash('Permissão negada.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    sistema_para_editar = None
+    if request.method == 'GET':
+        edit_id = request.args.get('edit_id', type=int)
+        if edit_id:
+            sistema_para_editar = ArtigoSistema.query.get_or_404(edit_id)
+
+    if request.method == 'POST':
+        id_para_atualizar = request.form.get('id_para_atualizar')
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        ativo = request.form.get('ativo_check') == 'on'
+
+        if not nome:
+            flash('Nome do sistema é obrigatório.', 'danger')
+        else:
+            query_nome = ArtigoSistema.query.filter_by(nome=nome)
+            if id_para_atualizar:
+                query_nome = query_nome.filter(ArtigoSistema.id != int(id_para_atualizar))
+            if query_nome.first():
+                flash(f'O sistema "{nome}" já existe.', 'danger')
+            else:
+                if id_para_atualizar:
+                    sistema = ArtigoSistema.query.get_or_404(id_para_atualizar)
+                    sistema.nome = nome
+                    sistema.descricao = descricao
+                    sistema.ativo = ativo
+                else:
+                    sistema = ArtigoSistema(nome=nome, descricao=descricao, ativo=ativo)
+                    db.session.add(sistema)
+                try:
+                    db.session.commit()
+                    flash('Sistema salvo com sucesso!', 'success')
+                    return redirect(url_for('admin_bp.admin_artigo_sistemas'))
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Erro ao salvar sistema: {str(e)}', 'danger')
+
+    sistemas = ArtigoSistema.query.order_by(ArtigoSistema.nome).all()
+    return render_template('admin/artigo_sistemas.html', sistemas=sistemas, sistema_editar=sistema_para_editar)

@@ -30,7 +30,8 @@
           <strong class="ms-2">Visibilidade:</strong>
           {{ artigo.visibility.label }}
           {% if artigo.tipo %}<strong class="ms-2">Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
-          {% if artigo.area_sistema %}<strong class="ms-2">Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
+          {% if artigo.area %}<strong class="ms-2">Área:</strong> {{ artigo.area.nome }}{% endif %}
+          {% if artigo.sistema %}<strong class="ms-2">Sistema:</strong> {{ artigo.sistema.nome }}{% endif %}
         </p>
         <form method="POST" enctype="multipart/form-data">
           <input type="hidden" name="progress_id" id="progress-id">
@@ -50,11 +51,20 @@
               </select>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Área/Sistema</label>
-              <select name="area_sistema_id" class="form-select">
+              <label class="form-label">Área</label>
+              <select name="area_id" class="form-select">
                 <option value="">Selecione</option>
-                {% for area in areas_sistema %}
-                <option value="{{ area.id }}" {% if artigo.area_sistema_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                {% for area in areas_artigo %}
+                <option value="{{ area.id }}" {% if artigo.area_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Sistema</label>
+              <select name="sistema_id" class="form-select">
+                <option value="">Selecione</option>
+                {% for sistema in sistemas_artigo %}
+                <option value="{{ sistema.id }}" {% if artigo.sistema_id == sistema.id %}selected{% endif %}>{{ sistema.nome }}</option>
                 {% endfor %}
               </select>
             </div>
