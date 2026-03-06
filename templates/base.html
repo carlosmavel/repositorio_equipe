@@ -360,37 +360,138 @@
         {% block content %}{% endblock content %}
     </div>
 
+    <footer class="border-top bg-body-tertiary py-3 mt-4">
+        <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <small class="text-muted">&copy; 2026 Orquetask</small>
+            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-underline" data-cookie-open-preferences="true">
+                Gerenciar cookies
+            </button>
+        </div>
+    </footer>
+
     <div id="cookieNoticeBanner" class="position-fixed bottom-0 start-0 end-0 p-2 p-md-3 bg-dark text-light border-top shadow-lg d-none" style="z-index: 1090;">
         <div class="container-fluid">
             <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
                 <p class="mb-0 small flex-grow-1">
-                    Utilizamos um cookie essencial para manter seu login/sessão ativa e reforçar a segurança de acesso.
+                    Utilizamos cookies essenciais para segurança e sessão. Você pode configurar cookies analíticos e de marketing.
                     Saiba mais na
                     <a href="{{ url_for('politica_cookies') }}" class="link-light fw-semibold text-decoration-underline">Política de Cookies e Privacidade</a>.
                 </p>
-                <button id="cookieNoticeDismiss" type="button" class="btn btn-sm btn-primary align-self-start align-self-md-center">Entendi</button>
+                <div class="d-flex flex-wrap gap-2">
+                    <button id="cookieNoticeAcceptAll" type="button" class="btn btn-sm btn-primary">Aceitar todos</button>
+                    <button id="cookieNoticeRejectOptional" type="button" class="btn btn-sm btn-outline-light">Rejeitar opcionais</button>
+                    <button id="cookieNoticeManage" type="button" class="btn btn-sm btn-light text-dark">Gerenciar preferências</button>
+                </div>
             </div>
         </div>
     </div>
 
-    {# Scripts de terceiros não essenciais devem ser declarados em blocos com data-consent-required="cookies"
-       e data-src para carregamento somente após consentimento local (ver script abaixo). #}
+    <div class="modal fade" id="cookiePreferencesModal" tabindex="-1" aria-labelledby="cookiePreferencesModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="cookiePreferencesModalLabel">Preferências de cookies</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-muted">Os cookies essenciais permanecem sempre ativos para manter autenticação e segurança.</p>
+
+            <div class="border rounded p-3 mb-3">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <h2 class="h6 mb-1">Essenciais</h2>
+                  <p class="small mb-0 text-muted">Necessários para login, sessão e funcionamento básico.</p>
+                </div>
+                <span class="badge text-bg-secondary">Sempre ativo</span>
+              </div>
+            </div>
+
+            <div class="form-check form-switch border rounded p-3 mb-3">
+              <input class="form-check-input" type="checkbox" role="switch" id="cookiePreferenceAnalytics">
+              <label class="form-check-label" for="cookiePreferenceAnalytics">
+                <strong>Analíticos</strong>
+                <span class="d-block small text-muted">Medição de uso e desempenho para melhoria contínua.</span>
+              </label>
+            </div>
+
+            <div class="form-check form-switch border rounded p-3">
+              <input class="form-check-input" type="checkbox" role="switch" id="cookiePreferenceMarketing">
+              <label class="form-check-label" for="cookiePreferenceMarketing">
+                <strong>Marketing</strong>
+                <span class="d-block small text-muted">Personalização de campanhas e públicos em plataformas parceiras.</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="cookiePreferencesRejectOptional">Rejeitar opcionais</button>
+            <button type="button" class="btn btn-primary" id="cookiePreferencesSave">Salvar preferências</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Scripts de terceiros não essenciais devem usar data-consent-category (analiticos/marketing)
+       e data-src para carregamento condicional (ver script abaixo). #}
+    <script type="text/plain" data-consent-category="analiticos" data-src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script type="text/plain" data-consent-category="marketing" data-src="https://connect.facebook.net/en_US/fbevents.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
-        var consentKey = 'cookie_notice_dismissed';
+        var consentKey = 'cookie_preferences_v1';
+        var consentCookieName = 'orquetask_cookie_preferences';
+        var policyVersion = '2026.03';
+        var consentTimestampKey = 'cookie_preferences_last_updated';
+        var consentPolicyVersionKey = 'cookie_preferences_policy_version';
         var cookieBanner = document.getElementById('cookieNoticeBanner');
-        var dismissButton = document.getElementById('cookieNoticeDismiss');
+        var acceptAllButton = document.getElementById('cookieNoticeAcceptAll');
+        var rejectOptionalButton = document.getElementById('cookieNoticeRejectOptional');
+        var manageButton = document.getElementById('cookieNoticeManage');
+        var analyticsInput = document.getElementById('cookiePreferenceAnalytics');
+        var marketingInput = document.getElementById('cookiePreferenceMarketing');
+        var savePreferencesButton = document.getElementById('cookiePreferencesSave');
+        var rejectOptionalInModalButton = document.getElementById('cookiePreferencesRejectOptional');
+        var openPreferenceTriggers = document.querySelectorAll('[data-cookie-open-preferences="true"]');
+        var cookiePreferencesModalElement = document.getElementById('cookiePreferencesModal');
+        var cookiePreferencesModal = cookiePreferencesModalElement ? new bootstrap.Modal(cookiePreferencesModalElement) : null;
 
-        function hasCookieNoticeConsent() {
-          return localStorage.getItem(consentKey) === '1';
+        function writePreferencesCookie(preferences) {
+          document.cookie = consentCookieName + '=' + encodeURIComponent(JSON.stringify(preferences)) + ';path=/;max-age=' + (60 * 60 * 24 * 365) + ';SameSite=Lax';
         }
 
-        function loadConsentScripts() {
-          document.querySelectorAll('script[data-consent-required="cookies"][data-src]').forEach(function (placeholderScript) {
+        function getDefaultPreferences() {
+          return {
+            essenciais: true,
+            analiticos: false,
+            marketing: false,
+            policyVersion: policyVersion,
+            timestamp: null
+          };
+        }
+
+        function getCookiePreferences() {
+          var raw = localStorage.getItem(consentKey);
+          if (!raw) {
+            return null;
+          }
+          try {
+            var parsed = JSON.parse(raw);
+            return {
+              essenciais: true,
+              analiticos: parsed.analiticos === true,
+              marketing: parsed.marketing === true,
+              policyVersion: parsed.policyVersion || policyVersion,
+              timestamp: parsed.timestamp || null
+            };
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function loadConditionalScriptsByCategory(categoryName) {
+          document.querySelectorAll('script[data-consent-category="' + categoryName + '"][data-src]').forEach(function (placeholderScript) {
             if (placeholderScript.dataset.loaded === '1') {
               return;
             }
@@ -406,19 +507,99 @@
           });
         }
 
-        if (cookieBanner && !hasCookieNoticeConsent()) {
-          cookieBanner.classList.remove('d-none');
-        } else {
-          loadConsentScripts();
+        function loadNonEssentialScripts(preferences) {
+          if (preferences.analiticos) {
+            loadConditionalScriptsByCategory('analiticos');
+          }
+          if (preferences.marketing) {
+            loadConditionalScriptsByCategory('marketing');
+          }
         }
 
-        if (dismissButton) {
-          dismissButton.addEventListener('click', function () {
-            localStorage.setItem(consentKey, '1');
-            if (cookieBanner) {
-              cookieBanner.classList.add('d-none');
+        function syncFormWithPreferences(preferences) {
+          if (analyticsInput) {
+            analyticsInput.checked = preferences.analiticos;
+          }
+          if (marketingInput) {
+            marketingInput.checked = preferences.marketing;
+          }
+        }
+
+        function savePreferences(preferences) {
+          var nowIso = new Date().toISOString();
+          var payload = {
+            essenciais: true,
+            analiticos: preferences.analiticos === true,
+            marketing: preferences.marketing === true,
+            policyVersion: policyVersion,
+            timestamp: nowIso
+          };
+          localStorage.setItem(consentKey, JSON.stringify(payload));
+          localStorage.setItem(consentTimestampKey, nowIso);
+          localStorage.setItem(consentPolicyVersionKey, policyVersion);
+          writePreferencesCookie(payload);
+          if (cookieBanner) {
+            cookieBanner.classList.add('d-none');
+          }
+          loadNonEssentialScripts(payload);
+        }
+
+        function openPreferencesModal() {
+          var preferences = getCookiePreferences() || getDefaultPreferences();
+          syncFormWithPreferences(preferences);
+          if (cookiePreferencesModal) {
+            cookiePreferencesModal.show();
+          }
+        }
+
+        var initialPreferences = getCookiePreferences();
+
+        if (cookieBanner && !initialPreferences) {
+          cookieBanner.classList.remove('d-none');
+        } else {
+          loadNonEssentialScripts(initialPreferences || getDefaultPreferences());
+        }
+
+        if (acceptAllButton) {
+          acceptAllButton.addEventListener('click', function () {
+            savePreferences({ analiticos: true, marketing: true });
+          });
+        }
+
+        if (rejectOptionalButton) {
+          rejectOptionalButton.addEventListener('click', function () {
+            savePreferences({ analiticos: false, marketing: false });
+          });
+        }
+
+        if (manageButton) {
+          manageButton.addEventListener('click', function () {
+            openPreferencesModal();
+          });
+        }
+
+        openPreferenceTriggers.forEach(function (trigger) {
+          trigger.addEventListener('click', function () {
+            openPreferencesModal();
+          });
+        });
+
+        if (savePreferencesButton) {
+          savePreferencesButton.addEventListener('click', function () {
+            savePreferences({
+              analiticos: analyticsInput ? analyticsInput.checked : false,
+              marketing: marketingInput ? marketingInput.checked : false
+            });
+            if (cookiePreferencesModal) {
+              cookiePreferencesModal.hide();
             }
-            loadConsentScripts();
+          });
+        }
+
+        if (rejectOptionalInModalButton) {
+          rejectOptionalInModalButton.addEventListener('click', function () {
+            if (analyticsInput) analyticsInput.checked = false;
+            if (marketingInput) marketingInput.checked = false;
           });
         }
 
