@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 from datetime import datetime
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app, send_from_directory, abort
 from werkzeug.utils import secure_filename
@@ -33,6 +34,33 @@ def send_password_email(user, action):
     send_email(user.email, 'Definição de Senha', html)
 
 auth_bp = Blueprint('auth_bp', __name__)
+LOGIN_AVATAR_COOKIE = 'login_avatar_token'
+LOGIN_AVATAR_TOKEN_SALT = 'login-avatar'
+LOGIN_AVATAR_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+
+
+def _login_avatar_serializer():
+    return URLSafeTimedSerializer(app.config['SECRET_KEY'], salt=LOGIN_AVATAR_TOKEN_SALT)
+
+
+def _build_login_avatar_token(user):
+    return _login_avatar_serializer().dumps({'uid': user.id})
+
+
+def _get_remembered_user_from_cookie():
+    token = request.cookies.get(LOGIN_AVATAR_COOKIE)
+    if not token:
+        return None
+
+    try:
+        payload = _login_avatar_serializer().loads(token, max_age=LOGIN_AVATAR_MAX_AGE_SECONDS)
+        user_id = payload.get('uid')
+    except (BadSignature, SignatureExpired):
+        return None
+
+    if not user_id:
+        return None
+    return User.query.get(user_id)
 
 # ROTAS PRINCIPAIS
 # -------------------------------------------------------------------------
@@ -59,7 +87,7 @@ def login():
         # Validação simples de campos vazios no backend
         if not username or not password:
             flash("Nome de usuário e senha são obrigatórios.", "danger")
-            return render_template("auth/login.html", users_json={})
+            return render_template("auth/login.html", remembered_user=_get_remembered_user_from_cookie())
 
         user = User.query.filter_by(username=username).first()
 
@@ -75,16 +103,33 @@ def login():
 
             # Redireciona para a página de destino após o login
             next_url = request.args.get('next')
+            response = redirect(next_url) if next_url else redirect(url_for("pagina_inicial"))
+            response.set_cookie(
+                LOGIN_AVATAR_COOKIE,
+                _build_login_avatar_token(user),
+                max_age=LOGIN_AVATAR_MAX_AGE_SECONDS,
+                secure=app.config.get('SESSION_COOKIE_SECURE', True),
+                httponly=True,
+                samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax'),
+            )
             if next_url:
-                return redirect(next_url)
-            return redirect(url_for("pagina_inicial")) # Redireciona para a página inicial do usuário
+                return response
+            return response # Redireciona para a página inicial do usuário
         else:
             # Credenciais inválidas
             flash("Usuário ou senha inválidos!", "danger")
-            return render_template("auth/login.html", users_json={})
+            return render_template("auth/login.html", remembered_user=_get_remembered_user_from_cookie())
 
     # Para requisições GET (primeiro acesso à página de login)
-    return render_template("auth/login.html", users_json={})
+    return render_template("auth/login.html", remembered_user=_get_remembered_user_from_cookie())
+
+
+@auth_bp.route('/login-avatar', endpoint='login_avatar')
+def login_avatar():
+    remembered_user = _get_remembered_user_from_cookie()
+    if not remembered_user or not remembered_user.foto:
+        return abort(404)
+    return send_from_directory(app.config['PROFILE_PICS_FOLDER'], remembered_user.foto)
 
 
 @auth_bp.route('/esqueci-senha', methods=['GET', 'POST'], endpoint='forgot_password')
@@ -305,5 +350,6 @@ def perfil():
 @auth_bp.route('/logout', endpoint='logout')
 def logout():
     session.clear()
-    return redirect(url_for('login'))
-
+    response = redirect(url_for('login'))
+    response.delete_cookie(LOGIN_AVATAR_COOKIE)
+    return response
