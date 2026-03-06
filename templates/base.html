@@ -288,14 +288,15 @@
                     {% endif %} {# Fim do if admin permission #}
 
                     {# Bloco BIBLIOTECA #}
-                    {% set biblioteca_active = (
-                        'meus_artigos' in request.endpoint or
-                        'novo_artigo' in request.endpoint or
-                        'pesquisar' in request.endpoint or
-                        'aprovacao' in request.endpoint or
-                        'artigo' in request.endpoint or
-                        'editar_artigo' in request.endpoint
-                    ) %}
+                    {% set current_endpoint = request.endpoint.split('.')[-1] %}
+                    {% set biblioteca_active = current_endpoint in [
+                        'meus_artigos',
+                        'novo_artigo',
+                        'pesquisar',
+                        'aprovacao',
+                        'artigo',
+                        'editar_artigo'
+                    ] %}
                     <li class="nav-item">
                         <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if biblioteca_active else '' }} {{ 'collapsed' if not biblioteca_active }}"
                         data-bs-toggle="collapse" href="#collapseBiblioteca" role="button"
