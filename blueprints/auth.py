@@ -145,6 +145,11 @@ def set_password_token(token):
             return redirect(url_for('login'))
     return render_template('auth/password_update.html', title='Criar Senha')
 
+@auth_bp.route('/politica-cookies', methods=['GET'], endpoint='politica_cookies')
+def politica_cookies():
+    return render_template('legal/politica_cookies.html')
+
+
 @auth_bp.route('/inicio', endpoint='pagina_inicial')
 def pagina_inicial():
     """
