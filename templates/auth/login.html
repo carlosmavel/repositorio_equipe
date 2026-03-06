@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
-{% block body_attrs %}{% endblock %}
+{% block body_attrs %}
+data-login-avatar-url="{{ url_for('login_avatar') }}"
+data-remembered-username="{{ remembered_user.username if remembered_user else '' }}"
+{% endblock %}
 
 {% block title %}Login{% endblock %}
 
@@ -95,8 +98,8 @@
       flashContainer.remove();
     }
 
-    const dataUsers  = document.body.dataset.users;
-    const users      = dataUsers ? JSON.parse(dataUsers) : {};
+    const loginAvatarUrl = document.body.dataset.loginAvatarUrl || "";
+    const rememberedUsername = (document.body.dataset.rememberedUsername || "").trim();
     const input      = document.getElementById("username");
     const photo      = document.getElementById("user-photo");
     const loginForm  = document.querySelector("form");
@@ -112,9 +115,9 @@
     /* ------------------------------------------------------------------
        2) Renderiza o avatar                                              */
     function render(username) {
-      if (users[username] && users[username].foto) {
+      if (rememberedUsername && loginAvatarUrl && username === rememberedUsername) {
         photo.innerHTML = `
-          <img src="/profile_pics/${users[username].foto}"
+          <img src="${loginAvatarUrl}"
                class="rounded-circle"
                style="width:60px; height:60px;"
                alt="${username}">
