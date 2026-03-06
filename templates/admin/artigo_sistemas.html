@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Sistemas de Artigo{% endblock %}
+{% block content %}
+<div class="container-fluid px-5">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h4>Sistemas</h4>
+          <form method="POST" class="row g-3">
+            <input type="hidden" name="id_para_atualizar" value="{{ sistema_editar.id if sistema_editar else '' }}">
+            <div class="col-md-6">
+              <label class="form-label">Nome</label>
+              <input name="nome" class="form-control" required value="{{ request.form.get('nome', sistema_editar.nome if sistema_editar else '') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Descrição</label>
+              <input name="descricao" class="form-control" value="{{ request.form.get('descricao', sistema_editar.descricao if sistema_editar else '') }}">
+            </div>
+            <div class="col-12 form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="ativo_check" name="ativo_check" {% if sistema_editar %}{% if sistema_editar.ativo %}checked{% endif %}{% else %}checked{% endif %}>
+              <label class="form-check-label" for="ativo_check">Ativo</label>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary">{{ 'Salvar alterações' if sistema_editar else 'Cadastrar sistema' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead><tr><th>Nome</th><th>Descrição</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {% for sistema in sistemas %}
+                <tr>
+                  <td>{{ sistema.nome }}</td>
+                  <td>{{ sistema.descricao or '-' }}</td>
+                  <td>{{ 'Ativo' if sistema.ativo else 'Inativo' }}</td>
+                  <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_bp.admin_artigo_sistemas', edit_id=sistema.id) }}">Editar</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -18,7 +18,7 @@
               <span class="fw-bold">Setor:</span>
               {{ art.author.setor.nome }}
               {% if art.tipo %}| <span class="fw-bold">Tipo:</span> {{ art.tipo.nome }}{% endif %}
-              {% if art.area_sistema %}| <span class="fw-bold">Área/Sistema:</span> {{ art.area_sistema.nome }}{% endif %}
+              {% if art.area %}| <span class="fw-bold">Área:</span> {{ art.area.nome }}{% endif %}{% if art.sistema %}| <span class="fw-bold">Sistema:</span> {{ art.sistema.nome }}{% endif %}
             </small>
           </div>
           <span class="badge rounded-pill bg-{{ st.color }} text-{{ st.text_color }}">

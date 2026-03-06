@@ -19,10 +19,18 @@
               </select>
             </div>
             <div class="col-md-3">
-              <select name="area_sistema_id" class="form-select">
-                <option value="">Todas áreas/sistemas</option>
-                {% for area in areas_sistema %}
-                <option value="{{ area.id }}" {% if area_sistema_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+              <select name="area_id" class="form-select">
+                <option value="">Todas áreas</option>
+                {% for area in areas_artigo %}
+                <option value="{{ area.id }}" {% if area_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="sistema_id" class="form-select">
+                <option value="">Todos sistemas</option>
+                {% for sistema in sistemas_artigo %}
+                <option value="{{ sistema.id }}" {% if sistema_id == sistema.id %}selected{% endif %}>{{ sistema.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -57,7 +65,8 @@
               <strong>Setor:</strong>
               {{ artigo.author.setor.nome }}
               {% if artigo.tipo %}| <strong>Tipo:</strong> {{ artigo.tipo.nome }}{% endif %}
-              {% if artigo.area_sistema %}| <strong>Área/Sistema:</strong> {{ artigo.area_sistema.nome }}{% endif %}
+              {% if artigo.area %}| <strong>Área:</strong> {{ artigo.area.nome }}{% endif %}
+              {% if artigo.sistema %}| <strong>Sistema:</strong> {{ artigo.sistema.nome }}{% endif %}
             </small>
           </div>
 

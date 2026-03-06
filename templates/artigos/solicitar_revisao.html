@@ -11,7 +11,7 @@
           <p class="text-muted">
             Artigo: “{{ artigo.titulo }}”
             {% if artigo.tipo %}| Tipo: {{ artigo.tipo.nome }}{% endif %}
-            {% if artigo.area_sistema %}| Área/Sistema: {{ artigo.area_sistema.nome }}{% endif %}
+            {% if artigo.area %}| Área: {{ artigo.area.nome }}{% endif %}{% if artigo.sistema %}| Sistema: {{ artigo.sistema.nome }}{% endif %}
           </p>
           <form method="post" action="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}">
             <div class="mb-3">

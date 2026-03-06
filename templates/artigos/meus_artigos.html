@@ -24,7 +24,7 @@
                     Atualizado em: {{ artigo.local_updated.strftime('%d/%m/%Y %H:%M') }} |
                     Visibilidade: {{ artigo.visibility.label }}
                     {% if artigo.tipo %}| Tipo: {{ artigo.tipo.nome }}{% endif %}
-                    {% if artigo.area_sistema %}| Área/Sistema: {{ artigo.area_sistema.nome }}{% endif %}
+                    {% if artigo.area %}| Área: {{ artigo.area.nome }}{% endif %}{% if artigo.sistema %}| Sistema: {{ artigo.sistema.nome }}{% endif %}
                   </small>
                 </div>
 
