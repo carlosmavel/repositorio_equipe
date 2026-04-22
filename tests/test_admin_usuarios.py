@@ -70,7 +70,7 @@ def test_create_user(client):
         assert user.extra_celulas.filter_by(id=ids['cel']).count() == 1
 
 
-def test_create_user_does_not_send_password_email_and_shows_admin_password_feedback(client, monkeypatch):
+def test_create_user_shows_initial_password_and_marks_mandatory_change(client):
     login_admin(client)
     ids = client.base_ids
     response = client.post('/admin/usuarios', data={
@@ -84,11 +84,38 @@ def test_create_user_does_not_send_password_email_and_shows_admin_password_feedb
 
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert 'E-mail NÃO foi enviado' in html
+    assert 'Senha inicial (gerada automaticamente):' in html
+    assert 'Usuário marcado para trocar a senha no primeiro acesso.' in html
     with app.app_context():
         user = User.query.filter_by(email='emailuser@example.com').first()
         assert user is not None
         assert user.deve_trocar_senha is True
+        assert user.check_password('') is False
+
+
+def test_create_user_with_admin_password_marks_mandatory_change(client):
+    login_admin(client)
+    ids = client.base_ids
+    senha_inicial = 'Temp1234!'
+    response = client.post('/admin/usuarios', data={
+        'username': 'manualpassuser',
+        'email': 'manualpass@example.com',
+        'password': senha_inicial,
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Senha inicial (informada pelo administrador): Temp1234!' in html
+    assert 'Usuário marcado para trocar a senha no primeiro acesso.' in html
+    with app.app_context():
+        user = User.query.filter_by(email='manualpass@example.com').first()
+        assert user is not None
+        assert user.deve_trocar_senha is True
+        assert user.check_password(senha_inicial) is True
 
 
 
