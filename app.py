@@ -105,6 +105,12 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from seeds.bootstrap_admin import ensure_initial_admin
 
+
+try:
+    from .core.services.permission_sync import sync_permission_catalog_with_lock
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from core.services.permission_sync import sync_permission_catalog_with_lock
+
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -187,6 +193,65 @@ for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROFILE_PICS_FOLDER'] = PROFILE_PICS_FOLDER
 
+
+
+@app.cli.command("bootstrap-permissions")
+def bootstrap_permissions_command() -> None:
+    """Sincroniza o catálogo centralizado de permissões (idempotente)."""
+    result = sync_permission_catalog_with_lock(db.session)
+    db.session.commit()
+
+    if result is None:
+        click.echo("ℹ️ Sincronização de permissões ignorada (lock não adquirido).")
+        return
+
+    click.echo(
+        "✅ Catálogo de permissões sincronizado. "
+        f"created={result.created} updated={result.updated} unchanged={result.unchanged}"
+    )
+
+
+def _should_run_startup_bootstrap() -> bool:
+    if app.config.get('TESTING'):
+        return False
+
+    enabled = str(os.getenv('RUN_STARTUP_BOOTSTRAP', '1')).strip().lower()
+    if enabled in {'0', 'false', 'no'}:
+        return False
+
+    if app.debug:
+        return os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
+    return True
+
+
+@app.before_request
+def _run_startup_permission_bootstrap_once() -> None:
+    if app.config.get('_permission_bootstrap_done'):
+        return
+    if not _should_run_startup_bootstrap():
+        app.config['_permission_bootstrap_done'] = True
+        return
+
+    result = sync_permission_catalog_with_lock(db.session)
+    db.session.commit()
+
+    if result is None:
+        app.logger.info(
+            'permission_catalog_sync_skipped',
+            extra={'event': 'permission_catalog_sync_skipped', 'reason': 'lock_not_acquired'},
+        )
+    else:
+        app.logger.info(
+            'permission_catalog_sync_completed',
+            extra={
+                'event': 'permission_catalog_sync_completed',
+                'created_count': result.created,
+                'updated_count': result.updated,
+                'unchanged_count': result.unchanged,
+            },
+        )
+
+    app.config['_permission_bootstrap_done'] = True
 
 @app.cli.command("bootstrap-admin")
 @click.option("--username", default="admin", show_default=True, help="Username do admin inicial.")
