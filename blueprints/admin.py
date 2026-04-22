@@ -452,7 +452,25 @@ def admin_usuarios():
             except ValueError:
                 flash('Data de admissão inválida.', 'danger')
 
-        if not username or not email or not estabelecimento_id or not setor_ids or not celula_ids:
+        admin_funcao = Funcao.query.filter_by(codigo='admin').first()
+        selected_funcao_ids = set(funcao_ids)
+        cargo_funcao_ids = {f.id for f in cargo_padrao.permissoes} if cargo_padrao else set()
+        is_target_admin = bool(admin_funcao and admin_funcao.id in (selected_funcao_ids | cargo_funcao_ids))
+
+        if id_para_atualizar and not is_target_admin and admin_funcao:
+            usuario_existente = User.query.get_or_404(id_para_atualizar)
+            possui_admin_atual = usuario_existente.has_permissao('admin')
+            removendo_admin = (
+                possui_admin_atual
+                and admin_funcao.id not in selected_funcao_ids
+                and admin_funcao.id not in cargo_funcao_ids
+            )
+            if not removendo_admin:
+                is_target_admin = possui_admin_atual
+
+        if not username or not email:
+            flash('Usuário e Email são obrigatórios.', 'danger')
+        elif not is_target_admin and (not estabelecimento_id or not setor_ids or not celula_ids):
             flash('Usuário, Email, Estabelecimento, Setor e Célula são obrigatórios.', 'danger')
         else:
             query_username = User.query.filter_by(username=username)

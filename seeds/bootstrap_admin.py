@@ -8,9 +8,9 @@ except ImportError:  # pragma: no cover - fallback for package execution
     from ..core.database import db
 
 try:
-    from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
+    from core.models import Funcao, User
 except ImportError:  # pragma: no cover - fallback for package execution
-    from ..core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
+    from ..core.models import Funcao, User
 
 
 @dataclass
@@ -18,18 +18,6 @@ class BootstrapAdminResult:
     user: User
     created: bool
     generated_password: str | None
-
-
-def _get_or_create(model, defaults=None, **kwargs):
-    instance = model.query.filter_by(**kwargs).first()
-    if instance:
-        return instance
-    params = defaults or {}
-    params.update(kwargs)
-    instance = model(**params)
-    db.session.add(instance)
-    db.session.flush()
-    return instance
 
 
 def _generate_secure_password(length: int = 20) -> str:
@@ -73,29 +61,6 @@ def ensure_initial_admin(
         db.session.commit()
         return BootstrapAdminResult(user=existing_admin, created=False, generated_password=None)
 
-    instituicao = _get_or_create(
-        Instituicao,
-        codigo="BOOT001",
-        nome="Bootstrap Instituição",
-        defaults={"descricao": "Estrutura mínima para bootstrap do admin."},
-    )
-    estabelecimento = _get_or_create(
-        Estabelecimento,
-        codigo="BOOT-EST",
-        nome_fantasia="Bootstrap Estabelecimento",
-        defaults={"instituicao_id": instituicao.id},
-    )
-    setor = _get_or_create(
-        Setor,
-        nome="Bootstrap Setor",
-        defaults={"estabelecimento_id": estabelecimento.id},
-    )
-    celula = _get_or_create(
-        Celula,
-        nome="Bootstrap Célula",
-        defaults={"estabelecimento_id": estabelecimento.id, "setor_id": setor.id},
-    )
-
     generated_password = None
     password = initial_password
     if not password:
@@ -106,9 +71,6 @@ def ensure_initial_admin(
         username=username,
         email=email,
         nome_completo=nome_completo,
-        estabelecimento_id=estabelecimento.id,
-        setor_id=setor.id,
-        celula_id=celula.id,
         deve_trocar_senha=True,
     )
     admin.set_password(password)
