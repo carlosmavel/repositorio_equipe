@@ -26,11 +26,13 @@ Estes itens são os mesmos listados na seção de pré-requisitos do projeto【F
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-3. **Aplique as migrações do banco** e (opcionalmente) rode os seeds:
+3. **Aplique as migrações do banco**, execute o bootstrap do admin e (opcionalmente) rode os seeds:
    ```bash
    flask db upgrade
+   flask bootstrap-admin
    python -m seeds.seed  # opcional - inclui exemplo do processo de onboarding
    ```
+   O comando `flask bootstrap-admin` é idempotente, não duplica o usuário admin e mantém `deve_trocar_senha=True` para forçar a troca imediata da senha inicial.
 
 ## 3. Configuração do `.env`
 Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`, `SECRET_KEY` e `DATABASE_URI`. Essas variáveis são obrigatórias para a aplicação【F:docs/GUIA_DE_INSTALACAO.md†L174-L188】【F:docs/GUIA_DE_INSTALACAO.md†L188-L230】. Um exemplo de `.env` pode ser visto abaixo:

@@ -243,13 +243,35 @@ Este comando executará todos os scripts de migração na pasta migrations/versi
 
 > **Observação:** se você adicionar uma nova coluna marcada como `nullable=True` em modelos existentes (como o `User`), remova previamente os registros ou deixe o campo temporariamente como `nullable=False` para rodar o `flask db upgrade`. Após a migração, altere o campo no banco para aceitar valores nulos, se desejar.
 
-## 12. (Opcional, mas Recomendado) Popular Dados de Exemplo
+## 12. Bootstrap Oficial do Admin Inicial (Recomendado)
+Use o comando oficial para criar (ou garantir) o administrador inicial:
+```bash
+flask bootstrap-admin
+```
+
+Comportamento do comando:
+- **Idempotente:** não cria usuário admin duplicado quando já existir.
+- **Senha inicial segura:** se `--password` não for enviada, uma senha temporária forte é gerada automaticamente e exibida no terminal.
+- **Troca obrigatória:** o usuário fica com `deve_trocar_senha=True` (equivalente a `must_change_password=True`).
+
+Exemplo com senha definida manualmente:
+```bash
+flask bootstrap-admin --username admin --email admin@seudominio.com --password 'TrocaImediata#2026'
+```
+
+> **Credenciais iniciais e troca imediata:**
+> 1. Guarde a senha temporária em local seguro.
+> 2. Faça login com o admin inicial.
+> 3. O sistema redireciona para atualização de senha por `deve_trocar_senha=True`.
+> 4. Defina uma nova senha forte e exclusiva.
+
+## 13. (Opcional, mas Recomendado) Popular Dados de Exemplo
 Execute o script abaixo para criar funções, organização, usuários e artigos básicos:
 ```bash
 python -m seeds.seed
 ```
 
-## 13. Rodar a Aplicação Flask
+## 14. Rodar a Aplicação Flask
 Finalmente! Para rodar o servidor de desenvolvimento do Flask:
 ```bash
 flask run (ou `python -m flask run`)
@@ -258,7 +280,7 @@ O terminal deverá exibir mensagens indicando que o servidor está rodando, gera
 
 Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá ver a página de login do Orquetask ou ser redirecionado para ela.
 
-## 14. Solução de Problemas Comuns no Windows
+## 15. Solução de Problemas Comuns no Windows
 
 * **Comandos não encontrados (`python`, `pip`, `flask`, `git`):**
     * Verifique se o software correspondente foi adicionado ao **PATH** do sistema durante sua instalação.
@@ -279,7 +301,7 @@ Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá 
 
 ---
 
-## 15. Configurar Envio de E-mails com SMTP Gmail
+## 16. Configurar Envio de E-mails com SMTP Gmail
 
 Para que o Orquetask envie notificações por e-mail, configure o SMTP do Gmail.
 
@@ -300,7 +322,7 @@ Para que o Orquetask envie notificações por e-mail, configure o SMTP do Gmail.
 
 Com essas configurações, o módulo central de e-mail continuará atendendo os envios de convite, redefinição de senha e notificações sem alterar as regras de negócio.
 
-## 16. Implantação em Produção
+## 17. Implantação em Produção
 
 Após concluir as etapas de instalação e configuração, consulte o
 [Guia de Implantação](./DEPLOY.md) para instruções detalhadas de como colocar o

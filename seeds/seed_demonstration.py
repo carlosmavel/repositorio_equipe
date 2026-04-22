@@ -37,14 +37,16 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.enums import Permissao, ArticleVisibility, ArticleStatus
 
-from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
+from werkzeug.security import generate_password_hash
 from app import app
 
 try:
     from . import seed_funcoes
+    from .bootstrap_admin import ensure_initial_admin
 except ImportError:  # pragma: no cover - fallback para execução direta
     import seed_funcoes
+    from bootstrap_admin import ensure_initial_admin
 
 
 def get_or_create(model, defaults=None, **kwargs):
@@ -379,25 +381,15 @@ def run():
                 )
                 db.session.add(user)
 
-        # Usuário administrador padrao
-        admin = User.query.filter_by(username="admin").first()
-        if not admin:
-            admin = User(
-                username="admin",
-                email="admin@seudominio.com",
-                password_hash=generate_password_hash("Senha123!"),
-                deve_trocar_senha=True,
-                nome_completo="Admin de Souza",
-                matricula="ADM001",
-                cpf="000.000.000-00",
-                estabelecimento_id=cel1.estabelecimento_id,
-                setor_id=cel1.setor_id,
-                celula_id=cel1.id,
+        bootstrap_result = ensure_initial_admin(
+            initial_password=os.getenv("INITIAL_ADMIN_PASSWORD"),
+        )
+        if bootstrap_result.created and bootstrap_result.generated_password:
+            print(
+                "Admin inicial criado pelo seed. "
+                f"username={bootstrap_result.user.username} "
+                f"senha_temporaria={bootstrap_result.generated_password}"
             )
-            func_admin = Funcao.query.filter_by(codigo="admin").first()
-            if func_admin:
-                admin.permissoes_personalizadas.append(func_admin)
-            db.session.add(admin)
 
         db.session.commit()
 
