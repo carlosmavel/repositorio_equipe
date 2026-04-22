@@ -326,8 +326,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function hasCheckedInput(selector) {
-    return document.querySelectorAll(selector).length > 0;
+  function hasCheckedInput(form, selector) {
+    return form.querySelectorAll(selector).length > 0;
   }
 
   function validateCreateUserForm() {
@@ -353,11 +353,13 @@ document.addEventListener("DOMContentLoaded", function () {
       : false;
 
     const exigeHierarquia = !(hasAdminByCargo || hasAdminMarcadoManual);
-    const hierarchyOk = !exigeHierarquia || (
-      hasCheckedInput("input[name='estabelecimento_id']:checked")
-      && hasCheckedInput("input[name='setor_ids']:checked")
-      && hasCheckedInput("input[name='celula_ids']:checked")
-    );
+    const hasSetor = hasCheckedInput(form, "input[name='setor_ids']:checked");
+    const hasCelula = hasCheckedInput(form, "input[name='celula_ids']:checked");
+
+    // Espelha a regra do backend:
+    // - setor e célula são obrigatórios para não-admin;
+    // - estabelecimento pode ser inferido a partir do setor/célula selecionados.
+    const hierarchyOk = !exigeHierarquia || (hasSetor && hasCelula);
 
     const isValid = Boolean(
       username?.value.trim()
