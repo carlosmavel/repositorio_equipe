@@ -16,6 +16,7 @@ from flask import (
     session, send_from_directory, flash, jsonify # Adicionei jsonify se for usar em APIs futuras
 )
 import logging
+import click
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from sqlalchemy import or_, func
@@ -99,6 +100,11 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_review_article,
         eligible_review_notification_users,
     )
+try:
+    from .seeds.bootstrap_admin import ensure_initial_admin
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from seeds.bootstrap_admin import ensure_initial_admin
+
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
@@ -180,6 +186,36 @@ for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
     os.makedirs(folder, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROFILE_PICS_FOLDER'] = PROFILE_PICS_FOLDER
+
+
+@app.cli.command("bootstrap-admin")
+@click.option("--username", default="admin", show_default=True, help="Username do admin inicial.")
+@click.option("--email", default="admin@seudominio.com", show_default=True, help="E-mail do admin inicial.")
+@click.option("--password", default=None, help="Senha inicial. Se omitida, será gerada com segurança e exibida no terminal.")
+@click.option("--nome-completo", "nome_completo", default="Administrador Inicial", show_default=True, help="Nome completo do admin inicial.")
+def bootstrap_admin_command(username: str, email: str, password: str | None, nome_completo: str) -> None:
+    """Cria (ou garante) o usuário administrador inicial de forma idempotente."""
+    result = ensure_initial_admin(
+        username=username,
+        email=email,
+        initial_password=password,
+        nome_completo=nome_completo,
+    )
+
+    if result.created:
+        click.echo("✅ Admin inicial criado com sucesso.")
+        click.echo(f"- username: {result.user.username}")
+        click.echo(f"- email: {result.user.email}")
+        if result.generated_password:
+            click.echo(f"- senha temporária gerada: {result.generated_password}")
+        else:
+            click.echo("- senha temporária: [informada via --password]")
+        click.echo("- deve_trocar_senha: True")
+    else:
+        click.echo("ℹ️ Admin inicial já existe (idempotente, nenhum duplicado criado).")
+        click.echo(f"- username: {result.user.username}")
+        click.echo("- deve_trocar_senha: True")
+
 
 
 def _is_auth_local_flash_path(path: str) -> bool:

@@ -91,12 +91,25 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     > em um repositório recém-clonado sem conflitos de cabeças.
     > Se suas migrações incluírem novas colunas com `nullable=True` em tabelas já existentes (ex.: `User`), remova os registros atuais ou defina o campo como `nullable=False` temporariamente para que a migração execute sem erros. Depois do `flask db upgrade`, ajuste o campo para permitir nulos, se for o caso.
 
-6.  **(Opcional) Popule dados de exemplo (funções, organização, usuários e artigos):**
+6.  **Bootstrap oficial do admin inicial (recomendado em qualquer ambiente):**
+    ```bash
+    flask bootstrap-admin
+    ```
+    * O comando é **idempotente**: se o admin já existir, não cria duplicado.
+    * Se `--password` não for informada, uma senha temporária forte é gerada e exibida no terminal.
+    * O usuário é criado/atualizado com `deve_trocar_senha=True` (equivalente ao `must_change_password=True`), exigindo troca imediata no primeiro login.
+
+    Exemplo com credenciais explícitas:
+    ```bash
+    flask bootstrap-admin --username admin --email admin@seudominio.com --password 'TrocaImediata#2026'
+    ```
+
+7.  **(Opcional) Popule dados de exemplo (funções, organização, usuários e artigos):**
     ```bash
     python -m seeds.seed
     ```
 
-7.  **Rode a aplicação Flask:**
+8.  **Rode a aplicação Flask:**
     ```bash
     flask run
     ```
