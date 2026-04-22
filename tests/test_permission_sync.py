@@ -12,32 +12,77 @@ except ImportError:  # pragma: no cover - fallback for package execution
     from ..core.services.permission_sync import sync_permission_catalog, sync_permission_catalog_with_lock
 
 
-def test_sync_permission_catalog_is_idempotent_and_updates_managed_fields(app_ctx):
-    result_first = sync_permission_catalog(db.session)
+def _assert_catalog_matches_database():
+    assert Funcao.query.filter_by(managed_by_system=True).count() >= len(CATALOG)
+
+    for item in CATALOG:
+        row = Funcao.query.filter_by(codigo=item.codigo).one_or_none()
+        assert row is not None
+        assert row.nome == item.nome
+        assert row.managed_by_system is True
+
+
+def test_sync_permission_catalog_base_vazia_cria_catalogo_completo(app_ctx):
+    result = sync_permission_catalog(db.session)
     db.session.commit()
 
-    assert result_first.created == len(CATALOG)
-    assert result_first.updated == 0
-    assert result_first.unchanged == 0
+    assert result.created == len(CATALOG)
+    assert result.updated == 0
+    assert result.unchanged == 0
+    _assert_catalog_matches_database()
 
+
+def test_sync_permission_catalog_base_parcial_completa_sem_duplicar(app_ctx):
+    parciais = [
+        Funcao(codigo=CATALOG[0].codigo, nome=CATALOG[0].nome, managed_by_system=True),
+        Funcao(codigo=CATALOG[1].codigo, nome=CATALOG[1].nome, managed_by_system=True),
+    ]
+    db.session.add_all(parciais)
+    db.session.commit()
+
+    result = sync_permission_catalog(db.session)
+    db.session.commit()
+
+    assert result.created == len(CATALOG) - len(parciais)
+    assert result.updated == 0
+    assert result.unchanged == len(parciais)
+    assert Funcao.query.filter_by(codigo=CATALOG[0].codigo).count() == 1
+    assert Funcao.query.filter_by(codigo=CATALOG[1].codigo).count() == 1
+    _assert_catalog_matches_database()
+
+
+def test_sync_permission_catalog_atualiza_nomes_desatualizados(app_ctx):
     item = CATALOG[0]
-    func = Funcao.query.filter_by(codigo=item.codigo).first()
-    assert func is not None
-
-    func.nome = "Nome divergente"
+    db.session.add(Funcao(codigo=item.codigo, nome="Nome divergente", managed_by_system=True))
     db.session.commit()
 
-    result_second = sync_permission_catalog(db.session)
+    result = sync_permission_catalog(db.session)
     db.session.commit()
 
-    assert result_second.created == 0
-    assert result_second.updated == 1
-    assert result_second.unchanged == len(CATALOG) - 1
+    assert result.created == len(CATALOG) - 1
+    assert result.updated == 1
+    assert result.unchanged == 0
 
-    updated = Funcao.query.filter_by(codigo=item.codigo).first()
-    assert updated is not None
-    assert updated.nome == item.nome
-    assert updated.managed_by_system is True
+    atualizada = Funcao.query.filter_by(codigo=item.codigo).one()
+    assert atualizada.nome == item.nome
+    assert atualizada.managed_by_system is True
+
+
+def test_sync_permission_catalog_idempotencia_duas_execucoes_estado_final_igual(app_ctx):
+    primeiro = sync_permission_catalog(db.session)
+    db.session.commit()
+    snapshot_1 = {(row.codigo, row.nome, row.managed_by_system) for row in Funcao.query.order_by(Funcao.codigo).all()}
+
+    segundo = sync_permission_catalog(db.session)
+    db.session.commit()
+    snapshot_2 = {(row.codigo, row.nome, row.managed_by_system) for row in Funcao.query.order_by(Funcao.codigo).all()}
+
+    assert primeiro.created == len(CATALOG)
+    assert segundo.created == 0
+    assert segundo.updated == 0
+    assert segundo.unchanged == len(CATALOG)
+    assert snapshot_1 == snapshot_2
+    _assert_catalog_matches_database()
 
 
 def test_sync_permission_catalog_with_lock_falls_back_for_non_postgres(app_ctx):
@@ -48,7 +93,7 @@ def test_sync_permission_catalog_with_lock_falls_back_for_non_postgres(app_ctx):
     assert result.created == len(CATALOG)
 
 
-def test_sync_permission_catalog_does_not_change_custom_permissions(app_ctx):
+def test_sync_permission_catalog_preserva_permissao_custom_fora_catalogo(app_ctx):
     custom = Funcao(codigo="custom_exportar", nome="Exportar customizado", managed_by_system=False)
     db.session.add(custom)
     db.session.commit()
