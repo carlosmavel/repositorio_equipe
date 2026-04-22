@@ -180,7 +180,7 @@ pip install --force-reinstall lxml "numpy<2" opencv-python python-docx
 ## 10. Configurar Variáveis de Ambiente Essenciais (no Windows)
 Para que o Orquetask funcione corretamente e de forma segura, é crucial configurar algumas **variáveis de ambiente** no seu sistema Windows. Essas variáveis permitem que a aplicação acesse configurações importantes sem que elas precisem estar escritas diretamente no código.
 
-Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha os valores de `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`, `SECRET_KEY` e `DATABASE_URI` com suas próprias configurações. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
+Antes de prosseguir, copie o arquivo `.env.example` que acompanha o projeto para `.env` e preencha **obrigatoriamente** `SECRET_KEY` e `DATABASE_URI`. As variáveis de SMTP (`MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`) são recomendadas para comunicações por e-mail, mas podem ser configuradas depois. O Flask carregará essas variáveis automaticamente ao executar `flask run` se o arquivo `.env` estiver na raiz do projeto.
 
 * **Por que usar Variáveis de Ambiente?**
     * **Segurança:** É a forma mais segura de gerenciar informações sensíveis como chaves secretas (`SECRET_KEY`) e credenciais de banco de dados (`DATABASE_URI`), mantendo-as fora do código-fonte que pode ser versionado no Git.
@@ -233,6 +233,11 @@ O arquivo `app.py` do Orquetask está programado para ler essas variáveis do se
     *(Opcionalmente, para testes rápidos, você pode definir variáveis temporariamente em uma sessão do PowerShell usando `$env:NOME_VARIAVEL = "VALOR"`, mas elas não persistirão).*
 
 Com essas variáveis corretamente configuradas, o Orquetask estará pronto para rodar usando configurações seguras e específicas do seu setup.
+
+> **Importante sobre cadastro e onboarding:**
+> - O campo **e-mail continua obrigatório** no cadastro de usuários.
+> - O **fluxo inicial de acesso não depende de envio de e-mail**: o admin define (ou recebe) uma senha inicial e o usuário é marcado para troca obrigatória no primeiro login.
+> - O **SMTP é opcional para onboarding inicial**, permanecendo útil/recomendado para comunicações futuras (como recuperação de senha e notificações).
 
 ## 11. Aplicar as Migrações do Banco de Dados
 Com o ambiente virtual ativo e as variáveis de ambiente configuradas (especialmente a `DATABASE_URI` correta):
@@ -301,9 +306,9 @@ Abra seu navegador de internet e acesse `http://127.0.0.1:5000/`. Você deverá 
 
 ---
 
-## 16. Configurar Envio de E-mails com SMTP Gmail
+## 16. Configurar Envio de E-mails com SMTP Gmail (Opcional para onboarding)
 
-Para que o Orquetask envie notificações por e-mail, configure o SMTP do Gmail.
+Para que o Orquetask envie notificações e fluxos de recuperação por e-mail, configure o SMTP do Gmail. Esta etapa é opcional para o onboarding inicial de usuários.
 
 1. **Use a conta de envio padrão do projeto:**
    * `orquetask.noreply@gmail.com`
@@ -320,7 +325,7 @@ Para que o Orquetask envie notificações por e-mail, configure o SMTP do Gmail.
    * `MAIL_DEFAULT_SENDER=orquetask.noreply@gmail.com`
 4. **Reinicie a aplicação** após alterar as variáveis para aplicar a nova configuração.
 
-Com essas configurações, o módulo central de e-mail continuará atendendo os envios de convite, redefinição de senha e notificações sem alterar as regras de negócio.
+Com essas configurações, o módulo central de e-mail atenderá os fluxos de redefinição de senha e notificações futuras sem alterar as regras de negócio.
 
 ## 17. Implantação em Produção
 

@@ -171,6 +171,53 @@ def test_login_redirects_to_mandatory_password_change(client, app_ctx):
     assert "/troca-senha-obrigatoria" in resp.headers["Location"]
 
 
+def test_login_blocks_navigation_until_password_is_changed(client, app_ctx):
+    with app.app_context():
+        from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+        inst = Instituicao(codigo="INST4B", nome="Inst4B")
+        est = Estabelecimento(codigo="E4B", nome_fantasia="Estab4B", instituicao=inst)
+        setor = Setor(nome="Setor4B", estabelecimento=est)
+        celula = Celula(nome="Cel4B", estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, celula])
+        db.session.flush()
+
+        user = User(
+            username="must_change_login_block",
+            email="must_change_login_block@example.com",
+            estabelecimento=est,
+            setor=setor,
+            celula=celula,
+            deve_trocar_senha=True,
+        )
+        user.set_password("Secret1!")
+        db.session.add(user)
+        db.session.commit()
+
+    login = client.post(
+        "/login",
+        data={"username": "must_change_login_block", "password": "Secret1!"},
+        follow_redirects=False,
+    )
+    assert login.status_code == 302
+    assert "/troca-senha-obrigatoria" in login.headers["Location"]
+
+    blocked = client.get("/perfil", follow_redirects=False)
+    assert blocked.status_code == 302
+    assert "/troca-senha-obrigatoria" in blocked.headers["Location"]
+
+    changed = client.post(
+        "/troca-senha-obrigatoria",
+        data={"nova_senha": "NovaSenha1!", "confirmar_nova_senha": "NovaSenha1!"},
+        follow_redirects=False,
+    )
+    assert changed.status_code == 302
+    assert "/inicio" in changed.headers["Location"]
+
+    unblocked = client.get("/inicio")
+    assert unblocked.status_code == 200
+
+
 def test_mandatory_password_change_blocks_home_and_unblocks_after_change(client, app_ctx):
     user_id = None
     username = "must_change_block"
