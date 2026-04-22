@@ -338,13 +338,32 @@ document.addEventListener("DOMContentLoaded", function () {
     const username = document.getElementById('username');
     const email = document.getElementById('email');
     const cargo = document.getElementById('cargo_id');
+
+    const selectedCargoId = cargo?.value || null;
+    const cargoAdminFuncoes = selectedCargoId && cargoDefaults[selectedCargoId]
+      ? cargoDefaults[selectedCargoId].funcoes || []
+      : [];
+    const adminFuncaoId = Number(window.adminFuncaoId);
+    const hasAdminByCargo = Number.isInteger(adminFuncaoId)
+      ? cargoAdminFuncoes.includes(adminFuncaoId)
+      : false;
+    const hasAdminMarcadoManual = Number.isInteger(adminFuncaoId)
+      ? Array.from(document.querySelectorAll("input[name='funcao_ids']:checked"))
+          .some((input) => Number(input.value) === adminFuncaoId)
+      : false;
+
+    const exigeHierarquia = !(hasAdminByCargo || hasAdminMarcadoManual);
+    const hierarchyOk = !exigeHierarquia || (
+      hasCheckedInput("input[name='estabelecimento_id']:checked")
+      && hasCheckedInput("input[name='setor_ids']:checked")
+      && hasCheckedInput("input[name='celula_ids']:checked")
+    );
+
     const isValid = Boolean(
       username?.value.trim()
       && email?.value.trim()
       && cargo?.value
-      && hasCheckedInput("input[name='estabelecimento_id']:checked")
-      && hasCheckedInput("input[name='setor_ids']:checked")
-      && hasCheckedInput("input[name='celula_ids']:checked")
+      && hierarchyOk
     );
 
     submitBtn.disabled = !isValid;
