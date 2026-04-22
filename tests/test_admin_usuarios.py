@@ -2,7 +2,6 @@ import pytest
 
 from app import app, db
 from core.models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
-from core.utils import DEFAULT_NEW_USER_PASSWORD
 
 @pytest.fixture
 def client(app_ctx):
@@ -64,7 +63,7 @@ def test_create_user(client):
         user = User.query.filter_by(username='newuser').first()
         assert user is not None
         assert user.email == 'new@example.com'
-        assert user.check_password(DEFAULT_NEW_USER_PASSWORD)
+        assert user.check_password('Mudanca123!') is False
         assert user.ativo is True
         assert user.celula_id == ids['cel']
         assert user.setor_id == ids['setor']
@@ -296,3 +295,52 @@ def test_edit_user_updates_relations(client):
         assert u.email == 'new@example.com'
         assert u.cargo_id == cargo_id
         assert {f.id for f in u.permissoes_personalizadas} == {func2_id}
+
+
+def test_admin_usuarios_form_keeps_email_required(client):
+    login_admin(client)
+    response = client.get('/admin/usuarios')
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'id="email"' in html
+    assert 'id="email" name="email"' in html
+    assert 'id="email" name="email" value="' in html
+    assert 'id="email" name="email" value="" required' in html
+
+
+def test_edit_user_duplicate_email_still_blocked(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        u1 = User(
+            username='u-one',
+            email='u-one@example.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+        )
+        u1.set_password('x')
+        u2 = User(
+            username='u-two',
+            email='u-two@example.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+        )
+        u2.set_password('x')
+        db.session.add_all([u1, u2])
+        db.session.commit()
+        u2_id = u2.id
+
+    response = client.post('/admin/usuarios', data={
+        'id_para_atualizar': str(u2_id),
+        'username': 'u-two',
+        'email': 'u-one@example.com',
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])],
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert 'já está em uso' in response.get_data(as_text=True)
