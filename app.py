@@ -8,6 +8,7 @@ import json
 import time
 import uuid
 import re # Você já tinha, bom para futuras validações
+import sys
 from datetime import datetime, timezone # Adicionei datetime aqui se for usar em 'strptime' na rota de perfil
 from zoneinfo import ZoneInfo # Você já tinha
 
@@ -137,9 +138,38 @@ NOME_NIVEL_CARGO = {valor: nome for valor, nome in NIVEIS_HIERARQUICOS}
 # Configuração da Aplicação (Seu código existente)
 # -------------------------------------------------------------------------
 app = Flask(__name__)
-logging.basicConfig(level=logging.DEBUG)
-app.logger.setLevel(logging.DEBUG)
 app.config.from_object(Config)
+
+
+def _is_homologacao_environment() -> bool:
+    env_name = (
+        os.getenv('APP_ENV')
+        or os.getenv('FLASK_ENV')
+        or os.getenv('ENVIRONMENT')
+        or 'production'
+    ).strip().lower()
+    return env_name in {'homologacao', 'homolog', 'staging', 'development'}
+
+
+if _is_homologacao_environment():
+    log_level = logging.DEBUG
+    logging.basicConfig(
+        level=log_level,
+        stream=sys.stdout,
+        format='%(asctime)s %(name)s %(levelname)s %(message)s',
+    )
+    app.config['SQLALCHEMY_ECHO'] = os.getenv('SQLALCHEMY_ECHO', 'true').lower() == 'true'
+else:
+    log_level = logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        stream=sys.stdout,
+        format='%(asctime)s %(name)s %(levelname)s %(message)s',
+    )
+    app.config.setdefault('SQLALCHEMY_ECHO', os.getenv('SQLALCHEMY_ECHO', 'false').lower() == 'true')
+
+app.logger.setLevel(log_level)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG if _is_homologacao_environment() else logging.WARNING)
 
 app.secret_key = app.config['SECRET_KEY']
 app.logger.info(
@@ -414,4 +444,3 @@ def inject_zoneinfo():
 def inject_niveis_cargo():
     """Disponibiliza o mapeamento de níveis hierárquicos para todos os templates."""
     return dict(NOME_NIVEL_CARGO=NOME_NIVEL_CARGO, NIVEIS_HIERARQUICOS=NIVEIS_HIERARQUICOS)
-

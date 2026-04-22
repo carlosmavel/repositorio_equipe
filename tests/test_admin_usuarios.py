@@ -1,4 +1,5 @@
 import pytest
+import logging
 
 from app import app, db
 from core.models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
@@ -47,12 +48,14 @@ def login_admin(client):
         sess['user_id'] = uid
 
 
-def test_create_user(client):
+def test_create_user(client, caplog):
     login_admin(client)
     ids = client.base_ids
+    caplog.set_level(logging.INFO)
     response = client.post('/admin/usuarios', data={
         'username': 'newuser',
         'email': 'new@example.com',
+        'password': 'SuperSecreta!123',
         'ativo_check': 'on',
         'estabelecimento_id': ids['est'],
         'setor_ids': [str(ids['setor'])],
@@ -68,6 +71,14 @@ def test_create_user(client):
         assert user.celula_id == ids['cel']
         assert user.setor_id == ids['setor']
         assert user.extra_celulas.filter_by(id=ids['cel']).count() == 1
+    post_log = next((record for record in caplog.records if record.message == 'admin_usuarios_post_received'), None)
+    assert post_log is not None
+    assert post_log.request_method == 'POST'
+    assert post_log.request_path == '/admin/usuarios'
+    assert post_log.request_form['password'] == ['***REDACTED***']
+    assert 'SuperSecreta!123' not in caplog.text
+    assert any(record.message == 'Tentando commit de usuário' for record in caplog.records)
+    assert any(record.message == 'admin_usuarios_commit_success' for record in caplog.records)
 
 
 def test_create_user_shows_initial_password_and_marks_mandatory_change(client):
@@ -120,11 +131,12 @@ def test_create_user_with_admin_password_marks_mandatory_change(client):
 
 
 
-def test_create_user_integrity_error_shows_friendly_message(client, monkeypatch):
+def test_create_user_integrity_error_shows_friendly_message(client, monkeypatch, caplog):
     from sqlalchemy.exc import IntegrityError
 
     login_admin(client)
     ids = client.base_ids
+    caplog.set_level(logging.INFO)
 
     def raise_integrity_error():
         raise IntegrityError('INSERT', {'email': 'duplicado@example.com'}, Exception('duplicate key value violates unique constraint'))
@@ -144,6 +156,11 @@ def test_create_user_integrity_error_shows_friendly_message(client, monkeypatch)
     html = response.get_data(as_text=True)
     assert 'Não foi possível salvar o usuário. Verifique os dados informados e tente novamente.' in html
     assert 'duplicate key value violates unique constraint' not in html
+    error_log = next((record for record in caplog.records if record.message == 'admin_usuarios_integrity_error'), None)
+    assert error_log is not None
+    assert error_log.error_repr
+    assert error_log.error_str
+    assert 'duplicate key value violates unique constraint' in error_log.error_orig
 
 def test_toggle_user_active(client):
     ids = client.base_ids

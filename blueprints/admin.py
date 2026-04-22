@@ -93,6 +93,16 @@ def _current_user():
     uid = session.get('user_id')
     return User.query.get(uid) if uid else None
 
+
+def _request_correlation_id():
+    return (
+        request.headers.get('X-Request-ID')
+        or request.headers.get('X-Correlation-ID')
+        or request.headers.get('X-Amzn-Trace-Id')
+        or request.environ.get('HTTP_X_REQUEST_ID')
+        or request.environ.get('HTTP_X_CORRELATION_ID')
+    )
+
 # ROTAS DE ADMINISTRAÇÃO (NOVA SEÇÃO - ADICIONE AS ROTAS DO ADMIN AQUI)
 # -------------------------------------------------------------------------
 @admin_bp.route('/admin/')
@@ -405,7 +415,27 @@ def admin_usuarios():
 
     if request.method == 'POST':
         manter_aba_cadastro = True
-        app.logger.debug(f"Received POST /admin/usuarios with data: {request.form}")
+        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        correlation_id = _request_correlation_id()
+        actor = _current_user()
+        actor_id = getattr(actor, 'id', None) if actor else session.get('user_id')
+        actor_username = getattr(actor, 'username', None) if actor else None
+        sanitized_form = request.form.to_dict(flat=False)
+        if 'password' in sanitized_form:
+            sanitized_form['password'] = ['***REDACTED***']
+        app.logger.info(
+            "admin_usuarios_post_received",
+            extra={
+                'event': 'admin_usuarios_post_received',
+                'request_method': request.method,
+                'request_path': request.path,
+                'request_form': sanitized_form,
+                'actor_id': actor_id,
+                'actor_username': actor_username,
+                'timestamp_utc': timestamp_utc,
+                'correlation_id': correlation_id,
+            },
+        )
         id_para_atualizar = request.form.get('id_para_atualizar')
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -470,9 +500,54 @@ def admin_usuarios():
             if not removendo_admin:
                 is_target_admin = possui_admin_atual
 
+        app.logger.info(
+            "admin_usuarios_parsed_payload",
+            extra={
+                'event': 'admin_usuarios_parsed_payload',
+                'username': username,
+                'email': email,
+                'ativo': ativo,
+                'estabelecimento_id': estabelecimento_id,
+                'setor_ids': setor_ids,
+                'celula_ids': celula_ids,
+                'cargo_id': cargo_id,
+                'funcao_ids': funcao_ids,
+                'id_para_atualizar': id_para_atualizar,
+                'is_target_admin': is_target_admin,
+                'correlation_id': correlation_id,
+            },
+        )
+
         if not username or not email:
+            app.logger.warning(
+                "admin_usuarios_validation_failed_missing_username_or_email",
+                extra={
+                    'event': 'admin_usuarios_validation_failed',
+                    'reason': 'missing_username_or_email',
+                    'username': username,
+                    'email': email,
+                    'correlation_id': correlation_id,
+                },
+            )
             flash('Usuário e Email são obrigatórios.', 'danger')
         elif not is_target_admin and (not estabelecimento_id or not setor_ids or not celula_ids):
+            missing_fields = []
+            if not estabelecimento_id:
+                missing_fields.append('estabelecimento_id')
+            if not setor_ids:
+                missing_fields.append('setor_ids')
+            if not celula_ids:
+                missing_fields.append('celula_ids')
+            app.logger.warning(
+                "admin_usuarios_validation_failed_missing_required_org_fields",
+                extra={
+                    'event': 'admin_usuarios_validation_failed',
+                    'reason': 'missing_required_org_fields',
+                    'missing_fields': missing_fields,
+                    'is_target_admin': is_target_admin,
+                    'correlation_id': correlation_id,
+                },
+            )
             flash('Usuário, Email, Estabelecimento, Setor e Célula são obrigatórios.', 'danger')
         else:
             query_username = User.query.filter_by(username=username)
@@ -485,10 +560,37 @@ def admin_usuarios():
                     query_cpf = query_cpf.filter(User.id != int(id_para_atualizar))
 
             if query_username.first():
+                app.logger.warning(
+                    "admin_usuarios_validation_failed_duplicate_username",
+                    extra={
+                        'event': 'admin_usuarios_validation_failed',
+                        'reason': 'duplicate_username',
+                        'username': username,
+                        'correlation_id': correlation_id,
+                    },
+                )
                 flash(f'O nome de usuário "{username}" já está em uso.', 'danger')
             elif query_email.first():
+                app.logger.warning(
+                    "admin_usuarios_validation_failed_duplicate_email",
+                    extra={
+                        'event': 'admin_usuarios_validation_failed',
+                        'reason': 'duplicate_email',
+                        'email': email,
+                        'correlation_id': correlation_id,
+                    },
+                )
                 flash(f'O email "{email}" já está em uso.', 'danger')
             elif query_cpf is not None and query_cpf.first():
+                app.logger.warning(
+                    "admin_usuarios_validation_failed_duplicate_cpf",
+                    extra={
+                        'event': 'admin_usuarios_validation_failed',
+                        'reason': 'duplicate_cpf',
+                        'cpf': cpf,
+                        'correlation_id': correlation_id,
+                    },
+                )
                 flash(f'O CPF "{cpf}" já está em uso.', 'danger')
             else:
                 if id_para_atualizar:
@@ -560,16 +662,57 @@ def admin_usuarios():
                     action_msg = 'criado'
 
                 try:
+                    app.logger.info(
+                        "Tentando commit de usuário",
+                        extra={
+                            'event': 'admin_usuarios_commit_attempt',
+                            'action': action_msg,
+                            'user_id': getattr(usr, 'id', None),
+                            'username': usr.username,
+                            'email': usr.email,
+                            'is_update': bool(id_para_atualizar),
+                            'correlation_id': correlation_id,
+                        },
+                    )
                     db.session.commit()
-                    app.logger.info(f"Usuario {action_msg}: id={usr.id}")
+                    app.logger.info(
+                        "admin_usuarios_commit_success",
+                        extra={
+                            'event': 'admin_usuarios_commit_success',
+                            'action': action_msg,
+                            'user_id': usr.id,
+                            'username': usr.username,
+                            'correlation_id': correlation_id,
+                        },
+                    )
                 except IntegrityError as e:
                     db.session.rollback()
                     flash('Não foi possível salvar o usuário. Verifique os dados informados e tente novamente.', 'danger')
-                    app.logger.error(f"Erro de integridade ao salvar usuário: {e}")
+                    app.logger.error(
+                        "admin_usuarios_integrity_error",
+                        extra={
+                            'event': 'admin_usuarios_integrity_error',
+                            'error_repr': repr(e),
+                            'error_str': str(e),
+                            'error_orig': str(getattr(e, 'orig', None)),
+                            'username': username,
+                            'email': email,
+                            'correlation_id': correlation_id,
+                        },
+                    )
                 except Exception as e:
                     db.session.rollback()
                     flash('Ocorreu um erro ao salvar o usuário. Tente novamente em instantes.', 'danger')
-                    app.logger.error(f"Erro DB User: {e}")
+                    app.logger.exception(
+                        "admin_usuarios_unexpected_error",
+                        extra={
+                            'event': 'admin_usuarios_unexpected_error',
+                            'error_repr': repr(e),
+                            'username': username,
+                            'email': email,
+                            'correlation_id': correlation_id,
+                        },
+                    )
                 else:
                     manter_aba_cadastro = False
                     if not id_para_atualizar:
