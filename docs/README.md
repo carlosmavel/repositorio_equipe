@@ -21,6 +21,26 @@ Orquetask é um sistema web integrado construído com Flask e Python. A base atu
 * **Temas Claro/Escuro e layout responsivo com sidebar.**
 * **Módulos em desenvolvimento:** Processos (modelos e telas administrativas já versionados, porém desativados por padrão) e Ordens de Serviço (modelos utilitários sem rotas ativas).
 
+## Catálogo de permissões: política de lifecycle
+
+O modelo `Funcao` possui o campo `managed_by_system` para separar permissões do
+catálogo nativo (`True`) de permissões customizadas (`False`).
+
+### Regras do sincronizador (`sync_permission_catalog`)
+
+* **Create/Update:** cria permissões canônicas ausentes e atualiza apenas
+  registros `managed_by_system=True`.
+* **Customizados preservados:** permissões `managed_by_system=False` não são
+  removidas nem alteradas pela sincronização.
+* **Renomeação de código:** só pode ocorrer via `CODE_ALIASES` (de/para)
+  definido em `core/permission_catalog.py`, preservando relacionamentos em
+  `cargo_funcoes` e `user_funcoes`.
+* **Bloqueio de mudança implícita de `codigo`:** se existir código gerenciado
+  pelo sistema fora das listas canônica, alias ou deprecated, a sincronização
+  falha com erro explícito.
+* **Deprecated:** códigos descontinuados devem ser listados em
+  `DEPRECATED_CODES` até a remoção por migração dedicada.
+
 ## Tecnologias Utilizadas
 
 * **Backend:** Python 3, Flask
