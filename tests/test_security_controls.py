@@ -137,3 +137,82 @@ def test_send_email_without_smtp_credentials_raises(monkeypatch):
     with local_app.app_context():
         with pytest.raises(RuntimeError):
             send_email("to@example.com", "Subject", "<p>Body</p>")
+
+
+def test_login_redirects_to_mandatory_password_change(client, app_ctx):
+    with app.app_context():
+        from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+        inst = Instituicao(codigo="INST4", nome="Inst4")
+        est = Estabelecimento(codigo="E4", nome_fantasia="Estab4", instituicao=inst)
+        setor = Setor(nome="Setor4", estabelecimento=est)
+        celula = Celula(nome="Cel4", estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, celula])
+        db.session.flush()
+
+        user = User(
+            username="must_change",
+            email="must_change@example.com",
+            estabelecimento=est,
+            setor=setor,
+            celula=celula,
+            deve_trocar_senha=True,
+        )
+        user.set_password("Secret1!")
+        db.session.add(user)
+        db.session.commit()
+
+    resp = client.post(
+        "/login",
+        data={"username": "must_change", "password": "Secret1!"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    assert "/troca-senha-obrigatoria" in resp.headers["Location"]
+
+
+def test_mandatory_password_change_blocks_home_and_unblocks_after_change(client, app_ctx):
+    user_id = None
+    username = "must_change_block"
+    with app.app_context():
+        from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+        inst = Instituicao(codigo="INST5", nome="Inst5")
+        est = Estabelecimento(codigo="E5", nome_fantasia="Estab5", instituicao=inst)
+        setor = Setor(nome="Setor5", estabelecimento=est)
+        celula = Celula(nome="Cel5", estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, celula])
+        db.session.flush()
+
+        user = User(
+            username=username,
+            email="must_change_block@example.com",
+            estabelecimento=est,
+            setor=setor,
+            celula=celula,
+            deve_trocar_senha=True,
+        )
+        user.set_password("Secret1!")
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["username"] = username
+
+    blocked = client.get("/inicio", follow_redirects=False)
+    assert blocked.status_code == 302
+    assert "/troca-senha-obrigatoria" in blocked.headers["Location"]
+
+    changed = client.post(
+        "/troca-senha-obrigatoria",
+        data={"nova_senha": "NovaSenha1!", "confirmar_nova_senha": "NovaSenha1!"},
+        follow_redirects=False,
+    )
+    assert changed.status_code == 302
+    assert "/inicio" in changed.headers["Location"]
+
+    with app.app_context():
+        refreshed = User.query.filter_by(username=username).first()
+        assert refreshed.deve_trocar_senha is False
