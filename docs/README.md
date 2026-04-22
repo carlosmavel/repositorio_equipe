@@ -95,19 +95,38 @@ Consulte o passo a passo de instalação dessas dependências e a configuração
     ```bash
     flask bootstrap-admin
     ```
-    * O comando é **idempotente**: se o admin já existir, não cria duplicado.
-    * Se `--password` não for informada, uma senha temporária forte é gerada e exibida no terminal.
-    * O usuário é criado/atualizado com `deve_trocar_senha=True` (equivalente ao `must_change_password=True`), exigindo troca imediata no primeiro login.
+    * **Comportamento atual (depois da mudança):**
+      * O comando é **idempotente**: se o admin já existir (por `username` ou `email`), não cria duplicado.
+      * Se `--password` não for informada, uma senha temporária forte é gerada e exibida no terminal.
+      * O usuário é criado/atualizado com `deve_trocar_senha=True` (equivalente ao `must_change_password=True`), exigindo troca imediata no primeiro login.
+      * Quando o admin já existe, o comando apenas garante permissão administrativa e troca obrigatória de senha; **não recria** estrutura organizacional.
+    * **Comportamento anterior (antes da mudança):**
+      * A inicialização do ambiente era normalmente feita com `python -m seeds.seed`, que também popula dados de demonstração e outros usuários, além do admin.
+      * Em prática, a criação do admin ficava acoplada ao seed completo, em vez de um bootstrap mínimo e idempotente.
 
     Exemplo com credenciais explícitas:
     ```bash
     flask bootstrap-admin --username admin --email admin@seudominio.com --password 'TrocaImediata#2026'
     ```
 
+    > **Nota de migração (ambientes existentes com BOOT\*):**
+    > Se já existir admin vinculado à estrutura `BOOT001` / `BOOT-EST` (e seus Setor/Célula de bootstrap), **não é obrigatório migrar imediatamente**. O `flask bootstrap-admin` mantém compatibilidade e continuará funcionando.
+    >
+    > Quando quiser ajustar:
+    > 1. Crie/seleciona a estrutura organizacional definitiva.
+    > 2. Reatribua o admin para `estabelecimento`, `setor` e `celula` finais.
+    > 3. Mantenha a função/permissão administrativa (`admin`) no usuário.
+    > 4. Só remova a estrutura BOOT\* após confirmar que nenhum usuário depende dela.
+
 7.  **(Opcional) Popule dados de exemplo (funções, organização, usuários e artigos):**
     ```bash
     python -m seeds.seed
     ```
+    > **Recomendação operacional (produção/base limpa):**
+    > Para inicialização limpa, use **apenas**:
+    > 1) `flask db upgrade`  
+    > 2) `flask bootstrap-admin`  
+    > Evite `python -m seeds.seed` nesse cenário, pois ele insere dados de exemplo.
 
 8.  **Rode a aplicação Flask:**
     ```bash
