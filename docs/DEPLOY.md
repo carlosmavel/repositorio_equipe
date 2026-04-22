@@ -26,13 +26,25 @@ Estes itens são os mesmos listados na seção de pré-requisitos do projeto【F
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-3. **Aplique as migrações do banco**, execute o bootstrap do admin e (opcionalmente) rode os seeds:
+3. **Aplique as migrações do banco** e execute o bootstrap do admin:
    ```bash
    flask db upgrade
    flask bootstrap-admin
-   python -m seeds.seed  # opcional - inclui exemplo do processo de onboarding
    ```
    O comando `flask bootstrap-admin` é idempotente, não duplica o usuário admin e mantém `deve_trocar_senha=True` para forçar a troca imediata da senha inicial.
+   Quando já existir admin com mesmo `username` ou `email`, ele atualiza permissões/troca obrigatória sem recriar usuário.
+
+   **Antes x depois da mudança (`flask bootstrap-admin`):**
+   - **Antes:** a prática comum era usar `python -m seeds.seed` para preparar o ambiente, trazendo também dados de demonstração.
+   - **Depois:** o fluxo recomendado em produção é bootstrap mínimo e idempotente com `flask bootstrap-admin`.
+
+   **Recomendação operacional para produção (base limpa):**
+   - Use somente `flask db upgrade` + `flask bootstrap-admin`.
+   - Não execute `python -m seeds.seed` quando o objetivo for subir ambiente limpo sem dados de exemplo.
+
+   **Nota de migração para ambientes existentes (estrutura BOOT\*):**
+   - Ambientes que já possuem admin vinculado à estrutura `BOOT001` / `BOOT-EST` permanecem compatíveis.
+   - Se desejar descontinuar BOOT\*, reatribua admins para a estrutura organizacional definitiva e remova BOOT\* apenas após validar que não há vínculos remanescentes.
 
 ## 3. Configuração do `.env`
 Copie o arquivo `.env.example` para `.env` e defina os valores das variáveis `MAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_USE_TLS`, `MAIL_DEFAULT_SENDER`, `SECRET_KEY` e `DATABASE_URI`. Essas variáveis são obrigatórias para a aplicação【F:docs/GUIA_DE_INSTALACAO.md†L174-L188】【F:docs/GUIA_DE_INSTALACAO.md†L188-L230】. Um exemplo de `.env` pode ser visto abaixo:

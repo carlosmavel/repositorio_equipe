@@ -254,10 +254,15 @@ Use o comando oficial para criar (ou garantir) o administrador inicial:
 flask bootstrap-admin
 ```
 
-Comportamento do comando:
-- **Idempotente:** não cria usuário admin duplicado quando já existir.
+Comportamento do comando **depois da mudança**:
+- **Idempotente:** não cria usuário admin duplicado quando já existir (por `username` ou `email`).
 - **Senha inicial segura:** se `--password` não for enviada, uma senha temporária forte é gerada automaticamente e exibida no terminal.
 - **Troca obrigatória:** o usuário fica com `deve_trocar_senha=True` (equivalente a `must_change_password=True`).
+- **Atualização sem recriar:** se o admin já existir, o comando garante permissão administrativa e troca obrigatória, sem recriar usuário/estrutura.
+
+Comportamento **antes da mudança**:
+- Em muitos ambientes, a preparação inicial dependia principalmente de `python -m seeds.seed`.
+- Isso criava também dados de exemplo (incluindo estrutura organizacional e usuários de demonstração), em vez de focar no bootstrap mínimo do admin.
 
 Exemplo com senha definida manualmente:
 ```bash
@@ -270,11 +275,26 @@ flask bootstrap-admin --username admin --email admin@seudominio.com --password '
 > 3. O sistema redireciona para atualização de senha por `deve_trocar_senha=True`.
 > 4. Defina uma nova senha forte e exclusiva.
 
+> **Nota de migração para ambientes existentes (compatibilidade com BOOT\*):**
+> - Se o admin atual já estiver vinculado à estrutura `BOOT001` / `BOOT-EST` (e entidades derivadas), o ambiente continua compatível.
+> - Para migrar para a estrutura definitiva da empresa:
+>   1. Crie a nova estrutura organizacional.
+>   2. Reatribua os admins para `estabelecimento`, `setor` e `celula` finais.
+>   3. Garanta que a permissão/função `admin` permaneça no usuário.
+>   4. Remova a estrutura BOOT\* somente depois de validar ausência de vínculos.
+
 ## 13. (Opcional, mas Recomendado) Popular Dados de Exemplo
 Execute o script abaixo para criar funções, organização, usuários e artigos básicos:
 ```bash
 python -m seeds.seed
 ```
+
+> **Recomendação operacional (produção com base limpa):**
+> Quando o objetivo é subir um ambiente limpo, use apenas:
+> 1. `flask db upgrade`
+> 2. `flask bootstrap-admin`
+>
+> Nesse cenário, **não** execute `python -m seeds.seed`, pois ele insere dados de exemplo.
 
 ## 14. Rodar a Aplicação Flask
 Finalmente! Para rodar o servidor de desenvolvimento do Flask:
