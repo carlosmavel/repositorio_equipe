@@ -3,14 +3,14 @@ import string
 from dataclasses import dataclass
 
 try:
-    from .core.database import db
-except ImportError:  # pragma: no cover - fallback for direct execution
     from core.database import db
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..core.database import db
 
 try:
-    from .core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
-except ImportError:  # pragma: no cover - fallback for direct execution
     from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
 
 
 @dataclass

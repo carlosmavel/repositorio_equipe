@@ -5,22 +5,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from .core.database import db
-except ImportError:  # pragma: no cover - fallback for direct execution
     from core.database import db
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..core.database import db
 
 try:
-    from .core.models import (
-        Instituicao,
-        Estabelecimento,
-        Setor,
-        Celula,
-        Cargo,
-        Funcao,
-        User,
-        Article,
-    )
-except ImportError:  # pragma: no cover - fallback for direct execution
     from core.models import (
         Instituicao,
         Estabelecimento,
@@ -31,11 +20,22 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         User,
         Article,
     )
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..core.models import (
+        Instituicao,
+        Estabelecimento,
+        Setor,
+        Celula,
+        Cargo,
+        Funcao,
+        User,
+        Article,
+    )
 
 try:
-    from .core.enums import Permissao, ArticleVisibility, ArticleStatus
-except ImportError:  # pragma: no cover - fallback for direct execution
     from core.enums import Permissao, ArticleVisibility, ArticleStatus
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..core.enums import Permissao, ArticleVisibility, ArticleStatus
 
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash
