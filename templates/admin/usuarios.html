@@ -100,6 +100,13 @@
                                     </div>
                                 </div>
                                 <div class="row">
+                                    <div class="col-md-4 mb-1">
+                                        <label for="password" class="form-label">Senha Inicial</label>
+                                        <input type="text" class="form-control form-control-sm" id="password" name="password" value="{{ request.form.get('password', '') }}" autocomplete="new-password">
+                                        <small class="text-muted">Opcional. Se não informar, uma senha será gerada e exibida no retorno administrativo.</small>
+                                    </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-md-6 mb-1">
                                         <label for="nome_completo" class="form-label">Nome Completo</label>
                                         <input type="text" class="form-control form-control-sm" id="nome_completo" name="nome_completo" value="{{ request.form.get('nome_completo', '') }}">

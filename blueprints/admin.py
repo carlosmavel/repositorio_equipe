@@ -74,11 +74,6 @@ except ImportError:  # pragma: no cover
         user_can_review_article,
     )
 
-try:
-    from .auth import send_password_email
-except ImportError:  # pragma: no cover
-    from blueprints.auth import send_password_email
-
 import json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -413,7 +408,7 @@ def admin_usuarios():
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         ativo = request.form.get('ativo_check') == 'on'
-        password = request.form.get('password')
+        password = request.form.get('password', '').strip()
 
         nome_completo = request.form.get('nome_completo', '').strip()
         matricula = request.form.get('matricula', '').strip()
@@ -501,10 +496,13 @@ def admin_usuarios():
                     usr.permissoes_personalizadas = [Funcao.query.get(fid) for fid in extras]
                     if password:
                         usr.set_password(password)
+                        usr.deve_trocar_senha = True
                     action_msg = 'atualizado'
                 else:
+                    senha_gerada = False
                     if not password:
                         password = str(uuid.uuid4())
+                        senha_gerada = True
                     usr = User(
                         username=username,
                         email=email,
@@ -524,6 +522,7 @@ def admin_usuarios():
                     )
                     app.logger.debug("Creating new user record")
                     usr.set_password(password)
+                    usr.deve_trocar_senha = True
                     usr.extra_setores = []
                     usr.extra_celulas = []
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
@@ -548,11 +547,15 @@ def admin_usuarios():
                     app.logger.error(f"Erro DB User: {e}")
                 else:
                     if not id_para_atualizar:
-                        try:
-                            send_password_email(usr, 'create')
-                        except Exception as e:
-                            app.logger.error(f"Erro ao enviar e-mail de cadastro: {e}")
-                    flash(f'Usuário {action_msg} com sucesso!', 'success')
+                        origem_senha = 'informada pelo administrador' if not senha_gerada else 'gerada automaticamente'
+                        flash(
+                            f'Usuário {action_msg} com sucesso! E-mail NÃO foi enviado. '
+                            f'Senha inicial ({origem_senha}): {password}. '
+                            'Usuário marcado para trocar a senha no primeiro acesso.',
+                            'success'
+                        )
+                    else:
+                        flash(f'Usuário {action_msg} com sucesso!', 'success')
                     return redirect(url_for('admin_bp.admin_usuarios'))
 
         if id_para_atualizar:

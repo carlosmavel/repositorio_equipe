@@ -162,6 +162,7 @@ def reset_password_token(token):
             flash('Verifique a nova senha e confirme corretamente.', 'danger')
         else:
             user.set_password(nova)
+            user.deve_trocar_senha = False
             db.session.commit()
             flash('Senha redefinida com sucesso. Faça login.', 'success')
             return redirect(url_for('login'))
@@ -185,6 +186,7 @@ def set_password_token(token):
             flash('Verifique a nova senha e confirme corretamente.', 'danger')
         else:
             user.set_password(nova)
+            user.deve_trocar_senha = False
             db.session.commit()
             flash('Senha definida com sucesso. Você já pode fazer login.', 'success')
             return redirect(url_for('login'))
@@ -324,6 +326,7 @@ def perfil():
                 password_error = 'A nova senha não atende aos requisitos de segurança.'
             else:
                 user.set_password(nova_senha)
+                user.deve_trocar_senha = False
                 try:
                     db.session.commit()
                     flash('Senha alterada com sucesso! Por favor, faça login novamente.', 'success')

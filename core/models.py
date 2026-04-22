@@ -255,6 +255,7 @@ class User(db.Model):
     data_admissao = db.Column(db.Date, nullable=True)
     telefone_contato = db.Column(db.String(20), nullable=True) # Pode ser o celular ou outro contato
     ativo = db.Column(db.Boolean, nullable=False, default=True, server_default='true')
+    deve_trocar_senha = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
 
     # Novas Chaves Estrangeiras e Relacionamentos (Fase 1)
     # Um usuário pertence a um estabelecimento, um setor e tem um cargo.
