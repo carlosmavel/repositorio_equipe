@@ -70,17 +70,9 @@ def test_create_user(client):
         assert user.extra_celulas.filter_by(id=ids['cel']).count() == 1
 
 
-def test_create_user_sends_password_email(client, monkeypatch):
+def test_create_user_does_not_send_password_email_and_shows_admin_password_feedback(client, monkeypatch):
     login_admin(client)
     ids = client.base_ids
-    called = {}
-
-    def fake_send_password_email(user, action):
-        called['user_email'] = user.email
-        called['action'] = action
-
-    monkeypatch.setattr('blueprints.admin.send_password_email', fake_send_password_email)
-
     response = client.post('/admin/usuarios', data={
         'username': 'emailuser',
         'email': 'emailuser@example.com',
@@ -91,10 +83,12 @@ def test_create_user_sends_password_email(client, monkeypatch):
     }, follow_redirects=True)
 
     assert response.status_code == 200
-    assert called == {
-        'user_email': 'emailuser@example.com',
-        'action': 'create',
-    }
+    html = response.get_data(as_text=True)
+    assert 'E-mail NÃO foi enviado' in html
+    with app.app_context():
+        user = User.query.filter_by(email='emailuser@example.com').first()
+        assert user is not None
+        assert user.deve_trocar_senha is True
 
 
 
@@ -344,3 +338,23 @@ def test_edit_user_duplicate_email_still_blocked(client):
 
     assert response.status_code == 200
     assert 'já está em uso' in response.get_data(as_text=True)
+
+
+def test_create_user_uses_admin_defined_initial_password(client):
+    login_admin(client)
+    ids = client.base_ids
+    response = client.post('/admin/usuarios', data={
+        'username': 'passdef',
+        'email': 'passdef@example.com',
+        'password': 'AdminInit#2026',
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with app.app_context():
+        user = User.query.filter_by(username='passdef').first()
+        assert user is not None
+        assert user.check_password('AdminInit#2026') is True
+        assert user.deve_trocar_senha is True
