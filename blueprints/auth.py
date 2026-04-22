@@ -37,6 +37,15 @@ auth_bp = Blueprint('auth_bp', __name__)
 LOGIN_AVATAR_COOKIE = 'login_avatar_token'
 LOGIN_AVATAR_TOKEN_SALT = 'login-avatar'
 LOGIN_AVATAR_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+MANDATORY_PASSWORD_CHANGE_ENDPOINTS = {
+    'login',
+    'logout',
+    'forgot_password',
+    'reset_password_token',
+    'set_password_token',
+    'politica_cookies',
+    'troca_senha_obrigatoria',
+}
 
 
 def _login_avatar_serializer():
@@ -61,6 +70,35 @@ def _get_remembered_user_from_cookie():
     if not user_id:
         return None
     return User.query.get(user_id)
+
+
+def _endpoint_name(endpoint: str) -> str:
+    return endpoint.split('.')[-1] if endpoint else ''
+
+
+@auth_bp.before_app_request
+def enforce_mandatory_password_change():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+
+    user = User.query.get(user_id)
+    if not user:
+        session.clear()
+        flash('Sua sessão expirou. Faça login novamente.', 'warning')
+        return redirect(url_for('login'))
+
+    if not user.deve_trocar_senha:
+        return None
+
+    endpoint_name = _endpoint_name(request.endpoint)
+    if endpoint_name in MANDATORY_PASSWORD_CHANGE_ENDPOINTS:
+        return None
+    if endpoint_name == 'static':
+        return None
+
+    flash('Você precisa trocar sua senha antes de continuar.', 'warning')
+    return redirect(url_for('troca_senha_obrigatoria'))
 
 # ROTAS PRINCIPAIS
 # -------------------------------------------------------------------------
@@ -100,6 +138,18 @@ def login():
             session["user_id"] = user.id
             session["username"] = user.username
             session["permissoes"] = [p.codigo for p in user.get_permissoes()]
+
+            if user.deve_trocar_senha:
+                response = redirect(url_for('troca_senha_obrigatoria'))
+                response.set_cookie(
+                    LOGIN_AVATAR_COOKIE,
+                    _build_login_avatar_token(user),
+                    max_age=LOGIN_AVATAR_MAX_AGE_SECONDS,
+                    secure=app.config.get('SESSION_COOKIE_SECURE', True),
+                    httponly=True,
+                    samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax'),
+                )
+                return response
 
             # Redireciona para a página de destino após o login
             next_url = request.args.get('next')
@@ -191,6 +241,32 @@ def set_password_token(token):
             flash('Senha definida com sucesso. Você já pode fazer login.', 'success')
             return redirect(url_for('login'))
     return render_template('auth/password_update.html', title='Criar Senha')
+
+
+@auth_bp.route('/troca-senha-obrigatoria', methods=['GET', 'POST'], endpoint='troca_senha_obrigatoria')
+def troca_senha_obrigatoria():
+    if 'user_id' not in session:
+        flash('Faça login para continuar.', 'warning')
+        return redirect(url_for('login'))
+
+    user = User.query.get_or_404(session['user_id'])
+    if not user.deve_trocar_senha:
+        return redirect(url_for('pagina_inicial'))
+
+    if request.method == 'POST':
+        nova = request.form.get('nova_senha')
+        confirmar = request.form.get('confirmar_nova_senha')
+
+        if not nova or nova != confirmar or not password_meets_requirements(nova):
+            flash('Verifique a nova senha e confirme corretamente.', 'danger')
+        else:
+            user.set_password(nova)
+            user.deve_trocar_senha = False
+            db.session.commit()
+            flash('Senha alterada com sucesso.', 'success')
+            return redirect(url_for('pagina_inicial'))
+
+    return render_template('auth/password_update.html', title='Troca Obrigatória de Senha')
 
 @auth_bp.route('/politica-cookies', methods=['GET'], endpoint='politica_cookies')
 def politica_cookies():
