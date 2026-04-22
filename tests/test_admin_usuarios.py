@@ -209,6 +209,26 @@ def test_create_user_with_celula(client):
         assert usr.extra_celulas.filter_by(id=cel_id).count() == 1
 
 
+def test_create_user_infers_hierarchy_from_celula_when_missing_fields(client):
+    login_admin(client)
+    ids = client.base_ids
+
+    response = client.post('/admin/usuarios', data={
+        'username': 'celauto',
+        'email': 'celauto@example.com',
+        'ativo_check': 'on',
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    with app.app_context():
+        usr = User.query.filter_by(username='celauto').first()
+        assert usr is not None
+        assert usr.estabelecimento_id == ids['est']
+        assert usr.setor_id == ids['setor']
+        assert usr.celula_id == ids['cel']
+
+
 def test_user_defaults_from_cargo(client):
     login_admin(client)
     ids = client.base_ids
