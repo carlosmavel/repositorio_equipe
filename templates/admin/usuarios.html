@@ -378,6 +378,7 @@
 {% block extra_js %}
 <script>
 window.cargoDefaults = {{ cargo_defaults|safe }};
+window.adminFuncaoId = {{ admin_funcao_id if admin_funcao_id else 'null' }};
 window.manterAbaCadastro = {{ 'true' if manter_aba_cadastro else 'false' }};
 </script>
 {% if user_editar %}

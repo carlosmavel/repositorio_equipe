@@ -43,8 +43,8 @@
                                             {% for cel in celulas %}
                                             <tr class="{{ 'table-light text-muted' if not cel.ativo else '' }} clickable-row" data-href="{{ url_for('admin_celulas', edit_id=cel.id) }}">
                                                 <td>{{ cel.nome }}</td>
-                                                <td>{{ cel.estabelecimento.nome_fantasia }}</td>
                                                 <td>{{ cel.estabelecimento.instituicao.nome }}</td>
+                                                <td>{{ cel.estabelecimento.nome_fantasia }}</td>
                                                 <td>{{ cel.setor.nome if cel.setor else '--' }}</td>
                                                 <td>
                                                     {% if cel.ativo %}

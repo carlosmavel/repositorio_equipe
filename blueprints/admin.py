@@ -601,6 +601,7 @@ def admin_usuarios():
         }
         for c in cargos
     }
+    admin_funcao = Funcao.query.filter_by(codigo='admin').first()
     return render_template(
         'admin/usuarios.html',
         usuarios=usuarios,
@@ -611,6 +612,7 @@ def admin_usuarios():
         celulas=celulas,
         funcoes=funcoes,
         cargo_defaults=json.dumps(cargo_defaults),
+        admin_funcao_id=admin_funcao.id if admin_funcao else None,
         manter_aba_cadastro=manter_aba_cadastro,
     )
 
