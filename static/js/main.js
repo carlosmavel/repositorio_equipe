@@ -307,8 +307,56 @@ document.addEventListener("DOMContentLoaded", function () {
     applyCargoDefaults('edit_', e.target.value);
   });
 
+  const selectedCargoCreate = document.getElementById('cargo_id')?.value;
+  if (selectedCargoCreate) {
+    applyCargoDefaults('', selectedCargoCreate);
+  }
+  const selectedCargoEdit = document.getElementById('edit_cargo_id')?.value;
+  if (selectedCargoEdit) {
+    applyCargoDefaults('edit_', selectedCargoEdit);
+  }
+
   // Expose helper for inline scripts
   window.setCargoFuncoesDisabled = setCargoFuncoesDisabled;
+
+  if (window.manterAbaCadastro) {
+    const cadastroTabBtn = document.getElementById('cadastro-tab');
+    if (cadastroTabBtn) {
+      bootstrap.Tab.getOrCreateInstance(cadastroTabBtn).show();
+    }
+  }
+
+  function hasCheckedInput(selector) {
+    return document.querySelectorAll(selector).length > 0;
+  }
+
+  function validateCreateUserForm() {
+    const form = document.getElementById('create-user-form');
+    const submitBtn = document.getElementById('submit-create-user');
+    if (!form || !submitBtn) return;
+
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const cargo = document.getElementById('cargo_id');
+    const isValid = Boolean(
+      username?.value.trim()
+      && email?.value.trim()
+      && cargo?.value
+      && hasCheckedInput("input[name='estabelecimento_id']:checked")
+      && hasCheckedInput("input[name='setor_ids']:checked")
+      && hasCheckedInput("input[name='celula_ids']:checked")
+    );
+
+    submitBtn.disabled = !isValid;
+    submitBtn.classList.toggle('disabled', !isValid);
+  }
+
+  const createUserForm = document.getElementById('create-user-form');
+  if (createUserForm) {
+    createUserForm.addEventListener('input', validateCreateUserForm);
+    createUserForm.addEventListener('change', validateCreateUserForm);
+    validateCreateUserForm();
+  }
 
   // Mostra o campo de especificar apenas quando a opção "Outra" estiver selecionada
   document.querySelectorAll('select[data-outra-select]').forEach((select) => {

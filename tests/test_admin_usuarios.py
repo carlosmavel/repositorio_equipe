@@ -276,6 +276,24 @@ def test_create_user_with_custom_permissions(client):
         assert {f.id for f in u.permissoes_personalizadas} == {f2_id}
 
 
+def test_create_user_missing_email_keeps_cadastro_tab(client):
+    login_admin(client)
+    ids = client.base_ids
+    response = client.post('/admin/usuarios', data={
+        'username': 'sememail',
+        'email': '',
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])]
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Usuário e Email são obrigatórios.' in html
+    assert 'window.manterAbaCadastro = true;' in html
+
+
 def test_edit_user_updates_relations(client):
     login_admin(client)
     ids = client.base_ids
