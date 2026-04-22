@@ -33,3 +33,10 @@ CATALOG: tuple[PermissionCatalogItem, ...] = (
 )
 
 CATALOG_BY_CODE: dict[str, PermissionCatalogItem] = {item.codigo: item for item in CATALOG}
+
+# Migrações lógicas de código (de -> para) permitidas no sincronizador.
+CODE_ALIASES: dict[str, str] = {}
+
+# Códigos descontinuados do catálogo nativo que podem permanecer no banco
+# sem atualização automática até remoção por migração explícita.
+DEPRECATED_CODES: set[str] = set()

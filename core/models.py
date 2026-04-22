@@ -98,6 +98,7 @@ class Funcao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(100), unique=True, nullable=False)
     nome = db.Column(db.String(255), nullable=False)
+    managed_by_system = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
 
     def __repr__(self):
         return f"<Funcao {self.codigo}>"
