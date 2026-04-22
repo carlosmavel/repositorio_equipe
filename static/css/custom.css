@@ -683,3 +683,24 @@ body > .container {
 .os-card.prioridade-alta {
   border-left-color: var(--bs-danger);
 }
+
+.required-hint {
+  font-size: 0.85rem;
+}
+
+.required-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--bs-danger);
+  margin-right: 4px;
+}
+
+.required-field {
+  border-left: 3px solid rgba(var(--bs-danger-rgb), 0.5);
+}
+
+.required-field:focus {
+  border-left-color: var(--bs-danger);
+}

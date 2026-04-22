@@ -396,6 +396,7 @@ def admin_toggle_ativo_estabelecimento(id):
 def admin_usuarios():
     """Lista, cria e edita usuários."""
     usuario_para_editar = None
+    manter_aba_cadastro = False
     if request.method == 'GET':
         edit_id = request.args.get('edit_id', type=int)
         if edit_id:
@@ -403,6 +404,7 @@ def admin_usuarios():
             app.logger.debug(f"Loading user {edit_id} for editing")
 
     if request.method == 'POST':
+        manter_aba_cadastro = True
         app.logger.debug(f"Received POST /admin/usuarios with data: {request.form}")
         id_para_atualizar = request.form.get('id_para_atualizar')
         username = request.form.get('username', '').strip()
@@ -475,14 +477,19 @@ def admin_usuarios():
         else:
             query_username = User.query.filter_by(username=username)
             query_email = User.query.filter_by(email=email)
+            query_cpf = User.query.filter_by(cpf=cpf) if cpf else None
             if id_para_atualizar:
                 query_username = query_username.filter(User.id != int(id_para_atualizar))
                 query_email = query_email.filter(User.id != int(id_para_atualizar))
+                if query_cpf is not None:
+                    query_cpf = query_cpf.filter(User.id != int(id_para_atualizar))
 
             if query_username.first():
                 flash(f'O nome de usuário "{username}" já está em uso.', 'danger')
             elif query_email.first():
                 flash(f'O email "{email}" já está em uso.', 'danger')
+            elif query_cpf is not None and query_cpf.first():
+                flash(f'O CPF "{cpf}" já está em uso.', 'danger')
             else:
                 if id_para_atualizar:
                     usr = User.query.get_or_404(id_para_atualizar)
@@ -564,6 +571,7 @@ def admin_usuarios():
                     flash('Ocorreu um erro ao salvar o usuário. Tente novamente em instantes.', 'danger')
                     app.logger.error(f"Erro DB User: {e}")
                 else:
+                    manter_aba_cadastro = False
                     if not id_para_atualizar:
                         origem_senha = 'informada pelo administrador' if not senha_gerada else 'gerada automaticamente'
                         flash(
@@ -603,6 +611,7 @@ def admin_usuarios():
         celulas=celulas,
         funcoes=funcoes,
         cargo_defaults=json.dumps(cargo_defaults),
+        manter_aba_cadastro=manter_aba_cadastro,
     )
 
 @admin_bp.route('/admin/usuarios/toggle_ativo/<int:id>', methods=['POST'])
