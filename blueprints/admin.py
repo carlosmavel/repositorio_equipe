@@ -55,7 +55,6 @@ except ImportError:  # pragma: no cover
     from core.decorators import admin_required
 try:
     from ..core.utils import (
-        DEFAULT_NEW_USER_PASSWORD,
         send_email,
         generate_token,
         eligible_review_notification_users,
@@ -66,7 +65,6 @@ try:
     )
 except ImportError:  # pragma: no cover
     from core.utils import (
-        DEFAULT_NEW_USER_PASSWORD,
         send_email,
         generate_token,
         eligible_review_notification_users,
@@ -506,7 +504,7 @@ def admin_usuarios():
                     action_msg = 'atualizado'
                 else:
                     if not password:
-                        password = DEFAULT_NEW_USER_PASSWORD
+                        password = str(uuid.uuid4())
                     usr = User(
                         username=username,
                         email=email,
