@@ -1,5 +1,9 @@
-from seeds.bootstrap_admin import ensure_initial_admin
-from core.models import User
+try:
+    from seeds.bootstrap_admin import ensure_initial_admin
+    from core.models import User
+except ImportError:  # pragma: no cover - fallback for package execution
+    from ..seeds.bootstrap_admin import ensure_initial_admin
+    from ..core.models import User
 
 
 def test_bootstrap_admin_is_idempotent_and_requires_password_change(app_ctx):
