@@ -462,13 +462,18 @@ def admin_usuarios():
                 setor_ids = [s.id for s in cargo_padrao.default_setores]
             if not celula_ids:
                 celula_ids = [c.id for c in cargo_padrao.default_celulas]
-            if not estabelecimento_id:
-                if setor_ids:
-                    setor_obj = Setor.query.get(setor_ids[0])
-                    estabelecimento_id = setor_obj.estabelecimento_id
-                elif celula_ids:
-                    cel_obj = Celula.query.get(celula_ids[0])
-                    estabelecimento_id = cel_obj.estabelecimento_id
+
+        if celula_ids and not setor_ids:
+            celulas = Celula.query.filter(Celula.id.in_(celula_ids)).all()
+            setor_ids = list(dict.fromkeys(c.setor_id for c in celulas if c.setor_id))
+
+        if not estabelecimento_id:
+            if setor_ids:
+                setor_obj = Setor.query.get(setor_ids[0])
+                estabelecimento_id = setor_obj.estabelecimento_id if setor_obj else None
+            elif celula_ids:
+                cel_obj = Celula.query.get(celula_ids[0])
+                estabelecimento_id = cel_obj.estabelecimento_id if cel_obj else None
 
         data_nascimento = None
         if data_nascimento_str:
