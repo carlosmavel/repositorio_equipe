@@ -1,7 +1,7 @@
 """add deve_trocar_senha to user
 
 Revision ID: 9f7a6b5c4d3e
-Revises: 14f1ad31865d
+Revises: 3a4b5c6d7e8f
 Create Date: 2026-04-22 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '9f7a6b5c4d3e'
-down_revision = '14f1ad31865d'
+down_revision = '3a4b5c6d7e8f'
 branch_labels = None
 depends_on = None
 
