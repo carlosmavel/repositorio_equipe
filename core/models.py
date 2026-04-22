@@ -260,13 +260,13 @@ class User(db.Model):
     # Novas Chaves Estrangeiras e Relacionamentos (Fase 1)
     # Um usuário pertence a um estabelecimento, um setor e tem um cargo.
     # Nullable=True para flexibilidade inicial ou para usuários que não se encaixam perfeitamente.
-    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=False)
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id'), nullable=True)
     estabelecimento = db.relationship('Estabelecimento', back_populates='usuarios')
 
-    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=False)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id'), nullable=True)
     setor = db.relationship('Setor', back_populates='usuarios')
 
-    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=False)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
     celula = db.relationship('Celula', back_populates='usuarios')
 
     cargo_id = db.Column(db.Integer, db.ForeignKey('cargo.id'), nullable=True)
