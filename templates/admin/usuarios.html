@@ -162,18 +162,34 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <p class="small text-muted mb-2">Selecione ao menos um estabelecimento, setor e célula para habilitar o cadastro.</p>
+                                <p class="small text-muted mb-2">
+                                    Campos de instituição/estabelecimento/setor/célula são herdados do cargo selecionado e exibidos apenas para consulta.
+                                </p>
+                                <input type="hidden" name="estabelecimento_id" id="hidden_estabelecimento_id" value="{{ request.form.get('estabelecimento_id', '') }}">
+                                <div id="hidden_setor_ids_container">
+                                    {% for setor_id in request.form.getlist('setor_ids') %}
+                                        <input type="hidden" name="setor_ids" value="{{ setor_id }}">
+                                    {% endfor %}
+                                </div>
+                                <div id="hidden_celula_ids_container">
+                                    {% for celula_id in request.form.getlist('celula_ids') %}
+                                        <input type="hidden" name="celula_ids" value="{{ celula_id }}">
+                                    {% endfor %}
+                                </div>
                                 {% for est in estabelecimentos %}
                                     <div class="form-check">
-                                        <input class="form-check-input estab-checkbox" type="checkbox" id="est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}checked{% endif %}>
-                                        <label class="form-check-label fw-bold" for="est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                        <input class="form-check-input estab-checkbox" type="checkbox" id="est{{ est.id }}" name="estabelecimento_id_visual" value="{{ est.id }}" {% if request.form.get('estabelecimento_id') == est.id|string %}checked{% endif %} disabled>
+                                        <label class="form-check-label fw-bold" for="est{{ est.id }}">
+                                            {{ est.nome_fantasia }}
+                                            <small class="text-muted">(Instituição: {{ est.instituicao.nome if est.instituicao else 'N/D' }})</small>
+                                        </label>
                                     </div>
                                     {% set setores_est = est.setores.all() %}
                                     {% if setores_est %}
                                         <div class="ms-4">
                                             {% for st in setores_est %}
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="setor{{ st.id }}" name="setor_ids_visual" value="{{ st.id }}" {% if st.id|string in request.form.getlist('setor_ids') %}checked{% endif %} disabled>
                                                     <label class="form-check-label" for="setor{{ st.id }}">{{ st.nome }}</label>
                                                 </div>
                                                 {% set celulas_set = st.celulas.all() %}
@@ -181,7 +197,7 @@
                                                     <div class="ms-4 mb-2">
                                                         {% for cel in celulas_set %}
                                                             <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" id="celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}checked{% endif %}>
+                                                                <input class="form-check-input" type="checkbox" id="celula{{ cel.id }}" name="celula_ids_visual" value="{{ cel.id }}" {% if cel.id|string in request.form.getlist('celula_ids') %}checked{% endif %} disabled>
                                                                 <label class="form-check-label" for="celula{{ cel.id }}">{{ cel.nome }}</label>
                                                             </div>
                                                         {% endfor %}
@@ -305,17 +321,52 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                            <p class="small text-muted mb-2">
+                                Campos de instituição/estabelecimento/setor/célula são herdados do cargo selecionado e exibidos apenas para consulta.
+                            </p>
+                            <input type="hidden" name="estabelecimento_id" id="edit_hidden_estabelecimento_id" value="{{ request.form.get('estabelecimento_id', user_editar.estabelecimento_id if user_editar.estabelecimento_id else '') }}">
+                            <div id="edit_hidden_setor_ids_container">
+                                {% if request.form.getlist('setor_ids') %}
+                                    {% for setor_id in request.form.getlist('setor_ids') %}
+                                        <input type="hidden" name="setor_ids" value="{{ setor_id }}">
+                                    {% endfor %}
+                                {% else %}
+                                    {% for setor_id in extra_setores_ids %}
+                                        <input type="hidden" name="setor_ids" value="{{ setor_id }}">
+                                    {% endfor %}
+                                    {% if user_editar.setor_id and user_editar.setor_id not in extra_setores_ids %}
+                                        <input type="hidden" name="setor_ids" value="{{ user_editar.setor_id }}">
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            <div id="edit_hidden_celula_ids_container">
+                                {% if request.form.getlist('celula_ids') %}
+                                    {% for celula_id in request.form.getlist('celula_ids') %}
+                                        <input type="hidden" name="celula_ids" value="{{ celula_id }}">
+                                    {% endfor %}
+                                {% else %}
+                                    {% for celula_id in extra_celulas_ids %}
+                                        <input type="hidden" name="celula_ids" value="{{ celula_id }}">
+                                    {% endfor %}
+                                    {% if user_editar.celula_id and user_editar.celula_id not in extra_celulas_ids %}
+                                        <input type="hidden" name="celula_ids" value="{{ user_editar.celula_id }}">
+                                    {% endif %}
+                                {% endif %}
+                            </div>
                             {% for est in estabelecimentos %}
                                 <div class="form-check">
-                                    <input class="form-check-input estab-checkbox" type="checkbox" id="edit_est{{ est.id }}" name="estabelecimento_id" value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}checked{% endif %}>
-                                    <label class="form-check-label fw-bold" for="edit_est{{ est.id }}">{{ est.nome_fantasia }}</label>
+                                    <input class="form-check-input estab-checkbox" type="checkbox" id="edit_est{{ est.id }}" name="estabelecimento_id_visual" value="{{ est.id }}" {% if (request.form.get('estabelecimento_id') == est.id|string) or (not request.form.get('estabelecimento_id') and user_editar.estabelecimento_id == est.id) %}checked{% endif %} disabled>
+                                    <label class="form-check-label fw-bold" for="edit_est{{ est.id }}">
+                                        {{ est.nome_fantasia }}
+                                        <small class="text-muted">(Instituição: {{ est.instituicao.nome if est.instituicao else 'N/D' }})</small>
+                                    </label>
                                 </div>
                                 {% set setores_est = est.setores.all() %}
                                 {% if setores_est %}
                                     <div class="ms-4">
                                         {% for st in setores_est %}
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="edit_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st.id in extra_setores_ids or st.id == user_editar.setor_id)) %}checked{% endif %}>
+                                                <input class="form-check-input" type="checkbox" id="edit_setor{{ st.id }}" name="setor_ids_visual" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st.id in extra_setores_ids or st.id == user_editar.setor_id)) %}checked{% endif %} disabled>
                                                 <label class="form-check-label" for="edit_setor{{ st.id }}">{{ st.nome }}</label>
                                             </div>
                                             {% set celulas_set = st.celulas.all() %}
@@ -323,7 +374,7 @@
                                                 <div class="ms-4 mb-2">
                                                     {% for cel in celulas_set %}
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="edit_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel.id in extra_celulas_ids or cel.id == user_editar.celula_id)) %}checked{% endif %}>
+                                                            <input class="form-check-input" type="checkbox" id="edit_celula{{ cel.id }}" name="celula_ids_visual" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel.id in extra_celulas_ids or cel.id == user_editar.celula_id)) %}checked{% endif %} disabled>
                                                             <label class="form-check-label" for="edit_celula{{ cel.id }}">{{ cel.nome }}</label>
                                                         </div>
                                                     {% endfor %}
