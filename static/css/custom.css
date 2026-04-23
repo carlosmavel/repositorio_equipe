@@ -607,6 +607,28 @@
   --bs-btn-line-height: 1.1;
 }
 
+.cargo-edit-btn {
+  --bs-btn-padding-y: 0.12rem;
+  --bs-btn-padding-x: 0.38rem;
+  --bs-btn-font-size: 0.78rem;
+  --bs-btn-border-radius: 0.38rem;
+  --bs-btn-line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  border: 1px solid rgba(13, 110, 253, 0.35);
+  background-color: transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cargo-edit-btn:hover {
+  color: #fff;
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
 .search-highlight {
   background-color: var(--highlight-color);
   padding: 0 2px;

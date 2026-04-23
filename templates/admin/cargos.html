@@ -74,6 +74,9 @@
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div class="acoes-cargo">
+                                                                                            <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm cargo-edit-btn" title="Editar Cargo" aria-label="Editar Cargo">
+                                                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                                                            </a>
                                                                                             {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                             {% set cargo_nome_js = cargo.nome | tojson %}
                                                                                             <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
@@ -110,6 +113,9 @@
                                                                                                             </div>
                                                                                                         </div>
                                                                                                         <div class="acoes-cargo">
+                                                                                                            <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm cargo-edit-btn" title="Editar Cargo" aria-label="Editar Cargo">
+                                                                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                                                                            </a>
                                                                                                             {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
                                                                                                             {% set cargo_nome_js = cargo.nome | tojson %}
                                                                                                             <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
@@ -566,8 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 cargoItem.classList.add('is-active');
             }
-            const url = el.dataset.url;
-            if (url) window.location.href = url;
         });
     });
 
