@@ -743,6 +743,7 @@ def admin_usuarios():
     funcoes = Funcao.query.order_by(Funcao.nome).all()
     cargo_defaults = {
         c.id: {
+            'estabelecimentos': [e.id for e in c.default_estabelecimentos],
             'setores': [s.id for s in c.default_setores],
             'celulas': [ce.id for ce in c.default_celulas],
             'funcoes': [f.id for f in c.permissoes],
@@ -973,6 +974,7 @@ def admin_cargos():
         nivel_hierarquico = request.form.get('nivel_hierarquico', type=int)
         ativo = request.form.get('ativo_check') == 'on'
         atende_os = request.form.get('pode_atender_os') == 'on'
+        estabelecimento_ids = list({int(e) for e in request.form.getlist('estabelecimento_ids') if e})
         setor_ids = list({int(s) for s in request.form.getlist('setor_ids') if s})
         celula_ids = list({int(c) for c in request.form.getlist('celula_ids') if c})
         funcao_ids = list({int(f) for f in request.form.getlist('funcao_ids') if f})
@@ -988,34 +990,77 @@ def admin_cargos():
             if nome_ja_existe:
                 flash(f'O nome de cargo "{nome}" já está em uso.', 'danger')
             else:
-                if id_para_atualizar:
-                    cargo = Cargo.query.get_or_404(id_para_atualizar)
-                    cargo.nome = nome
-                    cargo.descricao = descricao
-                    cargo.nivel_hierarquico = nivel_hierarquico
-                    cargo.ativo = ativo
-                    cargo.pode_atender_os = atende_os
-                    action_msg = 'atualizado'
+                setores_selecionados = Setor.query.filter(Setor.id.in_(setor_ids)).all() if setor_ids else []
+                celulas_selecionadas = Celula.query.filter(Celula.id.in_(celula_ids)).all() if celula_ids else []
+                estabelecimentos_ids_inferidos = set(estabelecimento_ids)
+                estabelecimentos_ids_inferidos.update(s.estabelecimento_id for s in setores_selecionados)
+                estabelecimentos_ids_inferidos.update(c.estabelecimento_id for c in celulas_selecionadas)
+                estabelecimentos_selecionados = (
+                    Estabelecimento.query.filter(Estabelecimento.id.in_(estabelecimentos_ids_inferidos)).all()
+                    if estabelecimentos_ids_inferidos else []
+                )
+
+                setor_ids_invalidos = set(setor_ids) - {s.id for s in setores_selecionados}
+                celula_ids_invalidos = set(celula_ids) - {c.id for c in celulas_selecionadas}
+                estabelecimento_ids_invalidos = set(estabelecimento_ids) - {e.id for e in estabelecimentos_selecionados}
+
+                erro_hierarquia = None
+                if estabelecimento_ids_invalidos or setor_ids_invalidos or celula_ids_invalidos:
+                    erro_hierarquia = 'Foram enviados itens de hierarquia inválidos. Atualize a página e tente novamente.'
                 else:
-                    cargo = Cargo(
-                        nome=nome,
-                        descricao=descricao,
-                        nivel_hierarquico=nivel_hierarquico,
-                        ativo=ativo,
-                        pode_atender_os=atende_os,
-                    )
-                    db.session.add(cargo)
-                    action_msg = 'criado'
-                cargo.default_setores = [Setor.query.get(sid) for sid in setor_ids]
-                cargo.default_celulas = [Celula.query.get(cid) for cid in celula_ids]
-                cargo.permissoes = [Funcao.query.get(fid) for fid in funcao_ids]
-                try:
-                    db.session.commit()
-                    flash(f'Cargo {action_msg} com sucesso!', 'success')
-                    return redirect(url_for('admin_bp.admin_cargos'))
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f'Erro ao salvar cargo: {str(e)}', 'danger')
+                    setores_por_id = {s.id: s for s in setores_selecionados}
+                    estabelecimentos_set = {e.id for e in estabelecimentos_selecionados}
+                    for setor in setores_selecionados:
+                        if setor.estabelecimento_id not in estabelecimentos_set:
+                            erro_hierarquia = 'Cada setor selecionado deve pertencer a um estabelecimento selecionado.'
+                            break
+                    if not erro_hierarquia:
+                        for celula in celulas_selecionadas:
+                            setor_da_celula = setores_por_id.get(celula.setor_id)
+                            if not setor_da_celula:
+                                erro_hierarquia = 'Cada célula selecionada deve pertencer a um setor selecionado.'
+                                break
+                            if celula.estabelecimento_id != setor_da_celula.estabelecimento_id:
+                                erro_hierarquia = 'Inconsistência entre célula, setor e estabelecimento selecionados.'
+                                break
+                            if celula.estabelecimento_id not in estabelecimentos_set:
+                                erro_hierarquia = 'Cada célula selecionada deve pertencer a um estabelecimento selecionado.'
+                                break
+
+                if erro_hierarquia:
+                    flash(erro_hierarquia, 'danger')
+                    if id_para_atualizar:
+                        cargo_para_editar = Cargo.query.get(id_para_atualizar)
+                else:
+                    if id_para_atualizar:
+                        cargo = Cargo.query.get_or_404(id_para_atualizar)
+                        cargo.nome = nome
+                        cargo.descricao = descricao
+                        cargo.nivel_hierarquico = nivel_hierarquico
+                        cargo.ativo = ativo
+                        cargo.pode_atender_os = atende_os
+                        action_msg = 'atualizado'
+                    else:
+                        cargo = Cargo(
+                            nome=nome,
+                            descricao=descricao,
+                            nivel_hierarquico=nivel_hierarquico,
+                            ativo=ativo,
+                            pode_atender_os=atende_os,
+                        )
+                        db.session.add(cargo)
+                        action_msg = 'criado'
+                    cargo.default_estabelecimentos = estabelecimentos_selecionados
+                    cargo.default_setores = setores_selecionados
+                    cargo.default_celulas = celulas_selecionadas
+                    cargo.permissoes = [Funcao.query.get(fid) for fid in funcao_ids]
+                    try:
+                        db.session.commit()
+                        flash(f'Cargo {action_msg} com sucesso!', 'success')
+                        return redirect(url_for('admin_bp.admin_cargos'))
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Erro ao salvar cargo: {str(e)}', 'danger')
 
         if id_para_atualizar:
             cargo_para_editar = Cargo.query.get(id_para_atualizar)
