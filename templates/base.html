@@ -113,9 +113,19 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
-            padding: 1.5rem; /* Espaçamento interno do conteúdo */
+            padding: 1.5rem 3rem 2rem;
             background-color: var(--content-bg);
             color: var(--text-default);
+        }
+
+        .page-root {
+            padding: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            .main-page-content {
+                padding: 1.25rem;
+            }
         }
 
         footer {
