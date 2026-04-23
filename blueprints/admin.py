@@ -463,10 +463,19 @@ def admin_usuarios():
                 'setor_ids': setor_ids[:],
                 'celula_ids': celula_ids[:],
             }
-            setor_ids = [s.id for s in cargo_padrao.default_setores]
-            celula_ids = [c.id for c in cargo_padrao.default_celulas]
             cargo_estabelecimentos = [e.id for e in cargo_padrao.default_estabelecimentos]
-            estabelecimento_id = cargo_estabelecimentos[0] if cargo_estabelecimentos else None
+            cargo_setor_ids = [s.id for s in cargo_padrao.default_setores]
+            cargo_celula_ids = [c.id for c in cargo_padrao.default_celulas]
+
+            # Reconciliação determinística:
+            # - quando o cargo define defaults organizacionais, eles prevalecem;
+            # - quando não define, preserva o payload manual recebido.
+            if cargo_setor_ids:
+                setor_ids = cargo_setor_ids
+            if cargo_celula_ids:
+                celula_ids = cargo_celula_ids
+            if cargo_estabelecimentos:
+                estabelecimento_id = cargo_estabelecimentos[0]
 
             if payload_org_original['estabelecimento_id'] != estabelecimento_id or payload_org_original['setor_ids'] != setor_ids or payload_org_original['celula_ids'] != celula_ids:
                 app.logger.warning(
