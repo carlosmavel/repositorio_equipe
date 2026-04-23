@@ -62,11 +62,16 @@
                                                                         {% if setor.cargos %}
                                                                             <ul class="list-group list-group-flush mb-2 cargo-list">
                                                                                 {% for cargo in setor.cargos %}
-                                                                                    <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
+                                                                                    <li class="list-group-item cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
                                                                                         <div class="linha-cargo">
-                                                                                            <div class="cargo-meta d-flex align-items-center">
+                                                                                            <div class="cargo-meta">
                                                                                                 <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
-                                                                                                <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                <div class="cargo-meta-inline">
+                                                                                                    <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                    <span class="cargo-status {{ 'cargo-status--ativo' if cargo.ativo else 'cargo-status--inativo' }}" title="{{ 'Ativo' if cargo.ativo else 'Inativo' }}" aria-label="Status: {{ 'Ativo' if cargo.ativo else 'Inativo' }}">
+                                                                                                        <i class="bi bi-circle-fill" aria-hidden="true"></i>
+                                                                                                    </span>
+                                                                                                </div>
                                                                                             </div>
                                                                                             <div class="acoes-cargo">
                                                                                             {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
@@ -93,11 +98,16 @@
                                                                                     {% if cel.cargos %}
                                                                                         <ul class="list-group list-group-flush cargo-list">
                                                                                             {% for cargo in cel.cargos %}
-                                                                                                <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
+                                                                                                <li class="list-group-item cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
                                                                                                     <div class="linha-cargo">
-                                                                                                        <div class="cargo-meta d-flex align-items-center">
+                                                                                                        <div class="cargo-meta">
                                                                                                             <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
-                                                                                                            <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                            <div class="cargo-meta-inline">
+                                                                                                                <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                                <span class="cargo-status {{ 'cargo-status--ativo' if cargo.ativo else 'cargo-status--inativo' }}" title="{{ 'Ativo' if cargo.ativo else 'Inativo' }}" aria-label="Status: {{ 'Ativo' if cargo.ativo else 'Inativo' }}">
+                                                                                                                    <i class="bi bi-circle-fill" aria-hidden="true"></i>
+                                                                                                                </span>
+                                                                                                            </div>
                                                                                                         </div>
                                                                                                         <div class="acoes-cargo">
                                                                                                             {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
