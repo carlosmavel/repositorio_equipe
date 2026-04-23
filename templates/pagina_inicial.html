@@ -3,7 +3,7 @@
 {% block title %}Início - Orquetask{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-5"> {# Usa container-fluid para ocupar o espaço do main-page-content #}
+<div class="container-fluid page-root"> {# Usa container-fluid para ocupar o espaço do main-page-content #}
     {# Saudação #}
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Bem-vindo(a) de volta, {{ current_user.nome_completo or current_user.username }}!</h1>
