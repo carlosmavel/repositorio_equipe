@@ -320,6 +320,10 @@ document.addEventListener("DOMContentLoaded", function () {
       chk.checked = isDefault;
       chk.disabled = isDefault;
     });
+
+    if (prefix === '') {
+      validateCreateUserForm();
+    }
   }
 
   document.getElementById('cargo_id')?.addEventListener('change', (e) => {
@@ -561,15 +565,99 @@ document.addEventListener("DOMContentLoaded", function () {
       };
     });
 
-    const setorChecked = form.querySelectorAll("input[id^='setor']:checked");
-    const celulaChecked = form.querySelectorAll("input[id^='celula']:checked");
-    const hasSetor = setorChecked.length > 0;
-    const hasCelula = celulaChecked.length > 0;
+    const selectedCargoDefaults = selectedCargoId && cargoDefaults[selectedCargoId]
+      ? cargoDefaults[selectedCargoId]
+      : { estabelecimentos: [], setores: [], celulas: [] };
+    const cargoDefaultSetores = Array.isArray(selectedCargoDefaults.setores) ? selectedCargoDefaults.setores : [];
+    const cargoDefaultCelulas = Array.isArray(selectedCargoDefaults.celulas) ? selectedCargoDefaults.celulas : [];
+    const cargoDefaultEstabelecimentos = Array.isArray(selectedCargoDefaults.estabelecimentos) ? selectedCargoDefaults.estabelecimentos : [];
+
+    const getNumericId = (input, prefix) => {
+      const fromValue = Number(input?.value);
+      if (Number.isInteger(fromValue) && fromValue > 0) return fromValue;
+      const fromId = Number((input?.id || '').replace(prefix, ''));
+      return Number.isInteger(fromId) && fromId > 0 ? fromId : null;
+    };
+
+    const allEstInputs = Array.from(form.querySelectorAll("input[id^='est']"));
+    const allSetorInputs = Array.from(form.querySelectorAll("input[id^='setor']"));
+    const allCelulaInputs = Array.from(form.querySelectorAll("input[id^='celula']"));
+
+    const setorToEstMap = new Map();
+    const celulaToSetorMap = new Map();
+    const celulaToEstMap = new Map();
+
+    allSetorInputs.forEach((setorInput) => {
+      const setorId = getNumericId(setorInput, 'setor');
+      if (!setorId) return;
+
+      const estInput = setorInput
+        .closest('.ms-4')
+        ?.previousElementSibling
+        ?.querySelector("input[id^='est']");
+      const estId = getNumericId(estInput, 'est');
+      if (estId) setorToEstMap.set(setorId, estId);
+    });
+
+    allCelulaInputs.forEach((celulaInput) => {
+      const celulaId = getNumericId(celulaInput, 'celula');
+      if (!celulaId) return;
+
+      const setorInput = celulaInput
+        .closest('.ms-4.mb-2')
+        ?.previousElementSibling
+        ?.querySelector("input[id^='setor']");
+      const setorId = getNumericId(setorInput, 'setor');
+      if (setorId) {
+        celulaToSetorMap.set(celulaId, setorId);
+        const estId = setorToEstMap.get(setorId);
+        if (estId) celulaToEstMap.set(celulaId, estId);
+      }
+    });
+
+    const checkedSetorIds = allSetorInputs
+      .filter((input) => input.checked)
+      .map((input) => getNumericId(input, 'setor'))
+      .filter((value) => Number.isInteger(value));
+    const checkedCelulaIds = allCelulaInputs
+      .filter((input) => input.checked)
+      .map((input) => getNumericId(input, 'celula'))
+      .filter((value) => Number.isInteger(value));
+    const checkedEstIds = allEstInputs
+      .filter((input) => input.checked)
+      .map((input) => getNumericId(input, 'est'))
+      .filter((value) => Number.isInteger(value));
+
+    const effectiveCelulaIds = new Set([...checkedCelulaIds, ...cargoDefaultCelulas.map(Number).filter(Number.isInteger)]);
+    const effectiveSetorIds = new Set([...checkedSetorIds, ...cargoDefaultSetores.map(Number).filter(Number.isInteger)]);
+    const effectiveEstabelecimentoIds = new Set([...checkedEstIds, ...cargoDefaultEstabelecimentos.map(Number).filter(Number.isInteger)]);
+
+    effectiveCelulaIds.forEach((celulaId) => {
+      const inferredSetorId = celulaToSetorMap.get(celulaId);
+      if (inferredSetorId) effectiveSetorIds.add(inferredSetorId);
+      const inferredEstId = celulaToEstMap.get(celulaId);
+      if (inferredEstId) effectiveEstabelecimentoIds.add(inferredEstId);
+    });
+
+    effectiveSetorIds.forEach((setorId) => {
+      const inferredEstId = setorToEstMap.get(setorId);
+      if (inferredEstId) effectiveEstabelecimentoIds.add(inferredEstId);
+    });
+
+    const hiddenEstabelecimentoValue = Number(document.getElementById('hidden_estabelecimento_id')?.value);
+    if (Number.isInteger(hiddenEstabelecimentoValue) && hiddenEstabelecimentoValue > 0) {
+      effectiveEstabelecimentoIds.add(hiddenEstabelecimentoValue);
+    }
+
+    const hasSetor = effectiveSetorIds.size > 0;
+    const hasCelula = effectiveCelulaIds.size > 0;
+    const hasEstabelecimento = effectiveEstabelecimentoIds.size > 0;
 
     // Espelha a regra do backend:
     // - setor e célula são obrigatórios para não-admin;
-    // - estabelecimento pode ser inferido a partir do setor/célula selecionados.
-    const hierarchyOk = !exigeHierarquia || (hasSetor && hasCelula);
+    // - setor pode ser inferido a partir de célula selecionada/herdada;
+    // - estabelecimento pode ser inferido a partir do setor/célula ou herdado do cargo.
+    const hierarchyOk = !exigeHierarquia || (hasEstabelecimento && hasSetor && hasCelula);
 
     const requiredFieldsOk = requiredResults.every((fieldResult) => fieldResult.filled);
     const isValid = Boolean(requiredFieldsOk && hierarchyOk);
@@ -594,15 +682,22 @@ document.addEventListener("DOMContentLoaded", function () {
       name: 'setor_ids/celula_ids',
       type: 'checkbox-group',
       valueRead: {
-        setor_ids: Array.from(setorChecked).map((input) => input.value),
-        celula_ids: Array.from(celulaChecked).map((input) => input.value),
+        estabelecimento_ids_efetivos: Array.from(effectiveEstabelecimentoIds),
+        setor_ids_efetivos: Array.from(effectiveSetorIds),
+        celula_ids_efetivos: Array.from(effectiveCelulaIds),
+        cargo_defaults: {
+          estabelecimentos: cargoDefaultEstabelecimentos,
+          setores: cargoDefaultSetores,
+          celulas: cargoDefaultCelulas,
+        },
       },
       filled: hierarchyOk,
       reason: !exigeHierarquia
         ? 'hierarquia dispensada para perfil admin'
-        : hasSetor && hasCelula
-          ? 'setor e célula preenchidos'
+        : hasEstabelecimento && hasSetor && hasCelula
+          ? 'estabelecimento, setor e célula preenchidos (inclui herdados/inferidos)'
           : `faltando ${[
+              !hasEstabelecimento ? 'estabelecimento_id' : null,
               !hasSetor ? 'setor_ids' : null,
               !hasCelula ? 'celula_ids' : null,
             ].filter(Boolean).join(' e ')}`,
