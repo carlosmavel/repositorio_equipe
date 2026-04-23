@@ -118,6 +118,47 @@
             color: var(--text-default);
         }
 
+        .cookie-manage-trigger {
+            cursor: pointer;
+            color: var(--bs-secondary-color);
+        }
+
+        .cookie-manage-trigger:hover,
+        .cookie-manage-trigger:focus-visible {
+            color: var(--bs-primary);
+            opacity: 1;
+        }
+
+        #cookiePreferencesModal .modal-dialog {
+            width: 100%;
+            max-width: 500px;
+            margin: 1rem auto;
+        }
+
+        #cookiePreferencesModal .modal-content {
+            max-height: calc(100dvh - 2rem);
+        }
+
+        #cookiePreferencesModal .modal-body {
+            overflow-y: auto;
+        }
+
+        #cookiePreferencesModal .modal-footer {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: .5rem;
+        }
+
+        #cookiePreferencesModal .modal-footer .btn {
+            min-width: 170px;
+        }
+
+        @media (max-width: 575.98px) {
+            #cookiePreferencesModal .modal-footer .btn {
+                width: 100%;
+            }
+        }
+
         .page-root {
             padding: 0;
         }
@@ -384,9 +425,8 @@
     <footer class="border-top bg-body-tertiary py-3">
         <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <small class="text-muted">&copy; 2026 Orquetask</small>
-            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-underline d-inline-flex align-items-center" data-cookie-open-preferences="true">
-                <i class="bi bi-cookie me-1" aria-hidden="true"></i>
-                <span>Gerenciar cookies</span>
+            <button type="button" class="btn btn-link btn-sm p-0 d-inline-flex align-items-center cookie-manage-trigger" data-cookie-open-preferences="true" data-bs-toggle="tooltip" data-bs-placement="top" title="Gerenciar cookies" aria-label="Gerenciar cookies">
+                <i class="bi bi-cookie fs-5" aria-hidden="true"></i>
             </button>
         </div>
     </footer>
