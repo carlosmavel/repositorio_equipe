@@ -418,6 +418,42 @@ def test_edit_user_updates_relations(client):
         assert {f.id for f in u.permissoes_personalizadas} == {func2_id}
 
 
+def test_edit_user_can_reset_password_and_require_change_on_next_login(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        u = User(
+            username='resetavel',
+            email='resetavel@example.com',
+            estabelecimento_id=ids['est'],
+            setor_id=ids['setor'],
+            celula_id=ids['cel'],
+            deve_trocar_senha=False,
+        )
+        u.set_password('SenhaAntiga#2026')
+        db.session.add(u)
+        db.session.commit()
+        uid = u.id
+
+    nova_senha = 'SenhaProvisoria#2026'
+    response = client.post('/admin/usuarios', data={
+        'id_para_atualizar': str(uid),
+        'username': 'resetavel',
+        'email': 'resetavel@example.com',
+        'password': nova_senha,
+        'ativo_check': 'on',
+        'estabelecimento_id': ids['est'],
+        'setor_ids': [str(ids['setor'])],
+        'celula_ids': [str(ids['cel'])],
+    }, follow_redirects=True)
+
+    assert response.status_code == 200
+    with app.app_context():
+        atualizado = User.query.get(uid)
+        assert atualizado.check_password(nova_senha) is True
+        assert atualizado.deve_trocar_senha is True
+
+
 def test_admin_usuarios_form_keeps_email_required(client):
     login_admin(client)
     response = client.get('/admin/usuarios')

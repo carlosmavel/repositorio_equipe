@@ -265,6 +265,19 @@
                                     <label for="edit_email" class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control form-control-sm" id="edit_email" name="email" value="{{ request.form.get('email', user_editar.email if user_editar.email else '') }}" required maxlength="120">
                                 </div>
+                                <div class="col-md-4 mb-1">
+                                    <label for="edit_password" class="form-label">Redefinir Senha</label>
+                                    <input
+                                        type="password"
+                                        class="form-control form-control-sm"
+                                        id="edit_password"
+                                        name="password"
+                                        autocomplete="new-password"
+                                    >
+                                    <small class="text-muted">
+                                        Opcional. Ao informar uma senha provisória, o usuário será obrigado a trocá-la no próximo acesso.
+                                    </small>
+                                </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-1">
