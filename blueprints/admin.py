@@ -458,10 +458,31 @@ def admin_usuarios():
 
         cargo_padrao = Cargo.query.get(cargo_id) if cargo_id else None
         if cargo_padrao:
-            if not setor_ids:
-                setor_ids = [s.id for s in cargo_padrao.default_setores]
-            if not celula_ids:
-                celula_ids = [c.id for c in cargo_padrao.default_celulas]
+            payload_org_original = {
+                'estabelecimento_id': estabelecimento_id,
+                'setor_ids': setor_ids[:],
+                'celula_ids': celula_ids[:],
+            }
+            setor_ids = [s.id for s in cargo_padrao.default_setores]
+            celula_ids = [c.id for c in cargo_padrao.default_celulas]
+            cargo_estabelecimentos = [e.id for e in cargo_padrao.default_estabelecimentos]
+            estabelecimento_id = cargo_estabelecimentos[0] if cargo_estabelecimentos else None
+
+            if payload_org_original['estabelecimento_id'] != estabelecimento_id or payload_org_original['setor_ids'] != setor_ids or payload_org_original['celula_ids'] != celula_ids:
+                app.logger.warning(
+                    "admin_usuarios_payload_org_reconciled_with_cargo_defaults",
+                    extra={
+                        'event': 'admin_usuarios_payload_org_reconciled_with_cargo_defaults',
+                        'cargo_id': cargo_id,
+                        'payload_original': payload_org_original,
+                        'payload_reconciled': {
+                            'estabelecimento_id': estabelecimento_id,
+                            'setor_ids': setor_ids,
+                            'celula_ids': celula_ids,
+                        },
+                        'correlation_id': correlation_id,
+                    },
+                )
 
         if celula_ids and not setor_ids:
             celulas = Celula.query.filter(Celula.id.in_(celula_ids)).all()

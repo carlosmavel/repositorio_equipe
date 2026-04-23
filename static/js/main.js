@@ -264,18 +264,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // --------------------------------------------------------------
-  // Auxiliar: permite apenas um estabelecimento selecionado
-  document.querySelectorAll('input[name="estabelecimento_id"]').forEach((chk) => {
-    chk.addEventListener('change', () => {
-      if (chk.checked) {
-        document.querySelectorAll('input[name="estabelecimento_id"]').forEach((o) => {
-          if (o !== chk) o.checked = false;
-        });
-      }
-    });
-  });
-
-
   const cargoDefaults = window.cargoDefaults || {};
 
   function setCargoFuncoesDisabled(prefix, cargoId) {
@@ -286,7 +274,41 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function applyCargoDefaults(prefix, cargoId) {
-    const defs = cargoDefaults[cargoId] || { setores: [], celulas: [], funcoes: [] };
+    const defs = cargoDefaults[cargoId] || { estabelecimentos: [], setores: [], celulas: [], funcoes: [] };
+    const form = prefix === 'edit_' ? document.getElementById('edit_cargo_id')?.closest('form') : document.getElementById('create-user-form');
+    const hiddenEstabelecimento = document.getElementById(`${prefix}hidden_estabelecimento_id`);
+    const hiddenSetorContainer = document.getElementById(`${prefix}hidden_setor_ids_container`);
+    const hiddenCelulaContainer = document.getElementById(`${prefix}hidden_celula_ids_container`);
+
+    const clearAndAppendMultiHidden = (container, name, values) => {
+      if (!container) return;
+      container.innerHTML = '';
+      values.forEach((value) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        container.appendChild(input);
+      });
+    };
+
+    const estabelecimentoPadrao = defs.estabelecimentos?.length ? defs.estabelecimentos[0] : '';
+    if (hiddenEstabelecimento) {
+      hiddenEstabelecimento.value = estabelecimentoPadrao ? String(estabelecimentoPadrao) : '';
+    }
+    clearAndAppendMultiHidden(hiddenSetorContainer, 'setor_ids', defs.setores || []);
+    clearAndAppendMultiHidden(hiddenCelulaContainer, 'celula_ids', defs.celulas || []);
+
+    const instituicaoDisplay = form?.querySelector("input[name='instituicao_nome_herdada']");
+    if (instituicaoDisplay) {
+      const estabelecimentoMarcado = form?.querySelector(`input[id^='${prefix}est'][value='${estabelecimentoPadrao}']`);
+      const instituicaoLabel = estabelecimentoMarcado?.closest('.form-check')?.querySelector('small')?.textContent || '';
+      instituicaoDisplay.value = instituicaoLabel.replace('(Instituição:', '').replace(')', '').trim();
+    }
+
+    document.querySelectorAll(`input[id^='${prefix}est']`).forEach((chk) => {
+      chk.checked = defs.estabelecimentos.includes(parseInt(chk.value));
+    });
     document.querySelectorAll(`input[id^='${prefix}setor']`).forEach((chk) => {
       chk.checked = defs.setores.includes(parseInt(chk.value));
     });
@@ -539,8 +561,8 @@ document.addEventListener("DOMContentLoaded", function () {
       };
     });
 
-    const setorChecked = form.querySelectorAll("input[name='setor_ids']:checked");
-    const celulaChecked = form.querySelectorAll("input[name='celula_ids']:checked");
+    const setorChecked = form.querySelectorAll("input[id^='setor']:checked");
+    const celulaChecked = form.querySelectorAll("input[id^='celula']:checked");
     const hasSetor = setorChecked.length > 0;
     const hasCelula = celulaChecked.length > 0;
 
