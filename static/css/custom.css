@@ -234,8 +234,8 @@
   text-overflow: ellipsis;
 }
 
-/* dá espaço extra abaixo do conteúdo principal */
-body > .container {
+/* Espaçamento opt-in por tela para evitar efeitos globais */
+.page-content-bottom-space {
   padding-bottom: 2rem;
 }
 
@@ -247,8 +247,8 @@ body > .container {
   background-color: var(--bg-hover-subtle);
 }
 
-/* ou, se quiser empurrar só o card do artigo */
-.card.shadow-sm {
+/* Espaçamento opt-in para cards específicos */
+.card-screen-spacing {
   margin-bottom: 2rem;
 }
 
@@ -289,7 +289,8 @@ body > .container {
 }
 
 .login-page {
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 100%;
   padding: 2rem 1rem;
   background: linear-gradient(135deg, var(--page-bg) 0%, rgba(13, 110, 253, 0.08) 100%);
   color: var(--text-default);
