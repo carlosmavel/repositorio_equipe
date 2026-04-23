@@ -182,7 +182,7 @@
                                     {% for est in inst.estabelecimentos %}
                                         <div class="ms-3">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="c_est{{ est.obj.id }}" value="{{ est.obj.id }}" disabled>
+                                                <input class="form-check-input" type="checkbox" id="c_est{{ est.obj.id }}" name="estabelecimento_ids" value="{{ est.obj.id }}" {% if est.obj.id|string in request.form.getlist('estabelecimento_ids') %}checked{% endif %}>
                                                 <label class="form-check-label fw-bold" for="c_est{{ est.obj.id }}">Estabelecimento: {{ est.obj.nome_fantasia }}</label>
                                             </div>
                                             {% if est.setores %}
@@ -348,7 +348,7 @@
                         <div class="card-body">
                             {% for est in estabelecimentos %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="e_est{{ est.id }}" value="{{ est.id }}" disabled>
+                                    <input class="form-check-input" type="checkbox" id="e_est{{ est.id }}" name="estabelecimento_ids" value="{{ est.id }}" {% if (request.form.getlist('estabelecimento_ids') and est.id|string in request.form.getlist('estabelecimento_ids')) or (not request.form.getlist('estabelecimento_ids') and (est in cargo_editar.default_estabelecimentos.all())) %}checked{% endif %}>
                                     <label class="form-check-label fw-bold" for="e_est{{ est.id }}">{{ est.nome_fantasia }}</label>
                                 </div>
                                 {% set setores_est = est.setores.all() %}

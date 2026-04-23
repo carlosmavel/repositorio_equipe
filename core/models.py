@@ -53,6 +53,12 @@ cargo_default_setores = db.Table(
     db.Column('setor_id', db.Integer, db.ForeignKey('setor.id'), primary_key=True),
 )
 
+cargo_default_estabelecimentos = db.Table(
+    'cargo_default_estabelecimentos',
+    db.Column('cargo_id', db.Integer, db.ForeignKey('cargo.id'), primary_key=True),
+    db.Column('estabelecimento_id', db.Integer, db.ForeignKey('estabelecimento.id'), primary_key=True),
+)
+
 # --- tabelas de permissões ---
 cargo_funcoes = db.Table(
     'cargo_funcoes',
@@ -221,6 +227,8 @@ class Cargo(db.Model):
     # Relacionamentos: Um Cargo pode ter vários Usuários
     usuarios = db.relationship('User', back_populates='cargo', lazy='dynamic')
     # Hierarquia padrão para usuários deste cargo
+    default_estabelecimentos = db.relationship(
+        'Estabelecimento', secondary=cargo_default_estabelecimentos, lazy='dynamic')
     default_setores = db.relationship(
         'Setor', secondary=cargo_default_setores, lazy='dynamic')
     default_celulas = db.relationship(
