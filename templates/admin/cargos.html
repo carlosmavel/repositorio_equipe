@@ -34,97 +34,98 @@
                                         <button class="btn btn-outline-secondary d-none" type="button" id="toggleTree">Voltar à visualização em árvore</button>
                                     </div>
                                 </div>
-                                <div class="ms-2" id="cargoContainer">
+                                <div class="cargo-tree" id="cargoContainer">
                                     {% for inst in estrutura %}
-                                        <div class="card mb-2 instituicao-container">
-                                            <div class="card-header d-flex align-items-center">
-                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="setores" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                <h5 class="mb-0">Instituição: <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h5>
-                                            </div>
-                                            <div id="inst-{{ inst.obj.id }}" class="collapse show">
+                                        <section class="hier-node level-instituicao instituicao-container">
+                                            <header class="hier-header d-flex align-items-center">
+                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="estabelecimentos" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                <i class="bi bi-building me-2 hier-level-icon" aria-hidden="true"></i>
+                                                <h5 class="mb-0 hier-title">Instituição <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h5>
+                                            </header>
+                                            <div id="inst-{{ inst.obj.id }}" class="collapse show hier-children">
                                                 {% for est in inst.estabelecimentos %}
-                                                    <div class="ms-4 mb-3 p-2 border rounded estabelecimento-wrapper">
-                                                        <h6 class="fw-bold">Estabelecimento: <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h6>
-                                                        <div class="estabelecimento-conteudo mt-2">
+                                                    <article class="hier-node level-estabelecimento estabelecimento-wrapper">
+                                                        <header class="hier-header d-flex align-items-center">
+                                                            <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="setores" data-bs-toggle="collapse" data-bs-target="#est-{{ est.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                            <i class="bi bi-shop me-2 hier-level-icon" aria-hidden="true"></i>
+                                                            <h6 class="mb-0 hier-title">Estabelecimento <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h6>
+                                                        </header>
+                                                        <div id="est-{{ est.obj.id }}" class="collapse show hier-children">
                                                             {% for setor in est.setores %}
-                                                            <div class="setor-container p-2 mb-2 rounded">
-                                                                <div class="d-flex align-items-center">
-                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="celulas" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                                    <strong class="mb-0">Setor: <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></strong>
-                                                                </div>
-                                                                <div id="setor-{{ setor.obj.id }}" class="ms-3 collapse show">
-                                                                    {% if setor.cargos %}
-                                                                        <ul class="list-group list-group-flush mb-2">
-                                                                            {% for cargo in setor.cargos %}
-                                                                                <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
-                                                                                    <div class="linha-cargo">
-                                                                                        <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
-                                                                                        <div class="acoes-cargo">
-                                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                            {% if cargo.ativo %}
-                                                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
-                                                                                                    <i class="bi bi-toggle-on"></i>
+                                                                <section class="hier-node level-setor setor-container">
+                                                                    <header class="hier-header d-flex align-items-center">
+                                                                        <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="celulas" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                                        <i class="bi bi-diagram-3 me-2 hier-level-icon" aria-hidden="true"></i>
+                                                                        <h6 class="mb-0 hier-title">Setor <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></h6>
+                                                                    </header>
+                                                                    <div id="setor-{{ setor.obj.id }}" class="collapse show hier-children">
+                                                                        {% if setor.cargos %}
+                                                                            <ul class="list-group list-group-flush mb-2 cargo-list">
+                                                                                {% for cargo in setor.cargos %}
+                                                                                    <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
+                                                                                        <div class="linha-cargo">
+                                                                                            <div class="cargo-meta d-flex align-items-center">
+                                                                                                <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
+                                                                                                <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                            </div>
+                                                                                            <div class="acoes-cargo">
+                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                <button type="submit" class="btn btn-sm cargo-action-btn {{ 'btn-outline-secondary' if cargo.ativo else 'btn-outline-primary' }}" title="{{ 'Desativar Cargo' if cargo.ativo else 'Ativar Cargo' }}">
+                                                                                                    <i class="bi {{ 'bi-toggle-on' if cargo.ativo else 'bi-toggle-off' }}"></i>
                                                                                                 </button>
-                                                                                            {% else %}
-                                                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
-                                                                                                    <i class="bi bi-toggle-off"></i>
-                                                                                                </button>
-                                                                                            {% endif %}
-                                                                                        </form>
+                                                                                            </form>
+                                                                                            </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                </li>
-                                                                            {% endfor %}
-                                                                        </ul>
-                                                                    {% endif %}
-                                                                    {% for cel in setor.celulas %}
-                                                                        <div class="celula-container ps-3 mb-2">
-                                                                            <div class="d-flex align-items-center">
-                                                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="cargos" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                                                <span class="fw-bold">Célula: <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></span>
-                                                                            </div>
-                                                                            <div id="cel-{{ cel.obj.id }}" class="ms-3 collapse show">
-                                                                                {% if cel.cargos %}
-                                                                                    <ul class="list-group list-group-flush">
-                                                                                        {% for cargo in cel.cargos %}
-                                                                                            <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
-                                                                                                <div class="linha-cargo">
-                                                                                                    <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
-                                                                                                    <div class="acoes-cargo">
-                                                                                                        {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                                        {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                                        <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                            {% if cargo.ativo %}
-                                                                                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Desativar Cargo">
-                                                                                                                    <i class="bi bi-toggle-on"></i>
+                                                                                    </li>
+                                                                                {% endfor %}
+                                                                            </ul>
+                                                                        {% endif %}
+                                                                        {% for cel in setor.celulas %}
+                                                                            <section class="hier-node level-celula celula-container">
+                                                                                <header class="hier-header d-flex align-items-center">
+                                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="cargos" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
+                                                                                    <i class="bi bi-grid-3x3-gap me-2 hier-level-icon" aria-hidden="true"></i>
+                                                                                    <p class="mb-0 hier-title">Célula <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></p>
+                                                                                </header>
+                                                                                <div id="cel-{{ cel.obj.id }}" class="collapse show hier-children">
+                                                                                    {% if cel.cargos %}
+                                                                                        <ul class="list-group list-group-flush cargo-list">
+                                                                                            {% for cargo in cel.cargos %}
+                                                                                                <li class="list-group-item cargo-item {{ 'text-muted' if not cargo.ativo else '' }}" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
+                                                                                                    <div class="linha-cargo">
+                                                                                                        <div class="cargo-meta d-flex align-items-center">
+                                                                                                            <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
+                                                                                                            <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
+                                                                                                        </div>
+                                                                                                        <div class="acoes-cargo">
+                                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
+                                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
+                                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                                                                                                                <button type="submit" class="btn btn-sm cargo-action-btn {{ 'btn-outline-secondary' if cargo.ativo else 'btn-outline-primary' }}" title="{{ 'Desativar Cargo' if cargo.ativo else 'Ativar Cargo' }}">
+                                                                                                                    <i class="bi {{ 'bi-toggle-on' if cargo.ativo else 'bi-toggle-off' }}"></i>
                                                                                                                 </button>
-                                                                                                            {% else %}
-                                                                                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Cargo">
-                                                                                                                    <i class="bi bi-toggle-off"></i>
-                                                                                                                </button>
-                                                                                                            {% endif %}
-                                                                                                        </form>
+                                                                                                            </form>
+                                                                                                        </div>
                                                                                                     </div>
-                                                                                                </div>
-                                                                                            </li>
-                                                                                        {% endfor %}
-                                                                                    </ul>
-                                                                                {% else %}
-                                                                                    <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
-                                                                                {% endif %}
-                                                                            </div>
-                                                                        </div>
-                                                                    {% endfor %}
-                                                                </div>
-                                                            </div>
+                                                                                                </li>
+                                                                                            {% endfor %}
+                                                                                        </ul>
+                                                                                    {% else %}
+                                                                                        <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
+                                                                                    {% endif %}
+                                                                                </div>
+                                                                            </section>
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                </section>
                                                             {% endfor %}
                                                         </div>
-                                                    </div>
+                                                    </article>
                                                 {% endfor %}
                                             </div>
-                                        </div>
+                                        </section>
                                     {% endfor %}
                                 </div>
                                 <div class="d-none" id="graphContainer">
@@ -548,6 +549,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('.cargo-name').forEach(function(el) {
         el.addEventListener('click', function() {
+            const cargoItem = el.closest('.cargo-item');
+            if (cargoItem) {
+                document.querySelectorAll('.cargo-item.is-active').forEach(function(item) {
+                    item.classList.remove('is-active');
+                });
+                cargoItem.classList.add('is-active');
+            }
             const url = el.dataset.url;
             if (url) window.location.href = url;
         });

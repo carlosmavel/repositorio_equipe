@@ -15,6 +15,13 @@
   --border-darker: #d0d7de;
   --highlight-color: #ffe69c;
   --section-header-bg: #eef1f6;
+  --hier-surface: #ffffff;
+  --hier-surface-muted: #f8fafc;
+  --hier-border: #dde3ea;
+  --hier-hover: rgba(13, 110, 253, 0.08);
+  --hier-active-bg: rgba(13, 110, 253, 0.14);
+  --hier-active-border: rgba(13, 110, 253, 0.36);
+  --hier-indent-step: 1.1rem;
   --overlay-light: rgba(255, 255, 255, 0.7);
   --shadow-soft: rgba(0,0,0,0.05);
   --shadow-muted: rgba(0,0,0,0.04);
@@ -37,6 +44,12 @@
   --border-darker: #333;
   --highlight-color: #665c00;
   --section-header-bg: #3b3b3b;
+  --hier-surface: #242424;
+  --hier-surface-muted: #2c2c2c;
+  --hier-border: #3f3f3f;
+  --hier-hover: rgba(141, 181, 255, 0.14);
+  --hier-active-bg: rgba(13, 110, 253, 0.24);
+  --hier-active-border: rgba(141, 181, 255, 0.5);
   --overlay-light: rgba(0,0,0,0.7);
   --shadow-soft: rgba(0,0,0,0.5);
   --shadow-muted: rgba(0,0,0,0.6);
@@ -428,70 +441,130 @@
   transition: none;
 }
 
-.instituicao-container {
-  margin-bottom: 1.5rem;
+.cargo-tree {
+  margin-top: 0.5rem;
 }
 
-.estabelecimento-wrapper {
-  background-color: var(--bg-muted) !important;
-  border: 1px solid var(--border-default);
-  border-radius: 0.25rem;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
+.hier-node {
+  background-color: transparent;
 }
 
-.instituicao-container .estabelecimento-wrapper:first-child {
-  margin-top: 1rem;
+.hier-header {
+  min-height: 2.2rem;
+  border-radius: 0.45rem;
+  padding: 0.3rem 0.45rem;
+  transition: background-color .2s ease;
 }
 
-.instituicao-container .estabelecimento-wrapper:first-child {
-  margin-top: 1rem;
+.hier-header:hover {
+  background-color: var(--hier-hover);
 }
 
-.estabelecimento-wrapper {
-  background-color: #f8f9fa;
-}
-.setor-container {
-  margin-left: 1rem;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem;
-  background-color: var(--bg-default) !important;
-  border: 1px solid var(--border-light);
-  border-radius: 0.25rem;
+.hier-level-icon {
+  color: var(--text-default);
+  opacity: 0.75;
+  font-size: 0.95rem;
 }
 
+.hier-title {
+  color: var(--text-default);
+  line-height: 1.2;
+}
+
+.level-instituicao > .hier-header .hier-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.level-estabelecimento > .hier-header .hier-title {
+  font-size: 0.93rem;
+  font-weight: 600;
+}
+
+.level-setor > .hier-header .hier-title,
+.level-celula > .hier-header .hier-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.hier-children {
+  margin-left: var(--hier-indent-step);
+  padding-left: 0.45rem;
+}
+
+.level-instituicao {
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.4rem;
+  border: 1px solid var(--hier-border);
+  border-radius: 0.55rem;
+  background: var(--hier-surface);
+}
+
+.estabelecimento-wrapper,
+.setor-container,
 .celula-container {
-  margin-left: 2rem;
-  margin-bottom: 0.5rem;
-  border-left: 1px solid var(--border-default);
-  padding-left: 1rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  background-color: var(--bg-muted) !important;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.cargo-list {
+  margin-left: calc(var(--hier-indent-step) * 0.9);
 }
 
 .cargo-item {
-  margin-left: 3rem;
-  margin-bottom: 0.25rem;
-  border-left: 1px solid var(--border-lighter);
-  padding-left: 1rem;
-  background-color: var(--bg-default) !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.45rem !important;
+  margin: 0.25rem 0;
+  padding: 0.45rem 0.6rem;
+  background-color: var(--hier-surface-muted) !important;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.cargo-item:hover {
+  background-color: var(--hier-hover) !important;
+}
+
+.cargo-item.is-active {
+  background-color: var(--hier-active-bg) !important;
+  border-color: var(--hier-active-border) !important;
+}
+
+.cargo-icon {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .linha-cargo {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+}
+
+.cargo-meta {
+  min-width: 0;
 }
 
 .nome-cargo {
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .acoes-cargo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.cargo-action-btn {
+  --bs-btn-padding-y: 0.12rem;
+  --bs-btn-padding-x: 0.38rem;
+  --bs-btn-font-size: 0.76rem;
+  --bs-btn-border-radius: 0.38rem;
+  --bs-btn-line-height: 1.1;
 }
 
 .search-highlight {
