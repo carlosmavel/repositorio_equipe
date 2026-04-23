@@ -326,6 +326,128 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function initCargoHierarchySync() {
+    const hierarchyForms = document.querySelectorAll('.js-cargo-hierarquia-form');
+    if (!hierarchyForms.length) return;
+
+    hierarchyForms.forEach((form) => {
+      const celulaCheckboxes = Array.from(form.querySelectorAll("input[type='checkbox'][name='celula_ids'][data-setor-id][data-estabelecimento-id][data-instituicao-id]"));
+      const setorCheckboxes = Array.from(form.querySelectorAll("input[type='checkbox'][name='setor_ids'][data-setor-id][data-estabelecimento-id][data-instituicao-id]"));
+      const estabelecimentoCheckboxes = Array.from(form.querySelectorAll("input[type='checkbox'][name='estabelecimento_ids'][data-estabelecimento-id][data-instituicao-id]"));
+      const instituicaoCheckboxes = Array.from(form.querySelectorAll("input[type='checkbox'][name='instituicao_ids'][data-instituicao-id]"));
+
+      const getByData = (list, key, value) => list.filter((checkbox) => checkbox.dataset[key] === String(value));
+      const anyChecked = (list) => list.some((checkbox) => checkbox.checked);
+      const setChecked = (list, checked) => {
+        list.forEach((checkbox) => {
+          checkbox.checked = checked;
+          checkbox.indeterminate = false;
+        });
+      };
+
+      const syncSetorByDescendants = (setorId) => {
+        const relatedSetores = getByData(setorCheckboxes, "setorId", setorId);
+        if (!relatedSetores.length) return;
+        const hasCheckedCelula = anyChecked(getByData(celulaCheckboxes, "setorId", setorId));
+        if (hasCheckedCelula) {
+          setChecked(relatedSetores, true);
+        }
+      };
+
+      const syncEstabelecimentoByDescendants = (estabelecimentoId) => {
+        const relatedEstabelecimentos = getByData(estabelecimentoCheckboxes, "estabelecimentoId", estabelecimentoId);
+        if (!relatedEstabelecimentos.length) return;
+        const hasCheckedSetor = anyChecked(getByData(setorCheckboxes, "estabelecimentoId", estabelecimentoId));
+        const hasCheckedCelula = anyChecked(getByData(celulaCheckboxes, "estabelecimentoId", estabelecimentoId));
+        setChecked(relatedEstabelecimentos, hasCheckedSetor || hasCheckedCelula);
+      };
+
+      const syncInstituicaoByDescendants = (instituicaoId) => {
+        const relatedInstituicoes = getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId);
+        if (!relatedInstituicoes.length) return;
+        const hasCheckedEstabelecimento = anyChecked(getByData(estabelecimentoCheckboxes, "instituicaoId", instituicaoId));
+        const hasCheckedSetor = anyChecked(getByData(setorCheckboxes, "instituicaoId", instituicaoId));
+        const hasCheckedCelula = anyChecked(getByData(celulaCheckboxes, "instituicaoId", instituicaoId));
+        setChecked(relatedInstituicoes, hasCheckedEstabelecimento || hasCheckedSetor || hasCheckedCelula);
+      };
+
+      const syncAllParents = () => {
+        const setorIds = new Set(celulaCheckboxes.map((checkbox) => checkbox.dataset.setorId));
+        setorIds.forEach(syncSetorByDescendants);
+
+        const estabelecimentoIds = new Set([
+          ...celulaCheckboxes.map((checkbox) => checkbox.dataset.estabelecimentoId),
+          ...setorCheckboxes.map((checkbox) => checkbox.dataset.estabelecimentoId),
+        ]);
+        estabelecimentoIds.forEach(syncEstabelecimentoByDescendants);
+
+        const instituicaoIds = new Set([
+          ...celulaCheckboxes.map((checkbox) => checkbox.dataset.instituicaoId),
+          ...setorCheckboxes.map((checkbox) => checkbox.dataset.instituicaoId),
+          ...estabelecimentoCheckboxes.map((checkbox) => checkbox.dataset.instituicaoId),
+        ]);
+        instituicaoIds.forEach(syncInstituicaoByDescendants);
+      };
+
+      celulaCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const { setorId, estabelecimentoId, instituicaoId } = checkbox.dataset;
+          if (checkbox.checked) {
+            setChecked(getByData(setorCheckboxes, "setorId", setorId), true);
+            setChecked(getByData(estabelecimentoCheckboxes, "estabelecimentoId", estabelecimentoId), true);
+            setChecked(getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId), true);
+            return;
+          }
+
+          syncSetorByDescendants(setorId);
+          syncEstabelecimentoByDescendants(estabelecimentoId);
+          syncInstituicaoByDescendants(instituicaoId);
+        });
+      });
+
+      setorCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const { setorId, estabelecimentoId, instituicaoId } = checkbox.dataset;
+          if (checkbox.checked) {
+            setChecked(getByData(estabelecimentoCheckboxes, "estabelecimentoId", estabelecimentoId), true);
+            setChecked(getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId), true);
+            return;
+          }
+          syncSetorByDescendants(setorId);
+          syncEstabelecimentoByDescendants(estabelecimentoId);
+          syncInstituicaoByDescendants(instituicaoId);
+        });
+      });
+
+      estabelecimentoCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const { estabelecimentoId, instituicaoId } = checkbox.dataset;
+          if (checkbox.checked) {
+            setChecked(getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId), true);
+            return;
+          }
+          syncEstabelecimentoByDescendants(estabelecimentoId);
+          syncInstituicaoByDescendants(instituicaoId);
+        });
+      });
+
+      instituicaoCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) return;
+          syncInstituicaoByDescendants(checkbox.dataset.instituicaoId);
+        });
+      });
+
+      form.addEventListener("submit", () => {
+        syncAllParents();
+      });
+
+      syncAllParents();
+    });
+  }
+
+  initCargoHierarchySync();
+
   function getFieldIdentifier(field) {
     return field?.name || field?.id || "(sem-name-id)";
   }
