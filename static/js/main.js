@@ -380,21 +380,37 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       };
 
-      const syncEstabelecimentoByDescendants = (estabelecimentoId) => {
+      const syncEstabelecimentoByDescendants = (estabelecimentoId, { allowAutoUncheck = false } = {}) => {
         const relatedEstabelecimentos = getByData(estabelecimentoCheckboxes, "estabelecimentoId", estabelecimentoId);
         if (!relatedEstabelecimentos.length) return;
         const hasCheckedSetor = anyChecked(getByData(setorCheckboxes, "estabelecimentoId", estabelecimentoId));
         const hasCheckedCelula = anyChecked(getByData(celulaCheckboxes, "estabelecimentoId", estabelecimentoId));
-        setChecked(relatedEstabelecimentos, hasCheckedSetor || hasCheckedCelula);
+
+        if (hasCheckedSetor || hasCheckedCelula) {
+          setChecked(relatedEstabelecimentos, true);
+          return;
+        }
+
+        if (allowAutoUncheck) {
+          setChecked(relatedEstabelecimentos, false);
+        }
       };
 
-      const syncInstituicaoByDescendants = (instituicaoId) => {
+      const syncInstituicaoByDescendants = (instituicaoId, { allowAutoUncheck = false } = {}) => {
         const relatedInstituicoes = getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId);
         if (!relatedInstituicoes.length) return;
         const hasCheckedEstabelecimento = anyChecked(getByData(estabelecimentoCheckboxes, "instituicaoId", instituicaoId));
         const hasCheckedSetor = anyChecked(getByData(setorCheckboxes, "instituicaoId", instituicaoId));
         const hasCheckedCelula = anyChecked(getByData(celulaCheckboxes, "instituicaoId", instituicaoId));
-        setChecked(relatedInstituicoes, hasCheckedEstabelecimento || hasCheckedSetor || hasCheckedCelula);
+
+        if (hasCheckedEstabelecimento || hasCheckedSetor || hasCheckedCelula) {
+          setChecked(relatedInstituicoes, true);
+          return;
+        }
+
+        if (allowAutoUncheck) {
+          setChecked(relatedInstituicoes, false);
+        }
       };
 
       const syncAllParents = () => {
@@ -439,7 +455,8 @@ document.addEventListener("DOMContentLoaded", function () {
             setChecked(getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId), true);
             return;
           }
-          syncSetorByDescendants(setorId);
+
+          setChecked(getByData(celulaCheckboxes, "setorId", setorId), false);
           syncEstabelecimentoByDescendants(estabelecimentoId);
           syncInstituicaoByDescendants(instituicaoId);
         });
@@ -452,15 +469,20 @@ document.addEventListener("DOMContentLoaded", function () {
             setChecked(getByData(instituicaoCheckboxes, "instituicaoId", instituicaoId), true);
             return;
           }
-          syncEstabelecimentoByDescendants(estabelecimentoId);
-          syncInstituicaoByDescendants(instituicaoId);
+
+          setChecked(getByData(setorCheckboxes, "estabelecimentoId", estabelecimentoId), false);
+          setChecked(getByData(celulaCheckboxes, "estabelecimentoId", estabelecimentoId), false);
+          syncInstituicaoByDescendants(instituicaoId, { allowAutoUncheck: true });
         });
       });
 
       instituicaoCheckboxes.forEach((checkbox) => {
         checkbox.addEventListener("change", () => {
           if (checkbox.checked) return;
-          syncInstituicaoByDescendants(checkbox.dataset.instituicaoId);
+          const { instituicaoId } = checkbox.dataset;
+          setChecked(getByData(estabelecimentoCheckboxes, "instituicaoId", instituicaoId), false);
+          setChecked(getByData(setorCheckboxes, "instituicaoId", instituicaoId), false);
+          setChecked(getByData(celulaCheckboxes, "instituicaoId", instituicaoId), false);
         });
       });
 
