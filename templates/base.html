@@ -109,10 +109,9 @@
         }
 
         .main-page-content {
-            flex: 1;
+            flex: 1 0 auto;
             display: flex;
             flex-direction: column;
-            min-height: 0;
             padding: 1.5rem 3rem 2rem;
             background-color: var(--content-bg);
             color: var(--text-default);
@@ -199,6 +198,7 @@
         }
 
         footer {
+            flex-shrink: 0;
             margin-top: auto;
         }
         #flash-container { margin-bottom: 1.5rem; }
