@@ -256,6 +256,51 @@ def test_user_defaults_from_cargo(client):
         assert usr.celula_id == ids['cel']
 
 
+def test_user_defaults_from_cargo_with_multiple_setores_and_celulas_keeps_consistency(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        est = Estabelecimento.query.get(ids['est'])
+        setor_1 = Setor.query.get(ids['setor'])
+        cel_1 = Celula.query.get(ids['cel'])
+        cel_2_mesmo_setor = Celula(nome='Cel 2 Setor 1', estabelecimento_id=est.id, setor_id=setor_1.id)
+        setor_2 = Setor(nome='Setor 2', estabelecimento_id=est.id)
+        db.session.add_all([cel_2_mesmo_setor, setor_2])
+        db.session.flush()
+        cel_3_setor_2 = Celula(nome='Cel 3 Setor 2', estabelecimento_id=est.id, setor_id=setor_2.id)
+        db.session.add(cel_3_setor_2)
+        db.session.flush()
+
+        cargo = Cargo(nome='Gestor Multi', ativo=True)
+        cargo.default_setores.extend([setor_1, setor_2])
+        cargo.default_celulas.extend([cel_1, cel_2_mesmo_setor, cel_3_setor_2])
+        db.session.add(cargo)
+        db.session.commit()
+        cargo_id = cargo.id
+        setor_1_id = setor_1.id
+        setor_2_id = setor_2.id
+        cel_1_id = cel_1.id
+        cel_2_id = cel_2_mesmo_setor.id
+        cel_3_id = cel_3_setor_2.id
+
+    response = client.post('/admin/usuarios', data={
+        'username': 'gestormulti',
+        'email': 'gestormulti@example.com',
+        'ativo_check': 'on',
+        'cargo_id': cargo_id
+    }, follow_redirects=True)
+    assert response.status_code == 200
+
+    with app.app_context():
+        usr = User.query.filter_by(username='gestormulti').first()
+        assert usr is not None
+        assert usr.cargo_id == cargo_id
+        assert usr.celula_id is not None
+        assert usr.setor_id == usr.celula.setor_id
+        assert {s.id for s in usr.extra_setores.all()} == {setor_1_id, setor_2_id}
+        assert {c.id for c in usr.extra_celulas.all()} == {cel_1_id, cel_2_id, cel_3_id}
+
+
 def test_get_permissoes_combinadas(client):
     login_admin(client)
     ids = client.base_ids

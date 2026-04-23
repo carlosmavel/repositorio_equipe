@@ -281,3 +281,101 @@ def test_user_cannot_view_wrong_instituicao(client):
 
         assert user_can_view_article(user2, art) is False
 
+
+def test_user_can_view_setor_visibility_via_extra_setor_herdado(client):
+    from core.utils import user_can_view_article
+    with app.app_context():
+        user = User.query.first()
+        est = user.estabelecimento
+        setor_extra = Setor(nome='Setor Extra', estabelecimento=est)
+        db.session.add(setor_extra)
+        db.session.flush()
+        cel_extra = Celula(nome='Celula Extra', estabelecimento=est, setor=setor_extra)
+        db.session.add(cel_extra)
+        db.session.flush()
+
+        user.extra_setores.append(setor_extra)
+
+        art = Article(
+            titulo='T9',
+            texto='C9',
+            user_id=user.id,
+            celula_id=user.celula_id,
+            visibility=ArticleVisibility.SETOR,
+            setor_id=setor_extra.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(user, art) is True
+
+
+def test_celula_visibility_does_not_leak_to_another_celula_same_setor(client):
+    from core.utils import user_can_view_article
+    with app.app_context():
+        user1 = User.query.first()
+        est = user1.estabelecimento
+        setor = user1.setor
+        cel2 = Celula(nome='Celula 2 mesmo setor', estabelecimento=est, setor=setor)
+        db.session.add(cel2)
+        db.session.flush()
+
+        user2 = User(
+            username='u9',
+            email='u9@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=cel2,
+        )
+        db.session.add(user2)
+
+        art = Article(
+            titulo='T10',
+            texto='C10',
+            user_id=user1.id,
+            celula_id=user1.celula_id,
+            visibility=ArticleVisibility.CELULA,
+            vis_celula_id=user1.celula_id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(user2, art) is False
+
+
+def test_regression_visibility_celula_only_matching_celula_id_or_extra_celulas(client):
+    from core.utils import user_can_view_article
+    with app.app_context():
+        author = User.query.first()
+        est = author.estabelecimento
+        setor = author.setor
+        cel2 = Celula(nome='Celula B', estabelecimento=est, setor=setor)
+        db.session.add(cel2)
+        db.session.flush()
+        viewer = User(
+            username='u10',
+            email='u10@test',
+            password_hash='x',
+            estabelecimento=est,
+            setor=setor,
+            celula=author.celula,
+        )
+        db.session.add(viewer)
+        db.session.flush()
+
+        art = Article(
+            titulo='T11',
+            texto='C11',
+            user_id=author.id,
+            celula_id=author.celula_id,
+            visibility=ArticleVisibility.CELULA,
+            vis_celula_id=cel2.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+
+        assert user_can_view_article(viewer, art) is False
+        viewer.extra_celulas.append(cel2)
+        db.session.commit()
+        assert user_can_view_article(viewer, art) is True

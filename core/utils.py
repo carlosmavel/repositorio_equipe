@@ -649,6 +649,8 @@ def user_can_view_article(user, article):
         return True
     if user.celula_id and article.extra_celulas.filter_by(id=user.celula_id).count():
         return True
+    if any(article.extra_celulas.filter_by(id=c.id).count() for c in user.extra_celulas.all()):
+        return True
 
     vis = article.visibility
 
@@ -663,6 +665,8 @@ def user_can_view_article(user, article):
             return True
     elif vis is ArticleVisibility.SETOR:
         if user_setor and article.setor_id == user_setor.id:
+            return True
+        if article.setor_id and user.extra_setores.filter_by(id=article.setor_id).count():
             return True
     elif vis is ArticleVisibility.CELULA:
         # Usa a célula explícita de visibilidade se definida; caso contrário,
