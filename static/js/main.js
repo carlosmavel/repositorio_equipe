@@ -472,7 +472,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           setChecked(getByData(setorCheckboxes, "estabelecimentoId", estabelecimentoId), false);
           setChecked(getByData(celulaCheckboxes, "estabelecimentoId", estabelecimentoId), false);
-          syncInstituicaoByDescendants(instituicaoId, { allowAutoUncheck: true });
+          syncInstituicaoByDescendants(instituicaoId);
         });
       });
 
