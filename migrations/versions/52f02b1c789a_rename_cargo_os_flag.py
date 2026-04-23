@@ -15,11 +15,39 @@ branch_labels = None
 depends_on = None
 
 
+def _column_exists(table_name: str, column_name: str) -> bool:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return any(col['name'] == column_name for col in inspector.get_columns(table_name))
+
+
 def upgrade():
-    with op.batch_alter_table('cargo') as batch_op:
-        batch_op.alter_column('atende_ordem_servico', new_column_name='pode_atender_os')
+    has_old_column = _column_exists('cargo', 'atende_ordem_servico')
+    has_new_column = _column_exists('cargo', 'pode_atender_os')
+
+    if has_old_column and not has_new_column:
+        with op.batch_alter_table('cargo') as batch_op:
+            batch_op.alter_column('atende_ordem_servico', new_column_name='pode_atender_os')
+    elif has_new_column:
+        # A coluna nova já existe (ex.: base criada com migration mais recente); nada a fazer.
+        pass
+    else:
+        # Estado inesperado em bases antigas/inconsistentes: garante a coluna prevista pela release.
+        with op.batch_alter_table('cargo') as batch_op:
+            batch_op.add_column(sa.Column('pode_atender_os', sa.Boolean(), nullable=False, server_default='false'))
 
 
 def downgrade():
-    with op.batch_alter_table('cargo') as batch_op:
-        batch_op.alter_column('pode_atender_os', new_column_name='atende_ordem_servico')
+    has_old_column = _column_exists('cargo', 'atende_ordem_servico')
+    has_new_column = _column_exists('cargo', 'pode_atender_os')
+
+    if has_new_column and not has_old_column:
+        with op.batch_alter_table('cargo') as batch_op:
+            batch_op.alter_column('pode_atender_os', new_column_name='atende_ordem_servico')
+    elif has_old_column:
+        # A coluna antiga já existe; downgrade já está refletido.
+        pass
+    else:
+        # Mantém downgrade resiliente em cenários inconsistentes.
+        with op.batch_alter_table('cargo') as batch_op:
+            batch_op.add_column(sa.Column('atende_ordem_servico', sa.Boolean(), nullable=False, server_default='false'))
