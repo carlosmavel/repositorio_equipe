@@ -326,8 +326,61 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function hasCheckedInput(form, selector) {
-    return form.querySelectorAll(selector).length > 0;
+  function getFieldIdentifier(field) {
+    return field?.name || field?.id || "(sem-name-id)";
+  }
+
+  function isFieldFilled(field) {
+    if (!field) {
+      return {
+        filled: false,
+        valueRead: null,
+        reason: "campo inexistente",
+        type: "missing",
+      };
+    }
+
+    const tag = (field.tagName || "").toLowerCase();
+    const type = (field.type || tag || "unknown").toLowerCase();
+    const role = (field.getAttribute("role") || "").toLowerCase();
+    const className = field.className || "";
+
+    if (type === "checkbox" || type === "radio") {
+      return {
+        filled: field.checked,
+        valueRead: field.checked,
+        reason: field.checked ? "marcado" : "não marcado",
+        type,
+      };
+    }
+
+    if (field.multiple || type === "select-multiple") {
+      const selectedValues = Array.from(field.selectedOptions || []).map((opt) => opt.value).filter(Boolean);
+      return {
+        filled: selectedValues.length > 0,
+        valueRead: selectedValues,
+        reason: selectedValues.length > 0 ? "possui opções selecionadas" : "nenhuma opção selecionada",
+        type: "select-multiple",
+      };
+    }
+
+    const rawValue = field.value;
+    const textValue = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+    const hasValue = Boolean(textValue);
+
+    let reason = hasValue ? "valor preenchido" : "valor vazio";
+    if (!hasValue && role.includes("combobox")) {
+      reason = "combobox sem valor";
+    } else if (!hasValue && className.includes("select2")) {
+      reason = "componente select2 sem valor";
+    }
+
+    return {
+      filled: hasValue,
+      valueRead: textValue,
+      reason,
+      type,
+    };
   }
 
   function validateCreateUserForm() {
@@ -353,23 +406,74 @@ document.addEventListener("DOMContentLoaded", function () {
       : false;
 
     const exigeHierarquia = !(hasAdminByCargo || hasAdminMarcadoManual);
-    const hasSetor = hasCheckedInput(form, "input[name='setor_ids']:checked");
-    const hasCelula = hasCheckedInput(form, "input[name='celula_ids']:checked");
+
+    const requiredFields = [username, email, cargo];
+    const requiredResults = requiredFields.map((field) => {
+      const result = isFieldFilled(field);
+      return {
+        id: field?.id || null,
+        name: field?.name || null,
+        ...result,
+      };
+    });
+
+    const setorChecked = form.querySelectorAll("input[name='setor_ids']:checked");
+    const celulaChecked = form.querySelectorAll("input[name='celula_ids']:checked");
+    const hasSetor = setorChecked.length > 0;
+    const hasCelula = celulaChecked.length > 0;
 
     // Espelha a regra do backend:
     // - setor e célula são obrigatórios para não-admin;
     // - estabelecimento pode ser inferido a partir do setor/célula selecionados.
     const hierarchyOk = !exigeHierarquia || (hasSetor && hasCelula);
 
-    const isValid = Boolean(
-      username?.value.trim()
-      && email?.value.trim()
-      && cargo?.value
-      && hierarchyOk
-    );
+    const requiredFieldsOk = requiredResults.every((fieldResult) => fieldResult.filled);
+    const isValid = Boolean(requiredFieldsOk && hierarchyOk);
 
     submitBtn.disabled = !isValid;
     submitBtn.classList.toggle('disabled', !isValid);
+
+    console.groupCollapsed('[create-user-form] validação botão "Adicionar Usuário"');
+    requiredResults.forEach((fieldResult) => {
+      console.log('Campo obrigatório', {
+        id: fieldResult.id,
+        name: fieldResult.name,
+        identifier: getFieldIdentifier({ id: fieldResult.id, name: fieldResult.name }),
+        type: fieldResult.type,
+        valueRead: fieldResult.valueRead,
+        filled: fieldResult.filled,
+        reason: fieldResult.reason,
+      });
+    });
+    console.log('Campo obrigatório (grupo)', {
+      id: '(grupo-hierarquia)',
+      name: 'setor_ids/celula_ids',
+      type: 'checkbox-group',
+      valueRead: {
+        setor_ids: Array.from(setorChecked).map((input) => input.value),
+        celula_ids: Array.from(celulaChecked).map((input) => input.value),
+      },
+      filled: hierarchyOk,
+      reason: !exigeHierarquia
+        ? 'hierarquia dispensada para perfil admin'
+        : hasSetor && hasCelula
+          ? 'setor e célula preenchidos'
+          : `faltando ${[
+              !hasSetor ? 'setor_ids' : null,
+              !hasCelula ? 'celula_ids' : null,
+            ].filter(Boolean).join(' e ')}`,
+    });
+    console.log('Resumo validação', {
+      exigeHierarquia,
+      hasAdminByCargo,
+      hasAdminMarcadoManual,
+      selectedCargoId,
+      requiredFieldsOk,
+      hierarchyOk,
+      isValid,
+      submitDisabled: submitBtn.disabled,
+    });
+    console.groupEnd();
   }
 
   const createUserForm = document.getElementById('create-user-form');
