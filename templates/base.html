@@ -13,8 +13,15 @@
     
     <style>
         /* === ESTILOS GLOBAIS PARA LAYOUT COM NAVBAR FIXA E SIDEBAR FIXA/OFFCANVAS === */
+        html, body {
+            height: 100%;
+        }
+
         body {
             margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             background-color: var(--page-bg); /* Ajuste conforme tema */
         }
 
@@ -100,15 +107,18 @@
             }
         }
 
-        .main-page-content-wrapper {
-            /* Este wrapper agora só precisa existir, o padding está no body */
-        }
         .main-page-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
             padding: 1.5rem; /* Espaçamento interno do conteúdo */
             background-color: var(--content-bg);
             color: var(--text-default);
-            /* Para garantir que o conteúdo não seja muito baixo em páginas curtas */
-            min-height: calc(100vh - 56px - 3rem); /* Altura da viewport - navbar - (padding-top+bottom do .main-page-content) */
+        }
+
+        footer {
+            margin-top: auto;
         }
         #flash-container { margin-bottom: 1.5rem; }
 
@@ -349,7 +359,7 @@
         </div>
     {% endif %} {# Fim do if de layout logado em páginas não-auth #}
 
-    <div class="main-page-content-wrapper">
+    <main class="main-page-content">
         {% if not is_auth_local_flash_page %}
         {# Flash messages globais exibidas fora do card apenas para páginas sem flash local #}
         <div id="flash-container" class="container-fluid">
@@ -358,9 +368,9 @@
         {% endif %}
 
         {% block content %}{% endblock content %}
-    </div>
+    </main>
 
-    <footer class="border-top bg-body-tertiary py-3 mt-4">
+    <footer class="border-top bg-body-tertiary py-3">
         <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <small class="text-muted">&copy; 2026 Orquetask</small>
             <button type="button" class="btn btn-link btn-sm p-0 text-decoration-underline" data-cookie-open-preferences="true">
