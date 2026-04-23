@@ -136,34 +136,55 @@
         }
 
         #cookiePreferencesModal .modal-content {
+            display: flex;
+            flex-direction: column;
             max-height: calc(100dvh - 2rem);
         }
 
         #cookiePreferencesModal .modal-body {
+            flex: 1 1 auto;
             overflow-y: auto;
         }
 
         #cookiePreferencesModal .modal-footer {
+            flex: 0 0 auto;
             flex-wrap: wrap;
             justify-content: flex-end;
             gap: .5rem;
+            padding: .75rem 1rem 1rem;
         }
 
         #cookiePreferencesModal .modal-footer .btn {
             min-width: 170px;
+            max-width: 100%;
         }
 
         #cookiePreferencesModal .form-check.form-switch {
-            padding-left: 3.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+            padding-left: 1rem;
         }
 
         #cookiePreferencesModal .form-check.form-switch .form-check-input {
-            margin-left: -2.25rem;
+            flex: 0 0 auto;
+            margin-left: 0;
+            margin-top: .15rem;
+        }
+
+        #cookiePreferencesModal .form-check.form-switch .form-check-label {
+            flex: 1 1 auto;
+            min-width: 0;
         }
 
         @media (max-width: 575.98px) {
+            #cookiePreferencesModal .modal-footer {
+                justify-content: stretch;
+            }
+
             #cookiePreferencesModal .modal-footer .btn {
                 width: 100%;
+                min-width: 0;
             }
         }
 
