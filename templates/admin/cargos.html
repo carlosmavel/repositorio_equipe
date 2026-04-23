@@ -154,7 +154,7 @@
                         <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Cargo
                     </h5>
 
-                    <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form">
+                    <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form js-cargo-hierarquia-form">
                         <div class="row">
                             <div class="col-md-8 mb-1">
                                 <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
@@ -178,25 +178,37 @@
                             <div class="card-header"><h6 class="mb-0">Hierarquia Padrão</h6></div>
                             <div class="card-body">
                                 {% for inst in estrutura %}
-                                    <div class="fw-bold mb-1">Instituição: {{ inst.obj.nome }}</div>
+                                    <div class="form-check mb-1">
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            id="c_inst{{ inst.obj.id }}"
+                                            name="instituicao_ids"
+                                            value="{{ inst.obj.id }}"
+                                            data-node-type="instituicao"
+                                            data-instituicao-id="{{ inst.obj.id }}"
+                                            {% if inst.obj.id|string in request.form.getlist('instituicao_ids') %}checked{% endif %}
+                                        >
+                                        <label class="form-check-label fw-bold" for="c_inst{{ inst.obj.id }}">Instituição: {{ inst.obj.nome }}</label>
+                                    </div>
                                     {% for est in inst.estabelecimentos %}
                                         <div class="ms-3">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="c_est{{ est.obj.id }}" name="estabelecimento_ids" value="{{ est.obj.id }}" {% if est.obj.id|string in request.form.getlist('estabelecimento_ids') %}checked{% endif %}>
+                                                <input class="form-check-input" type="checkbox" id="c_est{{ est.obj.id }}" name="estabelecimento_ids" value="{{ est.obj.id }}" data-node-type="estabelecimento" data-estabelecimento-id="{{ est.obj.id }}" data-instituicao-id="{{ inst.obj.id }}" {% if est.obj.id|string in request.form.getlist('estabelecimento_ids') %}checked{% endif %}>
                                                 <label class="form-check-label fw-bold" for="c_est{{ est.obj.id }}">Estabelecimento: {{ est.obj.nome_fantasia }}</label>
                                             </div>
                                             {% if est.setores %}
                                                 <div class="ms-4">
                                                     {% for st in est.setores %}
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="c_setor{{ st.obj.id }}" name="setor_ids" value="{{ st.obj.id }}" {% if st.obj.id|string in request.form.getlist('setor_ids') %}checked{% endif %}>
+                                                            <input class="form-check-input" type="checkbox" id="c_setor{{ st.obj.id }}" name="setor_ids" value="{{ st.obj.id }}" data-node-type="setor" data-setor-id="{{ st.obj.id }}" data-estabelecimento-id="{{ est.obj.id }}" data-instituicao-id="{{ inst.obj.id }}" {% if st.obj.id|string in request.form.getlist('setor_ids') %}checked{% endif %}>
                                                             <label class="form-check-label" for="c_setor{{ st.obj.id }}">Setor: {{ st.obj.nome }}</label>
                                                         </div>
                                                         {% if st.celulas %}
                                                             <div class="ms-4 mb-2">
                                                                 {% for cel in st.celulas %}
                                                                     <div class="form-check">
-                                                                        <input class="form-check-input" type="checkbox" id="c_celula{{ cel.obj.id }}" name="celula_ids" value="{{ cel.obj.id }}" {% if cel.obj.id|string in request.form.getlist('celula_ids') %}checked{% endif %}>
+                                                                        <input class="form-check-input" type="checkbox" id="c_celula{{ cel.obj.id }}" name="celula_ids" value="{{ cel.obj.id }}" data-node-type="celula" data-setor-id="{{ st.obj.id }}" data-estabelecimento-id="{{ est.obj.id }}" data-instituicao-id="{{ inst.obj.id }}" {% if cel.obj.id|string in request.form.getlist('celula_ids') %}checked{% endif %}>
                                                                         <label class="form-check-label" for="c_celula{{ cel.obj.id }}">Célula: {{ cel.obj.nome }}</label>
                                                                     </div>
                                                                 {% endfor %}
@@ -322,7 +334,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form">
+                <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form js-cargo-hierarquia-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ cargo_editar.id }}">
                     <div class="row">
                         <div class="col-md-8 mb-1">
@@ -348,7 +360,7 @@
                         <div class="card-body">
                             {% for est in estabelecimentos %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="e_est{{ est.id }}" name="estabelecimento_ids" value="{{ est.id }}" {% if (request.form.getlist('estabelecimento_ids') and est.id|string in request.form.getlist('estabelecimento_ids')) or (not request.form.getlist('estabelecimento_ids') and (est in cargo_editar.default_estabelecimentos.all())) %}checked{% endif %}>
+                                    <input class="form-check-input" type="checkbox" id="e_est{{ est.id }}" name="estabelecimento_ids" value="{{ est.id }}" data-node-type="estabelecimento" data-estabelecimento-id="{{ est.id }}" data-instituicao-id="{{ est.instituicao_id }}" {% if (request.form.getlist('estabelecimento_ids') and est.id|string in request.form.getlist('estabelecimento_ids')) or (not request.form.getlist('estabelecimento_ids') and (est in cargo_editar.default_estabelecimentos.all())) %}checked{% endif %}>
                                     <label class="form-check-label fw-bold" for="e_est{{ est.id }}">{{ est.nome_fantasia }}</label>
                                 </div>
                                 {% set setores_est = est.setores.all() %}
@@ -356,7 +368,7 @@
                                     <div class="ms-4">
                                         {% for st in setores_est %}
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="e_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in cargo_editar.default_setores.all())) %}checked{% endif %}>
+                                                <input class="form-check-input" type="checkbox" id="e_setor{{ st.id }}" name="setor_ids" value="{{ st.id }}" data-node-type="setor" data-setor-id="{{ st.id }}" data-estabelecimento-id="{{ est.id }}" data-instituicao-id="{{ est.instituicao_id }}" {% if (request.form.getlist('setor_ids') and st.id|string in request.form.getlist('setor_ids')) or (not request.form.getlist('setor_ids') and (st in cargo_editar.default_setores.all())) %}checked{% endif %}>
                                                 <label class="form-check-label" for="e_setor{{ st.id }}">{{ st.nome }}</label>
                                             </div>
                                             {% set celulas_set = st.celulas.all() %}
@@ -364,7 +376,7 @@
                                                 <div class="ms-4 mb-2">
                                                     {% for cel in celulas_set %}
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="e_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in cargo_editar.default_celulas.all())) %}checked{% endif %}>
+                                                            <input class="form-check-input" type="checkbox" id="e_celula{{ cel.id }}" name="celula_ids" value="{{ cel.id }}" data-node-type="celula" data-setor-id="{{ st.id }}" data-estabelecimento-id="{{ est.id }}" data-instituicao-id="{{ est.instituicao_id }}" {% if (request.form.getlist('celula_ids') and cel.id|string in request.form.getlist('celula_ids')) or (not request.form.getlist('celula_ids') and (cel in cargo_editar.default_celulas.all())) %}checked{% endif %}>
                                                             <label class="form-check-label" for="e_celula{{ cel.id }}">{{ cel.nome }}</label>
                                                         </div>
                                                     {% endfor %}
