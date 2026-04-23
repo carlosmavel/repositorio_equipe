@@ -497,6 +497,27 @@ def admin_usuarios():
             celulas = Celula.query.filter(Celula.id.in_(celula_ids)).all()
             setor_ids = list(dict.fromkeys(c.setor_id for c in celulas if c.setor_id))
 
+        celulas_resolvidas = []
+        if celula_ids:
+            celulas_resolvidas = Celula.query.filter(Celula.id.in_(celula_ids)).all()
+            celulas_por_id = {c.id: c for c in celulas_resolvidas}
+            celula_ids = [cid for cid in celula_ids if cid in celulas_por_id]
+            setores_derivados_das_celulas = [
+                celulas_por_id[cid].setor_id
+                for cid in celula_ids
+                if celulas_por_id[cid].setor_id
+            ]
+            setor_ids = list(dict.fromkeys([*setor_ids, *setores_derivados_das_celulas]))
+
+        setor_primario_id = None
+        celula_primaria_id = celula_ids[0] if celula_ids else None
+        if celula_primaria_id:
+            celula_primaria = next((c for c in celulas_resolvidas if c.id == celula_primaria_id), None)
+            if celula_primaria and celula_primaria.setor_id:
+                setor_primario_id = celula_primaria.setor_id
+        if setor_primario_id is None and setor_ids:
+            setor_primario_id = setor_ids[0]
+
         if not estabelecimento_id:
             if setor_ids:
                 setor_obj = Setor.query.get(setor_ids[0])
@@ -643,9 +664,9 @@ def admin_usuarios():
                     usr.data_nascimento = data_nascimento
                     usr.data_admissao = data_admissao
                     usr.estabelecimento_id = estabelecimento_id
-                    usr.setor_id = setor_ids[0] if setor_ids else None
+                    usr.setor_id = setor_primario_id
                     usr.cargo_id = cargo_id
-                    usr.celula_id = celula_ids[0] if celula_ids else None
+                    usr.celula_id = celula_primaria_id
                     usr.extra_setores = []
                     usr.extra_celulas = []
                     usr.extra_setores = [Setor.query.get(sid) for sid in setor_ids]
@@ -678,9 +699,9 @@ def admin_usuarios():
                         data_nascimento=data_nascimento,
                         data_admissao=data_admissao,
                         estabelecimento_id=estabelecimento_id,
-                        setor_id=setor_ids[0] if setor_ids else None,
+                        setor_id=setor_primario_id,
                         cargo_id=cargo_id,
-                        celula_id=celula_ids[0] if celula_ids else None,
+                        celula_id=celula_primaria_id,
                     )
                     app.logger.debug("Creating new user record")
                     usr.set_password(password)
