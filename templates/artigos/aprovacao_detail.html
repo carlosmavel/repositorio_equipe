@@ -66,6 +66,40 @@
         <p class="text-muted mt-3">Sem anexos.</p>
         {% endif %}
 
+        {% if comments_history %}
+        <hr>
+        <h5 class="mt-4">Histórico de Ajustes</h5>
+        <ul class="list-group mb-3">
+          {% for c in comments_history %}
+          {% set nome = c.autor.nome_completo if c.autor and c.autor.nome_completo else (c.autor.username if c.autor else 'Usuário') %}
+          {% set parts = nome.split() %}
+          <li class="list-group-item">
+            <strong>{{ parts[0] }} {{ parts[-1] }}</strong>
+            <small class="text-muted">
+              {{ c.created_at.strftime('%d/%m/%Y %H:%M') if c.created_at else '' }}
+            </small><br>
+            {{ c.texto }}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if revision_history %}
+        <hr>
+        <h5 class="mt-4">Histórico de Solicitações de Revisão</h5>
+        <ul class="list-group mb-3">
+          {% for rr in revision_history %}
+          <li class="list-group-item">
+            <strong>{{ rr.user.nome_completo if rr.user and rr.user.nome_completo else (rr.user.username if rr.user else 'Usuário') }}</strong>
+            <small class="text-muted">
+              {{ rr.created_at.strftime('%d/%m/%Y %H:%M') if rr.created_at else '' }}
+            </small><br>
+            {{ rr.comentario }}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
         <hr>
         {% if artigo.status == ArticleStatus.PENDENTE %}
         <form method="POST" id="reviewForm" novalidate>
