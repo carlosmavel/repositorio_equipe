@@ -319,16 +319,22 @@ def editar_artigo(artigo_id):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
-    editable_statuses = {
-        ArticleStatus.RASCUNHO,
-        ArticleStatus.EM_REVISAO,
-        ArticleStatus.EM_AJUSTE,
-        ArticleStatus.REJEITADO,
+    editable_status_values = {
+        ArticleStatus.RASCUNHO.value,
+        ArticleStatus.EM_REVISAO.value,
+        ArticleStatus.EM_AJUSTE.value,
+        ArticleStatus.REJEITADO.value,
     }
-    can_submit_actions = artigo.status in editable_statuses
+    can_submit_actions = True
 
     if request.method == "POST":
-        if not can_submit_actions:
+        raw_status = artigo.status
+        if isinstance(raw_status, ArticleStatus):
+            status_value = raw_status.value
+        else:
+            status_value = str(raw_status).strip().lower()
+        can_submit_current_status = status_value in editable_status_values
+        if not can_submit_current_status:
             flash("Este artigo não permite alterações no status atual.", "warning")
             return redirect(url_for("artigo", artigo_id=artigo_id))
 
