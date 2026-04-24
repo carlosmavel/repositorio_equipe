@@ -20,7 +20,6 @@ except ImportError:
 try:
     from ..core.utils import (
         sanitize_html,
-        extract_text,
         eligible_review_notification_users,
         user_can_view_article,
         user_can_edit_article,
@@ -30,7 +29,6 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
         sanitize_html,
-        extract_text,
         eligible_review_notification_users,
         user_can_view_article,
         user_can_edit_article,
@@ -38,8 +36,19 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_review_article,
     )
 try:
+    from ..core.services.ocr_queue import (
+        enqueue_attachment_for_ocr,
+        is_pdf_ocr_eligible,
+        OCR_STATUS_CONCLUIDO,
+    )
+except ImportError:  # pragma: no cover
+    from core.services.ocr_queue import (
+        enqueue_attachment_for_ocr,
+        is_pdf_ocr_eligible,
+        OCR_STATUS_CONCLUIDO,
+    )
+try:
     from ..core.progress import (
-        add_progress_message,
         clear_progress,
         get_progress,
         init_progress,
@@ -47,7 +56,6 @@ try:
     )
 except ImportError:  # pragma: no cover
     from core.progress import (
-        add_progress_message,
         clear_progress,
         get_progress,
         init_progress,
@@ -125,15 +133,6 @@ def novo_artigo():
         progress_id = request.form.get("progress_id")
         init_progress(progress_id)
 
-        def emit_progress(payload) -> None:
-            if isinstance(payload, dict):
-                msg = payload.get("message")
-                percent = payload.get("percent")
-            else:
-                msg = str(payload) if payload is not None else None
-                percent = None
-            add_progress_message(progress_id, msg, percent=percent)
-
         inst_id = est_id = setor_vis_id = vis_cel_id = None
         if vis is ArticleVisibility.INSTITUICAO and user.estabelecimento:
             inst_id = user.estabelecimento.instituicao_id
@@ -190,17 +189,19 @@ def novo_artigo():
                     f.save(dest)
                     filenames.append(unique_name)
 
-                    # extrai texto e descobre MIME
-                    texto_extraido = extract_text(dest, progress_callback=emit_progress)
-                    mime_type, _   = guess_type(dest)
+                    mime_type, _ = guess_type(dest)
+                    ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
 
                     # cria o registro de attachment
                     attachment = Attachment(
                         article   = artigo,
                         filename  = unique_name,
                         mime_type = mime_type or 'application/octet-stream',
-                        content   = texto_extraido
+                        content   = None,
+                        ocr_status= OCR_STATUS_CONCLUIDO,
                     )
+                    if ocr_eligible:
+                        enqueue_attachment_for_ocr(attachment)
                     db.session.add(attachment)
 
             # 4) Atualiza o campo JSON de nomes no artigo
@@ -367,15 +368,6 @@ def editar_artigo(artigo_id):
         progress_id = request.form.get("progress_id")
         init_progress(progress_id)
 
-        def emit_progress(payload) -> None:
-            if isinstance(payload, dict):
-                msg = payload.get("message")
-                percent = payload.get("percent")
-            else:
-                msg = str(payload) if payload is not None else None
-                percent = None
-            add_progress_message(progress_id, msg, percent=percent)
-
         # campos básicos
         titulo = request.form["titulo"].strip()
         texto  = request.form["texto"].strip()
@@ -442,17 +434,17 @@ def editar_artigo(artigo_id):
                 f.save(dest)
                 existing.append(unique_name)
 
-                # 1) extrai texto
-                texto_extraido = extract_text(dest, progress_callback=emit_progress)
-                # 2) descobre o MIME
                 mime_type, _ = guess_type(dest)
-                # 3) adiciona o attachment ao session
+                ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
                 attachment = Attachment(
                     article=artigo,
                     filename=unique_name,
                     mime_type=mime_type or "application/octet-stream",
-                    content=texto_extraido
+                    content=None,
+                    ocr_status=OCR_STATUS_CONCLUIDO,
                 )
+                if ocr_eligible:
+                    enqueue_attachment_for_ocr(attachment)
                 db.session.add(attachment)
 
         artigo.arquivos = json.dumps(existing) if existing else None

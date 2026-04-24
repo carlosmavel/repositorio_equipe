@@ -442,6 +442,12 @@ class Attachment(db.Model):
     original_filename = db.Column(db.Text, nullable=True) # Nome original do arquivo
     mime_type = db.Column(db.Text, nullable=False)
     content = db.Column(db.Text, nullable=True)  # texto extraído para busca
+    ocr_status = db.Column(db.String(32), nullable=False, default='concluido', server_default='concluido')
+    ocr_attempts = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    ocr_requested_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_finished_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_last_error = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     article = db.relationship('Article', back_populates='attachments')
