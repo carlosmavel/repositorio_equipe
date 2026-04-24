@@ -948,8 +948,9 @@ def pesquisar():
     area_id = request.args.get('area_id', type=int)
     sistema_id = request.args.get('sistema_id', type=int)
     bind = db.session.get_bind()
+    is_postgresql = bool(bind and bind.dialect.name == "postgresql")
     supports_unaccent = False
-    if bind and bind.dialect.name == "postgresql":
+    if is_postgresql:
         try:
             supports_unaccent = bool(
                 db.session.execute(
@@ -958,6 +959,7 @@ def pesquisar():
             )
         except Exception:
             supports_unaccent = False
+    searchable_ocr_statuses = ("concluido", "baixo_aproveitamento")
     query = Article.query.filter(
         Article.status.in_([ArticleStatus.APROVADO, ArticleStatus.EM_REVISAO])
     )
@@ -976,19 +978,24 @@ def pesquisar():
 
         tokens = [term] if exact else [t for t in term.split() if t]
 
-        if supports_unaccent:
+        if is_postgresql:
             for token in tokens:
                 like = f"%{token}%"
                 normalized_token = strip_accents(token)
                 like_unaccent = f"%{normalized_token}%"
+                ts_query = func.plainto_tsquery('portuguese', token)
+                attachment_text_fts = func.to_tsvector('portuguese', func.coalesce(Attachment.ocr_text, ''))
+                article_text_fts = func.to_tsvector('portuguese', func.coalesce(Article.texto, ''))
                 sub = (
                     db.session.query(Attachment.article_id)
                     .filter(
+                        Attachment.ocr_status.in_(searchable_ocr_statuses),
                         or_(
                             Attachment.filename.ilike(like),
-                            func.coalesce(Attachment.ocr_text, Attachment.content).ilike(like),
-                            func.unaccent(Attachment.filename).ilike(like_unaccent),
-                            func.unaccent(func.coalesce(Attachment.ocr_text, Attachment.content)).ilike(like_unaccent),
+                            Attachment.ocr_text.ilike(like),
+                            attachment_text_fts.op('@@')(ts_query),
+                            func.unaccent(Attachment.filename).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
+                            func.unaccent(func.coalesce(Attachment.ocr_text, '')).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
                         )
                     )
                     .scalar_subquery()
@@ -998,8 +1005,9 @@ def pesquisar():
                     or_(
                         Article.titulo.ilike(like),
                         Article.texto.ilike(like),
-                        func.unaccent(Article.titulo).ilike(like_unaccent),
-                        func.unaccent(Article.texto).ilike(like_unaccent),
+                        article_text_fts.op('@@')(ts_query),
+                        func.unaccent(Article.titulo).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
+                        func.unaccent(Article.texto).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
                         Article.id.in_(sub)
                     )
                 )
@@ -1013,7 +1021,7 @@ def pesquisar():
 
     artigos = query.order_by(Article.created_at.desc()).all()
 
-    if q and not supports_unaccent:
+    if q and not is_postgresql:
         def matches(article):
             def norm(value: str) -> str:
                 return strip_accents(value or "").lower()
@@ -1022,7 +1030,8 @@ def pesquisar():
                 t = norm(token)
                 fields = [article.titulo, article.texto]
                 for att in getattr(article, 'attachments', []) or []:
-                    fields.extend([att.filename, att.ocr_text or att.content])
+                    if att.ocr_status in searchable_ocr_statuses and att.ocr_text:
+                        fields.extend([att.filename, att.ocr_text])
                 return any(t in norm(f) for f in fields if f is not None)
 
             return all(token_found(tok) for tok in tokens)
