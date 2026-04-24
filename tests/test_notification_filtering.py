@@ -11,8 +11,9 @@ from core.models import (
     User,
     Funcao,
     Notification,
+    Article,
 )
-from core.enums import Permissao
+from core.enums import Permissao, ArticleStatus
 
 
 def add_perm(user, code):
@@ -77,4 +78,27 @@ def test_notification_only_for_allowed_users(client_with_users):
     n1 = Notification.query.filter_by(user_id=data['ap1'].id).count()
     n2 = Notification.query.filter_by(user_id=data['ap2'].id).count()
     assert n1 == 1
+    assert n2 == 0
+
+
+def test_novo_artigo_sem_acao_fica_rascunho(client_with_users):
+    client, data = client_with_users
+    login(client, data['author'])
+    resp = client.post('/novo-artigo', data={
+        'titulo': 'Sem ação explícita',
+        'texto': '<p>x</p>',
+        'visibility': 'celula',
+    })
+    assert resp.status_code == 302
+
+    artigo = Article.query.filter_by(
+        user_id=data['author'].id,
+        titulo='Sem ação explícita'
+    ).order_by(Article.id.desc()).first()
+    assert artigo is not None
+    assert artigo.status == ArticleStatus.RASCUNHO
+
+    n1 = Notification.query.filter_by(user_id=data['ap1'].id).count()
+    n2 = Notification.query.filter_by(user_id=data['ap2'].id).count()
+    assert n1 == 0
     assert n2 == 0
