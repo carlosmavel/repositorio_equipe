@@ -46,6 +46,9 @@ MANDATORY_PASSWORD_CHANGE_ENDPOINTS = {
     'politica_cookies',
     'troca_senha_obrigatoria',
 }
+MANDATORY_PASSWORD_CHANGE_PATHS = {
+    '/troca-senha-obrigatoria',
+}
 
 
 def _login_avatar_serializer():
@@ -76,6 +79,20 @@ def _endpoint_name(endpoint: str) -> str:
     return endpoint.split('.')[-1] if endpoint else ''
 
 
+def _is_mandatory_password_change_allowed_request(endpoint_name: str, path: str) -> bool:
+    if endpoint_name in MANDATORY_PASSWORD_CHANGE_ENDPOINTS:
+        return True
+    if endpoint_name == 'static':
+        return True
+    if not path:
+        return False
+    return (
+        path in MANDATORY_PASSWORD_CHANGE_PATHS
+        or path.startswith('/reset-senha/')
+        or path.startswith('/criar-senha/')
+    )
+
+
 @auth_bp.before_app_request
 def enforce_mandatory_password_change():
     user_id = session.get('user_id')
@@ -92,9 +109,7 @@ def enforce_mandatory_password_change():
         return None
 
     endpoint_name = _endpoint_name(request.endpoint)
-    if endpoint_name in MANDATORY_PASSWORD_CHANGE_ENDPOINTS:
-        return None
-    if endpoint_name == 'static':
+    if _is_mandatory_password_change_allowed_request(endpoint_name, request.path):
         return None
 
     flash('Você precisa trocar sua senha antes de continuar.', 'warning')
@@ -117,6 +132,11 @@ def login():
     e redireciona para a página inicial do usuário. Em caso de falha no POST,
     re-renderiza o formulário de login com mensagem de erro.
     """
+
+    if 'user_id' in session:
+        logged_user = User.query.get(session['user_id'])
+        if logged_user and logged_user.deve_trocar_senha:
+            return redirect(url_for('troca_senha_obrigatoria'))
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -249,7 +269,11 @@ def troca_senha_obrigatoria():
         flash('Faça login para continuar.', 'warning')
         return redirect(url_for('login'))
 
-    user = User.query.get_or_404(session['user_id'])
+    user = User.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        flash('Sua sessão expirou. Faça login novamente.', 'warning')
+        return redirect(url_for('login'))
     if not user.deve_trocar_senha:
         return redirect(url_for('pagina_inicial'))
 
