@@ -88,9 +88,28 @@ def test_approve_requires_comment(client, comentario):
 
 def test_novo_artigo_requires_fields(client):
     _login_user(client, ['artigo_criar'])
-    client.post('/novo-artigo', data={'titulo': '', 'texto': '', 'visibility': 'celula', 'acao': 'enviar'}, follow_redirects=True)
+    response = client.post('/novo-artigo', data={'titulo': '', 'texto': '', 'visibility': 'celula', 'acao': 'enviar'}, follow_redirects=False)
+    assert response.status_code == 200
     with app.app_context():
         assert Article.query.count() == 0
+
+
+def test_novo_artigo_persiste_campos_no_html_em_erro_validacao(client):
+    _login_user(client, ['artigo_criar'])
+    response = client.post('/novo-artigo', data={
+        'titulo': 'Título inválido temporário',
+        'texto': '',
+        'tipo_id': '',
+        'area_id': '',
+        'sistema_id': '',
+        'visibility': 'setor',
+        'acao': 'enviar',
+    }, follow_redirects=False)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'value="Título inválido temporário"' in html
+    assert 'name="visibility" id="visibilityInput" value="setor"' in html
 
 
 
@@ -123,12 +142,39 @@ def test_editar_artigo_requires_fields(client):
         db.session.add(art)
         db.session.commit()
         aid = art.id
-    client.post(f'/artigo/{aid}/editar', data={'titulo': '', 'texto': '', 'acao': 'salvar', 'visibility': 'celula'}, follow_redirects=True)
+    response = client.post(f'/artigo/{aid}/editar', data={'titulo': '', 'texto': '', 'acao': 'salvar', 'visibility': 'celula'}, follow_redirects=False)
+    assert response.status_code == 200
     with app.app_context():
         art = Article.query.get(aid)
         assert art.titulo == 'T'
         assert art.texto == 'C'
 
+
+def test_editar_artigo_persiste_campos_no_html_em_erro_validacao(client):
+    uid = _login_user(client, ['artigo_criar', Permissao.ARTIGO_EDITAR_CELULA])
+    with app.app_context():
+        user = User.query.get(uid)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Titulo Original', texto='Texto original', status=ArticleStatus.RASCUNHO,
+            user_id=uid, celula_id=user.celula_id, setor_id=user.setor_id,
+            estabelecimento_id=user.estabelecimento_id, instituicao_id=inst.id
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.post(f'/artigo/{aid}/editar', data={
+        'titulo': 'Novo Título Não Persistido',
+        'texto': '',
+        'visibility': 'setor',
+        'acao': 'salvar',
+    }, follow_redirects=False)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'value="Novo Título Não Persistido"' in html
+    assert 'name="visibility" id="visibilityInput" value="setor"' in html
 
 def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
     author_id = _login_user(client, ['artigo_criar'])
@@ -151,4 +197,3 @@ def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
     html = response.get_data(as_text=True)
     assert 'name="acao" value="salvar"' in html
     assert 'name="acao" value="enviar"' in html
-

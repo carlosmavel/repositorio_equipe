@@ -34,10 +34,17 @@
           {% if artigo.sistema %}<strong class="ms-2">Sistema:</strong> {{ artigo.sistema.nome }}{% endif %}
         </p>
         <form method="POST" enctype="multipart/form-data">
+          {% set f = form_data or {} %}
+          {% set form_titulo = f.get('titulo', artigo.titulo) %}
+          {% set form_tipo_id = f.get('tipo_id', artigo.tipo_id) %}
+          {% set form_area_id = f.get('area_id', artigo.area_id) %}
+          {% set form_sistema_id = f.get('sistema_id', artigo.sistema_id) %}
+          {% set form_texto = f.get('texto', artigo.texto) %}
+          {% set vis = f.get('visibility', artigo.visibility.value) %}
           <input type="hidden" name="progress_id" id="progress-id">
           <div class="mb-3">
             <label class="form-label">Título</label>
-            <input name="titulo" class="form-control" value="{{ artigo.titulo }}" required>
+            <input name="titulo" class="form-control" value="{{ form_titulo }}" required>
           </div>
 
           <div class="row">
@@ -46,7 +53,7 @@
               <select name="tipo_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for tipo in tipos_artigo %}
-                <option value="{{ tipo.id }}" {% if artigo.tipo_id == tipo.id %}selected{% endif %}>{{ tipo.nome }}</option>
+                <option value="{{ tipo.id }}" {% if form_tipo_id|string == tipo.id|string %}selected{% endif %}>{{ tipo.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -55,7 +62,7 @@
               <select name="area_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for area in areas_artigo %}
-                <option value="{{ area.id }}" {% if artigo.area_id == area.id %}selected{% endif %}>{{ area.nome }}</option>
+                <option value="{{ area.id }}" {% if form_area_id|string == area.id|string %}selected{% endif %}>{{ area.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -64,7 +71,7 @@
               <select name="sistema_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for sistema in sistemas_artigo %}
-                <option value="{{ sistema.id }}" {% if artigo.sistema_id == sistema.id %}selected{% endif %}>{{ sistema.nome }}</option>
+                <option value="{{ sistema.id }}" {% if form_sistema_id|string == sistema.id|string %}selected{% endif %}>{{ sistema.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -77,9 +84,8 @@
           <input type="hidden" name="texto" id="hidden-texto">
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Visibilidade</label>
-          {% set vis = artigo.visibility.value %}
+          <div class="mb-3">
+            <label class="form-label">Visibilidade</label>
           <div class="form-check">
             <input class="form-check-input vis-check" type="checkbox" value="instituicao" id="editVisInst" data-label="Instituição" {{ 'checked' if vis == 'instituicao' }}>
             <label class="form-check-label" for="editVisInst">Instituição</label>
@@ -96,7 +102,7 @@
             <input class="form-check-input vis-check" type="checkbox" value="celula" id="editVisCel" data-label="Célula" {{ 'checked' if vis == 'celula' }}>
             <label class="form-check-label" for="editVisCel">Célula</label>
           </div>
-          <input type="hidden" name="visibility" id="visibilityInput" value="{{ artigo.visibility.value }}">
+          <input type="hidden" name="visibility" id="visibilityInput" value="{{ vis }}">
           <div id="visibilityDisplay" class="mt-2"></div>
         </div>
 
@@ -187,7 +193,7 @@
       }
     }); // Ponto e vírgula aqui é bom, mas o principal é na linha abaixo
 
-    quill.root.innerHTML = {{ artigo.texto | tojson | safe }}; // <<< ADICIONADO PONTO E VÍRGULA AQUI
+    quill.root.innerHTML = {{ (form_data.get('texto') if form_data else artigo.texto) | tojson | safe }}; // <<< ADICIONADO PONTO E VÍRGULA AQUI
 
   // A chave }; que o VS Code apontava como erro provavelmente estava correta,
   // mas a linha anterior sem ponto e vírgula confundia o parser.

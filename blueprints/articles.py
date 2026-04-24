@@ -65,11 +65,55 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from mimetypes import guess_type
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 import os
 import json
 import uuid
 
 articles_bp = Blueprint('articles_bp', __name__)
+
+
+def _new_article_form_defaults():
+    return {
+        'titulo': '',
+        'texto': '',
+        'tipo_id': '',
+        'area_id': '',
+        'sistema_id': '',
+        'visibility': 'celula',
+    }
+
+
+def _render_novo_artigo_form(form_data=None):
+    data = _new_article_form_defaults()
+    if form_data:
+        data.update(form_data)
+    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
+    areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
+    sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
+    return render_template(
+        'artigos/novo_artigo.html',
+        tipos_artigo=tipos_artigo,
+        areas_artigo=areas_artigo,
+        sistemas_artigo=sistemas_artigo,
+        form_data=data,
+    )
+
+
+def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=None):
+    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
+    areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
+    sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
+    return render_template(
+        'artigos/editar_artigo.html',
+        artigo=artigo,
+        arquivos=arquivos,
+        tipos_artigo=tipos_artigo,
+        areas_artigo=areas_artigo,
+        sistemas_artigo=sistemas_artigo,
+        can_submit_actions=can_submit_actions,
+        form_data=form_data,
+    )
 
 
 @articles_bp.route('/upload-progress/<progress_id>', methods=['GET'])
@@ -105,11 +149,21 @@ def novo_artigo():
         area_id = request.form.get('area_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
 
+        form_data = {
+            'titulo': titulo,
+            'texto': texto_raw,
+            'tipo_id': '' if tipo_id is None else str(tipo_id),
+            'area_id': '' if area_id is None else str(area_id),
+            'sistema_id': '' if sistema_id is None else str(sistema_id),
+            'visibility': request.form.get('visibility') or 'celula',
+        }
+
         # Campos obrigatórios: título e ao menos texto ou anexo
         has_uploads = any(f and f.filename for f in files)
         if not titulo or (not texto_limpo and not has_uploads):
-            flash('Título e conteúdo são obrigatórios (texto ou anexo).', 'warning')
-            return redirect(url_for('novo_artigo'))
+            flash('Erro de validação: título e conteúdo são obrigatórios (texto ou anexo).', 'warning')
+            flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
+            return _render_novo_artigo_form(form_data)
 
         # 1.1) Descobre se é rascunho ou envio para revisão
         # Quando a submissão ocorre via fetch/FormData sem submitter explícito,
@@ -219,7 +273,23 @@ def novo_artigo():
                     )
                     db.session.add(notif)
                 db.session.commit()
-        except Exception:
+        except RequestEntityTooLarge:
+            db.session.rollback()
+            flash('Erro de upload: o tamanho dos anexos excede o limite permitido.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_novo_artigo_form(form_data)
+        except TimeoutError:
+            db.session.rollback()
+            app.logger.exception(
+                "Timeout ao criar artigo user_id=%s progress_id=%s titulo=%r",
+                user.id,
+                progress_id,
+                titulo,
+            )
+            flash('Erro de timeout: o processamento demorou além do esperado. Tente novamente.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_novo_artigo_form(form_data)
+        except Exception as exc:
             db.session.rollback()
             app.logger.exception(
                 "Falha ao criar artigo user_id=%s progress_id=%s titulo=%r",
@@ -227,8 +297,12 @@ def novo_artigo():
                 progress_id,
                 titulo,
             )
-            flash('Ocorreu um erro ao salvar o artigo. Tente novamente e, se persistir, contate o suporte.', 'danger')
-            return redirect(url_for('novo_artigo'))
+            if 'ocr' in str(exc).lower():
+                flash('Erro de OCR: falha ao processar o anexo para OCR.', 'danger')
+            else:
+                flash('Erro inesperado: não foi possível salvar o artigo.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_novo_artigo_form(form_data)
 
         # 7) Feedback para o usuário
         flash(
@@ -240,10 +314,7 @@ def novo_artigo():
         return redirect(url_for('meus_artigos'))
 
     # GET → exibe formulário
-    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
-    areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
-    sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
-    return render_template('artigos/novo_artigo.html', tipos_artigo=tipos_artigo, areas_artigo=areas_artigo, sistemas_artigo=sistemas_artigo)
+    return _render_novo_artigo_form()
 
 @articles_bp.route('/meus-artigos', endpoint='meus_artigos')
 def meus_artigos():
@@ -368,9 +439,18 @@ def editar_artigo(artigo_id):
         # campos básicos
         titulo = request.form["titulo"].strip()
         texto  = request.form["texto"].strip()
+        form_data = {
+            'titulo': titulo,
+            'texto': texto,
+            'tipo_id': request.form.get('tipo_id') or '',
+            'area_id': request.form.get('area_id') or '',
+            'sistema_id': request.form.get('sistema_id') or '',
+            'visibility': request.form.get('visibility') or artigo.visibility.value,
+        }
         if not titulo or not texto:
-            flash('Título e texto são obrigatórios.', 'warning')
-            return redirect(url_for('editar_artigo', artigo_id=artigo_id))
+            flash('Erro de validação: título e texto são obrigatórios.', 'warning')
+            flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
         artigo.titulo = titulo
         artigo.texto  = texto
@@ -402,83 +482,93 @@ def editar_artigo(artigo_id):
         artigo.setor_id = setor_vis_id
         artigo.vis_celula_id = vis_cel_id
 
-        # anexos ─ exclusões + novos
-        existing = json.loads(artigo.arquivos or "[]")
+        try:
+            # anexos ─ exclusões + novos
+            existing = json.loads(artigo.arquivos or "[]")
 
-        # exclusões
-        for fname in request.form.getlist("delete_files"):
-            if fname in existing:
-                existing.remove(fname)
+            # exclusões
+            for fname in request.form.getlist("delete_files"):
+                if fname in existing:
+                    existing.remove(fname)
 
-                # Encontrar e deletar o Attachment correspondente no banco
-                attachment_to_delete = Attachment.query.filter_by(article_id=artigo.id, filename=fname).first()
-                if attachment_to_delete:
-                    db.session.delete(attachment_to_delete)  # Deleta o objeto Attachment da sessão
-                try:
-                    os.remove(os.path.join(app.config["UPLOAD_FOLDER"], fname))
-                except FileNotFoundError:
-                    pass
+                    # Encontrar e deletar o Attachment correspondente no banco
+                    attachment_to_delete = Attachment.query.filter_by(article_id=artigo.id, filename=fname).first()
+                    if attachment_to_delete:
+                        db.session.delete(attachment_to_delete)  # Deleta o objeto Attachment da sessão
+                    try:
+                        os.remove(os.path.join(app.config["UPLOAD_FOLDER"], fname))
+                    except FileNotFoundError:
+                        pass
 
-        # novos uploads
-        for f in request.files.getlist("files"):
-            if f and f.filename:
-                original = secure_filename(f.filename)
-                if len(original) > 40:
-                    name, ext = os.path.splitext(original)
-                    original = name[:40 - len(ext)] + ext
-                unique_name = f"{uuid.uuid4().hex}_{original}"
-                dest = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
-                f.save(dest)
-                existing.append(unique_name)
+            # novos uploads
+            for f in request.files.getlist("files"):
+                if f and f.filename:
+                    original = secure_filename(f.filename)
+                    if len(original) > 40:
+                        name, ext = os.path.splitext(original)
+                        original = name[:40 - len(ext)] + ext
+                    unique_name = f"{uuid.uuid4().hex}_{original}"
+                    dest = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
+                    f.save(dest)
+                    existing.append(unique_name)
 
-                mime_type, _ = guess_type(dest)
-                ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
-                attachment = Attachment(
-                    article=artigo,
-                    filename=unique_name,
-                    mime_type=mime_type or "application/octet-stream",
-                    content=None,
-                )
-                if ocr_eligible:
-                    enqueue_attachment_for_ocr(attachment)
-                db.session.add(attachment)
+                    mime_type, _ = guess_type(dest)
+                    ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
+                    attachment = Attachment(
+                        article=artigo,
+                        filename=unique_name,
+                        mime_type=mime_type or "application/octet-stream",
+                        content=None,
+                    )
+                    if ocr_eligible:
+                        enqueue_attachment_for_ocr(attachment)
+                    db.session.add(attachment)
 
-        artigo.arquivos = json.dumps(existing) if existing else None
+            artigo.arquivos = json.dumps(existing) if existing else None
 
-        # se usuário clicou “Enviar para revisão”
-        if acao == "enviar":
-            artigo.status = ArticleStatus.PENDENTE
-            # 🔔 notifica responsáveis / admins
-            destinatarios = eligible_review_notification_users(artigo)
-            for dest in destinatarios:
-                n = Notification(
-                    user_id = dest.id,
-                    message = f"Novo artigo pendente para revisão: “{artigo.titulo}”",
-                    url     = url_for('aprovacao_detail', artigo_id=artigo.id)
-                )
-                db.session.add(n)
-            flash("Artigo enviado para revisão!", "success")
-        else:
-            flash("Artigo salvo!", "success")
+            # se usuário clicou “Enviar para revisão”
+            if acao == "enviar":
+                artigo.status = ArticleStatus.PENDENTE
+                # 🔔 notifica responsáveis / admins
+                destinatarios = eligible_review_notification_users(artigo)
+                for dest in destinatarios:
+                    n = Notification(
+                        user_id = dest.id,
+                        message = f"Novo artigo pendente para revisão: “{artigo.titulo}”",
+                        url     = url_for('aprovacao_detail', artigo_id=artigo.id)
+                    )
+                    db.session.add(n)
+                flash("Artigo enviado para revisão!", "success")
+            else:
+                flash("Artigo salvo!", "success")
 
-        db.session.commit()
-        mark_progress_done(progress_id)
-        return redirect(url_for("artigo", artigo_id=artigo.id))
+            db.session.commit()
+            mark_progress_done(progress_id)
+            return redirect(url_for("artigo", artigo_id=artigo.id))
+        except RequestEntityTooLarge:
+            db.session.rollback()
+            flash('Erro de upload: o tamanho dos anexos excede o limite permitido.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
+        except TimeoutError:
+            db.session.rollback()
+            app.logger.exception("Timeout ao editar artigo id=%s user_id=%s", artigo.id, user.id)
+            flash('Erro de timeout: o processamento demorou além do esperado. Tente novamente.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.exception("Falha ao editar artigo id=%s user_id=%s", artigo.id, user.id)
+            if 'ocr' in str(exc).lower():
+                flash('Erro de OCR: falha ao processar o anexo para OCR.', 'danger')
+            else:
+                flash('Erro inesperado: não foi possível salvar a edição do artigo.', 'danger')
+            flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
     # GET
     arquivos = json.loads(artigo.arquivos or "[]")
-    tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
-    areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
-    sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
-    return render_template(
-        "artigos/editar_artigo.html",
-        artigo=artigo,
-        arquivos=arquivos,
-        tipos_artigo=tipos_artigo,
-        areas_artigo=areas_artigo,
-        sistemas_artigo=sistemas_artigo,
-        can_submit_actions=can_submit_actions,
-    )
+    return _render_editar_artigo_form(artigo, arquivos, can_submit_actions)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
 def aprovacao():

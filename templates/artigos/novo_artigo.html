@@ -25,10 +25,12 @@
       <div class="card-body">
         <h3>Criar Novo Artigo</h3>
         <form method="post" enctype="multipart/form-data">
+          {% set f = form_data or {} %}
+          {% set selected_visibility = (f.get('visibility') or 'celula').split(',') %}
           <input type="hidden" name="progress_id" id="progress-id">
           <div class="mb-3">
             <label for="titulo" class="form-label">Título</label>
-            <input type="text" class="form-control" id="titulo" name="titulo" required>
+            <input type="text" class="form-control" id="titulo" name="titulo" value="{{ f.get('titulo', '') }}" required>
           </div>
 
           <div class="row">
@@ -37,7 +39,7 @@
               <select name="tipo_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for tipo in tipos_artigo %}
-                <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                <option value="{{ tipo.id }}" {% if f.get('tipo_id')|string == tipo.id|string %}selected{% endif %}>{{ tipo.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -46,7 +48,7 @@
               <select name="area_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for area in areas_artigo %}
-                <option value="{{ area.id }}">{{ area.nome }}</option>
+                <option value="{{ area.id }}" {% if f.get('area_id')|string == area.id|string %}selected{% endif %}>{{ area.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -55,7 +57,7 @@
               <select name="sistema_id" class="form-select">
                 <option value="">Selecione</option>
                 {% for sistema in sistemas_artigo %}
-                <option value="{{ sistema.id }}">{{ sistema.nome }}</option>
+                <option value="{{ sistema.id }}" {% if f.get('sistema_id')|string == sistema.id|string %}selected{% endif %}>{{ sistema.nome }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -70,22 +72,22 @@
           <div class="mb-3">
             <label class="form-label">Visibilidade</label>
             <div class="form-check">
-              <input class="form-check-input vis-check" type="checkbox" value="instituicao" id="visInst" data-label="Instituição">
+              <input class="form-check-input vis-check" type="checkbox" value="instituicao" id="visInst" data-label="Instituição" {% if 'instituicao' in selected_visibility %}checked{% endif %}>
               <label class="form-check-label" for="visInst">Instituição</label>
             </div>
             <div class="form-check">
-              <input class="form-check-input vis-check" type="checkbox" value="estabelecimento" id="visEst" data-label="Estabelecimento">
+              <input class="form-check-input vis-check" type="checkbox" value="estabelecimento" id="visEst" data-label="Estabelecimento" {% if 'estabelecimento' in selected_visibility %}checked{% endif %}>
               <label class="form-check-label" for="visEst">Estabelecimento</label>
             </div>
             <div class="form-check">
-              <input class="form-check-input vis-check" type="checkbox" value="setor" id="visSet" data-label="Setor">
+              <input class="form-check-input vis-check" type="checkbox" value="setor" id="visSet" data-label="Setor" {% if 'setor' in selected_visibility %}checked{% endif %}>
               <label class="form-check-label" for="visSet">Setor</label>
             </div>
             <div class="form-check">
-              <input class="form-check-input vis-check" type="checkbox" value="celula" id="visCel" data-label="Célula" checked>
+              <input class="form-check-input vis-check" type="checkbox" value="celula" id="visCel" data-label="Célula" {% if 'celula' in selected_visibility %}checked{% endif %}>
               <label class="form-check-label" for="visCel">Célula</label>
             </div>
-            <input type="hidden" name="visibility" id="visibilityInput">
+            <input type="hidden" name="visibility" id="visibilityInput" value="{{ f.get('visibility', 'celula') }}">
             <div id="visibilityDisplay" class="mt-2"></div>
           </div>
 
@@ -129,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ]
     }
   });
+  quill.root.innerHTML = {{ (form_data or {}).get('texto', '') | tojson | safe }};
 
   // Visibilidade por checkboxes → atualiza hidden e badges
   const visChecks = document.querySelectorAll('.vis-check');
