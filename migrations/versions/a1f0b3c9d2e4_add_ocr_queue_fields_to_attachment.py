@@ -1,7 +1,7 @@
 """add ocr queue fields to attachment
 
 Revision ID: a1f0b3c9d2e4
-Revises: 4c93f35865c8
+Revises: 5a7c9d1e2f34
 Create Date: 2026-04-24 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a1f0b3c9d2e4'
-down_revision = '4c93f35865c8'
+down_revision = '5a7c9d1e2f34'
 branch_labels = None
 depends_on = None
 
