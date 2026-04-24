@@ -11,6 +11,7 @@ import re # Você já tinha, bom para futuras validações
 import sys
 from datetime import datetime, timezone # Adicionei datetime aqui se for usar em 'strptime' na rota de perfil
 from zoneinfo import ZoneInfo # Você já tinha
+from urllib.parse import urlsplit, urlunsplit
 
 from flask import (
     Flask, request, render_template, redirect, url_for,
@@ -184,13 +185,31 @@ app.logger.info(
 )
 
 database_uri = app.config['SQLALCHEMY_DATABASE_URI']
-uri_parts_test = database_uri.split('@')
-if len(uri_parts_test) == 2:
-    scheme = database_uri.split('://')[0]
-    creds_part_test = uri_parts_test[0].split(':')
-    user_part_test = creds_part_test[0].split('//')[-1]
-    printed_uri_test = f"{scheme}://{user_part_test}:[SENHA_OCULTA]@{uri_parts_test[1]}"
-    app.logger.info("DATABASE_URI carregada do ambiente: %s", printed_uri_test)
+parsed_database_uri = urlsplit(database_uri)
+
+if parsed_database_uri.password is not None:
+    host = parsed_database_uri.hostname or ''
+    if ':' in host and not host.startswith('['):
+        host = f'[{host}]'
+
+    if parsed_database_uri.port is not None:
+        host = f'{host}:{parsed_database_uri.port}'
+
+    if parsed_database_uri.username:
+        userinfo = f'{parsed_database_uri.username}:[SENHA_OCULTA]@'
+    else:
+        userinfo = '[SENHA_OCULTA]@'
+
+    masked_database_uri = urlunsplit(
+        (
+            parsed_database_uri.scheme,
+            f'{userinfo}{host}',
+            parsed_database_uri.path,
+            parsed_database_uri.query,
+            parsed_database_uri.fragment,
+        )
+    )
+    app.logger.info("DATABASE_URI carregada do ambiente: %s", masked_database_uri)
 else:
     app.logger.info("DATABASE_URI carregada do ambiente: %s", database_uri)
 
