@@ -133,3 +133,4 @@ def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
     html = response.get_data(as_text=True)
     assert 'name="acao" value="salvar"' in html
     assert 'name="acao" value="enviar"' in html
+
