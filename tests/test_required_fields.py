@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from app import app, db
 from core.models import (
     Instituicao,
@@ -91,6 +92,23 @@ def test_novo_artigo_requires_fields(client):
     with app.app_context():
         assert Article.query.count() == 0
 
+
+
+
+def test_novo_artigo_accepts_attachment_without_text(client):
+    _login_user(client, ['artigo_criar'])
+    client.post('/novo-artigo', data={
+        'titulo': 'OCR sem texto',
+        'texto': '',
+        'visibility': 'celula',
+        'acao': 'enviar',
+        'files': (BytesIO(b'conteudo teste ocr'), 'ocr.txt'),
+    }, content_type='multipart/form-data', follow_redirects=True)
+
+    with app.app_context():
+        artigo = Article.query.filter_by(titulo='OCR sem texto').first()
+        assert artigo is not None
+        assert artigo.status == ArticleStatus.PENDENTE
 
 def test_editar_artigo_requires_fields(client):
     uid = _login_user(client, ['artigo_criar', Permissao.ARTIGO_EDITAR_CELULA])
