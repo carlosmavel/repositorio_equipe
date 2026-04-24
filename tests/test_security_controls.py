@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 import pytest
 
 from app import app, db
@@ -124,6 +125,54 @@ def test_secure_cookie_flags_present(app_ctx):
     assert app.config["SESSION_COOKIE_SECURE"] is True
     assert app.config["SESSION_COOKIE_HTTPONLY"] is True
     assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+
+
+def test_perfil_upload_above_max_content_length_redirects_with_flash(client, app_ctx):
+    original_limit = app.config.get("MAX_CONTENT_LENGTH")
+    app.config["MAX_CONTENT_LENGTH"] = 1024
+    try:
+        with app.app_context():
+            from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+            inst = Instituicao(codigo="INST413", nome="Inst413")
+            est = Estabelecimento(codigo="E413", nome_fantasia="Estab413", instituicao=inst)
+            setor = Setor(nome="Setor413", estabelecimento=est)
+            celula = Celula(nome="Cel413", estabelecimento=est, setor=setor)
+            db.session.add_all([inst, est, setor, celula])
+            db.session.flush()
+
+            user = User(
+                username="upload_413_user",
+                email="upload_413_user@example.com",
+                estabelecimento=est,
+                setor=setor,
+                celula=celula,
+            )
+            user.set_password("Secret1!")
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = user_id
+            sess["username"] = "upload_413_user"
+
+        oversized_payload = BytesIO(b"a" * 2048)
+        response = client.post(
+            "/perfil",
+            data={"foto": (oversized_payload, "big.jpg")},
+            content_type="multipart/form-data",
+            follow_redirects=True,
+            headers={"Referer": "/perfil"},
+        )
+
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert 'class="alert alert-danger' in body
+        assert "O arquivo enviado excede o tamanho máximo permitido." in body
+        assert "Limite atual: 1 KB." in body
+    finally:
+        app.config["MAX_CONTENT_LENGTH"] = original_limit
 
 
 def test_send_email_without_smtp_credentials_raises(monkeypatch):

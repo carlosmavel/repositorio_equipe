@@ -20,6 +20,7 @@ import logging
 import click
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
+from werkzeug.exceptions import RequestEntityTooLarge
 from sqlalchemy import or_, func
 #from models import user_funcoes
 
@@ -226,6 +227,47 @@ for folder in (UPLOAD_FOLDER, PROFILE_PICS_FOLDER):
     os.makedirs(folder, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PROFILE_PICS_FOLDER'] = PROFILE_PICS_FOLDER
+
+
+def _human_readable_size(size_in_bytes: int) -> str:
+    """Converte bytes para uma representação curta e amigável."""
+    if size_in_bytes < 1024:
+        return f"{size_in_bytes} B"
+    if size_in_bytes < 1024 * 1024:
+        return f"{size_in_bytes / 1024:.0f} KB"
+    return f"{size_in_bytes / (1024 * 1024):.1f} MB"
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(error):
+    max_content_length = app.config.get('MAX_CONTENT_LENGTH')
+
+    limite_texto = ''
+    if isinstance(max_content_length, int) and max_content_length > 0:
+        limite_texto = f" Limite atual: {_human_readable_size(max_content_length)}."
+
+    flash(
+        "O arquivo enviado excede o tamanho máximo permitido. "
+        f"Reduza o tamanho e tente novamente.{limite_texto}",
+        'danger',
+    )
+
+    app.logger.warning(
+        (
+            "HTTP 413 RequestEntityTooLarge | method=%s path=%s endpoint=%s "
+            "user_id=%s content_length=%s max_content_length=%s remote_addr=%s"
+        ),
+        request.method,
+        request.path,
+        request.endpoint,
+        session.get('user_id'),
+        request.content_length,
+        max_content_length,
+        request.remote_addr,
+    )
+
+    redirect_target = request.referrer or request.url or url_for('pagina_inicial')
+    return redirect(redirect_target)
 
 
 
