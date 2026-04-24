@@ -10,11 +10,11 @@ from flask import current_app
 try:
     from ..database import db
     from ..models import Attachment
-    from ..utils import extract_text
+    from ..utils import extract_text, log_article_event, log_article_exception
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Attachment
-    from core.utils import extract_text
+    from core.utils import extract_text, log_article_event, log_article_exception
 
 OCR_STATUS_PENDENTE = "pendente"
 OCR_STATUS_PROCESSANDO = "processando"
@@ -100,6 +100,22 @@ def process_pending_ocr_attachments(
         attachment.ocr_attempts = (attachment.ocr_attempts or 0) + 1
         attachment.ocr_last_attempt_at = started_at
         db.session.commit()
+        log_article_event(
+            current_app.logger,
+            "ocr_processing_started",
+            user_id=None,
+            route="/ocr/process-pending",
+            action="ocr_process_attachment",
+            article_id=attachment.article_id,
+            attachment_id=attachment.id,
+            filename=attachment.filename,
+            file_size=None,
+            mime_type=attachment.mime_type,
+            ocr_status=attachment.ocr_status,
+            attempt=attachment.ocr_attempts,
+            progress_id=None,
+            correlation_id=None,
+        )
 
         file_path = upload_folder / attachment.filename
 
@@ -125,6 +141,22 @@ def process_pending_ocr_attachments(
             else:
                 attachment.ocr_status = OCR_STATUS_CONCLUIDO
                 result.concluded += 1
+            log_article_event(
+                current_app.logger,
+                "ocr_processing_finished",
+                user_id=None,
+                route="/ocr/process-pending",
+                action="ocr_process_attachment",
+                article_id=attachment.article_id,
+                attachment_id=attachment.id,
+                filename=attachment.filename,
+                file_size=None,
+                mime_type=attachment.mime_type,
+                ocr_status=attachment.ocr_status,
+                attempt=attachment.ocr_attempts,
+                progress_id=None,
+                correlation_id=None,
+            )
         except Exception as exc:  # pragma: no cover - proteção operacional
             attachment.ocr_status = OCR_STATUS_ERRO
             finished_at = datetime.now(timezone.utc)
@@ -134,10 +166,21 @@ def process_pending_ocr_attachments(
             attachment.ocr_error_message = str(exc)
             attachment.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
             result.failed += 1
-            current_app.logger.exception(
-                "Falha no OCR do attachment id=%s filename=%s",
-                attachment.id,
-                attachment.filename,
+            log_article_exception(
+                current_app.logger,
+                "ocr_processing_failed",
+                user_id=None,
+                route="/ocr/process-pending",
+                action="ocr_process_attachment",
+                article_id=attachment.article_id,
+                attachment_id=attachment.id,
+                filename=attachment.filename,
+                file_size=None,
+                mime_type=attachment.mime_type,
+                ocr_status=attachment.ocr_status,
+                attempt=attachment.ocr_attempts,
+                progress_id=None,
+                correlation_id=None,
             )
 
         db.session.commit()

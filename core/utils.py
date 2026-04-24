@@ -2,6 +2,7 @@
 
 import bleach
 import re
+from typing import Any
 
 import os
 import json
@@ -54,6 +55,64 @@ except ImportError:  # pragma: no cover
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
+_RESERVED_LOG_RECORD_FIELDS = set(logging.makeLogRecord({}).__dict__.keys())
+
+
+def build_article_log_context(
+    *,
+    user_id: int | None = None,
+    route: str | None = None,
+    action: str | None = None,
+    article_id: int | None = None,
+    attachment_id: int | None = None,
+    filename: str | None = None,
+    file_size: int | None = None,
+    mime_type: str | None = None,
+    ocr_status: str | None = None,
+    attempt: int | None = None,
+    progress_id: str | None = None,
+    correlation_id: str | None = None,
+) -> dict[str, Any]:
+    """Monta payload de contexto padronizado para logs de artigo/anexo/OCR."""
+    return {
+        "user_id": user_id,
+        "route": route,
+        "action": action,
+        "article_id": article_id,
+        "attachment_id": attachment_id,
+        "filename": filename,
+        "file_size": file_size,
+        "mime_type": mime_type,
+        "ocr_status": ocr_status,
+        "attempt": attempt,
+        "progress_id": progress_id,
+        "correlation_id": correlation_id,
+    }
+
+
+def log_article_event(
+    logger_obj: logging.Logger,
+    event: str,
+    *,
+    level: int = logging.INFO,
+    **context: Any,
+) -> None:
+    """Emite evento estruturado e consistente para observabilidade."""
+    payload = build_article_log_context(**context)
+    safe_extra = {"event_context": payload}
+    safe_extra.update({k: v for k, v in payload.items() if k not in _RESERVED_LOG_RECORD_FIELDS})
+    logger_obj.log(level, event, extra=safe_extra)
+
+
+def log_article_exception(
+    logger_obj: logging.Logger,
+    event: str,
+    **context: Any,
+) -> None:
+    payload = build_article_log_context(**context)
+    safe_extra = {"event_context": payload}
+    safe_extra.update({k: v for k, v in payload.items() if k not in _RESERVED_LOG_RECORD_FIELDS})
+    logger_obj.exception(event, extra=safe_extra)
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
 #-------------------------------------------------------------------------------------------

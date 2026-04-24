@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app, g
 from sqlalchemy import or_, func, text
 import re
 
@@ -25,6 +25,8 @@ try:
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        log_article_event,
+        log_article_exception,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
@@ -34,6 +36,8 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        log_article_event,
+        log_article_exception,
     )
 try:
     from ..core.services.ocr_queue import (
@@ -71,6 +75,29 @@ import json
 import uuid
 
 articles_bp = Blueprint('articles_bp', __name__)
+
+
+def _request_correlation_id():
+    return (
+        request.headers.get('X-Request-ID')
+        or request.headers.get('X-Correlation-ID')
+        or request.headers.get('X-Amzn-Trace-Id')
+        or request.environ.get('HTTP_X_REQUEST_ID')
+        or request.environ.get('HTTP_X_CORRELATION_ID')
+    )
+
+
+@articles_bp.before_request
+def _capture_correlation_id():
+    g.request_correlation_id = _request_correlation_id()
+
+
+@articles_bp.after_request
+def _propagate_request_id(response):
+    correlation_id = getattr(g, "request_correlation_id", None)
+    if correlation_id:
+        response.headers["X-Request-ID"] = correlation_id
+    return response
 
 
 def _new_article_form_defaults():
@@ -195,15 +222,22 @@ def novo_artigo():
         elif vis is ArticleVisibility.CELULA:
             vis_cel_id = user.celula_id
 
-        app.logger.info(
-            "Criando artigo user_id=%s acao=%s vis=%s anexos=%s titulo_len=%s texto_len=%s progress_id=%s",
-            user.id,
-            acao,
-            vis.value,
-            len([f for f in files if f and f.filename]),
-            len(titulo),
-            len(texto_limpo),
-            progress_id,
+        correlation_id = getattr(g, "request_correlation_id", None)
+        log_article_event(
+            app.logger,
+            "article_create_started",
+            user_id=user.id,
+            route=request.path,
+            action=acao,
+            article_id=None,
+            attachment_id=None,
+            filename=None,
+            file_size=None,
+            mime_type=None,
+            ocr_status=None,
+            attempt=None,
+            progress_id=progress_id,
+            correlation_id=correlation_id,
         )
         try:
             # 3) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
@@ -240,6 +274,9 @@ def novo_artigo():
                     dest       = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
                     f.save(dest)
                     filenames.append(unique_name)
+                    f.stream.seek(0, os.SEEK_END)
+                    file_size = f.stream.tell()
+                    f.stream.seek(0)
 
                     mime_type, _ = guess_type(dest)
                     ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
@@ -254,6 +291,22 @@ def novo_artigo():
                     if ocr_eligible:
                         enqueue_attachment_for_ocr(attachment)
                     db.session.add(attachment)
+                    log_article_event(
+                        app.logger,
+                        "article_attachment_registered",
+                        user_id=user.id,
+                        route=request.path,
+                        action=acao,
+                        article_id=artigo.id,
+                        attachment_id=getattr(attachment, "id", None),
+                        filename=unique_name,
+                        file_size=file_size,
+                        mime_type=mime_type,
+                        ocr_status=attachment.ocr_status,
+                        attempt=attachment.ocr_attempts,
+                        progress_id=progress_id,
+                        correlation_id=correlation_id,
+                    )
 
             # 4) Atualiza o campo JSON de nomes no artigo
             artigo.arquivos = json.dumps(filenames) if filenames else None
@@ -261,6 +314,16 @@ def novo_artigo():
             # 5) Persiste tudo num único commit
             db.session.commit()
             mark_progress_done(progress_id)
+            log_article_event(
+                app.logger,
+                "article_create_committed",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=artigo.id,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
+            )
 
             # 6) Notifica responsáveis/admins, se necessário
             if status is ArticleStatus.PENDENTE:
@@ -280,22 +343,42 @@ def novo_artigo():
             return _render_novo_artigo_form(form_data)
         except TimeoutError:
             db.session.rollback()
-            app.logger.exception(
-                "Timeout ao criar artigo user_id=%s progress_id=%s titulo=%r",
-                user.id,
-                progress_id,
-                titulo,
+            log_article_exception(
+                app.logger,
+                "article_create_timeout",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=None,
+                attachment_id=None,
+                filename=None,
+                file_size=None,
+                mime_type=None,
+                ocr_status=None,
+                attempt=None,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
             )
             flash('Erro de timeout: o processamento demorou além do esperado. Tente novamente.', 'danger')
             flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
             return _render_novo_artigo_form(form_data)
         except Exception as exc:
             db.session.rollback()
-            app.logger.exception(
-                "Falha ao criar artigo user_id=%s progress_id=%s titulo=%r",
-                user.id,
-                progress_id,
-                titulo,
+            log_article_exception(
+                app.logger,
+                "article_create_failed",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=None,
+                attachment_id=None,
+                filename=None,
+                file_size=None,
+                mime_type=None,
+                ocr_status=None,
+                attempt=None,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
             )
             if 'ocr' in str(exc).lower():
                 flash('Erro de OCR: falha ao processar o anexo para OCR.', 'danger')
@@ -422,6 +505,7 @@ def editar_artigo(artigo_id):
     can_submit_actions = True
 
     if request.method == "POST":
+        correlation_id = getattr(g, "request_correlation_id", None)
         raw_status = artigo.status
         if isinstance(raw_status, ArticleStatus):
             status_value = raw_status.value
@@ -435,6 +519,16 @@ def editar_artigo(artigo_id):
         acao = request.form.get("acao", "salvar")   # salvar | enviar
         progress_id = request.form.get("progress_id")
         init_progress(progress_id)
+        log_article_event(
+            app.logger,
+            "article_edit_started",
+            user_id=user.id,
+            route=request.path,
+            action=acao,
+            article_id=artigo.id,
+            progress_id=progress_id,
+            correlation_id=correlation_id,
+        )
 
         # campos básicos
         titulo = request.form["titulo"].strip()
@@ -511,6 +605,9 @@ def editar_artigo(artigo_id):
                     dest = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
                     f.save(dest)
                     existing.append(unique_name)
+                    f.stream.seek(0, os.SEEK_END)
+                    file_size = f.stream.tell()
+                    f.stream.seek(0)
 
                     mime_type, _ = guess_type(dest)
                     ocr_eligible = is_pdf_ocr_eligible(unique_name, mime_type)
@@ -523,6 +620,22 @@ def editar_artigo(artigo_id):
                     if ocr_eligible:
                         enqueue_attachment_for_ocr(attachment)
                     db.session.add(attachment)
+                    log_article_event(
+                        app.logger,
+                        "article_attachment_registered",
+                        user_id=user.id,
+                        route=request.path,
+                        action=acao,
+                        article_id=artigo.id,
+                        attachment_id=getattr(attachment, "id", None),
+                        filename=unique_name,
+                        file_size=file_size,
+                        mime_type=mime_type,
+                        ocr_status=attachment.ocr_status,
+                        attempt=attachment.ocr_attempts,
+                        progress_id=progress_id,
+                        correlation_id=correlation_id,
+                    )
 
             artigo.arquivos = json.dumps(existing) if existing else None
 
@@ -544,6 +657,16 @@ def editar_artigo(artigo_id):
 
             db.session.commit()
             mark_progress_done(progress_id)
+            log_article_event(
+                app.logger,
+                "article_edit_committed",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=artigo.id,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
+            )
             return redirect(url_for("artigo", artigo_id=artigo.id))
         except RequestEntityTooLarge:
             db.session.rollback()
@@ -552,13 +675,43 @@ def editar_artigo(artigo_id):
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
         except TimeoutError:
             db.session.rollback()
-            app.logger.exception("Timeout ao editar artigo id=%s user_id=%s", artigo.id, user.id)
+            log_article_exception(
+                app.logger,
+                "article_edit_timeout",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=artigo.id,
+                attachment_id=None,
+                filename=None,
+                file_size=None,
+                mime_type=None,
+                ocr_status=None,
+                attempt=None,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
+            )
             flash('Erro de timeout: o processamento demorou além do esperado. Tente novamente.', 'danger')
             flash('Por limitação de multipart, os anexos precisam ser reenviados.', 'info')
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
         except Exception as exc:
             db.session.rollback()
-            app.logger.exception("Falha ao editar artigo id=%s user_id=%s", artigo.id, user.id)
+            log_article_exception(
+                app.logger,
+                "article_edit_failed",
+                user_id=user.id,
+                route=request.path,
+                action=acao,
+                article_id=artigo.id,
+                attachment_id=None,
+                filename=None,
+                file_size=None,
+                mime_type=None,
+                ocr_status=None,
+                attempt=None,
+                progress_id=progress_id,
+                correlation_id=correlation_id,
+            )
             if 'ocr' in str(exc).lower():
                 flash('Erro de OCR: falha ao processar o anexo para OCR.', 'danger')
             else:
