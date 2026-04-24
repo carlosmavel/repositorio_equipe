@@ -13,6 +13,7 @@ from core.models import (
     ArticleVisibility,
     ArticleStatus,
     Comment,
+    RevisionRequest,
 )
 from core.enums import Permissao
 from core.utils import (
@@ -335,3 +336,55 @@ def test_author_cannot_approve_own_article(app_ctx, client):
         art_db = Article.query.get(art_id)
         assert art_db.status == ArticleStatus.PENDENTE
         assert Comment.query.count() == 0
+
+
+def test_aprovacao_detail_shows_adjustment_and_revision_history(app_ctx, client):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+        setor = Setor(nome='S', estabelecimento=est)
+        cel = Celula(nome='C', estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, cel])
+        db.session.flush()
+
+        autor = User(
+            username='autor', email='a@test', password_hash='x',
+            estabelecimento=est, setor=setor, celula=cel
+        )
+        revisor = User(
+            username='revisor', email='r@test', password_hash='x',
+            estabelecimento=est, setor=setor, celula=cel
+        )
+        db.session.add_all([autor, revisor])
+        db.session.flush()
+
+        art = Article(
+            titulo='TituloHistorico', texto='Conteudo', status=ArticleStatus.PENDENTE,
+            user_id=autor.id, celula_id=cel.id,
+            estabelecimento_id=est.id, setor_id=setor.id,
+            instituicao_id=inst.id, visibility=ArticleVisibility.CELULA
+        )
+        db.session.add(art)
+        db.session.flush()
+
+        db.session.add(Comment(artigo_id=art.id, user_id=revisor.id, texto='Precisa ajustar introdução'))
+        db.session.add(RevisionRequest(artigo_id=art.id, user_id=autor.id, comentario='Solicito nova revisão após ajustes'))
+
+        f = Funcao(codigo=Permissao.ARTIGO_APROVAR_CELULA.value, nome='ap')
+        db.session.add(f)
+        db.session.flush()
+        revisor.permissoes_personalizadas.append(f)
+        db.session.commit()
+
+        art_id = art.id
+        revisor_id = revisor.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = revisor_id
+
+    resp = client.get(f'/aprovacao/{art_id}')
+    assert resp.status_code == 200
+    assert b'Hist\xc3\xb3rico de Ajustes' in resp.data
+    assert b'Precisa ajustar introdu\xc3\xa7\xc3\xa3o' in resp.data
+    assert b'Hist\xc3\xb3rico de Solicita\xc3\xa7\xc3\xb5es de Revis\xc3\xa3o' in resp.data
+    assert b'Solicito nova revis\xc3\xa3o ap\xc3\xb3s ajustes' in resp.data

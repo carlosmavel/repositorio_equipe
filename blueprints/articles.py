@@ -629,10 +629,22 @@ def aprovacao_detail(artigo_id):
 
     # GET → renderiza detalhes e histórico
     arquivos = json.loads(artigo.arquivos or '[]')
+    comments_history = (
+        artigo.comments
+        .order_by(Comment.created_at.asc(), Comment.id.asc())
+        .all()
+    )
+    revision_history = (
+        artigo.revision_requests
+        .order_by(RevisionRequest.created_at.asc(), RevisionRequest.id.asc())
+        .all()
+    )
     return render_template(
         'artigos/aprovacao_detail.html',
         artigo   = artigo,
-        arquivos = arquivos
+        arquivos = arquivos,
+        comments_history=comments_history,
+        revision_history=revision_history
     )
 
 @articles_bp.route('/solicitar_revisao/<int:artigo_id>', methods=['GET','POST'], endpoint='solicitar_revisao')
