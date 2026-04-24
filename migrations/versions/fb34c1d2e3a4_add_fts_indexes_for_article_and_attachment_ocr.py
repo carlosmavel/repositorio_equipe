@@ -1,7 +1,7 @@
 """add fts indexes for article text and attachment ocr text
 
 Revision ID: fb34c1d2e3a4
-Revises: fa23b0c1c9d0
+Revises: c8d9e0f1a2b3
 Create Date: 2026-04-24 00:00:00.000000
 """
 
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'fb34c1d2e3a4'
-down_revision = 'fa23b0c1c9d0'
+down_revision = 'c8d9e0f1a2b3'
 branch_labels = None
 depends_on = None
 
