@@ -39,13 +39,11 @@ try:
     from ..core.services.ocr_queue import (
         enqueue_attachment_for_ocr,
         is_pdf_ocr_eligible,
-        OCR_STATUS_CONCLUIDO,
     )
 except ImportError:  # pragma: no cover
     from core.services.ocr_queue import (
         enqueue_attachment_for_ocr,
         is_pdf_ocr_eligible,
-        OCR_STATUS_CONCLUIDO,
     )
 try:
     from ..core.progress import (
@@ -198,7 +196,6 @@ def novo_artigo():
                         filename  = unique_name,
                         mime_type = mime_type or 'application/octet-stream',
                         content   = None,
-                        ocr_status= OCR_STATUS_CONCLUIDO,
                     )
                     if ocr_eligible:
                         enqueue_attachment_for_ocr(attachment)
@@ -441,7 +438,6 @@ def editar_artigo(artigo_id):
                     filename=unique_name,
                     mime_type=mime_type or "application/octet-stream",
                     content=None,
-                    ocr_status=OCR_STATUS_CONCLUIDO,
                 )
                 if ocr_eligible:
                     enqueue_attachment_for_ocr(attachment)
@@ -747,9 +743,9 @@ def pesquisar():
                     .filter(
                         or_(
                             Attachment.filename.ilike(like),
-                            Attachment.content.ilike(like),
+                            func.coalesce(Attachment.ocr_text, Attachment.content).ilike(like),
                             func.unaccent(Attachment.filename).ilike(like_unaccent),
-                            func.unaccent(Attachment.content).ilike(like_unaccent),
+                            func.unaccent(func.coalesce(Attachment.ocr_text, Attachment.content)).ilike(like_unaccent),
                         )
                     )
                     .scalar_subquery()
@@ -783,7 +779,7 @@ def pesquisar():
                 t = norm(token)
                 fields = [article.titulo, article.texto]
                 for att in getattr(article, 'attachments', []) or []:
-                    fields.extend([att.filename, att.content])
+                    fields.extend([att.filename, att.ocr_text or att.content])
                 return any(t in norm(f) for f in fields if f is not None)
 
             return all(token_found(tok) for tok in tokens)

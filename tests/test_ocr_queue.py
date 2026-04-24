@@ -41,7 +41,10 @@ def test_process_pending_ocr_attachments_success(app_ctx, monkeypatch, tmp_path)
     assert attachment.ocr_attempts == 1
     assert attachment.ocr_started_at is not None
     assert attachment.ocr_finished_at is not None
+    assert attachment.ocr_processed_at is not None
+    assert attachment.ocr_last_attempt_at is not None
     assert "texto suficiente" in (attachment.content or "")
+    assert "texto suficiente" in (attachment.ocr_text or "")
 
 
 def test_process_pending_ocr_attachments_recovers_stuck(app_ctx, monkeypatch):
@@ -60,3 +63,4 @@ def test_process_pending_ocr_attachments_recovers_stuck(app_ctx, monkeypatch):
     assert attachment.ocr_status == OCR_STATUS_BAIXO_APROVEITAMENTO
     assert attachment.ocr_attempts == 1
     assert attachment.ocr_last_error is None
+    assert attachment.ocr_error_message is None

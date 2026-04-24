@@ -21,6 +21,7 @@ OCR_STATUS_PROCESSANDO = "processando"
 OCR_STATUS_CONCLUIDO = "concluido"
 OCR_STATUS_ERRO = "erro"
 OCR_STATUS_BAIXO_APROVEITAMENTO = "baixo_aproveitamento"
+OCR_STATUS_NAO_APLICAVEL = "nao_aplicavel"
 
 
 @dataclass
@@ -42,7 +43,15 @@ def enqueue_attachment_for_ocr(attachment: Attachment) -> None:
     attachment.ocr_requested_at = datetime.now(timezone.utc)
     attachment.ocr_started_at = None
     attachment.ocr_finished_at = None
+    attachment.ocr_processed_at = None
     attachment.ocr_last_error = None
+    attachment.ocr_error_message = None
+    attachment.ocr_pages_failed = None
+    attachment.ocr_pages_success = None
+    attachment.ocr_page_count = None
+    attachment.ocr_char_count = None
+    attachment.ocr_processing_time_seconds = None
+    attachment.ocr_confidence_score = None
 
 
 def _recover_stuck_processing(stuck_timeout_minutes: int) -> int:
@@ -86,8 +95,10 @@ def process_pending_ocr_attachments(
         result.processed += 1
 
         attachment.ocr_status = OCR_STATUS_PROCESSANDO
-        attachment.ocr_started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(timezone.utc)
+        attachment.ocr_started_at = started_at
         attachment.ocr_attempts = (attachment.ocr_attempts or 0) + 1
+        attachment.ocr_last_attempt_at = started_at
         db.session.commit()
 
         file_path = upload_folder / attachment.filename
@@ -95,8 +106,18 @@ def process_pending_ocr_attachments(
         try:
             content = extract_text(str(file_path))
             attachment.content = content
-            attachment.ocr_finished_at = datetime.now(timezone.utc)
+            attachment.ocr_text = content
+            finished_at = datetime.now(timezone.utc)
+            attachment.ocr_finished_at = finished_at
+            attachment.ocr_processed_at = finished_at
             attachment.ocr_last_error = None
+            attachment.ocr_error_message = None
+            attachment.ocr_char_count = len((content or "").strip())
+            attachment.ocr_page_count = 1
+            attachment.ocr_pages_success = 1
+            attachment.ocr_pages_failed = 0
+            attachment.ocr_engine = "extract_text"
+            attachment.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
 
             if len((content or "").strip()) < low_yield_threshold:
                 attachment.ocr_status = OCR_STATUS_BAIXO_APROVEITAMENTO
@@ -106,8 +127,12 @@ def process_pending_ocr_attachments(
                 result.concluded += 1
         except Exception as exc:  # pragma: no cover - proteção operacional
             attachment.ocr_status = OCR_STATUS_ERRO
-            attachment.ocr_finished_at = datetime.now(timezone.utc)
+            finished_at = datetime.now(timezone.utc)
+            attachment.ocr_finished_at = finished_at
+            attachment.ocr_processed_at = finished_at
             attachment.ocr_last_error = str(exc)
+            attachment.ocr_error_message = str(exc)
+            attachment.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
             result.failed += 1
             current_app.logger.exception(
                 "Falha no OCR do attachment id=%s filename=%s",
