@@ -218,6 +218,75 @@ def test_login_blocks_navigation_until_password_is_changed(client, app_ctx):
     assert unblocked.status_code == 200
 
 
+def test_mandatory_password_change_page_is_accessible_without_permissions(client, app_ctx):
+    with app.app_context():
+        from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+        inst = Instituicao(codigo="INST4C", nome="Inst4C")
+        est = Estabelecimento(codigo="E4C", nome_fantasia="Estab4C", instituicao=inst)
+        setor = Setor(nome="Setor4C", estabelecimento=est)
+        celula = Celula(nome="Cel4C", estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, celula])
+        db.session.flush()
+
+        user = User(
+            username="must_change_sem_permissoes",
+            email="must_change_sem_permissoes@example.com",
+            estabelecimento=est,
+            setor=setor,
+            celula=celula,
+            deve_trocar_senha=True,
+        )
+        user.set_password("Secret1!")
+        db.session.add(user)
+        db.session.commit()
+
+    login = client.post(
+        "/login",
+        data={"username": "must_change_sem_permissoes", "password": "Secret1!"},
+        follow_redirects=False,
+    )
+    assert login.status_code == 302
+    assert "/troca-senha-obrigatoria" in login.headers["Location"]
+
+    page = client.get("/troca-senha-obrigatoria", follow_redirects=False)
+    assert page.status_code == 200
+
+
+def test_login_get_redirects_to_mandatory_password_change_when_pending(client, app_ctx):
+    user_id = None
+    with app.app_context():
+        from core.models import Instituicao, Estabelecimento, Setor, Celula
+
+        inst = Instituicao(codigo="INST4D", nome="Inst4D")
+        est = Estabelecimento(codigo="E4D", nome_fantasia="Estab4D", instituicao=inst)
+        setor = Setor(nome="Setor4D", estabelecimento=est)
+        celula = Celula(nome="Cel4D", estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, celula])
+        db.session.flush()
+
+        user = User(
+            username="must_change_redirect_login",
+            email="must_change_redirect_login@example.com",
+            estabelecimento=est,
+            setor=setor,
+            celula=celula,
+            deve_trocar_senha=True,
+        )
+        user.set_password("Secret1!")
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+
+    with client.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["username"] = "must_change_redirect_login"
+
+    resp = client.get("/login", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "/troca-senha-obrigatoria" in resp.headers["Location"]
+
+
 def test_mandatory_password_change_blocks_home_and_unblocks_after_change(client, app_ctx):
     user_id = None
     username = "must_change_block"
