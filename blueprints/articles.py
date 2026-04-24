@@ -105,7 +105,10 @@ def novo_artigo():
             return redirect(url_for('novo_artigo'))
 
         # 1.1) Descobre se é rascunho ou envio para revisão
-        acao   = request.form.get('acao', 'enviar')  # 'rascunho' ou 'enviar'
+        # Quando a submissão ocorre via fetch/FormData sem submitter explícito,
+        # o campo `acao` pode não ser enviado. Nesse caso, salva como rascunho
+        # por padrão para evitar envio indevido para aprovação.
+        acao   = request.form.get('acao', 'rascunho')  # 'rascunho' ou 'enviar'
         status = (ArticleStatus.RASCUNHO
                   if acao == 'rascunho'
                   else ArticleStatus.PENDENTE)
