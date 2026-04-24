@@ -111,6 +111,10 @@ try:
     from .core.services.permission_sync import sync_permission_catalog_with_lock
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.services.permission_sync import sync_permission_catalog_with_lock
+try:
+    from .core.services.ocr_queue import process_pending_ocr_attachments
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from core.services.ocr_queue import process_pending_ocr_attachments
 
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -238,6 +242,28 @@ def bootstrap_permissions_command() -> None:
     click.echo(
         "✅ Catálogo de permissões sincronizado. "
         f"created={result.created} updated={result.updated} unchanged={result.unchanged}"
+    )
+
+
+@app.cli.command("process-ocr-pendente")
+@click.option("--batch-size", default=20, show_default=True, type=int)
+@click.option("--stuck-timeout-minutes", default=30, show_default=True, type=int)
+@click.option("--low-yield-threshold", default=80, show_default=True, type=int)
+def process_ocr_pendente_command(
+    batch_size: int,
+    stuck_timeout_minutes: int,
+    low_yield_threshold: int,
+) -> None:
+    """Processa OCR dos anexos pendentes fora da request web."""
+    result = process_pending_ocr_attachments(
+        batch_size=batch_size,
+        stuck_timeout_minutes=stuck_timeout_minutes,
+        low_yield_threshold=low_yield_threshold,
+    )
+    click.echo(
+        "✅ OCR pendente processado. "
+        f"recover={result.recovered_stuck} processed={result.processed} "
+        f"concluido={result.concluded} baixo_aproveitamento={result.low_yield} erro={result.failed}"
     )
 
 
