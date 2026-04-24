@@ -137,14 +137,7 @@
 
         {# Botões de ação #}
         <div class="mt-4">
-          {% if session.username
-          and artigo.author.username == session.username
-          and artigo.status in [
-          ArticleStatus.RASCUNHO,
-          ArticleStatus.EM_REVISAO,
-          ArticleStatus.EM_AJUSTE,
-          ArticleStatus.REJEITADO
-          ] %}
+          {% if can_edit_article %}
           <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-primary">
             Editar
           </a>
@@ -162,6 +155,9 @@
           style="position:absolute; bottom:10px; right:10px; cursor:pointer; font-size:1.3rem;"
         ></i>
         {% endif %}
+        <a href="{{ url_for('meus_artigos') }}" class="btn btn-outline-secondary ms-1">
+          Voltar para Meus Artigos
+        </a>
       </div>
 
       </div> {# .card-body #}

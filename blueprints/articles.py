@@ -300,7 +300,12 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
-    return render_template('artigos/artigo.html', artigo=artigo, arquivos=arquivos)
+    return render_template(
+        'artigos/artigo.html',
+        artigo=artigo,
+        arquivos=arquivos,
+        can_edit_article=user_can_edit_article(user, artigo)
+    )
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
