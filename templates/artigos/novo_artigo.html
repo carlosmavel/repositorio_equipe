@@ -292,39 +292,18 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const form = document.querySelector('form');
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
+  form.addEventListener('submit', (event) => {
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
+
     const progressId = progressIdInput?.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     if (progressIdInput) progressIdInput.value = progressId;
+
     resetProgressMessages();
     setOverlayState('Enviando artigo e anexos...', 0);
     startProgressPolling(progressId);
-    localStorage.removeItem(STORAGE_KEY);
 
-    try {
-      const formData = new FormData(form);
-      const submitter = event.submitter;
-      if (submitter?.name && !formData.has(submitter.name)) {
-        formData.append(submitter.name, submitter.value);
-      }
-      const response = await fetch(form.action || window.location.href, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (response.redirected) {
-        completeBar();
-        window.location.href = response.url;
-        return;
-      }
-    } catch (err) {
-      console.error('Falha ao enviar artigo', err);
-    }
-
-    completeBar();
-    stopProgressPolling();
-    setTimeout(() => window.location.reload(), 400);
+    // Observação: submissão nativa do formulário é mantida para preservar
+    // redirects/flash do servidor e evitar perder estado em caso de erro.
   });
 
   // Preview de anexos

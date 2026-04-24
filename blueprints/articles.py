@@ -99,9 +99,10 @@ def novo_artigo():
         area_id = request.form.get('area_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
 
-        # Campos obrigatórios
-        if not titulo or not texto_limpo:
-            flash('Título e texto são obrigatórios.', 'warning')
+        # Campos obrigatórios: título e ao menos texto ou anexo
+        has_uploads = any(f and f.filename for f in files)
+        if not titulo or (not texto_limpo and not has_uploads):
+            flash('Título e conteúdo são obrigatórios (texto ou anexo).', 'warning')
             return redirect(url_for('novo_artigo'))
 
         # 1.1) Descobre se é rascunho ou envio para revisão
@@ -143,72 +144,93 @@ def novo_artigo():
         elif vis is ArticleVisibility.CELULA:
             vis_cel_id = user.celula_id
 
-        # 3) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
-        artigo = Article(
-            titulo     = titulo,
-            texto      = texto_limpo,
-            status     = status,
-            user_id    = user.id,
-            celula_id  = user.celula_id or 1,
-            visibility = vis,
-            instituicao_id = inst_id,
-            estabelecimento_id = est_id,
-            setor_id = setor_vis_id,
-            vis_celula_id = vis_cel_id,
-            tipo_id = tipo_id,
-            area_id = area_id,
-            sistema_id = sistema_id,
-            arquivos   = None,
-            created_at = datetime.now(timezone.utc),
-            updated_at = datetime.now(timezone.utc)
+        app.logger.info(
+            "Criando artigo user_id=%s acao=%s vis=%s anexos=%s titulo_len=%s texto_len=%s progress_id=%s",
+            user.id,
+            acao,
+            vis.value,
+            len([f for f in files if f and f.filename]),
+            len(titulo),
+            len(texto_limpo),
+            progress_id,
         )
-        db.session.add(artigo)
-        db.session.flush()
+        try:
+            # 3) Cria o artigo (sem arquivos ainda) e dá um flush para ter ID
+            artigo = Article(
+                titulo     = titulo,
+                texto      = texto_limpo,
+                status     = status,
+                user_id    = user.id,
+                celula_id  = user.celula_id or 1,
+                visibility = vis,
+                instituicao_id = inst_id,
+                estabelecimento_id = est_id,
+                setor_id = setor_vis_id,
+                vis_celula_id = vis_cel_id,
+                tipo_id = tipo_id,
+                area_id = area_id,
+                sistema_id = sistema_id,
+                arquivos   = None,
+                created_at = datetime.now(timezone.utc),
+                updated_at = datetime.now(timezone.utc)
+            )
+            db.session.add(artigo)
+            db.session.flush()
 
-        # 3) Salva arquivos com nome único, extrai texto e cria Attachments
-        filenames = []
-        for f in files:
-            if f and f.filename:
-                original = secure_filename(f.filename)
-                if len(original) > 40:
-                    name, ext = os.path.splitext(original)
-                    original = name[:40 - len(ext)] + ext
-                unique_name = f"{uuid.uuid4().hex}_{original}"
-                dest       = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
-                f.save(dest)
-                filenames.append(unique_name)
+            # 3) Salva arquivos com nome único, extrai texto e cria Attachments
+            filenames = []
+            for f in files:
+                if f and f.filename:
+                    original = secure_filename(f.filename)
+                    if len(original) > 40:
+                        name, ext = os.path.splitext(original)
+                        original = name[:40 - len(ext)] + ext
+                    unique_name = f"{uuid.uuid4().hex}_{original}"
+                    dest       = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+                    f.save(dest)
+                    filenames.append(unique_name)
 
-                # extrai texto e descobre MIME
-                texto_extraido = extract_text(dest, progress_callback=emit_progress)
-                mime_type, _   = guess_type(dest)
+                    # extrai texto e descobre MIME
+                    texto_extraido = extract_text(dest, progress_callback=emit_progress)
+                    mime_type, _   = guess_type(dest)
 
-                # cria o registro de attachment
-                attachment = Attachment(
-                    article   = artigo,
-                    filename  = unique_name,
-                    mime_type = mime_type or 'application/octet-stream',
-                    content   = texto_extraido
-                )
-                db.session.add(attachment)
+                    # cria o registro de attachment
+                    attachment = Attachment(
+                        article   = artigo,
+                        filename  = unique_name,
+                        mime_type = mime_type or 'application/octet-stream',
+                        content   = texto_extraido
+                    )
+                    db.session.add(attachment)
 
-        # 4) Atualiza o campo JSON de nomes no artigo
-        artigo.arquivos = json.dumps(filenames) if filenames else None
+            # 4) Atualiza o campo JSON de nomes no artigo
+            artigo.arquivos = json.dumps(filenames) if filenames else None
 
-        # 5) Persiste tudo num único commit
-        db.session.commit()
-        mark_progress_done(progress_id)
-
-        # 6) Notifica responsáveis/admins, se necessário
-        if status is ArticleStatus.PENDENTE:
-            destinatarios = eligible_review_notification_users(artigo)
-            for dest in destinatarios:
-                notif = Notification(
-                    user_id = dest.id,
-                    message = f'Novo artigo pendente para revisão: “{artigo.titulo}”',
-                    url     = url_for('aprovacao_detail', artigo_id=artigo.id)
-                )
-                db.session.add(notif)
+            # 5) Persiste tudo num único commit
             db.session.commit()
+            mark_progress_done(progress_id)
+
+            # 6) Notifica responsáveis/admins, se necessário
+            if status is ArticleStatus.PENDENTE:
+                destinatarios = eligible_review_notification_users(artigo)
+                for dest in destinatarios:
+                    notif = Notification(
+                        user_id = dest.id,
+                        message = f'Novo artigo pendente para revisão: “{artigo.titulo}”',
+                        url     = url_for('aprovacao_detail', artigo_id=artigo.id)
+                    )
+                    db.session.add(notif)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception(
+                "Falha ao criar artigo user_id=%s progress_id=%s titulo=%r",
+                user.id,
+                progress_id,
+                titulo,
+            )
+            flash('Ocorreu um erro ao salvar o artigo. Tente novamente e, se persistir, contate o suporte.', 'danger')
+            return redirect(url_for('novo_artigo'))
 
         # 7) Feedback para o usuário
         flash(
