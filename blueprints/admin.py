@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app as app
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
 try:
@@ -75,7 +75,7 @@ except ImportError:  # pragma: no cover
     )
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from werkzeug.utils import secure_filename
 from mimetypes import guess_type
@@ -134,6 +134,68 @@ def admin_dashboard():
         .all()
     )
 
+    ocr_statuses = [
+        'pendente',
+        'processando',
+        'concluido',
+        'erro',
+        'baixo_aproveitamento',
+    ]
+    ocr_raw_counts = dict(
+        db.session.query(Attachment.ocr_status, func.count(Attachment.id))
+        .filter(Attachment.ocr_status.in_(ocr_statuses))
+        .group_by(Attachment.ocr_status)
+        .all()
+    )
+    ocr_total_eligible = sum(ocr_raw_counts.values())
+    ocr_status_metrics = {}
+    for status in ocr_statuses:
+        count = int(ocr_raw_counts.get(status, 0) or 0)
+        percentage = round((count / ocr_total_eligible) * 100, 2) if ocr_total_eligible else 0.0
+        ocr_status_metrics[status] = {
+            'count': count,
+            'percentage': percentage,
+        }
+
+    ocr_avg_char_count = (
+        db.session.query(func.avg(Attachment.ocr_char_count))
+        .filter(Attachment.ocr_status.in_(ocr_statuses))
+        .filter(Attachment.ocr_char_count.isnot(None))
+        .scalar()
+    ) or 0.0
+    ocr_avg_processing_seconds = (
+        db.session.query(func.avg(Attachment.ocr_processing_time_seconds))
+        .filter(Attachment.ocr_status.in_(ocr_statuses))
+        .filter(Attachment.ocr_processing_time_seconds.isnot(None))
+        .scalar()
+    ) or 0.0
+
+    processing_stuck_threshold_minutes = int(app.config.get('OCR_STUCK_THRESHOLD_MINUTES', 30))
+    processing_stuck_cutoff = datetime.now(timezone.utc) - timedelta(minutes=processing_stuck_threshold_minutes)
+    ocr_stuck_processing_items = (
+        Attachment.query
+        .filter(Attachment.ocr_status == 'processando')
+        .filter(Attachment.ocr_started_at.isnot(None))
+        .filter(Attachment.ocr_started_at < processing_stuck_cutoff)
+        .order_by(Attachment.ocr_started_at.asc())
+        .limit(5)
+        .all()
+    )
+
+    ocr_latest_errors = (
+        Attachment.query
+        .filter(Attachment.ocr_status.in_(['erro', 'baixo_aproveitamento']))
+        .filter(
+            or_(
+                Attachment.ocr_last_error.isnot(None),
+                Attachment.ocr_error_message.isnot(None),
+            )
+        )
+        .order_by(Attachment.ocr_last_attempt_at.desc().nullslast(), Attachment.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
     return render_template(
         "admin/dashboard.html",
         user_total=user_total,
@@ -143,6 +205,13 @@ def admin_dashboard():
         notifications_unread=notifications_unread,
         notifications_read=notifications_read,
         user_sector_counts=user_sector_counts,
+        ocr_status_metrics=ocr_status_metrics,
+        ocr_total_eligible=ocr_total_eligible,
+        ocr_avg_char_count=round(float(ocr_avg_char_count), 2),
+        ocr_avg_processing_seconds=round(float(ocr_avg_processing_seconds), 2),
+        ocr_latest_errors=ocr_latest_errors,
+        ocr_stuck_processing_items=ocr_stuck_processing_items,
+        processing_stuck_threshold_minutes=processing_stuck_threshold_minutes,
     )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])

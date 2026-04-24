@@ -44,6 +44,70 @@
                 </div>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card futuristic-card">
+                    <div class="card-header">OCR por Status (Elegíveis)</div>
+                    <div class="card-body">
+                        <canvas id="ocrStatusChart" class="dashboard-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="card futuristic-card h-100">
+                    <div class="card-header">Resumo OCR</div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Total elegível:</strong> {{ ocr_total_eligible }}</p>
+                        <p class="mb-1"><strong>Média de caracteres:</strong> {{ ocr_avg_char_count }}</p>
+                        <p class="mb-0"><strong>Média de processamento (s):</strong> {{ ocr_avg_processing_seconds }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card futuristic-card h-100">
+                    <div class="card-header">Últimos erros OCR</div>
+                    <div class="card-body">
+                        {% if ocr_latest_errors %}
+                            <ul class="mb-0">
+                                {% for item in ocr_latest_errors %}
+                                    <li>
+                                        #{{ item.id }} (artigo {{ item.article_id }}):
+                                        {{ item.ocr_last_error or item.ocr_error_message }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="mb-0">Sem erros OCR recentes.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card futuristic-card h-100">
+                    <div class="card-header">
+                        Itens presos em processando (>{{ processing_stuck_threshold_minutes }} min)
+                    </div>
+                    <div class="card-body">
+                        {% if ocr_stuck_processing_items %}
+                            <ul class="mb-0">
+                                {% for item in ocr_stuck_processing_items %}
+                                    <li>
+                                        #{{ item.id }} (artigo {{ item.article_id }}) iniciado em
+                                        {{ item.ocr_started_at.strftime('%d/%m/%Y %H:%M:%S') if item.ocr_started_at else '-' }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="mb-0">Nenhum item preso no limiar atual.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -131,6 +195,41 @@
                 scales: {
                     x: { ticks: { color: '#fff' }, grid: { color: '#333' }, beginAtZero: true },
                     y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
+                }
+            }
+        });
+
+        const ocrData = {{ ocr_status_metrics|tojson }};
+        new Chart(document.getElementById('ocrStatusChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(ocrData),
+                datasets: [
+                    {
+                        label: 'Quantidade',
+                        data: Object.values(ocrData).map(v => v.count),
+                        backgroundColor: 'rgba(25, 135, 84, 0.65)',
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '% do total elegível',
+                        data: Object.values(ocrData).map(v => v.percentage),
+                        backgroundColor: 'rgba(13, 110, 253, 0.55)',
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                ...baseOptions,
+                scales: {
+                    x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
+                    y: { ticks: { color: '#fff' }, grid: { color: '#333' }, beginAtZero: true },
+                    y1: {
+                        position: 'right',
+                        ticks: { color: '#fff' },
+                        grid: { drawOnChartArea: false },
+                        beginAtZero: true
+                    }
                 }
             }
         });
