@@ -319,7 +319,19 @@ def editar_artigo(artigo_id):
         flash("Você não tem permissão para editar este artigo.", "danger")
         return redirect(url_for("artigo", artigo_id=artigo_id))
 
+    editable_statuses = {
+        ArticleStatus.RASCUNHO,
+        ArticleStatus.EM_REVISAO,
+        ArticleStatus.EM_AJUSTE,
+        ArticleStatus.REJEITADO,
+    }
+    can_submit_actions = artigo.status in editable_statuses
+
     if request.method == "POST":
+        if not can_submit_actions:
+            flash("Este artigo não permite alterações no status atual.", "warning")
+            return redirect(url_for("artigo", artigo_id=artigo_id))
+
         acao = request.form.get("acao", "salvar")   # salvar | enviar
         progress_id = request.form.get("progress_id")
         init_progress(progress_id)
@@ -439,7 +451,15 @@ def editar_artigo(artigo_id):
     tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
     areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
     sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
-    return render_template("artigos/editar_artigo.html", artigo=artigo, arquivos=arquivos, tipos_artigo=tipos_artigo, areas_artigo=areas_artigo, sistemas_artigo=sistemas_artigo)
+    return render_template(
+        "artigos/editar_artigo.html",
+        artigo=artigo,
+        arquivos=arquivos,
+        tipos_artigo=tipos_artigo,
+        areas_artigo=areas_artigo,
+        sistemas_artigo=sistemas_artigo,
+        can_submit_actions=can_submit_actions,
+    )
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
 def aprovacao():

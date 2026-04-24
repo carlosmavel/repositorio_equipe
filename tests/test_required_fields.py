@@ -110,3 +110,26 @@ def test_editar_artigo_requires_fields(client):
         art = Article.query.get(aid)
         assert art.titulo == 'T'
         assert art.texto == 'C'
+
+
+def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
+    author_id = _login_user(client, ['artigo_criar'])
+    with app.app_context():
+        author = User.query.get(author_id)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Rascunho compartilhado', texto='Conteúdo', status=ArticleStatus.RASCUNHO,
+            user_id=author_id, celula_id=author.celula_id, setor_id=author.setor_id,
+            estabelecimento_id=author.estabelecimento_id, instituicao_id=inst.id
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    _login_user(client, [Permissao.ARTIGO_EDITAR_CELULA])
+    response = client.get(f'/artigo/{aid}/editar')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'name="acao" value="salvar"' in html
+    assert 'name="acao" value="enviar"' in html
