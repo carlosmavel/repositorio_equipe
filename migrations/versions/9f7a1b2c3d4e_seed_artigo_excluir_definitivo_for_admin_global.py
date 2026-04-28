@@ -1,7 +1,7 @@
 """seed artigo_excluir_definitivo and associate to admin global
 
 Revision ID: 9f7a1b2c3d4e
-Revises: fb34c1d2e3a4
+Revises: c7a1d9e6b2f4
 Create Date: 2026-04-28 00:00:00.000000
 """
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '9f7a1b2c3d4e'
-down_revision = 'fb34c1d2e3a4'
+down_revision = 'c7a1d9e6b2f4'
 branch_labels = None
 depends_on = None
 
