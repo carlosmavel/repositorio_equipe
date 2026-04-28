@@ -4,6 +4,12 @@ import pytest
 from app import app, db
 from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, ArticleStatus
 from core.enums import Permissao
+from core.utils import (
+    user_can_edit_article,
+    user_can_approve_article,
+    user_can_review_article,
+    user_can_view_article,
+)
 
 @pytest.fixture
 def client(app_ctx):
@@ -74,3 +80,64 @@ def test_aprovacao_requires_permission(client):
     login_user(client, [Permissao.ARTIGO_APROVAR_CELULA])
     resp = client.get('/aprovacao')
     assert resp.status_code == 200
+
+
+class _EmptyRelation:
+    def filter_by(self, **kwargs):
+        return self
+
+    def count(self):
+        return 0
+
+    def all(self):
+        return []
+
+
+class _FakeUser:
+    def __init__(self, perms=None, user_id=123):
+        self._perms = set(perms or [])
+        self.id = user_id
+        self.estabelecimento = None
+        self.celula = None
+        self.setor = None
+        self.setor_id = None
+        self.celula_id = None
+        self.extra_setores = _EmptyRelation()
+        self.extra_celulas = _EmptyRelation()
+
+    def has_permissao(self, code):
+        return code in self._perms
+
+
+def _build_article(author_id=999):
+    return Article(titulo='Art', texto='Texto', status=ArticleStatus.APROVADO, user_id=author_id)
+
+
+@pytest.mark.parametrize(
+    "checker",
+    [
+        user_can_edit_article,
+        user_can_approve_article,
+        user_can_review_article,
+        user_can_view_article,
+    ],
+)
+def test_user_none_returns_false_without_exception(checker):
+    article = _build_article()
+    assert checker(None, article) is False
+
+
+def test_valid_user_permissions_keep_current_behavior():
+    article = _build_article(author_id=999)
+    admin = _FakeUser(perms={'admin'}, user_id=123)
+
+    assert user_can_edit_article(admin, article) is True
+    assert user_can_review_article(admin, article) is True
+    assert user_can_view_article(admin, article) is True
+    assert user_can_approve_article(admin, article) is True
+
+
+def test_pesquisar_filter_with_none_user_does_not_raise_exception():
+    articles = [_build_article(author_id=1), _build_article(author_id=2)]
+    filtered = [a for a in articles if user_can_view_article(None, a)]
+    assert filtered == []
