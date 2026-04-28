@@ -462,9 +462,37 @@ class Attachment(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     article = db.relationship('Article', back_populates='attachments')
+    reprocess_audits = db.relationship(
+        'OCRReprocessAudit',
+        back_populates='attachment',
+        lazy='dynamic',
+        cascade='all, delete-orphan',
+    )
 
     def __repr__(self):
         return f"<Attachment {self.filename} for article_id={self.article_id}>"
+
+
+class OCRReprocessAudit(db.Model):
+    __tablename__ = 'ocr_reprocess_audit'
+
+    id = db.Column(db.Integer, primary_key=True)
+    attachment_id = db.Column(db.Integer, db.ForeignKey('attachment.id', ondelete='CASCADE'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
+    triggered_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    trigger_scope = db.Column(db.String(32), nullable=False)
+    previous_status = db.Column(db.String(32), nullable=True)
+    new_status = db.Column(db.String(32), nullable=False, default='pendente', server_default='pendente')
+    attempts_before = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    attempts_after = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    triggered_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    attachment = db.relationship('Attachment', back_populates='reprocess_audits')
+    article = db.relationship('Article')
+    triggered_by = db.relationship('User')
+
+    def __repr__(self):
+        return f"<OCRReprocessAudit attachment_id={self.attachment_id} scope={self.trigger_scope}>"
 
 class Notification(db.Model):
     __tablename__ = 'notification'

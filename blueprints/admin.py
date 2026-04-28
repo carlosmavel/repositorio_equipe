@@ -45,9 +45,9 @@ except ImportError:  # pragma: no cover
     )
 
 try:
-    from ..core.enums import ArticleStatus
+    from ..core.enums import ArticleStatus, Permissao
 except ImportError:
-    from core.enums import ArticleStatus
+    from core.enums import ArticleStatus, Permissao
 
 try:
     from ..core.decorators import admin_required
@@ -62,6 +62,7 @@ try:
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        log_article_event,
     )
 except ImportError:  # pragma: no cover
     from core.utils import (
@@ -72,6 +73,19 @@ except ImportError:  # pragma: no cover
         user_can_edit_article,
         user_can_approve_article,
         user_can_review_article,
+        log_article_event,
+    )
+try:
+    from ..core.services.ocr_queue import (
+        OCR_STATUS_BAIXO_APROVEITAMENTO,
+        OCR_STATUS_ERRO,
+        mark_attachment_for_reprocess,
+    )
+except ImportError:  # pragma: no cover
+    from core.services.ocr_queue import (
+        OCR_STATUS_BAIXO_APROVEITAMENTO,
+        OCR_STATUS_ERRO,
+        mark_attachment_for_reprocess,
     )
 
 import json
@@ -102,6 +116,54 @@ def _request_correlation_id():
         or request.environ.get('HTTP_X_REQUEST_ID')
         or request.environ.get('HTTP_X_CORRELATION_ID')
     )
+
+
+def _can_reprocess_ocr(user) -> bool:
+    if not user:
+        return False
+    return user.has_permissao('admin') or user.has_permissao(Permissao.ARTIGO_OCR_REPROCESSAR.value)
+
+
+def _eligible_ocr_attachment_query():
+    return Attachment.query.filter(
+        or_(
+            Attachment.mime_type == 'application/pdf',
+            Attachment.filename.ilike('%.pdf'),
+        )
+    )
+
+
+def _reprocess_attachments(attachments, *, actor: User, trigger_scope: str, success_message: str):
+    if not attachments:
+        flash('Nenhum anexo elegível para reprocesso foi encontrado.', 'info')
+        return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
+
+    for attachment in attachments:
+        mark_attachment_for_reprocess(
+            attachment,
+            triggered_by_user_id=actor.id,
+            trigger_scope=trigger_scope,
+        )
+        log_article_event(
+            app.logger,
+            "ocr_reprocess_requested",
+            user_id=actor.id,
+            route=request.path,
+            action=trigger_scope,
+            article_id=attachment.article_id,
+            attachment_id=attachment.id,
+            filename=attachment.filename,
+            file_size=None,
+            mime_type=attachment.mime_type,
+            ocr_status=attachment.ocr_status,
+            attempt=attachment.ocr_attempts,
+            progress_id=None,
+            correlation_id=_request_correlation_id(),
+        )
+
+    db.session.commit()
+    flash(f'{success_message} ({len(attachments)} anexo(s) reenfileirado(s)).', 'success')
+    return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
 
 # ROTAS DE ADMINISTRAÇÃO (NOVA SEÇÃO - ADICIONE AS ROTAS DO ADMIN AQUI)
 # -------------------------------------------------------------------------
@@ -196,6 +258,7 @@ def admin_dashboard():
         .all()
     )
 
+    current_user = _current_user()
     return render_template(
         "admin/dashboard.html",
         user_total=user_total,
@@ -212,6 +275,83 @@ def admin_dashboard():
         ocr_latest_errors=ocr_latest_errors,
         ocr_stuck_processing_items=ocr_stuck_processing_items,
         processing_stuck_threshold_minutes=processing_stuck_threshold_minutes,
+        can_reprocess_ocr=_can_reprocess_ocr(current_user),
+    )
+
+
+@admin_bp.route('/admin/ocr/reprocess/attachment/<int:attachment_id>', methods=['POST'])
+def admin_reprocess_ocr_attachment(attachment_id):
+    user = _current_user()
+    if not _can_reprocess_ocr(user):
+        flash('Permissão negada para reprocessar OCR.', 'danger')
+        return redirect(url_for('meus_artigos'))
+
+    attachment = _eligible_ocr_attachment_query().filter(Attachment.id == attachment_id).one_or_none()
+    if not attachment:
+        flash('Anexo não encontrado ou não elegível para OCR.', 'warning')
+        return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
+
+    return _reprocess_attachments(
+        [attachment],
+        actor=user,
+        trigger_scope='attachment',
+        success_message='Reprocesso do anexo solicitado com sucesso',
+    )
+
+
+@admin_bp.route('/admin/ocr/reprocess/article/<int:article_id>', methods=['POST'])
+def admin_reprocess_ocr_article(article_id):
+    user = _current_user()
+    if not _can_reprocess_ocr(user):
+        flash('Permissão negada para reprocessar OCR.', 'danger')
+        return redirect(url_for('meus_artigos'))
+
+    attachments = _eligible_ocr_attachment_query().filter(Attachment.article_id == article_id).all()
+    return _reprocess_attachments(
+        attachments,
+        actor=user,
+        trigger_scope='article',
+        success_message='Reprocesso por artigo solicitado com sucesso',
+    )
+
+
+@admin_bp.route('/admin/ocr/reprocess/errors', methods=['POST'])
+def admin_reprocess_ocr_errors():
+    user = _current_user()
+    if not _can_reprocess_ocr(user):
+        flash('Permissão negada para reprocessar OCR.', 'danger')
+        return redirect(url_for('meus_artigos'))
+
+    attachments = (
+        _eligible_ocr_attachment_query()
+        .filter(Attachment.ocr_status == OCR_STATUS_ERRO)
+        .all()
+    )
+    return _reprocess_attachments(
+        attachments,
+        actor=user,
+        trigger_scope='errors',
+        success_message='Reprocesso de anexos com erro solicitado com sucesso',
+    )
+
+
+@admin_bp.route('/admin/ocr/reprocess/low-yield', methods=['POST'])
+def admin_reprocess_ocr_low_yield():
+    user = _current_user()
+    if not _can_reprocess_ocr(user):
+        flash('Permissão negada para reprocessar OCR.', 'danger')
+        return redirect(url_for('meus_artigos'))
+
+    attachments = (
+        _eligible_ocr_attachment_query()
+        .filter(Attachment.ocr_status == OCR_STATUS_BAIXO_APROVEITAMENTO)
+        .all()
+    )
+    return _reprocess_attachments(
+        attachments,
+        actor=user,
+        trigger_scope='low_yield',
+        success_message='Reprocesso de anexos com baixo aproveitamento solicitado com sucesso',
     )
 
 @admin_bp.route('/admin/instituicoes', methods=['GET', 'POST'])

@@ -79,6 +79,13 @@
                     <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
                   </div>
                 </a>
+                {% if can_reprocess_ocr and ext == 'pdf' %}
+                <div class="px-2 pb-2">
+                  <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
+                    <button type="submit" class="btn btn-sm btn-outline-warning w-100">Reprocessar OCR</button>
+                  </form>
+                </div>
+                {% endif %}
                 {% if ext == 'pdf' and not att.content %}
                 <i class="bi bi-exclamation-circle-fill text-warning position-absolute"
                   style="top: 8px; right: 8px; z-index: 5; font-size: 1.1rem;"
@@ -137,6 +144,13 @@
 
         {# Botões de ação #}
         <div class="mt-4">
+          {% if can_reprocess_ocr and artigo.attachments and artigo.attachments.count() > 0 %}
+          <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_article', article_id=artigo.id) }}" class="d-inline">
+            <button type="submit" class="btn btn-outline-warning">
+              Reprocessar OCR deste artigo
+            </button>
+          </form>
+          {% endif %}
           {% if can_edit_article %}
           <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-primary">
             Editar
