@@ -534,6 +534,9 @@ def user_can_edit_article(user, article):
     except ImportError:  # pragma: no cover - fallback for direct execution
         from core.models import Article
 
+    if user is None:
+        return False
+
     if not isinstance(article, Article):
         return False
 
@@ -574,6 +577,9 @@ def user_can_approve_article(user, article):
         from .models import Article  # type: ignore  # pragma: no cover
     except ImportError:  # pragma: no cover - fallback for direct execution
         from core.models import Article
+
+    if user is None:
+        return False
 
     if not isinstance(article, Article):
         return False
@@ -617,6 +623,9 @@ def user_can_review_article(user, article):
     except ImportError:  # pragma: no cover - fallback for direct execution
         from core.models import Article
 
+    if user is None:
+        return False
+
     if not isinstance(article, Article):
         return False
 
@@ -657,6 +666,9 @@ def user_can_view_article(user, article):
         from .enums import ArticleVisibility
     except ImportError:  # pragma: no cover - fallback for direct execution
         from core.enums import ArticleVisibility
+
+    if user is None:
+        return False
 
     if not isinstance(article, Article):
         return False
