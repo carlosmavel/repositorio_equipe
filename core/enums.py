@@ -66,6 +66,7 @@ class Permissao(Enum):
     ARTIGO_TIPO_GERENCIAR = "artigo_tipo_gerenciar"
     ARTIGO_AREA_GERENCIAR = "artigo_area_gerenciar"
     ARTIGO_OCR_REPROCESSAR = "artigo_ocr_reprocessar"
+    ARTIGO_EXCLUIR_DEFINITIVO = "artigo_excluir_definitivo"
 
 
 class OSStatus(Enum):

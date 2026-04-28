@@ -139,3 +139,13 @@ def test_sync_permission_catalog_applies_alias_renaming(app_ctx):
         assert migrated.nome == item.nome
     finally:
         permission_catalog.CODE_ALIASES.pop(alias_code, None)
+
+
+def test_sync_permission_catalog_contains_artigo_excluir_definitivo(app_ctx):
+    result = sync_permission_catalog(db.session)
+    db.session.commit()
+
+    assert result.created == len(CATALOG)
+    perm = Funcao.query.filter_by(codigo="artigo_excluir_definitivo").one_or_none()
+    assert perm is not None
+    assert perm.managed_by_system is True
