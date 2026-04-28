@@ -12,6 +12,8 @@ try:
 except ImportError:  # pragma: no cover - fallback for package execution
     from ..core.models import Funcao, User
 
+ADMIN_PERMISSION_CODES = ("admin", "artigo_excluir_definitivo")
+
 
 @dataclass
 class BootstrapAdminResult:
@@ -44,19 +46,24 @@ def ensure_initial_admin(
 ) -> BootstrapAdminResult:
     """Garante usuário administrador inicial de forma idempotente."""
 
-    admin_funcao = Funcao.query.filter_by(codigo="admin").first()
-    if not admin_funcao:
-        admin_funcao = Funcao(codigo="admin", nome="Administrador")
-        db.session.add(admin_funcao)
-        db.session.flush()
+    admin_funcoes = []
+    for codigo in ADMIN_PERMISSION_CODES:
+        funcao = Funcao.query.filter_by(codigo=codigo).first()
+        if not funcao:
+            nome = "Administrador" if codigo == "admin" else codigo.replace("_", " ").capitalize()
+            funcao = Funcao(codigo=codigo, nome=nome)
+            db.session.add(funcao)
+            db.session.flush()
+        admin_funcoes.append(funcao)
 
     existing_admin = User.query.filter_by(username=username).first()
     if not existing_admin:
         existing_admin = User.query.filter_by(email=email).first()
 
     if existing_admin:
-        if admin_funcao not in existing_admin.permissoes_personalizadas:
-            existing_admin.permissoes_personalizadas.append(admin_funcao)
+        for funcao in admin_funcoes:
+            if funcao not in existing_admin.permissoes_personalizadas:
+                existing_admin.permissoes_personalizadas.append(funcao)
         existing_admin.deve_trocar_senha = True
         db.session.commit()
         return BootstrapAdminResult(user=existing_admin, created=False, generated_password=None)
@@ -74,7 +81,8 @@ def ensure_initial_admin(
         deve_trocar_senha=True,
     )
     admin.set_password(password)
-    admin.permissoes_personalizadas.append(admin_funcao)
+    for funcao in admin_funcoes:
+        admin.permissoes_personalizadas.append(funcao)
 
     db.session.add(admin)
     db.session.commit()

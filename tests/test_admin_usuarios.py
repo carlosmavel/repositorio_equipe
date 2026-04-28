@@ -3,6 +3,7 @@ import logging
 
 from app import app, db
 from core.models import User, Instituicao, Estabelecimento, Setor, Celula, Cargo, Funcao
+from seeds.bootstrap_admin import ensure_initial_admin
 
 @pytest.fixture
 def client(app_ctx):
@@ -521,3 +522,15 @@ def test_create_user_uses_admin_defined_initial_password(client):
         assert user is not None
         assert user.check_password('AdminInit#2026') is True
         assert user.deve_trocar_senha is True
+
+
+def test_bootstrap_admin_recebe_permissao_artigo_excluir_definitivo(client):
+    with app.app_context():
+        result = ensure_initial_admin(
+            username='admin_global',
+            email='admin_global@example.com',
+            initial_password='Temp1234!',
+        )
+        codigos = {funcao.codigo for funcao in result.user.get_permissoes()}
+        assert 'admin' in codigos
+        assert 'artigo_excluir_definitivo' in codigos
