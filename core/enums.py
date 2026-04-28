@@ -65,6 +65,7 @@ class Permissao(Enum):
     # --- taxonomia de artigos ---
     ARTIGO_TIPO_GERENCIAR = "artigo_tipo_gerenciar"
     ARTIGO_AREA_GERENCIAR = "artigo_area_gerenciar"
+    ARTIGO_OCR_REPROCESSAR = "artigo_ocr_reprocessar"
 
 
 class OSStatus(Enum):

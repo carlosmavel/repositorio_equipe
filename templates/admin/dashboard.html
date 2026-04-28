@@ -61,6 +61,15 @@
                         <p class="mb-1"><strong>Total elegível:</strong> {{ ocr_total_eligible }}</p>
                         <p class="mb-1"><strong>Média de caracteres:</strong> {{ ocr_avg_char_count }}</p>
                         <p class="mb-0"><strong>Média de processamento (s):</strong> {{ ocr_avg_processing_seconds }}</p>
+                        {% if can_reprocess_ocr %}
+                        <hr>
+                        <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_errors') }}" class="mb-2">
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Reprocessar todos com erro</button>
+                        </form>
+                        <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_low_yield') }}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Reprocessar baixo aproveitamento</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>

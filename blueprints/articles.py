@@ -477,11 +477,18 @@ def artigo(artigo_id):
         return redirect(url_for('meus_artigos'))
 
     arquivos = json.loads(artigo.arquivos or '[]')
+    can_reprocess_ocr = bool(
+        user and (
+            user.has_permissao('admin')
+            or user.has_permissao(Permissao.ARTIGO_OCR_REPROCESSAR.value)
+        )
+    )
     return render_template(
         'artigos/artigo.html',
         artigo=artigo,
         arquivos=arquivos,
-        can_edit_article=user_can_edit_article(user, artigo)
+        can_edit_article=user_can_edit_article(user, artigo),
+        can_reprocess_ocr=can_reprocess_ocr,
     )
 
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')

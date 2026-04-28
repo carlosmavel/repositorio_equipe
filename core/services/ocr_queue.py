@@ -9,11 +9,11 @@ from flask import current_app
 
 try:
     from ..database import db
-    from ..models import Attachment
+    from ..models import Attachment, OCRReprocessAudit
     from ..utils import extract_text, log_article_event, log_article_exception
 except ImportError:  # pragma: no cover
     from core.database import db
-    from core.models import Attachment
+    from core.models import Attachment, OCRReprocessAudit
     from core.utils import extract_text, log_article_event, log_article_exception
 
 OCR_STATUS_PENDENTE = "pendente"
@@ -52,6 +52,32 @@ def enqueue_attachment_for_ocr(attachment: Attachment) -> None:
     attachment.ocr_char_count = None
     attachment.ocr_processing_time_seconds = None
     attachment.ocr_confidence_score = None
+
+
+def mark_attachment_for_reprocess(
+    attachment: Attachment,
+    *,
+    triggered_by_user_id: int,
+    trigger_scope: str,
+) -> None:
+    previous_status = attachment.ocr_status
+    attempts_before = int(attachment.ocr_attempts or 0)
+
+    enqueue_attachment_for_ocr(attachment)
+    attachment.ocr_attempts = attempts_before + 1
+    attachment.ocr_last_attempt_at = datetime.now(timezone.utc)
+
+    audit = OCRReprocessAudit(
+        attachment_id=attachment.id,
+        article_id=attachment.article_id,
+        triggered_by_user_id=triggered_by_user_id,
+        trigger_scope=trigger_scope,
+        previous_status=previous_status,
+        new_status=OCR_STATUS_PENDENTE,
+        attempts_before=attempts_before,
+        attempts_after=attachment.ocr_attempts,
+    )
+    db.session.add(audit)
 
 
 def _recover_stuck_processing(stuck_timeout_minutes: int) -> int:
