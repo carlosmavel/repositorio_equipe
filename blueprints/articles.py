@@ -1047,6 +1047,12 @@ def pesquisar():
 
     # Filtra conforme visibilidade
     user = User.query.filter_by(username=session['username']).first()
+    if user is None:
+        session.pop('username', None)
+        session.pop('user_id', None)
+        flash('Sua sessão expirou ou é inválida. Faça login novamente.', 'warning')
+        return redirect(url_for('login'))
+
     artigos = [a for a in artigos if user_can_view_article(user, a)]
 
     # formata datas para o fuso local
