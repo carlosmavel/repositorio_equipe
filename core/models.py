@@ -494,6 +494,24 @@ class OCRReprocessAudit(db.Model):
     def __repr__(self):
         return f"<OCRReprocessAudit attachment_id={self.attachment_id} scope={self.trigger_scope}>"
 
+
+class ArticleDeletionAudit(db.Model):
+    __tablename__ = 'article_deletion_audit'
+
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, nullable=False, index=True)
+    article_title = db.Column(db.String(200), nullable=False)
+    deleted_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True, server_default=func.now())
+    attachment_count = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    reason = db.Column(db.Text, nullable=False)
+    request_id = db.Column(db.String(255), nullable=True)
+
+    deleted_by = db.relationship('User')
+
+    def __repr__(self):
+        return f"<ArticleDeletionAudit article_id={self.article_id} deleted_by={self.deleted_by_user_id}>"
+
 class Notification(db.Model):
     __tablename__ = 'notification'
     id = db.Column(db.Integer, primary_key=True)

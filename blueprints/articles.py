@@ -8,9 +8,9 @@ except ImportError:
     from core.database import db
 
 try:
-    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema
+    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit
 except ImportError:
-    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema
+    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit
 
 try:
     from ..core.enums import ArticleStatus, ArticleVisibility, Permissao
@@ -525,6 +525,17 @@ def excluir_artigo_definitivo(artigo_id):
         return redirect(url_for('artigo', artigo_id=artigo_id))
 
     try:
+        db.session.add(
+            ArticleDeletionAudit(
+                article_id=artigo.id,
+                article_title=artigo.titulo,
+                deleted_by_user_id=user.id,
+                deleted_at=datetime.now(timezone.utc),
+                attachment_count=attachments_count,
+                reason=motivo,
+                request_id=getattr(g, "request_correlation_id", None),
+            )
+        )
         db.session.delete(artigo)
         db.session.commit()
         flash(f'Artigo excluído definitivamente com sucesso. {attachments_count} anexo(s) removido(s).', 'success')

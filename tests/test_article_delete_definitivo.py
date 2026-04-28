@@ -1,5 +1,5 @@
 from app import app, db
-from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment
+from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment, ArticleDeletionAudit
 from core.enums import ArticleStatus
 
 
@@ -89,10 +89,22 @@ def test_excluir_definitivo_sucesso(client):
         db.session.add(Attachment(article_id=aid, filename='a.pdf', mime_type='application/pdf', content=None))
         db.session.commit()
 
-    resp = client.post(f'/artigo/{aid}/excluir-definitivo', data={'motivo': 'duplicado', 'confirmacao': 'Titulo Sucesso'}, follow_redirects=True)
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        headers={'X-Request-ID': 'req-del-1'},
+        data={'motivo': 'duplicado', 'confirmacao': 'Titulo Sucesso'},
+        follow_redirects=True,
+    )
     assert resp.status_code == 200
     with app.app_context():
         assert Article.query.get(aid) is None
+        audit = ArticleDeletionAudit.query.filter_by(article_id=aid).first()
+        assert audit is not None
+        assert audit.article_title == 'Titulo Sucesso'
+        assert audit.attachment_count == 1
+        assert audit.reason == 'duplicado'
+        assert audit.request_id == 'req-del-1'
+        assert audit.deleted_at is not None
 
 
 def test_excluir_definitivo_erro_transacional(client, monkeypatch):
