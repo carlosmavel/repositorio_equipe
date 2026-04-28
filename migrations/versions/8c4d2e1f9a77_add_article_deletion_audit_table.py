@@ -1,7 +1,7 @@
 """add article deletion audit table
 
 Revision ID: 8c4d2e1f9a77
-Revises: c7a1d9e6b2f4
+Revises: 9f7a1b2c3d4e
 Create Date: 2026-04-28 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '8c4d2e1f9a77'
-down_revision = 'c7a1d9e6b2f4'
+down_revision = '9f7a1b2c3d4e'
 branch_labels = None
 depends_on = None
 
