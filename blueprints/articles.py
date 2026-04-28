@@ -491,6 +491,49 @@ def artigo(artigo_id):
         can_reprocess_ocr=can_reprocess_ocr,
     )
 
+
+@articles_bp.route('/artigo/<int:artigo_id>/excluir-definitivo', methods=['POST'])
+def excluir_artigo_definitivo(artigo_id):
+    if 'user_id' not in session or 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if not user or not (user.has_permissao('admin') or user.has_permissao('artigo_excluir_definitivo')):
+        flash('Permissão negada para exclusão definitiva de artigo.', 'danger')
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
+    motivo = (request.form.get('motivo') or '').strip()
+    confirmacao = (request.form.get('confirmacao') or '').strip()
+    if not motivo:
+        flash('Informe o motivo da exclusão definitiva.', 'warning')
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
+    artigo = Article.query.get_or_404(artigo_id)
+
+    confirmacoes_validas = {'CONFIRMAR', artigo.titulo}
+    if confirmacao not in confirmacoes_validas:
+        flash('Confirmação inválida. Digite CONFIRMAR ou exatamente o título do artigo.', 'warning')
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
+    attachments = artigo.attachments.all()
+    _revision_requests = artigo.revision_requests.all()
+    _comments = artigo.comments.all()
+    attachments_count = len(attachments)
+    has_critical_link = any((att.ocr_status or '').strip().lower() == 'processando' for att in attachments)
+    if has_critical_link:
+        flash('Exclusão bloqueada: o artigo possui anexo com processamento OCR em andamento.', 'danger')
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
+    try:
+        db.session.delete(artigo)
+        db.session.commit()
+        flash(f'Artigo excluído definitivamente com sucesso. {attachments_count} anexo(s) removido(s).', 'success')
+        return redirect(url_for('meus_artigos'))
+    except Exception:
+        db.session.rollback()
+        flash('Falha ao excluir definitivamente o artigo. A operação foi cancelada.', 'danger')
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
 @articles_bp.route("/artigo/<int:artigo_id>/editar", methods=["GET", "POST"], endpoint='editar_artigo')
 def editar_artigo(artigo_id):
     if "username" not in session:
