@@ -388,19 +388,24 @@
                         'artigo',
                         'editar_artigo'
                     ] %}
-                    {% set boletins_active = current_endpoint in ['boletins_listar', 'boletins_buscar', 'boletins_visualizar', 'boletins_novo', 'boletins_editar'] %}
-                    {% if current_user.is_authenticated and (current_user.has_permissao('boletim_visualizar') or current_user.has_permissao('boletim_buscar')) %}
+                    {% set boletins_active = current_endpoint in ['boletins_listar', 'boletins_novo', 'boletins_buscar', 'boletins_visualizar', 'boletins_editar'] %}
+                    {% if current_user.is_authenticated and (current_user.has_permissao('boletim_visualizar') or current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin')) %}
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if boletins_active else '' }}" href="{{ url_for('boletins_listar') }}">
-                            <i class="bi bi-journal-richtext me-2"></i> Boletins
+                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if boletins_active else '' }} {{ 'collapsed' if not boletins_active }}"
+                        data-bs-toggle="collapse" href="#collapseBoletins" role="button"
+                        aria-expanded="{{ 'true' if boletins_active else 'false' }}"
+                        aria-controls="collapseBoletins">
+                            <span><i class="bi bi-journal-richtext me-2"></i> Boletins</span>
+                            <i class="bi bi-chevron-down small"></i>
                         </a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.is_authenticated and (current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin')) %}
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' else '' }}" href="{{ url_for('boletins_buscar') }}">
-                            <i class="bi bi-search me-2"></i> Pesquisar boletins
-                        </a>
+                        <div class="collapse {{ 'show' if boletins_active }}" id="collapseBoletins">
+                            <ul class="nav flex-column ps-3">
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_novo' else '' }}" href="{{ url_for('boletins_novo') }}"><i class="bi bi-plus-square me-2"></i> Cadastro de Boletins</a></li>
+                                {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' else '' }}" href="{{ url_for('boletins_buscar') }}"><i class="bi bi-search me-2"></i> Pesquisar boletins</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     </li>
                     {% endif %}
 
