@@ -181,6 +181,7 @@ def buscar_boletins():
         boletins=pagination.items,
         termo=termo,
         can_manage=user.has_permissao('boletim_gerenciar'),
+        badge_for=_ocr_status_badge,
         pagination=pagination,
         per_page=per_page,
     )
