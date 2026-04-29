@@ -149,3 +149,22 @@ def test_sync_permission_catalog_contains_artigo_excluir_definitivo(app_ctx):
     perm = Funcao.query.filter_by(codigo="artigo_excluir_definitivo").one_or_none()
     assert perm is not None
     assert perm.managed_by_system is True
+
+
+def test_sync_permission_catalog_contains_boletim_permissions(app_ctx):
+    result = sync_permission_catalog(db.session)
+    db.session.commit()
+
+    assert result.created == len(CATALOG)
+
+    expected = {
+        "boletim_visualizar": "Boletim visualizar",
+        "boletim_buscar": "Boletim buscar",
+        "boletim_gerenciar": "Boletim gerenciar",
+    }
+
+    for codigo, nome in expected.items():
+        perm = Funcao.query.filter_by(codigo=codigo).one_or_none()
+        assert perm is not None
+        assert perm.nome == nome
+        assert perm.managed_by_system is True
