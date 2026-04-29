@@ -31,6 +31,18 @@ def _require_permission(permission_name: str, redirect_endpoint: str = 'pagina_i
     return user, None
 
 
+def _require_any_permission(permission_names: tuple[str, ...], redirect_endpoint: str = 'pagina_inicial'):
+    if 'user_id' not in session:
+        flash('Por favor, faça login.', 'warning')
+        return None, redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if not user or not any(user.has_permissao(p) for p in permission_names):
+        flash('Permissão negada.', 'danger')
+        return None, redirect(url_for(redirect_endpoint))
+    return user, None
+
+
 def _ocr_status_badge(status: str) -> str:
     map_css = {
         'concluido': 'success',
@@ -45,7 +57,7 @@ def _ocr_status_badge(status: str) -> str:
 
 @boletins_bp.route('/boletins', methods=['GET'], endpoint='boletins_listar')
 def listar_boletins():
-    user, denied = _require_permission('boletim_visualizar')
+    user, denied = _require_any_permission(('boletim_visualizar', 'boletim_buscar'))
     if denied:
         return denied
 
