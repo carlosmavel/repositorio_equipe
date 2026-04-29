@@ -72,6 +72,9 @@ def build_article_log_context(
     attempt: int | None = None,
     progress_id: str | None = None,
     correlation_id: str | None = None,
+    article_title: str | None = None,
+    attachment_count: int | None = None,
+    reason: str | None = None,
 ) -> dict[str, Any]:
     """Monta payload de contexto padronizado para logs de artigo/anexo/OCR."""
     return {
@@ -87,6 +90,9 @@ def build_article_log_context(
         "attempt": attempt,
         "progress_id": progress_id,
         "correlation_id": correlation_id,
+        "article_title": article_title,
+        "attachment_count": attachment_count,
+        "reason": reason,
     }
 
 
