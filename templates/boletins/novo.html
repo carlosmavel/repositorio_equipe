@@ -1,12 +1,60 @@
 {% extends 'base.html' %}
+
+{% block title %}{{ 'Editar Boletim' if modo_edicao else 'Novo Boletim' }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h1>{{ 'Editar boletim' if modo_edicao else 'Novo boletim' }}</h1>
-  <form method="post" enctype="multipart/form-data">
-    <div class="mb-3"><label>Título</label><input class="form-control" name="titulo" value="{{ boletim.titulo if boletim else '' }}" required></div>
-    <div class="mb-3"><label>Data</label><input type="date" class="form-control" name="data_boletim" value="{{ boletim.data_boletim.strftime('%Y-%m-%d') if boletim else '' }}" required></div>
-    {% if not modo_edicao %}<div class="mb-3"><label>PDF</label><input type="file" name="arquivo" accept="application/pdf" class="form-control" required></div>{% endif %}
-    <button class="btn btn-primary" type="submit">Salvar</button>
-  </form>
+<div class="container-fluid page-root">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="mb-4">{{ 'Editar Boletim' if modo_edicao else 'Criar Novo Boletim' }}</h3>
+          <form method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label for="titulo" class="form-label">Título</label>
+              <input
+                type="text"
+                class="form-control"
+                id="titulo"
+                name="titulo"
+                value="{{ boletim.titulo if boletim else '' }}"
+                required
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="data_boletim" class="form-label">Data</label>
+              <input
+                type="date"
+                class="form-control"
+                id="data_boletim"
+                name="data_boletim"
+                value="{{ boletim.data_boletim.strftime('%Y-%m-%d') if boletim else '' }}"
+                required
+              >
+            </div>
+
+            {% if not modo_edicao %}
+            <div class="mb-3">
+              <label for="arquivo" class="form-label">PDF</label>
+              <input
+                type="file"
+                class="form-control"
+                id="arquivo"
+                name="arquivo"
+                accept="application/pdf"
+                required
+              >
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end mt-4">
+              <button class="btn btn-primary" type="submit">{{ 'Salvar Alterações' if modo_edicao else 'Salvar Boletim' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
