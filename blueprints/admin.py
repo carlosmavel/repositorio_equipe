@@ -79,12 +79,14 @@ try:
     from ..core.services.ocr_queue import (
         OCR_STATUS_BAIXO_APROVEITAMENTO,
         OCR_STATUS_ERRO,
+        OCR_STATUS_PROCESSANDO,
         mark_attachment_for_reprocess,
     )
 except ImportError:  # pragma: no cover
     from core.services.ocr_queue import (
         OCR_STATUS_BAIXO_APROVEITAMENTO,
         OCR_STATUS_ERRO,
+        OCR_STATUS_PROCESSANDO,
         mark_attachment_for_reprocess,
     )
 
@@ -289,6 +291,10 @@ def admin_reprocess_ocr_attachment(attachment_id):
     attachment = _eligible_ocr_attachment_query().filter(Attachment.id == attachment_id).one_or_none()
     if not attachment:
         flash('Anexo não encontrado ou não elegível para OCR.', 'warning')
+        return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
+
+    if (attachment.ocr_status or '').strip().lower() == OCR_STATUS_PROCESSANDO:
+        flash('OCR deste anexo já está em processamento.', 'info')
         return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
 
     return _reprocess_attachments(
