@@ -239,18 +239,37 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   // --- FIM DA NOVA FUNÇÃO GLOBAL ---
 
-  // Torna linhas de tabela com a classe .clickable-row navegáveis
-  document.querySelectorAll('.clickable-row').forEach((row) => {
-    row.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'A' && !e.target.closest('a') &&
-          e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
-        const href = row.dataset.href;
-        if (href) {
-          window.location.href = href;
+  // Torna linhas/cards clicáveis navegáveis via data-href
+  function bindClickableElements(selector) {
+    document.querySelectorAll(selector).forEach((element) => {
+      element.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a') &&
+            e.target.tagName !== 'BUTTON' && !e.target.closest('button') &&
+            e.target.tagName !== 'INPUT' && !e.target.closest('input') &&
+            e.target.tagName !== 'SELECT' && !e.target.closest('select') &&
+            e.target.tagName !== 'TEXTAREA' && !e.target.closest('textarea') &&
+            e.target.tagName !== 'LABEL' && !e.target.closest('label')) {
+          const href = element.dataset.href;
+          if (href) {
+            window.location.href = href;
+          }
         }
-      }
+      });
+
+      element.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const href = element.dataset.href;
+          if (href) {
+            window.location.href = href;
+          }
+        }
+      });
     });
-  });
+  }
+
+  bindClickableElements('.clickable-row');
+  bindClickableElements('.clickable-card');
 
   document.querySelectorAll('.copy-link-icon').forEach((icon) => {
     icon.addEventListener('click', (e) => {
