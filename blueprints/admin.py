@@ -79,12 +79,14 @@ try:
     from ..core.services.ocr_queue import (
         OCR_STATUS_BAIXO_APROVEITAMENTO,
         OCR_STATUS_ERRO,
+        OCR_STATUS_PROCESSANDO,
         mark_attachment_for_reprocess,
     )
 except ImportError:  # pragma: no cover
     from core.services.ocr_queue import (
         OCR_STATUS_BAIXO_APROVEITAMENTO,
         OCR_STATUS_ERRO,
+        OCR_STATUS_PROCESSANDO,
         mark_attachment_for_reprocess,
     )
 
