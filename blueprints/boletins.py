@@ -66,6 +66,7 @@ def listar_boletins():
         'boletins/listagem.html',
         boletins=boletins,
         can_manage=user.has_permissao('boletim_gerenciar'),
+        can_search=user.has_permissao('boletim_buscar'),
         badge_for=_ocr_status_badge,
     )
 
