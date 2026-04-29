@@ -114,9 +114,9 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.services.permission_sync import sync_permission_catalog_with_lock
 try:
-    from .core.services.ocr_queue import process_pending_ocr_attachments
+    from .core.services.ocr_queue import process_pending_ocr_items
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from core.services.ocr_queue import process_pending_ocr_attachments
+    from core.services.ocr_queue import process_pending_ocr_items
 
 from mimetypes import guess_type # Se for usar, descomente
 from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
@@ -315,16 +315,19 @@ def process_ocr_pendente_command(
     stuck_timeout_minutes: int,
     low_yield_threshold: int,
 ) -> None:
-    """Processa OCR dos anexos pendentes fora da request web."""
-    result = process_pending_ocr_attachments(
+    """Processa OCR pendente em lote (anexos e boletins) fora da request web."""
+    results = process_pending_ocr_items(
         batch_size=batch_size,
         stuck_timeout_minutes=stuck_timeout_minutes,
         low_yield_threshold=low_yield_threshold,
     )
+    attachment_result = results["attachments"]
+    boletim_result = results["boletins"]
+
     click.echo(
         "✅ OCR pendente processado. "
-        f"recover={result.recovered_stuck} processed={result.processed} "
-        f"concluido={result.concluded} baixo_aproveitamento={result.low_yield} erro={result.failed}"
+        f"attachments(recover={attachment_result.recovered_stuck}, processed={attachment_result.processed}, concluido={attachment_result.concluded}, baixo_aproveitamento={attachment_result.low_yield}, erro={attachment_result.failed}) "
+        f"boletins(recover={boletim_result.recovered_stuck}, processed={boletim_result.processed}, concluido={boletim_result.concluded}, baixo_aproveitamento={boletim_result.low_yield}, erro={boletim_result.failed})"
     )
 
 
