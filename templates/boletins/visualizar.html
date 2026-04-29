@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h1>{{ boletim.titulo }}</h1>
+  <p><strong>Data:</strong> {{ boletim.data_boletim.strftime('%d/%m/%Y') }}</p>
+  <p><strong>Status OCR:</strong> {{ boletim.ocr_status }}</p>
+  <p><a class="btn btn-outline-secondary" href="{{ url_for('uploaded_file', filename=boletim.arquivo) }}" target="_blank">Abrir PDF</a></p>
+  {% if can_manage %}
+  <a class="btn btn-primary" href="{{ url_for('boletins_editar', id=boletim.id) }}">Editar</a>
+  <form method="post" class="d-inline" action="{{ url_for('boletins_reprocessar_ocr', id=boletim.id) }}"><button class="btn btn-warning">Reprocessar OCR</button></form>
+  <form method="post" class="d-inline" action="{{ url_for('boletins_excluir', id=boletim.id) }}" onsubmit="return confirm('Excluir boletim?');"><button class="btn btn-danger">Excluir</button></form>
+  {% endif %}
+</div>
+{% endblock %}
