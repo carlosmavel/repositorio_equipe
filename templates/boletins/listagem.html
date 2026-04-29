@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Boletins{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Boletins</h1>
+    {% if can_manage %}<a class="btn btn-primary" href="{{ url_for('boletins_novo') }}">Novo boletim</a>{% endif %}
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>ID</th><th>Título</th><th>Data</th><th>Status OCR</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for b in boletins %}
+      <tr>
+        <td>{{ b.id }}</td><td>{{ b.titulo }}</td><td>{{ b.data_boletim.strftime('%d/%m/%Y') }}</td>
+        <td><span class="badge bg-{{ badge_for(b.ocr_status) }}">{{ b.ocr_status }}</span></td>
+        <td>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('boletins_visualizar', id=b.id) }}">Abrir</a>
+          {% if can_manage %}
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('boletins_editar', id=b.id) }}">Editar</a>
+          <form class="d-inline" method="post" action="{{ url_for('boletins_reprocessar_ocr', id=b.id) }}"><button class="btn btn-sm btn-outline-warning">Reprocessar OCR</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

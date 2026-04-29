@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h1>{{ 'Editar boletim' if modo_edicao else 'Novo boletim' }}</h1>
+  <form method="post" enctype="multipart/form-data">
+    <div class="mb-3"><label>Título</label><input class="form-control" name="titulo" value="{{ boletim.titulo if boletim else '' }}" required></div>
+    <div class="mb-3"><label>Data</label><input type="date" class="form-control" name="data_boletim" value="{{ boletim.data_boletim.strftime('%Y-%m-%d') if boletim else '' }}" required></div>
+    {% if not modo_edicao %}<div class="mb-3"><label>PDF</label><input type="file" name="arquivo" accept="application/pdf" class="form-control" required></div>{% endif %}
+    <button class="btn btn-primary" type="submit">Salvar</button>
+  </form>
+</div>
+{% endblock %}

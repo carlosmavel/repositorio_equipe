@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h1>Buscar boletins</h1>
+  <form method="get" class="mb-3">
+    <input class="form-control" type="text" name="q" placeholder="Título ou texto OCR" value="{{ termo or '' }}">
+  </form>
+  <ul class="list-group">
+    {% for b in boletins %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('boletins_visualizar', id=b.id) }}">{{ b.titulo }}</a>
+        <span class="text-muted">{{ b.data_boletim.strftime('%d/%m/%Y') }}</span>
+      </li>
+    {% else %}
+      <li class="list-group-item">Nenhum resultado.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
