@@ -526,17 +526,21 @@ def excluir_artigo_definitivo(artigo_id):
     _revision_requests = artigo.revision_requests.all()
     _comments = artigo.comments.all()
     attachments_count = len(attachments)
+    correlation_id = getattr(g, "request_correlation_id", None)
+    route = request.path
     has_critical_link = any((att.ocr_status or '').strip().lower() == 'processando' for att in attachments)
     if has_critical_link:
         log_article_event(
             app.logger,
-            "article_delete_blocked_critical_consistency",
+            "article_hard_delete_blocked",
             level=30,
             article_id=artigo.id,
+            article_title=artigo.titulo,
             user_id=user.id,
             reason='ocr_processing_in_progress',
+            route=route,
             attachment_count=attachments_count,
-            correlation_id=getattr(g, "request_correlation_id", None),
+            correlation_id=correlation_id,
         )
         flash('Exclusão bloqueada: o artigo possui anexo com processamento OCR em andamento.', 'danger')
         return redirect(url_for('artigo', artigo_id=artigo_id))
@@ -558,11 +562,15 @@ def excluir_artigo_definitivo(artigo_id):
     if etapa_critica:
         log_article_event(
             app.logger,
-            "article_delete_blocked_critical_process_link",
+            "article_hard_delete_blocked",
             level=30,
             article_id=artigo.id,
+            article_title=artigo.titulo,
             user_id=user.id,
-            correlation_id=getattr(g, "request_correlation_id", None),
+            reason='critical_process_link',
+            route=route,
+            attachment_count=attachments_count,
+            correlation_id=correlation_id,
         )
         processo_nome = etapa_critica.processo.nome if etapa_critica.processo else etapa_critica.processo_id
         flash(
@@ -584,7 +592,7 @@ def excluir_artigo_definitivo(artigo_id):
                     article_id=artigo.id,
                     user_id=user.id,
                     attachment_id=attachment.id,
-                    correlation_id=getattr(g, "request_correlation_id", None),
+                    correlation_id=correlation_id,
                 )
                 continue
 
@@ -598,7 +606,7 @@ def excluir_artigo_definitivo(artigo_id):
                     user_id=user.id,
                     attachment_id=attachment.id,
                     filename=filename,
-                    correlation_id=getattr(g, "request_correlation_id", None),
+                    correlation_id=correlation_id,
                 )
             except FileNotFoundError:
                 log_article_event(
@@ -609,7 +617,7 @@ def excluir_artigo_definitivo(artigo_id):
                     user_id=user.id,
                     attachment_id=attachment.id,
                     filename=filename,
-                    correlation_id=getattr(g, "request_correlation_id", None),
+                    correlation_id=correlation_id,
                 )
             except OSError:
                 log_article_exception(
@@ -619,7 +627,7 @@ def excluir_artigo_definitivo(artigo_id):
                     user_id=user.id,
                     attachment_id=attachment.id,
                     filename=filename,
-                    correlation_id=getattr(g, "request_correlation_id", None),
+                    correlation_id=correlation_id,
                 )
 
         db.session.add(
@@ -635,6 +643,17 @@ def excluir_artigo_definitivo(artigo_id):
         )
         db.session.delete(artigo)
         db.session.commit()
+        log_article_event(
+            app.logger,
+            "article_hard_delete",
+            user_id=user.id,
+            article_id=artigo.id,
+            article_title=artigo.titulo,
+            attachment_count=attachments_count,
+            reason=motivo,
+            route=route,
+            correlation_id=correlation_id,
+        )
         flash(f'Artigo excluído definitivamente com sucesso. {attachments_count} anexo(s) removido(s).', 'success')
         return redirect(url_for('meus_artigos'))
     except Exception:
