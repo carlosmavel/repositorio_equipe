@@ -82,7 +82,7 @@
                 {% if can_reprocess_ocr and ext == 'pdf' %}
                 <div class="px-2 pb-2">
                   <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
-                    <button type="submit" class="btn btn-sm btn-outline-warning w-100">Reprocessar OCR</button>
+                    <button type="submit" class="btn btn-sm btn-app-secondary w-100">Reprocessar OCR</button>
                   </form>
                 </div>
                 {% endif %}
@@ -146,19 +146,19 @@
         <div class="mt-4">
           {% if can_reprocess_ocr and artigo.attachments and artigo.attachments.count() > 0 %}
           <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_article', article_id=artigo.id) }}" class="d-inline">
-            <button type="submit" class="btn btn-outline-warning">
+            <button type="submit" class="btn btn-app-secondary">
               Reprocessar OCR deste artigo
             </button>
           </form>
           {% endif %}
           {% if can_edit_article %}
-          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-primary">
+          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-app-primary">
             Editar
           </a>
           {% endif %}
 
         {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
-        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-warning text-dark">
+        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-app-secondary">
           Solicitar Revisão
         </a>
         {% endif %}
@@ -169,11 +169,11 @@
           style="position:absolute; bottom:10px; right:10px; cursor:pointer; font-size:1.3rem;"
         ></i>
         {% endif %}
-        <a href="{{ url_for('meus_artigos') }}" class="btn btn-outline-secondary ms-1">
+        <a href="{{ url_for('meus_artigos') }}" class="btn btn-app-secondary ms-1">
           Voltar para Meus Artigos
         </a>
         {% if can_delete_definitive %}
-        <button type="button" class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
+        <button type="button" class="btn btn-app-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
           Excluir definitivamente
         </button>
         {% endif %}
@@ -219,8 +219,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-danger">Confirmar exclusão definitiva</button>
+          <button type="button" class="btn btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-app-danger">Confirmar exclusão definitiva</button>
         </div>
       </form>
     </div>
