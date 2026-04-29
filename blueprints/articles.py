@@ -483,12 +483,19 @@ def artigo(artigo_id):
             or user.has_permissao(Permissao.ARTIGO_OCR_REPROCESSAR.value)
         )
     )
+    can_delete_definitive = bool(
+        user and (
+            user.has_permissao('admin')
+            or user.has_permissao(Permissao.ARTIGO_EXCLUIR_DEFINITIVO.value)
+        )
+    )
     return render_template(
         'artigos/artigo.html',
         artigo=artigo,
         arquivos=arquivos,
         can_edit_article=user_can_edit_article(user, artigo),
         can_reprocess_ocr=can_reprocess_ocr,
+        can_delete_definitive=can_delete_definitive,
     )
 
 

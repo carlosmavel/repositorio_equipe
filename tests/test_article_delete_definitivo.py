@@ -64,6 +64,27 @@ def test_excluir_definitivo_sem_permissao(client):
     assert b'Permiss' in resp.data
 
 
+def test_botao_excluir_definitivo_visibilidade_condicional(client):
+    _login(client, username='u_del', perms=[])
+    with app.app_context():
+        aid = _create_article('Sem Permissao')
+    sem_permissao = client.get(f'/artigo/{aid}')
+    assert b'Excluir definitivamente' not in sem_permissao.data
+
+    with app.app_context():
+        user = User.query.filter_by(username='u_del').first()
+        permissao = Funcao.query.filter_by(codigo='artigo_excluir_definitivo').first()
+        if not permissao:
+            permissao = Funcao(codigo='artigo_excluir_definitivo', nome='artigo_excluir_definitivo')
+            db.session.add(permissao)
+            db.session.flush()
+        user.permissoes_personalizadas.append(permissao)
+        db.session.commit()
+
+    com_permissao = client.get(f'/artigo/{aid}')
+    assert b'Excluir definitivamente' in com_permissao.data
+
+
 def test_excluir_definitivo_confirmacao_invalida(client):
     _login(client, perms=['artigo_excluir_definitivo'])
     with app.app_context():
