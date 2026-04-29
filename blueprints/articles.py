@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app, g
-from sqlalchemy import or_, func, text
+from sqlalchemy import or_, func, text, and_
 import re
 
 try:
@@ -8,9 +8,9 @@ except ImportError:
     from core.database import db
 
 try:
-    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit
+    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article
 except ImportError:
-    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit
+    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article
 
 try:
     from ..core.enums import ArticleStatus, ArticleVisibility, Permissao
@@ -533,6 +533,37 @@ def excluir_artigo_definitivo(artigo_id):
         )
         flash('Exclusão bloqueada: o artigo possui anexo com processamento OCR em andamento.', 'danger')
         return redirect(url_for('artigo', artigo_id=artigo_id))
+
+    etapa_critica = (
+        db.session.query(ProcessoEtapa)
+        .join(processo_etapa_article, processo_etapa_article.c.etapa_id == ProcessoEtapa.id)
+        .join(Processo, Processo.id == ProcessoEtapa.processo_id)
+        .filter(
+            and_(
+                processo_etapa_article.c.article_id == artigo.id,
+                Processo.ativo.is_(True),
+                ProcessoEtapa.tipos_os.any(obrigatorio_preenchimento=True),
+            )
+        )
+        .order_by(Processo.nome.asc(), ProcessoEtapa.ordem.asc(), ProcessoEtapa.nome.asc())
+        .first()
+    )
+    if etapa_critica:
+        log_article_event(
+            app.logger,
+            "article_delete_blocked_critical_process_link",
+            level=30,
+            article_id=artigo.id,
+            user_id=user.id,
+            correlation_id=getattr(g, "request_correlation_id", None),
+        )
+        processo_nome = etapa_critica.processo.nome if etapa_critica.processo else etapa_critica.processo_id
+        flash(
+            f"Exclusão bloqueada: artigo vinculado à etapa crítica '{etapa_critica.nome}' do processo '{processo_nome}'.",
+            'danger',
+        )
+        return redirect(url_for('artigo', artigo_id=artigo_id))
+
 
     try:
         upload_folder = app.config.get('UPLOAD_FOLDER')

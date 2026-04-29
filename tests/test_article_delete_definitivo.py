@@ -1,7 +1,7 @@
 import os
 
 from app import app, db
-from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment, ArticleDeletionAudit, Comment, RevisionRequest, OCRReprocessAudit
+from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment, ArticleDeletionAudit, Comment, RevisionRequest, OCRReprocessAudit, Processo, ProcessoEtapa, TipoOS
 from core.enums import ArticleStatus
 
 
@@ -187,3 +187,72 @@ def test_excluir_definitivo_arquivo_faltando_logado_sem_quebrar_consistencia(cli
         assert Article.query.get(aid) is None
         assert Attachment.query.filter_by(article_id=aid).count() == 0
     assert any('article_attachment_file_not_found_during_delete' in message for message in caplog.messages)
+
+
+def _vincular_artigo_a_etapa(article_id, *, processo_ativo=True, tipo_os_obrigatorio=True):
+    processo = Processo(nome='Proc Critico' if processo_ativo else 'Proc Inativo', ativo=processo_ativo)
+    db.session.add(processo)
+    db.session.flush()
+
+    etapa = ProcessoEtapa(processo_id=processo.id, nome='Etapa X', ordem=1)
+    db.session.add(etapa)
+    db.session.flush()
+
+    tipo_os = TipoOS(nome='Tipo OS X', obrigatorio_preenchimento=tipo_os_obrigatorio)
+    db.session.add(tipo_os)
+    db.session.flush()
+
+    etapa.tipos_os.append(tipo_os)
+    artigo = Article.query.get(article_id)
+    etapa.artigos.append(artigo)
+    db.session.commit()
+
+
+def test_excluir_definitivo_com_vinculo_processo_nao_critico_permite(client):
+    _login(client, perms=['artigo_excluir_definitivo'])
+    with app.app_context():
+        aid = _create_article('Titulo Nao Critico')
+        _vincular_artigo_a_etapa(aid, processo_ativo=False, tipo_os_obrigatorio=True)
+
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        data={'motivo': 'cleanup', 'confirmacao': 'Titulo Nao Critico'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert Article.query.get(aid) is None
+
+
+def test_excluir_definitivo_com_vinculo_processo_ativo_sem_tipo_obrigatorio_permite(client):
+    _login(client, perms=['artigo_excluir_definitivo'])
+    with app.app_context():
+        aid = _create_article('Titulo Sem Obrigatorio')
+        _vincular_artigo_a_etapa(aid, processo_ativo=True, tipo_os_obrigatorio=False)
+
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        data={'motivo': 'cleanup', 'confirmacao': 'Titulo Sem Obrigatorio'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert Article.query.get(aid) is None
+
+
+def test_excluir_definitivo_com_vinculo_critico_bloqueia(client):
+    _login(client, perms=['artigo_excluir_definitivo'])
+    with app.app_context():
+        aid = _create_article('Titulo Critico')
+        _vincular_artigo_a_etapa(aid, processo_ativo=True, tipo_os_obrigatorio=True)
+
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        data={'motivo': 'cleanup', 'confirmacao': 'Titulo Critico'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert b'Etapa X' in resp.data
+    assert b'Proc Critico' in resp.data
+    with app.app_context():
+        assert Article.query.get(aid) is not None
