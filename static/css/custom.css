@@ -260,6 +260,46 @@
   background-color: var(--bg-hover-subtle);
 }
 
+/* Padronização visual de botões (UX) */
+.btn-app-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+.btn-app-primary:hover,
+.btn-app-primary:focus {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+  color: #fff;
+}
+
+.btn-app-secondary {
+  background-color: transparent;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+}
+
+.btn-app-secondary:hover,
+.btn-app-secondary:focus {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+}
+
+.btn-app-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: #fff;
+}
+
+.btn-app-danger:hover,
+.btn-app-danger:focus {
+  background-color: #bb2d3b;
+  border-color: #b02a37;
+  color: #fff;
+}
+
 /* Espaçamento opt-in para cards específicos */
 .card-screen-spacing {
   margin-bottom: 2rem;
