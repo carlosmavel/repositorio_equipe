@@ -591,6 +591,13 @@ class ProcessoEtapa(db.Model):
     artigos = db.relationship(
         'Article', secondary='processo_etapa_article', lazy='dynamic')
 
+
+
+    def is_critical_for_article_deletion(self):
+        processo_ativo = bool(self.processo and self.processo.ativo)
+        possui_tipo_os_obrigatorio = self.tipos_os.filter_by(obrigatorio_preenchimento=True).count() > 0
+        return processo_ativo and possui_tipo_os_obrigatorio
+
     def __repr__(self):
         return f"<ProcessoEtapa {self.nome} ({self.ordem})>"
 
