@@ -1,7 +1,7 @@
 """add boletim fts index
 
 Revision ID: aa91c3d7e5f1
-Revises: c7a1d9e6b2f4
+Revises: 5d2a9c7e1f44
 Create Date: 2026-04-29 00:00:00.000000
 """
 
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'aa91c3d7e5f1'
-down_revision = 'c7a1d9e6b2f4'
+down_revision = '5d2a9c7e1f44'
 branch_labels = None
 depends_on = None
 
