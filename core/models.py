@@ -291,6 +291,7 @@ class User(db.Model):
     
     # Relacionamentos existentes (verifique se os back_populates/backrefs estão corretos com seus outros modelos)
     articles = db.relationship('Article', back_populates='author', lazy='dynamic', cascade='all, delete-orphan')
+    boletins = db.relationship('Boletim', back_populates='autor', lazy='dynamic', cascade='all, delete-orphan')
     revision_requests = db.relationship('RevisionRequest', foreign_keys='RevisionRequest.user_id', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', foreign_keys='Comment.user_id', back_populates='autor', lazy='dynamic', cascade='all, delete-orphan')
@@ -471,6 +472,40 @@ class Attachment(db.Model):
 
     def __repr__(self):
         return f"<Attachment {self.filename} for article_id={self.article_id}>"
+
+
+class Boletim(db.Model):
+    __tablename__ = 'boletim'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titulo = db.Column(db.String(255), nullable=False, index=True)
+    data_boletim = db.Column(db.Date, nullable=False, index=True)
+    arquivo = db.Column(db.String(512), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    ocr_status = db.Column(db.String(32), nullable=False, default='nao_aplicavel', server_default='nao_aplicavel')
+    ocr_text = db.Column(db.Text, nullable=True)
+    ocr_processed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_error_message = db.Column(db.Text, nullable=True)
+    ocr_page_count = db.Column(db.Integer, nullable=True)
+    ocr_pages_success = db.Column(db.Integer, nullable=True)
+    ocr_pages_failed = db.Column(db.Integer, nullable=True)
+    ocr_char_count = db.Column(db.Integer, nullable=True)
+    ocr_attempts = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    ocr_last_attempt_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_confidence_score = db.Column(db.Float, nullable=True)
+    ocr_engine = db.Column(db.String(64), nullable=True)
+    ocr_processing_time_seconds = db.Column(db.Float, nullable=True)
+    ocr_requested_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_finished_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ocr_last_error = db.Column(db.Text, nullable=True)
+
+    autor = db.relationship('User', foreign_keys=[created_by], back_populates='boletins')
+
+    def __repr__(self):
+        return f"<Boletim {self.titulo}>"
 
 
 class OCRReprocessAudit(db.Model):
