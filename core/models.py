@@ -409,7 +409,7 @@ class Article(db.Model):
 class RevisionRequest(db.Model):
     __tablename__ = 'revision_request'
     id = db.Column(db.Integer, primary_key=True)
-    artigo_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    artigo_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Usuário que solicitou a revisão
     comentario = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration
@@ -423,7 +423,7 @@ class RevisionRequest(db.Model):
 class Comment(db.Model):
     __tablename__ = "comment" # Comentários feitos durante o fluxo de aprovação
     id = db.Column(db.Integer, primary_key=True)
-    artigo_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=False)
+    artigo_id = db.Column(db.Integer, db.ForeignKey("article.id", ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False) # Usuário responsável pelo comentário
     texto = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=True) # Conforme migration

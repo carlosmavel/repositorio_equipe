@@ -521,10 +521,69 @@ def excluir_artigo_definitivo(artigo_id):
     attachments_count = len(attachments)
     has_critical_link = any((att.ocr_status or '').strip().lower() == 'processando' for att in attachments)
     if has_critical_link:
+        log_article_event(
+            app.logger,
+            "article_delete_blocked_critical_consistency",
+            level=30,
+            article_id=artigo.id,
+            user_id=user.id,
+            reason='ocr_processing_in_progress',
+            attachment_count=attachments_count,
+            correlation_id=getattr(g, "request_correlation_id", None),
+        )
         flash('Exclusão bloqueada: o artigo possui anexo com processamento OCR em andamento.', 'danger')
         return redirect(url_for('artigo', artigo_id=artigo_id))
 
     try:
+        upload_folder = app.config.get('UPLOAD_FOLDER')
+        for attachment in attachments:
+            filename = (attachment.filename or '').strip()
+            if not filename:
+                log_article_event(
+                    app.logger,
+                    "article_attachment_missing_filename",
+                    level=30,
+                    article_id=artigo.id,
+                    user_id=user.id,
+                    attachment_id=attachment.id,
+                    correlation_id=getattr(g, "request_correlation_id", None),
+                )
+                continue
+
+            file_path = os.path.join(upload_folder, filename) if upload_folder else filename
+            try:
+                os.remove(file_path)
+                log_article_event(
+                    app.logger,
+                    "article_attachment_file_deleted",
+                    article_id=artigo.id,
+                    user_id=user.id,
+                    attachment_id=attachment.id,
+                    filename=filename,
+                    correlation_id=getattr(g, "request_correlation_id", None),
+                )
+            except FileNotFoundError:
+                log_article_event(
+                    app.logger,
+                    "article_attachment_file_not_found_during_delete",
+                    level=30,
+                    article_id=artigo.id,
+                    user_id=user.id,
+                    attachment_id=attachment.id,
+                    filename=filename,
+                    correlation_id=getattr(g, "request_correlation_id", None),
+                )
+            except OSError:
+                log_article_exception(
+                    app.logger,
+                    "article_attachment_file_delete_error",
+                    article_id=artigo.id,
+                    user_id=user.id,
+                    attachment_id=attachment.id,
+                    filename=filename,
+                    correlation_id=getattr(g, "request_correlation_id", None),
+                )
+
         db.session.add(
             ArticleDeletionAudit(
                 article_id=artigo.id,

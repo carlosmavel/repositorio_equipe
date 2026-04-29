@@ -1,5 +1,7 @@
+import os
+
 from app import app, db
-from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment, ArticleDeletionAudit
+from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment, ArticleDeletionAudit, Comment, RevisionRequest, OCRReprocessAudit
 from core.enums import ArticleStatus
 
 
@@ -125,3 +127,63 @@ def test_excluir_definitivo_erro_transacional(client, monkeypatch):
     monkeypatch.setattr(db.session, 'commit', original_commit)
     with app.app_context():
         assert Article.query.get(aid) is not None
+
+
+def test_excluir_definitivo_remove_historicos_e_arquivo_fisico(client, tmp_path):
+    _login(client, perms=['artigo_excluir_definitivo'])
+    app.config['UPLOAD_FOLDER'] = str(tmp_path)
+    with app.app_context():
+        aid = _create_article('Titulo Completo')
+        attachment = Attachment(article_id=aid, filename='hist.pdf', mime_type='application/pdf', content=None)
+        db.session.add(attachment)
+        db.session.flush()
+        db.session.add(Comment(artigo_id=aid, user_id=1, texto='coment'))
+        db.session.add(RevisionRequest(artigo_id=aid, user_id=1, comentario='rev'))
+        db.session.add(
+            OCRReprocessAudit(
+                attachment_id=attachment.id,
+                article_id=aid,
+                triggered_by_user_id=1,
+                trigger_scope='single',
+                new_status='pendente',
+            )
+        )
+        db.session.commit()
+
+    filepath = tmp_path / 'hist.pdf'
+    filepath.write_bytes(b'pdf')
+    assert filepath.exists()
+
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        data={'motivo': 'cleanup', 'confirmacao': 'Titulo Completo'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert not filepath.exists()
+    with app.app_context():
+        assert Article.query.get(aid) is None
+        assert Attachment.query.filter_by(article_id=aid).count() == 0
+        assert Comment.query.filter_by(artigo_id=aid).count() == 0
+        assert RevisionRequest.query.filter_by(artigo_id=aid).count() == 0
+        assert OCRReprocessAudit.query.filter_by(article_id=aid).count() == 0
+
+
+def test_excluir_definitivo_arquivo_faltando_logado_sem_quebrar_consistencia(client, tmp_path, caplog):
+    _login(client, perms=['artigo_excluir_definitivo'])
+    app.config['UPLOAD_FOLDER'] = str(tmp_path)
+    with app.app_context():
+        aid = _create_article('Titulo Missing File')
+        db.session.add(Attachment(article_id=aid, filename='nao-existe.pdf', mime_type='application/pdf', content=None))
+        db.session.commit()
+
+    resp = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        data={'motivo': 'cleanup', 'confirmacao': 'Titulo Missing File'},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        assert Article.query.get(aid) is None
+        assert Attachment.query.filter_by(article_id=aid).count() == 0
+    assert any('article_attachment_file_not_found_during_delete' in message for message in caplog.messages)
