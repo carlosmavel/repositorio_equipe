@@ -74,3 +74,25 @@ def test_busca_boletim_sem_permissao(client):
 
     assert resp.status_code == 200
     assert b'Permiss' in resp.data
+
+
+def test_listagem_exibe_atalho_buscar_com_permissao(client):
+    with app.app_context():
+        _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+
+    resp = client.get('/boletins')
+
+    assert resp.status_code == 200
+    assert b'Pesquisar boletins' in resp.data
+    assert b'>Buscar<' in resp.data
+
+
+def test_listagem_oculta_atalho_buscar_sem_permissao(client):
+    with app.app_context():
+        _setup_user(client, ['boletim_visualizar'])
+
+    resp = client.get('/boletins')
+
+    assert resp.status_code == 200
+    assert b'Pesquisar boletins' not in resp.data
+    assert b'>Buscar<' not in resp.data
