@@ -55,6 +55,7 @@
             {% set att_ocr_status = (att.ocr_status or '')|lower %}
             {% set ocr_status_data = ocr_status_map.get(att_ocr_status) %}
             {% set ocr_panel_id = 'ocr-info-' ~ att.id %}
+            {% set is_processing = (att.ocr_status or '').lower() == 'processando' %}
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card">
               <div class="card h-100 shadow-sm position-relative">
                 <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
@@ -95,9 +96,20 @@
                 </a>
                 {% if can_reprocess_ocr and ext == 'pdf' %}
                 <div class="px-2 pb-2">
+                  {% if is_processing %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-app btn-app-secondary w-100 opacity-50"
+                    disabled
+                    title="OCR em processamento"
+                    aria-disabled="true">
+                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR
+                  </button>
+                  {% else %}
                   <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
                     <button type="submit" class="btn btn-sm btn-app btn-app-secondary w-100"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button>
                   </form>
+                  {% endif %}
                 </div>
                 {% endif %}
                 {% if ext == 'pdf' %}

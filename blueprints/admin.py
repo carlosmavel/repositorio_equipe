@@ -291,6 +291,10 @@ def admin_reprocess_ocr_attachment(attachment_id):
         flash('Anexo não encontrado ou não elegível para OCR.', 'warning')
         return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
 
+    if (attachment.ocr_status or '').strip().lower() == OCR_STATUS_PROCESSANDO:
+        flash('OCR deste anexo já está em processamento.', 'info')
+        return redirect(request.referrer or url_for('admin_bp.admin_dashboard'))
+
     return _reprocess_attachments(
         [attachment],
         actor=user,
