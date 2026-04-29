@@ -39,12 +39,7 @@
 
           {# Anexos com aviso para PDFs não pesquisáveis #}
           {% if artigo.attachments %}
-          <h5 class="d-flex align-items-center">
-            Anexos
-            <i class="bi bi-info-circle ms-1 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="PDFs escaneados ou PDFs de imagem podem não ter o texto totalmente extraído, apenas algumas palavras-chave">
-            </i>
-          </h5>
+          <h5 class="d-flex align-items-center">Anexos</h5>
           <div class="row g-3">
             {% for att in artigo.attachments %}
             {% set fname = att.filename %}
@@ -59,6 +54,7 @@
             } %}
             {% set att_ocr_status = (att.ocr_status or '')|lower %}
             {% set ocr_status_data = ocr_status_map.get(att_ocr_status) %}
+            {% set ocr_panel_id = 'ocr-info-' ~ att.id %}
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card">
               <div class="card h-100 shadow-sm position-relative">
                 <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
@@ -102,6 +98,30 @@
                   <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
                     <button type="submit" class="btn btn-sm btn-app btn-app-secondary w-100"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button>
                   </form>
+                </div>
+                {% endif %}
+                {% if ext == 'pdf' %}
+                <div class="px-2 pb-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-1"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#{{ ocr_panel_id }}"
+                    aria-expanded="false"
+                    aria-controls="{{ ocr_panel_id }}"
+                    aria-label="Exibir informações de OCR do anexo {{ original_name }}">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Detalhes do OCR
+                  </button>
+                  <div class="collapse mt-2" id="{{ ocr_panel_id }}">
+                    <div class="border rounded p-2 small bg-light">
+                      <div><strong>Caracteres OCR:</strong> {{ att.ocr_char_count if att.ocr_char_count is not none else '—' }}</div>
+                      <div><strong>Páginas OCR:</strong> {{ att.ocr_page_count if att.ocr_page_count is not none else '—' }}</div>
+                      <div><strong>Páginas com sucesso:</strong> {{ att.ocr_pages_success if att.ocr_pages_success is not none else '—' }}</div>
+                      <div><strong>Páginas com falha:</strong> {{ att.ocr_pages_failed if att.ocr_pages_failed is not none else '—' }}</div>
+                      <div><strong>Tentativas OCR:</strong> {{ att.ocr_attempts if att.ocr_attempts is not none else '—' }}</div>
+                    </div>
+                  </div>
                 </div>
                 {% endif %}
                 {% if ext == 'pdf' and not att.content %}
