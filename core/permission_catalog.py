@@ -18,11 +18,18 @@ class PermissionCatalogItem:
     nome: str
 
 
+FRIENDLY_NAMES: dict[str, str] = {
+    Permissao.BOLETIM_VISUALIZAR.value: "Boletim visualizar",
+    Permissao.BOLETIM_BUSCAR.value: "Boletim buscar",
+    Permissao.BOLETIM_GERENCIAR.value: "Boletim gerenciar",
+}
+
+
 CATALOG: tuple[PermissionCatalogItem, ...] = (
     *(
         PermissionCatalogItem(
             codigo=permission.value,
-            nome=permission.value.replace("_", " ").capitalize(),
+            nome=FRIENDLY_NAMES.get(permission.value, permission.value.replace("_", " ").capitalize()),
         )
         for permission in Permissao
     ),

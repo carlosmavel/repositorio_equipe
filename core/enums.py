@@ -68,6 +68,11 @@ class Permissao(Enum):
     ARTIGO_OCR_REPROCESSAR = "artigo_ocr_reprocessar"
     ARTIGO_EXCLUIR_DEFINITIVO = "artigo_excluir_definitivo"
 
+    # --- boletim ---
+    BOLETIM_VISUALIZAR = "boletim_visualizar"
+    BOLETIM_BUSCAR = "boletim_buscar"
+    BOLETIM_GERENCIAR = "boletim_gerenciar"
+
 
 class OSStatus(Enum):
     """Status possíveis de uma Ordem de Serviço."""
