@@ -1,7 +1,7 @@
 """seed boletim permissions
 
 Revision ID: 5d2a9c7e1f44
-Revises: bb1d9e24176f
+Revises: 7f1a9b2c3d4e
 Create Date: 2026-04-29 00:00:00.000000
 """
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '5d2a9c7e1f44'
-down_revision = 'bb1d9e24176f'
+down_revision = '7f1a9b2c3d4e'
 branch_labels = None
 depends_on = None
 
