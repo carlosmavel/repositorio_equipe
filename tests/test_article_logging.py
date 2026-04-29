@@ -1,7 +1,8 @@
 from io import BytesIO
 
 from app import app, db
-from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User
+from core.enums import ArticleStatus
+from core.models import Instituicao, Estabelecimento, Setor, Celula, Funcao, User, Article, Attachment
 
 
 import pytest
@@ -17,11 +18,14 @@ def client(app_ctx):
         db.session.add_all([inst, est, setor, cel])
         db.session.commit()
 
-        func = Funcao.query.filter_by(codigo='artigo_criar').first()
-        if not func:
-            func = Funcao(codigo='artigo_criar', nome='artigo_criar')
-            db.session.add(func)
-            db.session.flush()
+        funcoes = []
+        for codigo in ('artigo_criar', 'artigo_excluir_definitivo'):
+            func = Funcao.query.filter_by(codigo=codigo).first()
+            if not func:
+                func = Funcao(codigo=codigo, nome=codigo)
+                db.session.add(func)
+                db.session.flush()
+            funcoes.append(func)
 
         user = User(
             username='logger_user',
@@ -31,7 +35,8 @@ def client(app_ctx):
             setor_id=setor.id,
             celula_id=cel.id,
         )
-        user.permissoes_personalizadas.append(func)
+        for func in funcoes:
+            user.permissoes_personalizadas.append(func)
         db.session.add(user)
         db.session.commit()
         uid = user.id
@@ -87,3 +92,71 @@ def test_articles_propagam_x_request_id_no_response(client):
     response = client.get('/upload-progress/abc', headers={'X-Request-ID': 'corr-xyz'})
     assert response.status_code == 200
     assert response.headers.get('X-Request-ID') == 'corr-xyz'
+
+
+def test_excluir_definitivo_emite_evento_hard_delete_com_contexto(monkeypatch, client):
+    eventos = []
+
+    def _fake_log_article_event(_logger, event, **context):
+        eventos.append((event, context))
+
+    monkeypatch.setattr('blueprints.articles.log_article_event', _fake_log_article_event)
+
+    with app.app_context():
+        user = User.query.filter_by(username='logger_user').first()
+        artigo = Article(titulo='Delete me', texto='x', status=ArticleStatus.RASCUNHO, user_id=user.id)
+        db.session.add(artigo)
+        db.session.commit()
+        aid = artigo.id
+
+    response = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        headers={'X-Request-ID': 'req-hard-del-1'},
+        data={'motivo': 'duplicado', 'confirmacao': 'Delete me'},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    hard_delete_ctx = next(ctx for nome, ctx in eventos if nome == 'article_hard_delete')
+    assert hard_delete_ctx['user_id'] is not None
+    assert hard_delete_ctx['article_id'] == aid
+    assert hard_delete_ctx['article_title'] == 'Delete me'
+    assert hard_delete_ctx['attachment_count'] == 0
+    assert hard_delete_ctx['reason'] == 'duplicado'
+    assert hard_delete_ctx['route'] == f'/artigo/{aid}/excluir-definitivo'
+    assert hard_delete_ctx['correlation_id'] == 'req-hard-del-1'
+
+
+def test_excluir_definitivo_bloqueado_emite_evento_com_contexto(monkeypatch, client):
+    eventos = []
+
+    def _fake_log_article_event(_logger, event, **context):
+        eventos.append((event, context))
+
+    monkeypatch.setattr('blueprints.articles.log_article_event', _fake_log_article_event)
+
+    with app.app_context():
+        user = User.query.filter_by(username='logger_user').first()
+        artigo = Article(titulo='Blocked delete', texto='x', status=ArticleStatus.RASCUNHO, user_id=user.id)
+        db.session.add(artigo)
+        db.session.flush()
+        db.session.add(Attachment(article_id=artigo.id, filename='lock.pdf', mime_type='application/pdf', ocr_status='processando'))
+        db.session.commit()
+        aid = artigo.id
+
+    response = client.post(
+        f'/artigo/{aid}/excluir-definitivo',
+        headers={'X-Request-ID': 'req-hard-del-2'},
+        data={'motivo': 'higienizacao', 'confirmacao': 'Blocked delete'},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    blocked_ctx = next(ctx for nome, ctx in eventos if nome == 'article_hard_delete_blocked')
+    assert blocked_ctx['user_id'] is not None
+    assert blocked_ctx['article_id'] == aid
+    assert blocked_ctx['article_title'] == 'Blocked delete'
+    assert blocked_ctx['attachment_count'] == 1
+    assert blocked_ctx['reason'] == 'ocr_processing_in_progress'
+    assert blocked_ctx['route'] == f'/artigo/{aid}/excluir-definitivo'
+    assert blocked_ctx['correlation_id'] == 'req-hard-del-2'
