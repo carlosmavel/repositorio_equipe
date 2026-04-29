@@ -910,3 +910,38 @@
 .required-field:focus {
   border-left-color: var(--bs-danger);
 }
+
+.ocr-status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ocr-status-pendente {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.ocr-status-processando {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.ocr-status-concluido {
+  background-color: #198754;
+  color: #fff;
+}
+
+.ocr-status-erro {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.ocr-status-baixo-aproveitamento {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.ocr-status-desconhecido {
+  background-color: #6c757d;
+  color: #fff;
+}

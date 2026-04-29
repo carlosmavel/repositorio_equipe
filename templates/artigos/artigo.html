@@ -50,6 +50,15 @@
             {% set fname = att.filename %}
             {% set ext = fname.split('.')[-1].lower() %}
             {% set original_name = fname.split('_', 1)[1] if '_' in fname else fname %}
+            {% set ocr_status_map = {
+              'pendente': {'label': 'Pendente', 'class': 'ocr-status-pendente'},
+              'processando': {'label': 'Processando', 'class': 'ocr-status-processando'},
+              'concluido': {'label': 'Concluído', 'class': 'ocr-status-concluido'},
+              'erro': {'label': 'Erro', 'class': 'ocr-status-erro'},
+              'baixo_aproveitamento': {'label': 'Baixo aproveitamento', 'class': 'ocr-status-baixo-aproveitamento'}
+            } %}
+            {% set att_ocr_status = (att.ocr_status or '')|lower %}
+            {% set ocr_status_data = ocr_status_map.get(att_ocr_status) %}
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 attachment-card">
               <div class="card h-100 shadow-sm position-relative">
                 <a href="{{ url_for('uploaded_file', filename=fname) }}" class="text-decoration-none text-reset"
@@ -77,6 +86,15 @@
                   <div class="card-body p-2 attachment-meta">
                     <div class="attachment-name" title="{{ original_name }}">{{ original_name }}</div>
                     <div class="attachment-details"><span class="attachment-kind">{{ "Imagem" if ext in ["jpg","jpeg","png","gif","webp"] else "Documento" }}</span></div>
+                    {% if ext == 'pdf' %}
+                    <div class="mt-1">
+                      {% if ocr_status_data %}
+                      <span class="badge ocr-status-badge {{ ocr_status_data.class }}">OCR: {{ ocr_status_data.label }}</span>
+                      {% else %}
+                      <span class="badge ocr-status-badge ocr-status-desconhecido">OCR: Não informado</span>
+                      {% endif %}
+                    </div>
+                    {% endif %}
                   </div>
                 </a>
                 {% if can_reprocess_ocr and ext == 'pdf' %}
