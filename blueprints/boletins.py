@@ -3,8 +3,9 @@ import os
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import or_
+from sqlalchemy import and_, func, or_, text
 from werkzeug.utils import secure_filename
+import unicodedata
 
 try:
     from ..core.database import db
@@ -113,13 +114,63 @@ def buscar_boletins():
         return denied
 
     termo = (request.args.get('q') or '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = min(max(request.args.get('per_page', 20, type=int), 1), 100)
+
+    bind = db.session.get_bind()
+    is_postgresql = bool(bind and bind.dialect.name == 'postgresql')
+    supports_unaccent = False
+    if is_postgresql:
+        try:
+            supports_unaccent = bool(
+                db.session.execute(
+                    text("SELECT 1 FROM pg_extension WHERE extname='unaccent'")
+                ).scalar()
+            )
+        except Exception:
+            supports_unaccent = False
+
+    def _strip_accents(value: str) -> str:
+        normalized = unicodedata.normalize('NFD', value or '')
+        return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+
     query = Boletim.query
     if termo:
-        like = f"%{termo}%"
-        query = query.filter(or_(Boletim.titulo.ilike(like), Boletim.ocr_text.ilike(like)))
+        tokens = [t for t in termo.split() if t]
+        if is_postgresql:
+            for token in tokens:
+                like = f"%{token}%"
+                conditions = [
+                    Boletim.titulo.ilike(like),
+                    Boletim.ocr_text.ilike(like),
+                    func.to_tsvector('portuguese', func.coalesce(Boletim.titulo, '') + text("' '") + func.coalesce(Boletim.ocr_text, '')).op('@@')(func.plainto_tsquery('portuguese', token)),
+                ]
+                if supports_unaccent:
+                    like_unaccent = f"%{_strip_accents(token)}%"
+                    conditions.extend([
+                        func.unaccent(Boletim.titulo).ilike(like_unaccent),
+                        func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(like_unaccent),
+                    ])
+                query = query.filter(or_(*conditions))
+        else:
+            for token in tokens:
+                normalized_token = _strip_accents(token).lower()
+                query = query.filter(
+                    or_(
+                        func.lower(Boletim.titulo).ilike(f"%{normalized_token}%"),
+                        func.lower(func.coalesce(Boletim.ocr_text, '')).ilike(f"%{normalized_token}%"),
+                    )
+                )
 
-    boletins = query.order_by(Boletim.data_boletim.desc(), Boletim.id.desc()).all()
-    return render_template('boletins/busca.html', boletins=boletins, termo=termo, can_manage=user.has_permissao('boletim_gerenciar'))
+    pagination = query.order_by(Boletim.data_boletim.desc(), Boletim.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template(
+        'boletins/busca.html',
+        boletins=pagination.items,
+        termo=termo,
+        can_manage=user.has_permissao('boletim_gerenciar'),
+        pagination=pagination,
+        per_page=per_page,
+    )
 
 
 @boletins_bp.route('/boletins/<int:id>/editar', methods=['GET', 'POST'], endpoint='boletins_editar')

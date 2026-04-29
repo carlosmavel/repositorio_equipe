@@ -4,7 +4,15 @@
   <h1>Buscar boletins</h1>
   <form method="get" class="mb-3">
     <input class="form-control" type="text" name="q" placeholder="Título ou texto OCR" value="{{ termo or '' }}">
-  </form>
+    <div class="mt-2 d-flex gap-2 align-items-center">
+    <label for="per_page" class="form-label mb-0">Por página:</label>
+    <select id="per_page" name="per_page" class="form-select w-auto" onchange="this.form.submit()">
+      {% for option in [10, 20, 50, 100] %}
+        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
   <ul class="list-group">
     {% for b in boletins %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -15,5 +23,18 @@
       <li class="list-group-item">Nenhum resultado.</li>
     {% endfor %}
   </ul>
+{% if pagination and pagination.pages > 1 %}
+<nav class="mt-3" aria-label="Paginação">
+  <ul class="pagination">
+    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=pagination.prev_num) }}">Anterior</a>
+    </li>
+    <li class="page-item disabled"><span class="page-link">Página {{ pagination.page }} de {{ pagination.pages }}</span></li>
+    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=pagination.next_num) }}">Próxima</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
 </div>
 {% endblock %}
