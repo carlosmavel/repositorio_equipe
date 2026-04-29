@@ -172,6 +172,11 @@
         <a href="{{ url_for('meus_artigos') }}" class="btn btn-outline-secondary ms-1">
           Voltar para Meus Artigos
         </a>
+        {% if can_delete_definitive %}
+        <button type="button" class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
+          Excluir definitivamente
+        </button>
+        {% endif %}
       </div>
 
       </div> {# .card-body #}
@@ -179,6 +184,49 @@
   </div> {# .col #}
 </div> {# .row #}
 </div>
+
+{% if can_delete_definitive %}
+<div class="modal fade" id="deleteDefinitiveModal" tabindex="-1" aria-labelledby="deleteDefinitiveModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('excluir_artigo_definitivo', artigo_id=artigo.id) }}" id="deleteDefinitiveForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteDefinitiveModalLabel">Excluir artigo definitivamente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {% if csrf_token is defined %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% endif %}
+          <div class="alert alert-danger" role="alert">
+            <strong>Atenção:</strong> essa ação é irreversível e removerá o artigo e seus anexos permanentemente.
+          </div>
+
+          <div class="mb-3">
+            <label for="motivoExclusao" class="form-label">Motivo da exclusão definitiva</label>
+            <textarea class="form-control" id="motivoExclusao" name="motivo" rows="3" required aria-describedby="motivoErro"></textarea>
+            <div id="motivoErro" class="invalid-feedback">Informe o motivo da exclusão definitiva.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmacaoExclusao" class="form-label">
+              Confirme digitando <strong>CONFIRMAR</strong> ou o título exato do artigo
+            </label>
+            <input type="text" class="form-control" id="confirmacaoExclusao" name="confirmacao" required aria-describedby="confirmacaoErro">
+            <div id="confirmacaoErro" class="invalid-feedback">
+              Digite CONFIRMAR ou exatamente: "{{ artigo.titulo }}".
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Confirmar exclusão definitiva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 {% block extra_js %}
 <script>
@@ -192,6 +240,45 @@
     } else {
       console.warn('Função markNotificationAsReadMatchingUrl não encontrada em main.js.');
     }
+
+    const deleteModal = document.getElementById('deleteDefinitiveModal');
+    const deleteForm = document.getElementById('deleteDefinitiveForm');
+    if (!deleteModal || !deleteForm) return;
+
+    const motivoEl = document.getElementById('motivoExclusao');
+    const confirmacaoEl = document.getElementById('confirmacaoExclusao');
+    const tituloArtigo = "{{ artigo.titulo|e }}";
+
+    deleteModal.addEventListener('shown.bs.modal', function () {
+      motivoEl.focus();
+    });
+
+    deleteForm.addEventListener('submit', function (event) {
+      const motivo = (motivoEl.value || '').trim();
+      const confirmacao = (confirmacaoEl.value || '').trim();
+      const confirmacaoValida = confirmacao === 'CONFIRMAR' || confirmacao === tituloArtigo;
+
+      motivoEl.classList.remove('is-invalid');
+      confirmacaoEl.classList.remove('is-invalid');
+
+      let hasError = false;
+      if (!motivo) {
+        motivoEl.classList.add('is-invalid');
+        hasError = true;
+      }
+
+      if (!confirmacaoValida) {
+        confirmacaoEl.classList.add('is-invalid');
+        hasError = true;
+      }
+
+      if (hasError) {
+        event.preventDefault();
+        event.stopPropagation();
+        const firstInvalid = deleteForm.querySelector('.is-invalid');
+        if (firstInvalid) firstInvalid.focus();
+      }
+    });
   });
 </script>
 {% endblock %}
