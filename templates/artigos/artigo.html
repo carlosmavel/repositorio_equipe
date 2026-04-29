@@ -82,7 +82,7 @@
                 {% if can_reprocess_ocr and ext == 'pdf' %}
                 <div class="px-2 pb-2">
                   <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
-                    <button type="submit" class="btn btn-sm btn-app-secondary w-100">Reprocessar OCR</button>
+                    <button type="submit" class="btn btn-sm btn-app btn-app-secondary w-100"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button>
                   </form>
                 </div>
                 {% endif %}
@@ -145,21 +145,25 @@
         {# Botões de ação #}
         <div class="mt-4">
           {% if can_reprocess_ocr and artigo.attachments and artigo.attachments.count() > 0 %}
-          <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_article', article_id=artigo.id) }}" class="d-inline">
-            <button type="submit" class="btn btn-app-secondary">
-              Reprocessar OCR deste artigo
-            </button>
-          </form>
+          <div class="article-actions-group mb-3">
+            <small class="text-muted d-block mb-2">Ações de OCR</small>
+            <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_article', article_id=artigo.id) }}" class="d-inline">
+              <button type="submit" class="btn btn-app btn-app-primary">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR deste artigo
+              </button>
+            </form>
+          </div>
           {% endif %}
+          <div class="article-actions-group d-flex flex-wrap gap-2">
           {% if can_edit_article %}
-          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-app-primary">
-            Editar
+          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-primary">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i> Editar
           </a>
           {% endif %}
 
         {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
-        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-app-secondary">
-          Solicitar Revisão
+        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+          <i class="bi bi-chat-left-text" aria-hidden="true"></i> Solicitar Revisão
         </a>
         {% endif %}
         {% if artigo.status == ArticleStatus.APROVADO %}
@@ -169,14 +173,15 @@
           style="position:absolute; bottom:10px; right:10px; cursor:pointer; font-size:1.3rem;"
         ></i>
         {% endif %}
-        <a href="{{ url_for('meus_artigos') }}" class="btn btn-app-secondary ms-1">
-          Voltar para Meus Artigos
+        <a href="{{ url_for('meus_artigos') }}" class="btn btn-app btn-app-secondary">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar para Meus Artigos
         </a>
         {% if can_delete_definitive %}
-        <button type="button" class="btn btn-app-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
-          Excluir definitivamente
+        <button type="button" class="btn btn-app btn-app-danger" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
+          <i class="bi bi-trash3" aria-hidden="true"></i> Excluir definitivamente
         </button>
         {% endif %}
+      </div>
       </div>
 
       </div> {# .card-body #}
@@ -219,8 +224,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-app-danger">Confirmar exclusão definitiva</button>
+          <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
+          <button type="submit" class="btn btn-app btn-app-danger"><i class="bi bi-check-circle" aria-hidden="true"></i> Confirmar exclusão definitiva</button>
         </div>
       </form>
     </div>
