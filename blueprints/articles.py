@@ -142,6 +142,19 @@ def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=N
         form_data=form_data,
     )
 
+def _render_artigo_indisponivel(artigo_id):
+    auditoria_exclusao = (
+        ArticleDeletionAudit.query
+        .filter_by(article_id=artigo_id)
+        .order_by(ArticleDeletionAudit.deleted_at.desc())
+        .first()
+    )
+    return render_template(
+        "artigos/artigo_indisponivel.html",
+        artigo_id=artigo_id,
+        auditoria_exclusao=auditoria_exclusao,
+    ), 200
+
 
 @articles_bp.route('/upload-progress/<progress_id>', methods=['GET'])
 def upload_progress(progress_id):
@@ -427,7 +440,9 @@ def meus_artigos():
 def artigo(artigo_id):
     if 'username' not in session:
         return redirect(url_for('login'))
-    artigo = Article.query.get_or_404(artigo_id)
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
     user = User.query.filter_by(username=session['username']).first()
     if not user_can_view_article(user, artigo):
         flash('Você não tem permissão para ver este artigo.', 'danger')
@@ -994,7 +1009,9 @@ def aprovacao_detail(artigo_id):
         flash('Permissão negada.', 'danger')
         return redirect(url_for('login'))
 
-    artigo = Article.query.get_or_404(artigo_id)
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
     if not (
         user_can_approve_article(user, artigo) or
         user_can_review_article(user, artigo)

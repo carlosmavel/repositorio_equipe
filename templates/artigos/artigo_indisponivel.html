@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Recurso indisponível{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">Recurso indisponível</h4>
+    <p class="mb-0">Este artigo não está mais disponível. Ele pode ter sido excluído definitivamente por um administrador.</p>
+  </div>
+
+  {% if auditoria_exclusao %}
+  <div class="card shadow-sm">
+    <div class="card-header">Detalhes da exclusão (auditoria)</div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Título do artigo</dt>
+        <dd class="col-sm-8">{{ auditoria_exclusao.article_title }}</dd>
+
+        <dt class="col-sm-4">Excluído por</dt>
+        <dd class="col-sm-8">{{ auditoria_exclusao.deleted_by.username if auditoria_exclusao.deleted_by else 'Usuário não identificado' }}</dd>
+
+        <dt class="col-sm-4">Data/hora da exclusão</dt>
+        <dd class="col-sm-8">{{ auditoria_exclusao.deleted_at }}</dd>
+
+        <dt class="col-sm-4">Motivo</dt>
+        <dd class="col-sm-8">{{ auditoria_exclusao.reason }}</dd>
+
+        <dt class="col-sm-4">ID original do artigo</dt>
+        <dd class="col-sm-8">{{ auditoria_exclusao.article_id }}</dd>
+      </dl>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted">Não foi encontrado log de exclusão para este artigo. Se precisar de mais detalhes, contate o administrador.</p>
+  <p><strong>ID original do artigo:</strong> {{ artigo_id }}</p>
+  {% endif %}
+</div>
+{% endblock %}
