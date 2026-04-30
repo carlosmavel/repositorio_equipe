@@ -214,11 +214,16 @@
                         <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
                         <div class="card-body">
                             <p class="text-muted mb-2">Permissões herdadas do cargo já vêm marcadas e não podem ser desmarcadas.</p>
-                            {% for f in funcoes %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
-                                    <label class="form-check-label" for="func{{ f.id }}">{{ f.nome }}</label>
-                                </div>
+                            {% for categoria, funcoes_categoria in funcoes_por_categoria.items() %}
+                                {% if funcoes_categoria %}
+                                    <h6 class="mt-3 mb-2">{{ categoria }}</h6>
+                                    {% for f in funcoes_categoria %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
+                                            <label class="form-check-label" for="func{{ f.id }}">{{ f.nome }}</label>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
@@ -404,11 +409,16 @@
                         <div class="card-header"><h6 class="mb-0">Permissões (Funções)</h6></div>
                         <div class="card-body">
                             <p class="text-muted mb-2">Permissões herdadas do cargo já vêm marcadas e não podem ser desmarcadas.</p>
-                            {% for f in funcoes %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="edit_func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in user_editar.permissoes_personalizadas.all() or (user_editar.cargo and f in user_editar.cargo.permissoes.all()))) %}checked{% endif %} {% if user_editar.cargo and f in user_editar.cargo.permissoes.all() %}disabled{% endif %}>
-                                    <label class="form-check-label" for="edit_func{{ f.id }}">{{ f.nome }}</label>
-                                </div>
+                            {% for categoria, funcoes_categoria in funcoes_por_categoria.items() %}
+                                {% if funcoes_categoria %}
+                                    <h6 class="mt-3 mb-2">{{ categoria }}</h6>
+                                    {% for f in funcoes_categoria %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_func{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in user_editar.permissoes_personalizadas.all() or (user_editar.cargo and f in user_editar.cargo.permissoes.all()))) %}checked{% endif %} {% if user_editar.cargo and f in user_editar.cargo.permissoes.all() %}disabled{% endif %}>
+                                            <label class="form-check-label" for="edit_func{{ f.id }}">{{ f.nome }}</label>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
