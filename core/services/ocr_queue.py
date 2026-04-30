@@ -6,6 +6,7 @@ from mimetypes import guess_type
 from pathlib import Path
 
 from flask import current_app
+from pypdf import PdfReader
 
 try:
     from ..database import db
@@ -31,6 +32,14 @@ class OCRBatchResult:
     concluded: int = 0
     low_yield: int = 0
     failed: int = 0
+
+
+def get_pdf_page_count(file_path: Path) -> int | None:
+    try:
+        reader = PdfReader(str(file_path))
+        return len(reader.pages)
+    except Exception:
+        return None
 
 
 def is_pdf_ocr_eligible(filename: str, mime_type: str | None = None) -> bool:
@@ -170,14 +179,25 @@ def process_pending_ocr_attachments(
             attachment.ocr_processed_at = finished_at
             attachment.ocr_last_error = None
             attachment.ocr_error_message = None
-            attachment.ocr_char_count = len((content or "").strip())
-            attachment.ocr_page_count = 1
-            attachment.ocr_pages_success = 1
-            attachment.ocr_pages_failed = 0
+            ocr_char_count = len((content or "").strip())
+            attachment.ocr_char_count = ocr_char_count
+            if is_pdf_ocr_eligible(attachment.filename, attachment.mime_type):
+                ocr_page_count = get_pdf_page_count(file_path) or 1
+                attachment.ocr_page_count = ocr_page_count
+                if ocr_char_count > 0:
+                    attachment.ocr_pages_success = ocr_page_count
+                    attachment.ocr_pages_failed = 0
+                else:
+                    attachment.ocr_pages_success = 0
+                    attachment.ocr_pages_failed = ocr_page_count
+            else:
+                attachment.ocr_page_count = 1
+                attachment.ocr_pages_success = 1
+                attachment.ocr_pages_failed = 0
             attachment.ocr_engine = "extract_text"
             attachment.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
 
-            if len((content or "").strip()) < low_yield_threshold:
+            if ocr_char_count < low_yield_threshold:
                 attachment.ocr_status = OCR_STATUS_BAIXO_APROVEITAMENTO
                 result.low_yield += 1
             else:
@@ -285,14 +305,20 @@ def process_pending_ocr_boletins(
             boletim.ocr_processed_at = finished_at
             boletim.ocr_last_error = None
             boletim.ocr_error_message = None
-            boletim.ocr_char_count = len((content or "").strip())
-            boletim.ocr_page_count = 1
-            boletim.ocr_pages_success = 1
-            boletim.ocr_pages_failed = 0
+            ocr_char_count = len((content or "").strip())
+            boletim.ocr_char_count = ocr_char_count
+            ocr_page_count = get_pdf_page_count(file_path) or 1
+            boletim.ocr_page_count = ocr_page_count
+            if ocr_char_count > 0:
+                boletim.ocr_pages_success = ocr_page_count
+                boletim.ocr_pages_failed = 0
+            else:
+                boletim.ocr_pages_success = 0
+                boletim.ocr_pages_failed = ocr_page_count
             boletim.ocr_engine = "extract_text"
             boletim.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
 
-            if len((content or "").strip()) < low_yield_threshold:
+            if ocr_char_count < low_yield_threshold:
                 boletim.ocr_status = OCR_STATUS_BAIXO_APROVEITAMENTO
                 result.low_yield += 1
             else:
