@@ -1,18 +1,28 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <h1>Buscar boletins</h1>
-  <form method="get" class="mb-3">
-    <input class="form-control" type="text" name="q" placeholder="Título ou texto OCR" value="{{ termo or '' }}">
-    <div class="mt-2 d-flex gap-2 align-items-center">
-      <label for="per_page" class="form-label mb-0">Por página:</label>
-      <select id="per_page" name="per_page" class="form-select w-auto" onchange="this.form.submit()">
+<div class="container-fluid page-root">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h1 class="h2 mb-3">Buscar boletins</h1>
+          <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-10">
+              <input class="form-control" type="text" name="q" placeholder="Título ou texto OCR" value="{{ termo or '' }}">
+            </div>
+            <div class="col-md-2">
+              <label for="per_page" class="form-label mb-1">Por página:</label>
+              <select id="per_page" name="per_page" class="form-select" onchange="this.form.submit()">
         {% for option in [10, 20, 50, 100] %}
           <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
         {% endfor %}
       </select>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-  </form>
+  </div>
 
   {% if boletins %}
   <div class="row row-cols-1 g-3">
@@ -62,5 +72,7 @@
   </ul>
 </nav>
 {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

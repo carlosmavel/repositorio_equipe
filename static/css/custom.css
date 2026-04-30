@@ -704,6 +704,15 @@
   padding: 0 2px;
   border-radius: 3px;
 }
+
+.clickable-card {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.clickable-card:hover {
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.12);
+}
 /* Form builder styles */
 #fieldsContainer .field.card {
   border: 1px solid var(--border-light);
