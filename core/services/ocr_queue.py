@@ -70,6 +70,15 @@ def _normalize_extract_result(raw_result):
         "pages_success": pages_success,
         "pages_failed": 1 - pages_success,
     }
+
+
+def _extract_text_with_metadata(file_path: Path):
+    try:
+        return extract_text(str(file_path), return_metadata=True)
+    except TypeError:
+        return extract_text(str(file_path))
+
+
 def get_pdf_page_count(file_path: Path) -> int | None:
     try:
         reader = PdfReader(str(file_path))
@@ -207,7 +216,7 @@ def process_pending_ocr_attachments(
         file_path = upload_folder / attachment.filename
 
         try:
-            extraction = _normalize_extract_result(extract_text(str(file_path)))
+            extraction = _normalize_extract_result(_extract_text_with_metadata(file_path))
             content = extraction["text"]
             attachment.content = content
             attachment.ocr_text = content
@@ -330,7 +339,7 @@ def process_pending_ocr_boletins(
         file_path = upload_folder / boletim.arquivo
 
         try:
-            extraction = _normalize_extract_result(extract_text(str(file_path)))
+            extraction = _normalize_extract_result(_extract_text_with_metadata(file_path))
             content = extraction["text"]
             boletim.ocr_text = content
             finished_at = datetime.now(timezone.utc)

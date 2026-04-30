@@ -183,7 +183,7 @@ e executados somente quando parâmetros específicos são informados.
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
+def extract_text(path: str, **ocr_options) -> str | ExtractedTextResult:
     """Extrai texto de vários formatos de arquivo.
 
     Parâmetros adicionais são encaminhados para as rotinas de OCR quando o
@@ -191,6 +191,7 @@ def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
     anterior quando nenhum parâmetro extra é fornecido.
     """
     progress_callback = ocr_options.pop("progress_callback", None)
+    return_metadata = ocr_options.pop("return_metadata", False)
 
     ext = os.path.splitext(path)[1].lower()
     text_parts: list[str] = []
@@ -198,14 +199,16 @@ def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
     # TXT
     if ext == '.txt':
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-            return _build_extraction_result(f.read(), method='plain_text')
+            result = _build_extraction_result(f.read(), method='plain_text')
+            return result if return_metadata else result["text"]
 
     # DOCX
     if ext == '.docx':
         doc = Document(path)
         for para in doc.paragraphs:
             text_parts.append(para.text)
-        return _build_extraction_result('\n'.join(text_parts), method='document_text')
+        result = _build_extraction_result('\n'.join(text_parts), method='document_text')
+        return result if return_metadata else result["text"]
 
     # XLSX
     if ext == '.xlsx':
@@ -216,7 +219,8 @@ def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
                 for cell in row:
                     if cell is not None:
                         text_parts.append(str(cell))
-        return _build_extraction_result('\n'.join(text_parts), method='document_text')
+        result = _build_extraction_result('\n'.join(text_parts), method='document_text')
+        return result if return_metadata else result["text"]
 
     # XLS (Excel antigo)
     if ext == '.xls':
@@ -227,21 +231,29 @@ def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
                     cell = sheet.cell(rx, cx).value
                     if cell:
                         text_parts.append(str(cell))
-        return _build_extraction_result('\n'.join(text_parts), method='document_text')
+        result = _build_extraction_result('\n'.join(text_parts), method='document_text')
+        return result if return_metadata else result["text"]
 
     # ODS (LibreOffice Calc)
     if ext == '.ods':
         doc = opendocument.load(path)
         for elem in doc.getElementsByType(P):
             text_parts.append(str(elem))
-        return _build_extraction_result('\n'.join(text_parts), method='document_text')
+        result = _build_extraction_result('\n'.join(text_parts), method='document_text')
+        return result if return_metadata else result["text"]
 
     # PDF
     if ext == '.pdf':
-        return extract_text_from_pdf(path, progress_callback=progress_callback, **ocr_options)
+        return extract_text_from_pdf(
+            path,
+            progress_callback=progress_callback,
+            return_metadata=return_metadata,
+            **ocr_options,
+        )
 
     # outros formatos não suportados
-    return _build_extraction_result('', method='unsupported_format')
+    result = _build_extraction_result('', method='unsupported_format')
+    return result if return_metadata else result["text"]
 
 
 def preprocess_image(img, debug_dir=None, page_idx=0):
@@ -373,7 +385,8 @@ def extract_text_from_pdf(
     clean: bool = False,
     detect_sparse: bool = False,
     progress_callback=None,
-) -> ExtractedTextResult:
+    return_metadata: bool = False,
+) -> str | ExtractedTextResult:
     """Extrai texto de PDFs pesquisáveis ou via ``pdf2image`` + ``pytesseract``.
 
     Primeiro tenta recuperar o conteúdo diretamente (PDF pesquisável) para
@@ -385,22 +398,25 @@ def extract_text_from_pdf(
     direct_text = _extract_pdf_text_without_ocr(path)
     if direct_text:
         total_pages = direct_text.count("\n") + 1 if direct_text else 1
-        return _build_extraction_result(
+        result = _build_extraction_result(
             direct_text,
             method="pdf_direct_text",
             total_pages=total_pages,
             pages_success=total_pages if direct_text.strip() else 0,
             pages_failed=0 if direct_text.strip() else total_pages,
         )
+        return result if return_metadata else result["text"]
 
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
-        return _build_extraction_result("", method="pdf_ocr_page_by_page")
+        result = _build_extraction_result("", method="pdf_ocr_page_by_page")
+        return result if return_metadata else result["text"]
     try:
         images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
-        return _build_extraction_result("", method="pdf_ocr_page_by_page")
+        result = _build_extraction_result("", method="pdf_ocr_page_by_page")
+        return result if return_metadata else result["text"]
     text_parts: list[str] = []
     total_pages = len(images) or 1
     for i, img in enumerate(images, start=1):
@@ -426,13 +442,14 @@ def extract_text_from_pdf(
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")
     pages_success = sum(1 for txt in text_parts if (txt or "").strip())
-    return _build_extraction_result(
+    result = _build_extraction_result(
         "\n".join(text_parts),
         method="pdf_ocr_page_by_page",
         total_pages=total_pages or 1,
         pages_success=pages_success,
         pages_failed=max((total_pages or 1) - pages_success, 0),
     )
+    return result if return_metadata else result["text"]
 
 
 def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
