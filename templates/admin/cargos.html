@@ -224,69 +224,18 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% set grupos = [
-                                ('Célula', [
-                                    Permissao.ARTIGO_EDITAR_CELULA.value,
-                                    Permissao.ARTIGO_APROVAR_CELULA.value,
-                                    Permissao.ARTIGO_REVISAR_CELULA.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value
-                                ]),
-                                ('Setor', [
-                                    Permissao.ARTIGO_EDITAR_SETOR.value,
-                                    Permissao.ARTIGO_APROVAR_SETOR.value,
-                                    Permissao.ARTIGO_REVISAR_SETOR.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value
-                                ]),
-                                ('Estabelecimento', [
-                                    Permissao.ARTIGO_EDITAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_ESTABELECIMENTO.value
-                                ]),
-                                ('Instituição', [
-                                    Permissao.ARTIGO_EDITAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_INSTITUICAO.value
-                                ]),
-                                ('Todas as Unidades', [
-                                    Permissao.ARTIGO_EDITAR_TODAS.value,
-                                    Permissao.ARTIGO_APROVAR_TODAS.value,
-                                    Permissao.ARTIGO_REVISAR_TODAS.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_TODAS.value
-                                ])
-                            ] %}
-
-                            {# Permissão para criar artigos - não faz parte de um grupo #}
-                            {% for f in funcoes if f.codigo == 'artigo_criar' %}
+                            {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
                                     <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
                                 </div>
-                            {% endfor %}
-
-                            {% for f in funcoes if f.codigo in ['artigo_tipo_gerenciar', 'artigo_area_gerenciar'] %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
-                                    <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
-                                </div>
-                            {% endfor %}
-
-                            {% for label, codes in grupos %}
-                                <div class="mt-2"><strong>{{ label }}</strong></div>
-                                {% for f in funcoes if f.codigo in codes %}
-                                    <div class="form-check ms-3">
-                                        <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
-                                        <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
-                                    </div>
-                                {% endfor %}
                             {% endfor %}
                         </div>
                     </div>
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Boletim</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes if f.codigo in ['boletim_visualizar', 'boletim_buscar', 'boletim_gerenciar'] %}
+                            {% for f in funcoes_por_categoria.get('Permissões de Boletins', []) %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
                                     <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
@@ -297,7 +246,7 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões Globais</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes if f.codigo == 'admin' %}
+                            {% for f in funcoes_por_categoria.get('Permissões Administrativas', []) %}
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="c_admin{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
                                     <label class="form-check-label" for="c_admin{{ f.id }}">Administrador Global</label>
@@ -392,68 +341,18 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                     <div class="card-body">
-                            {% set grupos = [
-                                ('Célula', [
-                                    Permissao.ARTIGO_EDITAR_CELULA.value,
-                                    Permissao.ARTIGO_APROVAR_CELULA.value,
-                                    Permissao.ARTIGO_REVISAR_CELULA.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_CELULA.value
-                                ]),
-                                ('Setor', [
-                                    Permissao.ARTIGO_EDITAR_SETOR.value,
-                                    Permissao.ARTIGO_APROVAR_SETOR.value,
-                                    Permissao.ARTIGO_REVISAR_SETOR.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_SETOR.value
-                                ]),
-                                ('Estabelecimento', [
-                                    Permissao.ARTIGO_EDITAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_ESTABELECIMENTO.value
-                                ]),
-                                ('Instituição', [
-                                    Permissao.ARTIGO_EDITAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_INSTITUICAO.value
-                                ]),
-                                ('Todas as Unidades', [
-                                    Permissao.ARTIGO_EDITAR_TODAS.value,
-                                    Permissao.ARTIGO_APROVAR_TODAS.value,
-                                    Permissao.ARTIGO_REVISAR_TODAS.value,
-                                    Permissao.ARTIGO_ASSUMIR_REVISAO_TODAS.value
-                                ])
-                            ] %}
-
-                            {% for f in funcoes if f.codigo == 'artigo_criar' %}
+                            {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
                                     <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
                                 </div>
-                            {% endfor %}
-
-                            {% for f in funcoes if f.codigo in ['artigo_tipo_gerenciar', 'artigo_area_gerenciar'] %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
-                                    <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
-                                </div>
-                            {% endfor %}
-
-                            {% for label, codes in grupos %}
-                                <div class="mt-2"><strong>{{ label }}</strong></div>
-                                {% for f in funcoes if f.codigo in codes %}
-                                    <div class="form-check ms-3">
-                                        <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
-                                        <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
-                                    </div>
-                                {% endfor %}
                             {% endfor %}
                         </div>
                     </div>
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Boletim</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes if f.codigo in ['boletim_visualizar', 'boletim_buscar', 'boletim_gerenciar'] %}
+                            {% for f in funcoes_por_categoria.get('Permissões de Boletins', []) %}
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
                                     <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
@@ -464,7 +363,7 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões Globais</h6></div>
                         <div class="card-body">
-                            {% for f in funcoes if f.codigo == 'admin' %}
+                            {% for f in funcoes_por_categoria.get('Permissões Administrativas', []) %}
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="e_admin{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
                                     <label class="form-check-label" for="e_admin{{ f.id }}">Administrador Global</label>
