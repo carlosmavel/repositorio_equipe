@@ -1369,6 +1369,7 @@ def admin_cargos():
         setores=setores,
         celulas=celulas,
         funcoes=funcoes,
+        funcoes_por_categoria=funcoes_por_categoria,
         estrutura=estrutura,
     )
 
