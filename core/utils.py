@@ -106,6 +106,12 @@ def build_article_log_context(
     article_title: str | None = None,
     attachment_count: int | None = None,
     reason: str | None = None,
+    ocr_method: str | None = None,
+    ocr_engine: str | None = None,
+    ocr_page_count: int | None = None,
+    ocr_pages_success: int | None = None,
+    ocr_pages_failed: int | None = None,
+    ocr_char_count: int | None = None,
 ) -> dict[str, Any]:
     """Monta payload de contexto padronizado para logs de artigo/anexo/OCR."""
     return {
@@ -125,6 +131,12 @@ def build_article_log_context(
         "article_title": article_title,
         "attachment_count": attachment_count,
         "reason": reason,
+        "ocr_method": ocr_method,
+        "ocr_engine": ocr_engine,
+        "ocr_page_count": ocr_page_count,
+        "ocr_pages_success": ocr_pages_success,
+        "ocr_pages_failed": ocr_pages_failed,
+        "ocr_char_count": ocr_char_count,
     }
 
 
@@ -398,6 +410,17 @@ def extract_text_from_pdf(
     direct_text = _extract_pdf_text_without_ocr(path)
     if direct_text:
         total_pages = direct_text.count("\n") + 1 if direct_text else 1
+        final_char_count = len(direct_text.strip())
+        logger.info(
+            "pdf_direct_text",
+            extra={
+                "ocr_method": "pdf_direct_text",
+                "ocr_engine": "pdf_direct_text",
+                "ocr_page_count": total_pages,
+                "ocr_char_count": final_char_count,
+                "ocr_status": "concluido",
+            },
+        )
         result = _build_extraction_result(
             direct_text,
             method="pdf_direct_text",
@@ -419,6 +442,15 @@ def extract_text_from_pdf(
         return result if return_metadata else result["text"]
     text_parts: list[str] = []
     total_pages = len(images) or 1
+    logger.info(
+        "pdf_ocr_page_by_page",
+        extra={
+            "ocr_method": "pdf_ocr_page_by_page",
+            "ocr_engine": "pdf_ocr_page_by_page",
+            "ocr_page_count": total_pages,
+            "ocr_status": "processando",
+        },
+    )
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, page_idx=i)
@@ -442,8 +474,22 @@ def extract_text_from_pdf(
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")
     pages_success = sum(1 for txt in text_parts if (txt or "").strip())
+    final_text = "\n".join(text_parts)
+    final_char_count = len(final_text.strip())
+    logger.info(
+        "pdf_ocr_page_by_page",
+        extra={
+            "ocr_method": "pdf_ocr_page_by_page",
+            "ocr_engine": "pdf_ocr_page_by_page",
+            "ocr_page_count": total_pages or 1,
+            "ocr_pages_success": pages_success,
+            "ocr_pages_failed": max((total_pages or 1) - pages_success, 0),
+            "ocr_char_count": final_char_count,
+            "ocr_status": "concluido",
+        },
+    )
     result = _build_extraction_result(
-        "\n".join(text_parts),
+        final_text,
         method="pdf_ocr_page_by_page",
         total_pages=total_pages or 1,
         pages_success=pages_success,
