@@ -147,33 +147,41 @@ def buscar_boletins():
         normalized = unicodedata.normalize('NFD', value or '')
         return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
 
+    def _sql_strip_accents(expression):
+        normalized = func.lower(func.coalesce(expression, ''))
+        for accented, plain in (
+            ('á', 'a'), ('à', 'a'), ('â', 'a'), ('ã', 'a'), ('ä', 'a'),
+            ('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),
+            ('í', 'i'), ('ì', 'i'), ('î', 'i'), ('ï', 'i'),
+            ('ó', 'o'), ('ò', 'o'), ('ô', 'o'), ('õ', 'o'), ('ö', 'o'),
+            ('ú', 'u'), ('ù', 'u'), ('û', 'u'), ('ü', 'u'),
+            ('ç', 'c'),
+        ):
+            normalized = func.replace(normalized, accented, plain)
+        return normalized
+
     query = Boletim.query
     if termo:
         tokens = [t for t in termo.split() if t]
-        if is_postgresql:
-            for token in tokens:
-                like = f"%{token}%"
-                conditions = [
-                    Boletim.titulo.ilike(like),
-                    Boletim.ocr_text.ilike(like),
-                    func.to_tsvector('portuguese', func.coalesce(Boletim.titulo, '') + text("' '") + func.coalesce(Boletim.ocr_text, '')).op('@@')(func.plainto_tsquery('portuguese', token)),
-                ]
-                if supports_unaccent:
-                    like_unaccent = f"%{_strip_accents(token)}%"
-                    conditions.extend([
-                        func.unaccent(Boletim.titulo).ilike(like_unaccent),
-                        func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(like_unaccent),
-                    ])
-                query = query.filter(or_(*conditions))
-        else:
-            for token in tokens:
-                normalized_token = _strip_accents(token).lower()
-                query = query.filter(
-                    or_(
-                        func.lower(Boletim.titulo).ilike(f"%{normalized_token}%"),
-                        func.lower(func.coalesce(Boletim.ocr_text, '')).ilike(f"%{normalized_token}%"),
-                    )
+        for token in tokens:
+            like = f"%{token}%"
+            like_normalized = f"%{_strip_accents(token).lower()}%"
+            conditions = [
+                Boletim.titulo.ilike(like),
+                Boletim.ocr_text.ilike(like),
+                _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
+                _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
+            ]
+            if is_postgresql:
+                conditions.append(
+                    func.to_tsvector('portuguese', func.coalesce(Boletim.titulo, '') + text("' '") + func.coalesce(Boletim.ocr_text, '')).op('@@')(func.plainto_tsquery('portuguese', token))
                 )
+                if supports_unaccent:
+                    conditions.extend([
+                        func.unaccent(Boletim.titulo).ilike(f"%{_strip_accents(token)}%"),
+                        func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(f"%{_strip_accents(token)}%"),
+                    ])
+            query = query.filter(or_(*conditions))
 
     pagination = query.order_by(Boletim.data_boletim.desc(), Boletim.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
     return render_template(
