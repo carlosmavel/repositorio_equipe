@@ -66,6 +66,17 @@ def test_busca_boletim_match_ocr(client):
     assert b'Atualiza' in resp.data
 
 
+
+def test_busca_boletim_ignora_acentos(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Boletim de Ação Integrada', 'Texto com informação técnica', date(2026, 1, 3))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'acao informacao'})
+
+    assert resp.status_code == 200
+    assert b'Boletim de A' in resp.data
+
 def test_busca_boletim_sem_permissao(client):
     with app.app_context():
         _setup_user(client, ['boletim_visualizar'])
