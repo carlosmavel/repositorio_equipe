@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import OrderedDict
 
 try:
     from .enums import Permissao
@@ -47,3 +48,29 @@ CODE_ALIASES: dict[str, str] = {}
 # Códigos descontinuados do catálogo nativo que podem permanecer no banco
 # sem atualização automática até remoção por migração explícita.
 DEPRECATED_CODES: set[str] = set()
+
+
+PERMISSION_CATEGORIES_ORDER: tuple[str, ...] = (
+    "Permissões de Artigos",
+    "Permissões de Boletins",
+    "Permissões Administrativas",
+    "Outras Permissões",
+)
+
+PERMISSION_CATEGORY_BY_CODE: dict[str, str] = {
+    item.codigo: (
+        "Permissões de Artigos" if item.codigo.startswith("artigo_")
+        else "Permissões de Boletins" if item.codigo.startswith("boletim_")
+        else "Permissões Administrativas" if item.codigo.startswith("admin")
+        else "Outras Permissões"
+    )
+    for item in CATALOG
+}
+
+
+def agrupar_funcoes_por_categoria(funcoes):
+    categorias = OrderedDict((categoria, []) for categoria in PERMISSION_CATEGORIES_ORDER)
+    for funcao in funcoes:
+        categoria = PERMISSION_CATEGORY_BY_CODE.get(funcao.codigo, "Outras Permissões")
+        categorias[categoria].append(funcao)
+    return categorias

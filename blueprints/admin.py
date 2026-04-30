@@ -91,7 +91,11 @@ except ImportError:  # pragma: no cover
     )
 
 import json
-from collections import OrderedDict
+try:
+    from ..core.permission_catalog import agrupar_funcoes_por_categoria
+except ImportError:  # pragma: no cover
+    from core.permission_catalog import agrupar_funcoes_por_categoria
+
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from werkzeug.utils import secure_filename
@@ -104,28 +108,6 @@ admin_bp = Blueprint('admin_bp', __name__)
 
 
 
-def _categoria_permissao_por_codigo(codigo: str) -> str:
-    codigo_normalizado = (codigo or '').lower()
-    if codigo_normalizado.startswith('artigo_'):
-        return 'Permissões de Artigos'
-    if codigo_normalizado.startswith('boletim_'):
-        return 'Permissões de Boletins'
-    if codigo_normalizado.startswith('admin'):
-        return 'Permissões Administrativas'
-    return 'Outras Permissões'
-
-
-def _agrupar_funcoes_por_categoria(funcoes):
-    categorias_ordenadas = OrderedDict((categoria, []) for categoria in (
-        'Permissões de Artigos',
-        'Permissões de Boletins',
-        'Permissões Administrativas',
-        'Outras Permissões',
-    ))
-    for funcao in funcoes:
-        categoria = _categoria_permissao_por_codigo(funcao.codigo)
-        categorias_ordenadas[categoria].append(funcao)
-    return categorias_ordenadas
 def _can_manage_taxonomy(user, permission_code: str) -> bool:
     return bool(user and (user.has_permissao('admin') or user.has_permissao(permission_code)))
 
@@ -1032,7 +1014,7 @@ def admin_usuarios():
     cargos = Cargo.query.order_by(Cargo.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
     funcoes = Funcao.query.order_by(Funcao.nome).all()
-    funcoes_por_categoria = _agrupar_funcoes_por_categoria(funcoes)
+    funcoes_por_categoria = agrupar_funcoes_por_categoria(funcoes)
     cargo_defaults = {
         c.id: {
             'estabelecimentos': [e.id for e in c.default_estabelecimentos],
@@ -1361,6 +1343,7 @@ def admin_cargos():
     setores = Setor.query.order_by(Setor.nome).all()
     celulas = Celula.query.order_by(Celula.nome).all()
     funcoes = Funcao.query.order_by(Funcao.nome).all()
+    funcoes_por_categoria = agrupar_funcoes_por_categoria(funcoes)
 
     instituicoes = Instituicao.query.order_by(Instituicao.nome).all()
     estrutura = []
