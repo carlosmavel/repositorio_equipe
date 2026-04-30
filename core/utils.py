@@ -2,7 +2,7 @@
 
 import bleach
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 import os
 import json
@@ -56,6 +56,36 @@ from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 _RESERVED_LOG_RECORD_FIELDS = set(logging.makeLogRecord({}).__dict__.keys())
+
+
+class ExtractedTextResult(TypedDict):
+    text: str
+    method: str
+    total_pages: int
+    pages_success: int
+    pages_failed: int
+
+
+def _build_extraction_result(
+    text: str,
+    *,
+    method: str,
+    total_pages: int = 1,
+    pages_success: int | None = None,
+    pages_failed: int | None = None,
+) -> ExtractedTextResult:
+    resolved_total = max(int(total_pages or 0), 1)
+    resolved_success = pages_success if pages_success is not None else (1 if text.strip() else 0)
+    resolved_success = max(min(int(resolved_success), resolved_total), 0)
+    resolved_failed = pages_failed if pages_failed is not None else (resolved_total - resolved_success)
+    resolved_failed = max(int(resolved_failed), 0)
+    return {
+        "text": text,
+        "method": method,
+        "total_pages": resolved_total,
+        "pages_success": resolved_success,
+        "pages_failed": resolved_failed,
+    }
 
 
 def build_article_log_context(
@@ -153,7 +183,7 @@ e executados somente quando parâmetros específicos são informados.
 #-------------------------------------------------------------------------------------------
 # Extração de texto dos anexos
 #-------------------------------------------------------------------------------------------
-def extract_text(path: str, **ocr_options) -> str:
+def extract_text(path: str, **ocr_options) -> ExtractedTextResult:
     """Extrai texto de vários formatos de arquivo.
 
     Parâmetros adicionais são encaminhados para as rotinas de OCR quando o
@@ -168,14 +198,14 @@ def extract_text(path: str, **ocr_options) -> str:
     # TXT
     if ext == '.txt':
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-            return f.read()
+            return _build_extraction_result(f.read(), method='plain_text')
 
     # DOCX
     if ext == '.docx':
         doc = Document(path)
         for para in doc.paragraphs:
             text_parts.append(para.text)
-        return '\n'.join(text_parts)
+        return _build_extraction_result('\n'.join(text_parts), method='document_text')
 
     # XLSX
     if ext == '.xlsx':
@@ -186,7 +216,7 @@ def extract_text(path: str, **ocr_options) -> str:
                 for cell in row:
                     if cell is not None:
                         text_parts.append(str(cell))
-        return '\n'.join(text_parts)
+        return _build_extraction_result('\n'.join(text_parts), method='document_text')
 
     # XLS (Excel antigo)
     if ext == '.xls':
@@ -197,21 +227,21 @@ def extract_text(path: str, **ocr_options) -> str:
                     cell = sheet.cell(rx, cx).value
                     if cell:
                         text_parts.append(str(cell))
-        return '\n'.join(text_parts)
+        return _build_extraction_result('\n'.join(text_parts), method='document_text')
 
     # ODS (LibreOffice Calc)
     if ext == '.ods':
         doc = opendocument.load(path)
         for elem in doc.getElementsByType(P):
             text_parts.append(str(elem))
-        return '\n'.join(text_parts)
+        return _build_extraction_result('\n'.join(text_parts), method='document_text')
 
     # PDF
     if ext == '.pdf':
         return extract_text_from_pdf(path, progress_callback=progress_callback, **ocr_options)
 
     # outros formatos não suportados
-    return ''
+    return _build_extraction_result('', method='unsupported_format')
 
 
 def preprocess_image(img, debug_dir=None, page_idx=0):
@@ -343,7 +373,7 @@ def extract_text_from_pdf(
     clean: bool = False,
     detect_sparse: bool = False,
     progress_callback=None,
-) -> str:
+) -> ExtractedTextResult:
     """Extrai texto de PDFs pesquisáveis ou via ``pdf2image`` + ``pytesseract``.
 
     Primeiro tenta recuperar o conteúdo diretamente (PDF pesquisável) para
@@ -354,18 +384,25 @@ def extract_text_from_pdf(
     """
     direct_text = _extract_pdf_text_without_ocr(path)
     if direct_text:
-        return direct_text
+        total_pages = direct_text.count("\n") + 1 if direct_text else 1
+        return _build_extraction_result(
+            direct_text,
+            method="pdf_direct_text",
+            total_pages=total_pages,
+            pages_success=total_pages if direct_text.strip() else 0,
+            pages_failed=0 if direct_text.strip() else total_pages,
+        )
 
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
-        return ""
+        return _build_extraction_result("", method="pdf_ocr_page_by_page")
     try:
         images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
         logger.error("Erro ao converter PDF %s: %s", path, e)
-        return ""
+        return _build_extraction_result("", method="pdf_ocr_page_by_page")
     text_parts: list[str] = []
-    total_pages = len(images)
+    total_pages = len(images) or 1
     for i, img in enumerate(images, start=1):
         try:
             pre = preprocess_image(img, page_idx=i)
@@ -388,7 +425,14 @@ def extract_text_from_pdf(
         except Exception as e:  # pragma: no cover
             logger.error("Erro no OCR da pagina %s do PDF %s: %s", i, path, e)
             text_parts.append("")
-    return "\n".join(text_parts)
+    pages_success = sum(1 for txt in text_parts if (txt or "").strip())
+    return _build_extraction_result(
+        "\n".join(text_parts),
+        method="pdf_ocr_page_by_page",
+        total_pages=total_pages or 1,
+        pages_success=pages_success,
+        pages_failed=max((total_pages or 1) - pages_success, 0),
+    )
 
 
 def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:

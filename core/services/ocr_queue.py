@@ -34,6 +34,42 @@ class OCRBatchResult:
     failed: int = 0
 
 
+
+
+def _normalize_extract_result(raw_result):
+    if isinstance(raw_result, str):
+        text = raw_result
+        pages_success = 1 if (text or "").strip() else 0
+        return {
+            "text": text,
+            "method": "extract_text",
+            "total_pages": 1,
+            "pages_success": pages_success,
+            "pages_failed": 1 - pages_success,
+        }
+
+    if isinstance(raw_result, dict):
+        text = raw_result.get("text", "") or ""
+        total_pages = int(raw_result.get("total_pages") or 1)
+        pages_success = int(raw_result.get("pages_success") or 0)
+        pages_failed = int(raw_result.get("pages_failed") or max(total_pages - pages_success, 0))
+        return {
+            "text": text,
+            "method": raw_result.get("method") or "extract_text",
+            "total_pages": max(total_pages, 1),
+            "pages_success": max(pages_success, 0),
+            "pages_failed": max(pages_failed, 0),
+        }
+
+    text = str(raw_result or "")
+    pages_success = 1 if text.strip() else 0
+    return {
+        "text": text,
+        "method": "extract_text",
+        "total_pages": 1,
+        "pages_success": pages_success,
+        "pages_failed": 1 - pages_success,
+    }
 def get_pdf_page_count(file_path: Path) -> int | None:
     try:
         reader = PdfReader(str(file_path))
@@ -171,7 +207,8 @@ def process_pending_ocr_attachments(
         file_path = upload_folder / attachment.filename
 
         try:
-            content = extract_text(str(file_path))
+            extraction = _normalize_extract_result(extract_text(str(file_path)))
+            content = extraction["text"]
             attachment.content = content
             attachment.ocr_text = content
             finished_at = datetime.now(timezone.utc)
@@ -182,19 +219,14 @@ def process_pending_ocr_attachments(
             ocr_char_count = len((content or "").strip())
             attachment.ocr_char_count = ocr_char_count
             if is_pdf_ocr_eligible(attachment.filename, attachment.mime_type):
-                ocr_page_count = get_pdf_page_count(file_path) or 1
-                attachment.ocr_page_count = ocr_page_count
-                if ocr_char_count > 0:
-                    attachment.ocr_pages_success = ocr_page_count
-                    attachment.ocr_pages_failed = 0
-                else:
-                    attachment.ocr_pages_success = 0
-                    attachment.ocr_pages_failed = ocr_page_count
+                attachment.ocr_page_count = extraction["total_pages"]
+                attachment.ocr_pages_success = extraction["pages_success"]
+                attachment.ocr_pages_failed = extraction["pages_failed"]
             else:
                 attachment.ocr_page_count = 1
-                attachment.ocr_pages_success = 1
-                attachment.ocr_pages_failed = 0
-            attachment.ocr_engine = "extract_text"
+                attachment.ocr_pages_success = 1 if ocr_char_count > 0 else 0
+                attachment.ocr_pages_failed = 0 if ocr_char_count > 0 else 1
+            attachment.ocr_engine = extraction["method"]
             attachment.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
 
             if ocr_char_count < low_yield_threshold:
@@ -298,7 +330,8 @@ def process_pending_ocr_boletins(
         file_path = upload_folder / boletim.arquivo
 
         try:
-            content = extract_text(str(file_path))
+            extraction = _normalize_extract_result(extract_text(str(file_path)))
+            content = extraction["text"]
             boletim.ocr_text = content
             finished_at = datetime.now(timezone.utc)
             boletim.ocr_finished_at = finished_at
@@ -307,15 +340,10 @@ def process_pending_ocr_boletins(
             boletim.ocr_error_message = None
             ocr_char_count = len((content or "").strip())
             boletim.ocr_char_count = ocr_char_count
-            ocr_page_count = get_pdf_page_count(file_path) or 1
-            boletim.ocr_page_count = ocr_page_count
-            if ocr_char_count > 0:
-                boletim.ocr_pages_success = ocr_page_count
-                boletim.ocr_pages_failed = 0
-            else:
-                boletim.ocr_pages_success = 0
-                boletim.ocr_pages_failed = ocr_page_count
-            boletim.ocr_engine = "extract_text"
+            boletim.ocr_page_count = extraction["total_pages"]
+            boletim.ocr_pages_success = extraction["pages_success"]
+            boletim.ocr_pages_failed = extraction["pages_failed"]
+            boletim.ocr_engine = extraction["method"]
             boletim.ocr_processing_time_seconds = max((finished_at - started_at).total_seconds(), 0.0)
 
             if ocr_char_count < low_yield_threshold:
