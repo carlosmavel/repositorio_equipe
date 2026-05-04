@@ -954,3 +954,19 @@
   background-color: #6c757d;
   color: #fff;
 }
+
+
+.ocr-details-panel,
+.boletim-surface,
+.boletim-ocr-text,
+.boletim-pdf-thumbnail {
+  background-color: var(--bg-muted) !important;
+  color: var(--text-default);
+}
+
+[data-bs-theme="dark"] .ocr-details-panel,
+[data-bs-theme="dark"] .boletim-surface,
+[data-bs-theme="dark"] .boletim-ocr-text,
+[data-bs-theme="dark"] .boletim-pdf-thumbnail {
+  border-color: var(--border-default) !important;
+}
