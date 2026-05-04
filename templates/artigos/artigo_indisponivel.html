@@ -6,7 +6,7 @@
 <div class="container py-4">
   <div class="alert alert-warning" role="alert">
     <h4 class="alert-heading">Recurso indisponível</h4>
-    <p class="mb-0">Este artigo não está mais disponível. Ele pode ter sido excluído definitivamente por um administrador.</p>
+    <p class="mb-0">{% if auditoria_exclusao %}Este artigo foi excluído definitivamente por um administrador.{% else %}Este artigo não está mais disponível. Ele pode ter sido excluído definitivamente por um administrador.{% endif %}</p>
   </div>
 
   {% if auditoria_exclusao %}
@@ -24,7 +24,7 @@
         <dd class="col-sm-8">{{ auditoria_exclusao.deleted_at }}</dd>
 
         <dt class="col-sm-4">Motivo</dt>
-        <dd class="col-sm-8">{{ auditoria_exclusao.reason }}</dd>
+        <dd class="col-sm-8">{{ auditoria_exclusao.reason | striptags | trim }}</dd>
 
         <dt class="col-sm-4">ID original do artigo</dt>
         <dd class="col-sm-8">{{ auditoria_exclusao.article_id }}</dd>
