@@ -33,9 +33,9 @@
 
           <div class="row g-4">
             <div class="col-12 col-lg-4">
-              <div class="border rounded p-3 bg-light h-100">
+              <div class="border rounded p-3 boletim-surface h-100">
                 <h5 class="mb-3">Capa do PDF</h5>
-                <div id="boletim-pdf-thumbnail" class="d-flex align-items-center justify-content-center border rounded bg-white" style="min-height: 260px;">
+                <div id="boletim-pdf-thumbnail" class="d-flex align-items-center justify-content-center border rounded boletim-pdf-thumbnail" style="min-height: 260px;">
                   <div id="boletim-pdf-placeholder" class="text-center text-muted px-3">
                     <i class="bi bi-file-earmark-pdf fs-1 d-block mb-2" aria-hidden="true"></i>
                     <span>Miniatura indisponível.</span>
@@ -54,7 +54,7 @@
 
             <div class="col-12 col-lg-8">
               <h5>Texto OCR</h5>
-              <div class="border rounded bg-light p-3" style="max-height: 380px; overflow-y: auto; white-space: pre-wrap;">
+              <div class="border rounded boletim-ocr-text p-3" style="max-height: 380px; overflow-y: auto; white-space: pre-wrap;">
                 {% if boletim.ocr_text and boletim.ocr_text.strip() %}
                 {{ boletim.ocr_text }}
                 {% else %}

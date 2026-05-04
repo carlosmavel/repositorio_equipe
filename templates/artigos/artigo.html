@@ -126,7 +126,7 @@
                     Detalhes do OCR
                   </button>
                   <div class="collapse mt-2" id="{{ ocr_panel_id }}">
-                    <div class="border rounded p-2 small bg-light">
+                    <div class="border rounded p-2 small ocr-details-panel">
                       <div><strong>Caracteres OCR:</strong> {{ att.ocr_char_count if att.ocr_char_count is not none else '—' }}</div>
                       <div><strong>Páginas OCR:</strong> {{ att.ocr_page_count if att.ocr_page_count is not none else '—' }}</div>
                       <div><strong>Páginas com sucesso:</strong> {{ att.ocr_pages_success if att.ocr_pages_success is not none else '—' }}</div>
