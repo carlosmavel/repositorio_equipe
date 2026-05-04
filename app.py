@@ -7,9 +7,11 @@ import os
 import json
 import time
 import uuid
+import hashlib
 import re # Você já tinha, bom para futuras validações
 import sys
 from datetime import datetime, timezone # Adicionei datetime aqui se for usar em 'strptime' na rota de perfil
+from pathlib import Path
 from zoneinfo import ZoneInfo # Você já tinha
 from urllib.parse import urlsplit, urlunsplit
 
@@ -22,6 +24,7 @@ import click
 from flask_migrate import Migrate
 from werkzeug.security import check_password_hash, generate_password_hash # generate_password_hash se for resetar senha no admin
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
 from sqlalchemy import or_, func
 #from models import user_funcoes
 
@@ -46,6 +49,7 @@ try:
         Notification,
         Comment,
         Attachment,
+        Boletim,
         Instituicao,
         Celula,
         Estabelecimento,
@@ -63,6 +67,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         Notification,
         Comment,
         Attachment,
+        Boletim,
         Instituicao,
         Celula,
         Estabelecimento,
@@ -119,7 +124,6 @@ except ImportError:  # pragma: no cover - fallback for direct execution
     from core.services.ocr_queue import process_pending_ocr_items
 
 from mimetypes import guess_type # Se for usar, descomente
-from werkzeug.utils import secure_filename # Útil para uploads, como na sua foto de perfil
 
 # -------------------------------------------------------------------------
 # Constantes de apoio
@@ -332,6 +336,133 @@ def process_ocr_pendente_command(
         f"attachments(recover={attachment_result.recovered_stuck}, processed={attachment_result.processed}, concluido={attachment_result.concluded}, baixo_aproveitamento={attachment_result.low_yield}, erro={attachment_result.failed}) "
         f"boletins(recover={boletim_result.recovered_stuck}, processed={boletim_result.processed}, concluido={boletim_result.concluded}, baixo_aproveitamento={boletim_result.low_yield}, erro={boletim_result.failed})"
     )
+
+
+def _parse_boletim_date_from_title(filename_stem: str):
+    match = re.search(r"(\d{1,2})_(\d{1,2})_(\d{2}|\d{4})$", filename_stem.strip())
+    if not match:
+        return None
+
+    day = int(match.group(1))
+    month = int(match.group(2))
+    year_raw = match.group(3)
+    year = int(year_raw)
+    if len(year_raw) == 2:
+        year += 2000
+
+    try:
+        return datetime(year, month, day).date()
+    except ValueError:
+        return None
+
+
+def _file_sha256(path: Path) -> str:
+    hasher = hashlib.sha256()
+    with path.open("rb") as file_obj:
+        for chunk in iter(lambda: file_obj.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+@app.cli.command("importar-boletins")
+@click.option("--pasta", required=True, type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.option("--admin-email", required=True, type=str)
+@click.option("--dry-run", is_flag=True, default=False)
+def importar_boletins_command(pasta: Path, admin_email: str, dry_run: bool) -> None:
+    """Importa boletins PDF em lote com extração de data no título."""
+    admin = User.query.filter(func.lower(User.email) == admin_email.strip().lower()).one_or_none()
+    if not admin:
+        raise click.ClickException(f"Usuário administrador não encontrado para o e-mail: {admin_email}")
+
+    upload_dir = Path(app.config["UPLOAD_FOLDER"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    pdf_paths = sorted([path for path in pasta.rglob("*") if path.is_file() and path.suffix.lower() == ".pdf"])
+    click.echo(f"🔎 Arquivos PDF encontrados: {len(pdf_paths)}")
+
+    existing_name_and_size = {
+        (row.arquivo or "", os.path.getsize(upload_dir / row.arquivo) if (upload_dir / row.arquivo).exists() else None)
+        for row in Boletim.query.with_entities(Boletim.arquivo).all()
+    }
+    existing_hashes = set()
+    for arquivo, _ in existing_name_and_size:
+        full_path = upload_dir / arquivo
+        if full_path.exists() and full_path.is_file():
+            try:
+                existing_hashes.add(_file_sha256(full_path))
+            except OSError:
+                continue
+
+    imported = 0
+    duplicated = 0
+    errored = 0
+    with_date = 0
+    without_date = 0
+
+    for pdf_path in pdf_paths:
+        titulo = pdf_path.stem
+        boletim_date = _parse_boletim_date_from_title(titulo)
+        if boletim_date:
+            with_date += 1
+            date_text = boletim_date.strftime("%d/%m/%Y")
+        else:
+            without_date += 1
+            date_text = "data não identificada"
+
+        try:
+            file_hash = _file_sha256(pdf_path)
+            duplicate_by_hash = file_hash in existing_hashes
+            duplicate_by_name = any((pdf_path.name == item_name) for item_name, _ in existing_name_and_size)
+            if duplicate_by_hash or duplicate_by_name:
+                duplicated += 1
+                click.echo(f"⏭️  Ignorado duplicado: {pdf_path} ({date_text})")
+                continue
+
+            dest_filename = secure_filename(pdf_path.name)
+            dest_name = dest_filename
+            if (upload_dir / dest_name).exists():
+                dest_name = f"{uuid.uuid4().hex}_{dest_filename}"
+
+            click.echo(f"📄 Processando: {pdf_path} | data: {date_text}")
+            if dry_run:
+                imported += 1
+                continue
+
+            with pdf_path.open("rb") as src, (upload_dir / dest_name).open("wb") as dst:
+                dst.write(src.read())
+
+            data_boletim = boletim_date or datetime.now().date()
+            boletim = Boletim(
+                titulo=titulo,
+                data_boletim=data_boletim,
+                arquivo=dest_name,
+                created_by=admin.id,
+                ocr_status="pendente",
+            )
+            db.session.add(boletim)
+            db.session.flush()
+
+            imported += 1
+            existing_hashes.add(file_hash)
+            existing_name_and_size.add((dest_name, os.path.getsize(upload_dir / dest_name)))
+        except Exception as exc:
+            errored += 1
+            click.echo(f"❌ Erro ao processar {pdf_path}: {exc}")
+            if not dry_run:
+                db.session.rollback()
+
+    if not dry_run:
+        db.session.commit()
+
+    click.echo("")
+    click.echo("📊 Resumo da importação de boletins")
+    click.echo(f"- total de arquivos encontrados: {len(pdf_paths)}")
+    click.echo(f"- total importado: {imported}")
+    click.echo(f"- total ignorado (duplicidade): {duplicated}")
+    click.echo(f"- total com erro: {errored}")
+    click.echo(f"- total com data identificada: {with_date}")
+    click.echo(f"- total sem data: {without_date}")
+    click.echo(f"- modo dry-run: {'sim' if dry_run else 'não'}")
 
 
 def _should_run_startup_bootstrap() -> bool:
