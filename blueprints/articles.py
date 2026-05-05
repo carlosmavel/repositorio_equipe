@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app, g
 from sqlalchemy import or_, func, text, and_
+import math
 import re
 
 try:
@@ -1141,6 +1142,8 @@ def pesquisar():
         return redirect(url_for('login'))
 
     q = request.args.get('q','').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = min(max(request.args.get('per_page', 20, type=int), 1), 100)
     tipo_id = request.args.get('tipo_id', type=int)
     area_id = request.args.get('area_id', type=int)
     sistema_id = request.args.get('sistema_id', type=int)
@@ -1231,6 +1234,12 @@ def pesquisar():
         return redirect(url_for('login'))
 
     artigos = [a for a in artigos if user_can_view_article(user, a)]
+    total_artigos = len(artigos)
+    total_paginas = max(1, math.ceil(total_artigos / per_page))
+    page = min(max(page, 1), total_paginas)
+    inicio = (page - 1) * per_page
+    fim = inicio + per_page
+    artigos = artigos[inicio:fim]
 
     # formata datas para o fuso local
     for art in artigos:
@@ -1258,5 +1267,9 @@ def pesquisar():
         tipos_artigo=ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all(),
         areas_artigo=ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all(),
         sistemas_artigo=ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all(),
-        now=datetime.now(ZoneInfo("America/Sao_Paulo"))
+        now=datetime.now(ZoneInfo("America/Sao_Paulo")),
+        page=page,
+        per_page=per_page,
+        total_paginas=total_paginas,
+        total_artigos=total_artigos,
     )

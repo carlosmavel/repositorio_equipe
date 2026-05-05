@@ -63,13 +63,27 @@
 
       {% if pagination and pagination.pages > 1 %}
       <nav class="mt-3" aria-label="Paginação">
-        <ul class="pagination">
+        <ul class="pagination flex-wrap gap-1">
+          <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=1) }}">Primeira</a>
+          </li>
           <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
             <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=pagination.prev_num) }}">Anterior</a>
           </li>
           <li class="page-item disabled"><span class="page-link">Página {{ pagination.page }} de {{ pagination.pages }}</span></li>
           <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
             <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=pagination.next_num) }}">Próxima</a>
+          </li>
+          <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('boletins_buscar', q=termo, per_page=per_page, page=pagination.pages) }}">Última</a>
+          </li>
+          <li class="page-item">
+            <form method="get" class="d-flex ms-2">
+              <input type="hidden" name="q" value="{{ termo }}">
+              <input type="hidden" name="per_page" value="{{ per_page }}">
+              <input class="form-control form-control-sm" type="number" name="page" min="1" max="{{ pagination.pages }}" value="{{ pagination.page }}" style="width: 90px;" aria-label="Página específica">
+              <button class="btn btn-sm btn-outline-secondary ms-1" type="submit">Ir</button>
+            </form>
           </li>
         </ul>
       </nav>
