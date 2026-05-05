@@ -469,7 +469,7 @@ def extract_text_from_pdf(
             pages_success=total_pages if direct_text.strip() else 0,
             pages_failed=0 if direct_text.strip() else total_pages,
         )
-        final_char_count = len(re.sub(r"\s+", "", result["text"] or ""))
+        final_char_count = direct_char_count
         logger.info(
             "ocr_result_selected",
             extra={
