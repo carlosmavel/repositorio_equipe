@@ -131,3 +131,28 @@ def test_busca_boletim_aproximada_com_percentual(client):
 
     assert resp.status_code == 200
     assert b'Comunicado Dia livre dos pais 2026' in resp.data
+
+
+def test_busca_boletim_percentual_sem_bordas(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Comunicado Dia dos pais 2026', 'Texto irrelevante', date(2026, 1, 7))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'Dia%pais'})
+
+    assert resp.status_code == 200
+    assert b'Comunicado Dia dos pais 2026' in resp.data
+
+
+def test_busca_boletim_percentual_prefixo_sufixo(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Comunicado Dia dos pais', 'Texto irrelevante', date(2026, 1, 8))
+
+    resp_prefixo = client.get('/boletins/buscar', query_string={'q': '%pais'})
+    resp_sufixo = client.get('/boletins/buscar', query_string={'q': 'Dia%'})
+
+    assert resp_prefixo.status_code == 200
+    assert resp_sufixo.status_code == 200
+    assert b'Comunicado Dia dos pais' in resp_prefixo.data
+    assert b'Comunicado Dia dos pais' in resp_sufixo.data

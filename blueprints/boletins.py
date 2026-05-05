@@ -3,18 +3,19 @@ import os
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, or_, text
 from werkzeug.utils import secure_filename
-import unicodedata
 
 try:
     from ..core.database import db
     from ..core.models import Boletim, User
     from ..core.services.ocr_queue import enqueue_boletim_for_ocr
+    from ..core.utils import build_like_pattern, strip_accents
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Boletim, User
     from core.services.ocr_queue import enqueue_boletim_for_ocr
+    from core.utils import build_like_pattern, strip_accents
 
 boletins_bp = Blueprint('boletins_bp', __name__)
 
@@ -143,10 +144,6 @@ def buscar_boletins():
         except Exception:
             supports_unaccent = False
 
-    def _strip_accents(value: str) -> str:
-        normalized = unicodedata.normalize('NFD', value or '')
-        return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
-
     def _sql_strip_accents(expression):
         normalized = func.lower(func.coalesce(expression, ''))
         for accented, plain in (
@@ -162,10 +159,8 @@ def buscar_boletins():
 
     query = Boletim.query
     if termo:
-        has_wildcard = '%' in termo
-        like = termo if has_wildcard else f"%{termo}%"
-        like_normalized = _strip_accents(termo).lower()
-        like_normalized = like_normalized if has_wildcard else f"%{like_normalized}%"
+        like = build_like_pattern(termo)
+        like_normalized = build_like_pattern(strip_accents(termo).lower())
 
         conditions = [
             Boletim.titulo.ilike(like),
