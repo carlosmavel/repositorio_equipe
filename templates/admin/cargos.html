@@ -3,6 +3,40 @@
 {% block title %}Admin - Gerenciar Cargos{% endblock %}
 
 {% block content %}
+{% macro permissao_descricao(funcao) -%}
+    {%- if 'editar' in funcao.codigo -%}
+        Permite editar artigos
+    {%- elif 'aprovar' in funcao.codigo -%}
+        Permite aprovar artigos pendentes
+    {%- elif 'revisar' in funcao.codigo -%}
+        Permite revisar conteúdo de artigos
+    {%- elif 'assumir_revisao' in funcao.codigo -%}
+        Permite assumir a responsabilidade por revisões de artigos
+    {%- elif funcao.codigo == 'artigo_area_gerenciar' -%}
+        Permite gerenciar o cadastro de áreas dos artigos
+    {%- elif funcao.codigo == 'artigo_tipo_gerenciar' -%}
+        Permite gerenciar o cadastro de tipos dos artigos
+    {%- elif funcao.codigo == 'artigo_ocr_reprocessar' -%}
+        Permite reprocessar OCR de anexos dos artigos
+    {%- elif funcao.codigo == 'artigo_excluir_definitivo' -%}
+        Permite excluir artigos definitivamente
+    {%- else -%}
+        Permite executar esta ação em artigos
+    {%- endif -%}
+    {%- if 'celula' in funcao.codigo -%}
+        , com alcance na célula.
+    {%- elif 'setor' in funcao.codigo -%}
+        , com alcance no setor.
+    {%- elif 'estabelecimento' in funcao.codigo -%}
+        , com alcance no estabelecimento.
+    {%- elif 'instituicao' in funcao.codigo -%}
+        , com alcance na instituição.
+    {%- elif 'todas' in funcao.codigo -%}
+        , com alcance geral.
+    {%- else -%}
+        .
+    {%- endif -%}
+{%- endmacro %}
 <div class="container-fluid page-root">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
         <h1 class="h2">Gerenciar Cargos</h1>
@@ -224,11 +258,27 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
+                            {% set ns = namespace(celula=[], setor=[], area=[]) %}
                             {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
-                                    <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
-                                </div>
+                                {% if 'celula' in f.codigo %}{% set _ = ns.celula.append(f) %}
+                                {% elif 'setor' in f.codigo %}{% set _ = ns.setor.append(f) %}
+                                {% else %}{% set _ = ns.area.append(f) %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for titulo, permissoes in [('Permissões por Célula', ns.celula), ('Permissões por Setor', ns.setor), ('Permissões por Área', ns.area)] %}
+                                {% if permissoes %}
+                                    <h6 class="mt-2 mb-1 text-muted">{{ titulo }}</h6>
+                                    {% for f in permissoes %}
+                                        <div class="form-check d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" id="c_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if f.id|string in request.form.getlist('funcao_ids') %}checked{% endif %}>
+                                            <label class="form-check-label" for="c_funcao{{ f.id }}">{{ f.nome }}</label>
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ permissao_descricao(f) }}" aria-label="Informações sobre {{ f.nome }}">
+                                                <i class="bi bi-info-circle"></i>
+                                            </button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
@@ -341,11 +391,26 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                     <div class="card-body">
+                            {% set ns_edit = namespace(celula=[], setor=[], area=[]) %}
                             {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
-                                    <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
-                                </div>
+                                {% if 'celula' in f.codigo %}{% set _ = ns_edit.celula.append(f) %}
+                                {% elif 'setor' in f.codigo %}{% set _ = ns_edit.setor.append(f) %}
+                                {% else %}{% set _ = ns_edit.area.append(f) %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for titulo, permissoes in [('Permissões por Célula', ns_edit.celula), ('Permissões por Setor', ns_edit.setor), ('Permissões por Área', ns_edit.area)] %}
+                                {% if permissoes %}
+                                    <h6 class="mt-2 mb-1 text-muted">{{ titulo }}</h6>
+                                    {% for f in permissoes %}
+                                        <div class="form-check d-flex align-items-center gap-2">
+                                            <input class="form-check-input" type="checkbox" id="e_funcao{{ f.id }}" name="funcao_ids" value="{{ f.id }}" {% if (request.form.getlist('funcao_ids') and f.id|string in request.form.getlist('funcao_ids')) or (not request.form.getlist('funcao_ids') and (f in cargo_editar.permissoes.all())) %}checked{% endif %}>
+                                            <label class="form-check-label" for="e_funcao{{ f.id }}">{{ f.nome }}</label>
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ permissao_descricao(f) }}" aria-label="Informações sobre {{ f.nome }}">
+                                                <i class="bi bi-info-circle"></i>
+                                            </button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
@@ -396,6 +461,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle=\"tooltip\"]').forEach(function(el) { new bootstrap.Tooltip(el); });
     document.querySelectorAll('.toggle-section').forEach(function(btn) {
         const icon = btn.querySelector('i');
         if (btn.getAttribute('aria-expanded') === 'true') {
