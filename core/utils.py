@@ -2,6 +2,7 @@
 
 import bleach
 import re
+import unicodedata
 from typing import Any, TypedDict
 
 import os
@@ -57,6 +58,27 @@ from sqlalchemy import select
 logger = logging.getLogger(__name__)
 _RESERVED_LOG_RECORD_FIELDS = set(logging.makeLogRecord({}).__dict__.keys())
 
+
+
+
+def strip_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFD", value or "")
+    return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+
+
+def build_like_pattern(term: str) -> str:
+    cleaned = (term or '').strip()
+    if not cleaned:
+        return ''
+
+    if '%' in cleaned:
+        if not cleaned.startswith('%'):
+            cleaned = f"%{cleaned}"
+        if not cleaned.endswith('%'):
+            cleaned = f"{cleaned}%"
+        return cleaned
+
+    return f"%{cleaned}%"
 
 class ExtractedTextResult(TypedDict):
     text: str

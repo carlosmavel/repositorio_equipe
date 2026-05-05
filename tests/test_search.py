@@ -154,3 +154,20 @@ def test_search_includes_concluded_or_low_yield_ocr_status(client):
     resp = client.get('/pesquisar', query_string={'q': 'frase_unica_baixo_aproveitamento'})
     assert resp.status_code == 200
     assert b'Baixo aproveitamento OCR' in resp.data
+
+
+def test_article_search_with_percent_without_edges(client):
+    login(client)
+    resp = client.get('/pesquisar', query_string={'q': 'Dom%Casmurro'})
+    assert resp.status_code == 200
+    assert b'Art' in resp.data
+
+
+def test_article_search_with_percent_prefix_and_suffix(client):
+    login(client)
+    resp_prefix = client.get('/pesquisar', query_string={'q': '%Casmurro'})
+    resp_suffix = client.get('/pesquisar', query_string={'q': 'Dom%'})
+    assert resp_prefix.status_code == 200
+    assert resp_suffix.status_code == 200
+    assert b'Art' in resp_prefix.data
+    assert b'Art' in resp_suffix.data

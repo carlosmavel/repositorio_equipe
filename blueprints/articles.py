@@ -27,6 +27,8 @@ try:
         user_can_review_article,
         log_article_event,
         log_article_exception,
+        build_like_pattern,
+        strip_accents,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
@@ -38,6 +40,8 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         user_can_review_article,
         log_article_event,
         log_article_exception,
+        build_like_pattern,
+        strip_accents,
     )
 try:
     from ..core.services.ocr_queue import (
@@ -64,7 +68,6 @@ except ImportError:  # pragma: no cover
         mark_progress_done,
     )
 import time
-import unicodedata
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from mimetypes import guess_type
@@ -1158,36 +1161,26 @@ def pesquisar():
         Article.status.in_([ArticleStatus.APROVADO, ArticleStatus.EM_REVISAO])
     )
 
-    def strip_accents(value: str) -> str:
-        normalized = unicodedata.normalize("NFD", value or "")
-        return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
-
-    tokens = []
     if q:
-        exact = False
         term = q
         if len(term) >= 2 and term.startswith('"') and term.endswith('"'):
             term = term[1:-1]
-            exact = True
-
-        tokens = [term] if exact else [t for t in term.split() if t]
 
         if is_postgresql:
-            for token in tokens:
-                like = f"%{token}%"
-                normalized_token = strip_accents(token)
-                like_unaccent = f"%{normalized_token}%"
-                ts_query = func.plainto_tsquery('portuguese', token)
-                attachment_text_fts = func.to_tsvector('portuguese', func.coalesce(Attachment.ocr_text, ''))
-                article_text_fts = func.to_tsvector('portuguese', func.coalesce(Article.texto, ''))
-                sub = (
+            like = build_like_pattern(term)
+            normalized_token = strip_accents(term)
+            like_unaccent = build_like_pattern(normalized_token)
+            ts_query = func.plainto_tsquery('portuguese', term) if '%' not in term else None
+            attachment_text_fts = func.to_tsvector('portuguese', func.coalesce(Attachment.ocr_text, ''))
+            article_text_fts = func.to_tsvector('portuguese', func.coalesce(Article.texto, ''))
+            sub = (
                     db.session.query(Attachment.article_id)
                     .filter(
                         Attachment.ocr_status.in_(searchable_ocr_statuses),
                         or_(
                             Attachment.filename.ilike(like),
                             Attachment.ocr_text.ilike(like),
-                            attachment_text_fts.op('@@')(ts_query),
+                            attachment_text_fts.op('@@')(ts_query) if ts_query is not None else text("FALSE"),
                             func.unaccent(Attachment.filename).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
                             func.unaccent(func.coalesce(Attachment.ocr_text, '')).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
                         )
@@ -1195,16 +1188,16 @@ def pesquisar():
                     .scalar_subquery()
                 )
 
-                query = query.filter(
-                    or_(
-                        Article.titulo.ilike(like),
-                        Article.texto.ilike(like),
-                        article_text_fts.op('@@')(ts_query),
-                        func.unaccent(Article.titulo).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
-                        func.unaccent(Article.texto).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
-                        Article.id.in_(sub)
-                    )
+            query = query.filter(
+                or_(
+                    Article.titulo.ilike(like),
+                    Article.texto.ilike(like),
+                    article_text_fts.op('@@')(ts_query) if ts_query is not None else text("FALSE"),
+                    func.unaccent(Article.titulo).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
+                    func.unaccent(Article.texto).ilike(like_unaccent) if supports_unaccent else text("FALSE"),
+                    Article.id.in_(sub)
                 )
+            )
 
     if tipo_id:
         query = query.filter(Article.tipo_id == tipo_id)
@@ -1216,19 +1209,16 @@ def pesquisar():
     artigos = query.order_by(Article.created_at.desc()).all()
 
     if q and not is_postgresql:
+        term = q[1:-1] if len(q) >= 2 and q.startswith('"') and q.endswith('"') else q
+        pattern = build_like_pattern(strip_accents(term).lower()).replace('%', '.*')
+        regex = re.compile(pattern)
+
         def matches(article):
-            def norm(value: str) -> str:
-                return strip_accents(value or "").lower()
-
-            def token_found(token: str) -> bool:
-                t = norm(token)
-                fields = [article.titulo, article.texto]
-                for att in getattr(article, 'attachments', []) or []:
-                    if att.ocr_status in searchable_ocr_statuses and att.ocr_text:
-                        fields.extend([att.filename, att.ocr_text])
-                return any(t in norm(f) for f in fields if f is not None)
-
-            return all(token_found(tok) for tok in tokens)
+            fields = [article.titulo, article.texto]
+            for att in getattr(article, 'attachments', []) or []:
+                if att.ocr_status in searchable_ocr_statuses:
+                    fields.extend([att.filename, att.ocr_text])
+            return any(regex.search(strip_accents((f or '')).lower()) for f in fields if f is not None)
 
         artigos = [a for a in artigos if matches(a)]
 
