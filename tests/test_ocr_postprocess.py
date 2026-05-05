@@ -1,5 +1,4 @@
 import types
-import os
 from PIL import Image
 from core.utils import extract_text_from_pdf
 
@@ -114,3 +113,55 @@ def test_detect_sparse(monkeypatch, tmp_path):
     calls["count"] = 0
     text2 = extract_text_from_pdf(str(pdf), reorder=True, clean=True, detect_sparse=False)
     assert calls["count"] == 0
+
+
+def test_pdf_direct_text_sufficient_skips_convert_from_path(monkeypatch, tmp_path):
+    pdf = tmp_path / "sample.pdf"
+    create_dummy_pdf(pdf)
+
+    monkeypatch.setattr("core.utils._get_pdf_total_pages", lambda p: 2)
+    monkeypatch.setattr("core.utils._extract_pdf_text_without_ocr", lambda p: "A" * 220)
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: (_ for _ in ()).throw(AssertionError("não deveria chamar OCR por página")))
+
+    result = extract_text_from_pdf(str(pdf), return_metadata=True)
+    assert result["method"] == "pdf_direct_text"
+    assert result["total_pages"] == 2
+
+
+def test_pdf_direct_text_low_yield_fallbacks_to_page_ocr(monkeypatch, tmp_path):
+    pdf = tmp_path / "scan.pdf"
+    create_dummy_pdf(pdf)
+    img = Image.new("RGB", (800, 800), "white")
+    calls = {"preprocess": 0, "extract": 0}
+
+    monkeypatch.setattr("core.utils._get_pdf_total_pages", lambda p: 4)
+    monkeypatch.setattr("core.utils._extract_pdf_text_without_ocr", lambda p: "abc")
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: [img, img, img, img])
+
+    def fake_preprocess(image, **kwargs):
+        calls["preprocess"] += 1
+        return image
+
+    def fake_extract(image, **kwargs):
+        calls["extract"] += 1
+        return "texto ocr"
+
+    monkeypatch.setattr("core.utils.preprocess_image", fake_preprocess)
+    monkeypatch.setattr("core.utils.extract_text_from_image", fake_extract)
+
+    result = extract_text_from_pdf(str(pdf), return_metadata=True)
+    assert result["method"] == "pdf_ocr_page_by_page"
+    assert result["total_pages"] == 4
+    assert calls["preprocess"] == 4
+    assert calls["extract"] == 4
+
+
+def test_total_pages_comes_from_pdf_counter_not_newlines(monkeypatch, tmp_path):
+    pdf = tmp_path / "lines.pdf"
+    create_dummy_pdf(pdf)
+    monkeypatch.setattr("core.utils._get_pdf_total_pages", lambda p: 4)
+    monkeypatch.setattr("core.utils._extract_pdf_text_without_ocr", lambda p: "linha1\nlinha2\nlinha3\nlinha4\nlinha5\n" + ("x" * 250))
+    monkeypatch.setattr("core.utils.convert_from_path", lambda p, dpi=300: (_ for _ in ()).throw(AssertionError("não deveria chamar OCR por página")))
+
+    result = extract_text_from_pdf(str(pdf), return_metadata=True)
+    assert result["total_pages"] == 4
