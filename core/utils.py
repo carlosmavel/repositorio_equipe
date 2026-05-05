@@ -13,6 +13,7 @@ import xlrd
 from odf import opendocument
 from odf.text import P
 import logging
+import time
 import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 
@@ -429,20 +430,38 @@ def extract_text_from_pdf(
     correspondentes são habilitados. Com todos os parâmetros em ``False`` o
     comportamento é idêntico ao anterior.
     """
+    started_at = time.monotonic()
+    total_pages = _get_pdf_total_pages(path)
+    logger.info("pdf_page_count_detected", extra={"ocr_page_count": total_pages})
+
     direct_text = _extract_pdf_text_without_ocr(path)
-    if direct_text:
-        total_pages = direct_text.count("\n") + 1 if direct_text else 1
-        final_char_count = len(direct_text.strip())
-        logger.info(
-            "pdf_direct_text",
-            extra={
-                "ocr_method": "pdf_direct_text",
-                "ocr_engine": "pdf_direct_text",
-                "ocr_page_count": total_pages,
-                "ocr_char_count": final_char_count,
-                "ocr_status": "concluido",
-            },
-        )
+    direct_char_count = len(re.sub(r"\s+", "", direct_text or ""))
+    direct_text_min_chars = 100
+    min_chars_per_page = 50
+    should_fallback = (
+        not direct_text
+        or direct_char_count < direct_text_min_chars
+        or (total_pages > 0 and (direct_char_count / total_pages) < min_chars_per_page)
+    )
+    fallback_reason = None
+    if not direct_text:
+        fallback_reason = "direct_text_empty"
+    elif direct_char_count < direct_text_min_chars:
+        fallback_reason = "direct_text_below_min_chars"
+    elif total_pages > 0 and (direct_char_count / total_pages) < min_chars_per_page:
+        fallback_reason = "direct_text_below_min_chars_per_page"
+
+    logger.info(
+        "pdf_direct_text_evaluation",
+        extra={
+            "ocr_page_count": total_pages,
+            "ocr_char_count": direct_char_count,
+            "ocr_fallback": should_fallback,
+            "ocr_fallback_reason": fallback_reason,
+        },
+    )
+
+    if not should_fallback:
         result = _build_extraction_result(
             direct_text,
             method="pdf_direct_text",
@@ -450,12 +469,42 @@ def extract_text_from_pdf(
             pages_success=total_pages if direct_text.strip() else 0,
             pages_failed=0 if direct_text.strip() else total_pages,
         )
+        final_char_count = len(re.sub(r"\s+", "", result["text"] or ""))
+        logger.info(
+            "ocr_result_selected",
+            extra={
+                "ocr_method": result["method"],
+                "ocr_engine": result["method"],
+                "ocr_page_count": result["total_pages"],
+                "ocr_pages_success": result["pages_success"],
+                "ocr_pages_failed": result["pages_failed"],
+                "ocr_char_count": final_char_count,
+                "ocr_status": "concluido",
+            },
+        )
+        logger.info(
+            "ocr_processing_finished",
+            extra={
+                "ocr_method": result["method"],
+                "ocr_engine": result["method"],
+                "ocr_processing_time_seconds": round(time.monotonic() - started_at, 4),
+                "ocr_status": "concluido",
+            },
+        )
         return result if return_metadata else result["text"]
 
     if not (convert_from_path and Image and pytesseract):
         logger.warning("pdf2image, PIL ou pytesseract indisponivel para %s", path)
         result = _build_extraction_result("", method="pdf_ocr_page_by_page")
         return result if return_metadata else result["text"]
+    logger.info(
+        "ocr_fallback_started",
+        extra={
+            "ocr_page_count": total_pages,
+            "ocr_fallback_reason": fallback_reason or "direct_text_low_yield",
+            "ocr_status": "baixo_aproveitamento",
+        },
+    )
     try:
         images = convert_from_path(path, dpi=300)
     except Exception as e:  # pragma: no cover - erro ao converter
@@ -463,7 +512,6 @@ def extract_text_from_pdf(
         result = _build_extraction_result("", method="pdf_ocr_page_by_page")
         return result if return_metadata else result["text"]
     text_parts: list[str] = []
-    total_pages = len(images) or 1
     logger.info(
         "pdf_ocr_page_by_page",
         extra={
@@ -497,27 +545,47 @@ def extract_text_from_pdf(
             text_parts.append("")
     pages_success = sum(1 for txt in text_parts if (txt or "").strip())
     final_text = "\n".join(text_parts)
-    final_char_count = len(final_text.strip())
+    final_char_count = len(re.sub(r"\s+", "", final_text or ""))
+    pages_failed = max(total_pages - pages_success, 0)
     logger.info(
-        "pdf_ocr_page_by_page",
+        "ocr_result_selected",
         extra={
             "ocr_method": "pdf_ocr_page_by_page",
             "ocr_engine": "pdf_ocr_page_by_page",
-            "ocr_page_count": total_pages or 1,
+            "ocr_page_count": total_pages,
             "ocr_pages_success": pages_success,
-            "ocr_pages_failed": max((total_pages or 1) - pages_success, 0),
+            "ocr_pages_failed": pages_failed,
             "ocr_char_count": final_char_count,
-            "ocr_status": "concluido",
+            "ocr_status": "concluido" if final_char_count else "baixo_aproveitamento",
+        },
+    )
+    logger.info(
+        "ocr_processing_finished",
+        extra={
+            "ocr_method": "pdf_ocr_page_by_page",
+            "ocr_engine": "pdf_ocr_page_by_page",
+            "ocr_processing_time_seconds": round(time.monotonic() - started_at, 4),
+            "ocr_status": "concluido" if final_char_count else "baixo_aproveitamento",
         },
     )
     result = _build_extraction_result(
         final_text,
         method="pdf_ocr_page_by_page",
-        total_pages=total_pages or 1,
+        total_pages=total_pages,
         pages_success=pages_success,
-        pages_failed=max((total_pages or 1) - pages_success, 0),
+        pages_failed=pages_failed,
     )
     return result if return_metadata else result["text"]
+
+
+def _get_pdf_total_pages(path: str) -> int:
+    if not PdfReader:  # pragma: no cover
+        return 1
+    try:
+        return max(len(PdfReader(path).pages), 1)
+    except Exception as e:  # pragma: no cover
+        logger.warning("Falha ao detectar total de paginas de %s: %s", path, e)
+        return 1
 
 
 def _extract_pdf_text_without_ocr(path: str, sample_pages: int = 3) -> str:
