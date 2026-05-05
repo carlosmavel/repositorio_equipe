@@ -258,15 +258,17 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                         <div class="card-body">
-                            {% set ns = namespace(celula=[], setor=[], area=[]) %}
+                            {% set ns = namespace(instituicao=[], estabelecimento=[], setor=[], celula=[], cadastros=[]) %}
                             {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
-                                {% if 'celula' in f.codigo %}{% set _ = ns.celula.append(f) %}
+                                {% if 'instituicao' in f.codigo %}{% set _ = ns.instituicao.append(f) %}
+                                {% elif 'estabelecimento' in f.codigo %}{% set _ = ns.estabelecimento.append(f) %}
                                 {% elif 'setor' in f.codigo %}{% set _ = ns.setor.append(f) %}
-                                {% else %}{% set _ = ns.area.append(f) %}
+                                {% elif 'celula' in f.codigo %}{% set _ = ns.celula.append(f) %}
+                                {% else %}{% set _ = ns.cadastros.append(f) %}
                                 {% endif %}
                             {% endfor %}
 
-                            {% for titulo, permissoes in [('Permissões por Célula', ns.celula), ('Permissões por Setor', ns.setor), ('Permissões por Área', ns.area)] %}
+                            {% for titulo, permissoes in [('Permissões por Instituição', ns.instituicao), ('Permissões por Estabelecimento', ns.estabelecimento), ('Permissões por Setor', ns.setor), ('Permissões por Célula', ns.celula), ('Cadastros de Artigo', ns.cadastros)] %}
                                 {% if permissoes %}
                                     <h6 class="mt-2 mb-1 text-muted">{{ titulo }}</h6>
                                     {% for f in permissoes %}
@@ -391,14 +393,16 @@
                     <div class="card mb-3">
                         <div class="card-header"><h6 class="mb-0">Permissões de Artigos</h6></div>
                     <div class="card-body">
-                            {% set ns_edit = namespace(celula=[], setor=[], area=[]) %}
+                            {% set ns_edit = namespace(instituicao=[], estabelecimento=[], setor=[], celula=[], cadastros=[]) %}
                             {% for f in funcoes_por_categoria.get('Permissões de Artigos', []) %}
-                                {% if 'celula' in f.codigo %}{% set _ = ns_edit.celula.append(f) %}
+                                {% if 'instituicao' in f.codigo %}{% set _ = ns_edit.instituicao.append(f) %}
+                                {% elif 'estabelecimento' in f.codigo %}{% set _ = ns_edit.estabelecimento.append(f) %}
                                 {% elif 'setor' in f.codigo %}{% set _ = ns_edit.setor.append(f) %}
-                                {% else %}{% set _ = ns_edit.area.append(f) %}
+                                {% elif 'celula' in f.codigo %}{% set _ = ns_edit.celula.append(f) %}
+                                {% else %}{% set _ = ns_edit.cadastros.append(f) %}
                                 {% endif %}
                             {% endfor %}
-                            {% for titulo, permissoes in [('Permissões por Célula', ns_edit.celula), ('Permissões por Setor', ns_edit.setor), ('Permissões por Área', ns_edit.area)] %}
+                            {% for titulo, permissoes in [('Permissões por Instituição', ns_edit.instituicao), ('Permissões por Estabelecimento', ns_edit.estabelecimento), ('Permissões por Setor', ns_edit.setor), ('Permissões por Célula', ns_edit.celula), ('Cadastros de Artigo', ns_edit.cadastros)] %}
                                 {% if permissoes %}
                                     <h6 class="mt-2 mb-1 text-muted">{{ titulo }}</h6>
                                     {% for f in permissoes %}
