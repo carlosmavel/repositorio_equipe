@@ -72,7 +72,7 @@ def test_busca_boletim_ignora_acentos(client):
         user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
         _create_boletim(user, 'Boletim de Ação Integrada', 'Texto com informação técnica', date(2026, 1, 3))
 
-    resp = client.get('/boletins/buscar', query_string={'q': 'acao informacao'})
+    resp = client.get('/boletins/buscar', query_string={'q': '%acao%'})
 
     assert resp.status_code == 200
     assert b'Boletim de A' in resp.data
@@ -107,3 +107,27 @@ def test_listagem_oculta_atalho_buscar_sem_permissao(client):
     assert resp.status_code == 200
     assert b'Pesquisar boletins' not in resp.data
     assert b'>Buscar<' not in resp.data
+
+
+def test_busca_boletim_frase_exata_sem_percentual(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Comunicado Dia dos pais 2026', 'Texto irrelevante', date(2026, 1, 4))
+        _create_boletim(user, 'Comunicado Dia livre dos pais 2026', 'Texto irrelevante', date(2026, 1, 5))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'Dia dos pais'})
+
+    assert resp.status_code == 200
+    assert b'Comunicado Dia dos pais 2026' in resp.data
+    assert b'Comunicado Dia livre dos pais 2026' not in resp.data
+
+
+def test_busca_boletim_aproximada_com_percentual(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Comunicado Dia livre dos pais 2026', 'Texto irrelevante', date(2026, 1, 6))
+
+    resp = client.get('/boletins/buscar', query_string={'q': '%Dia%pais%'})
+
+    assert resp.status_code == 200
+    assert b'Comunicado Dia livre dos pais 2026' in resp.data

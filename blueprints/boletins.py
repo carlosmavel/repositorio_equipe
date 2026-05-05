@@ -3,7 +3,7 @@ import os
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, func, or_, text
+from sqlalchemy import and_, func, or_
 from werkzeug.utils import secure_filename
 import unicodedata
 
@@ -162,26 +162,23 @@ def buscar_boletins():
 
     query = Boletim.query
     if termo:
-        tokens = [t for t in termo.split() if t]
-        for token in tokens:
-            like = f"%{token}%"
-            like_normalized = f"%{_strip_accents(token).lower()}%"
-            conditions = [
-                Boletim.titulo.ilike(like),
-                Boletim.ocr_text.ilike(like),
-                _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
-                _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
-            ]
-            if is_postgresql:
-                conditions.append(
-                    func.to_tsvector('portuguese', func.coalesce(Boletim.titulo, '') + text("' '") + func.coalesce(Boletim.ocr_text, '')).op('@@')(func.plainto_tsquery('portuguese', token))
-                )
-                if supports_unaccent:
-                    conditions.extend([
-                        func.unaccent(Boletim.titulo).ilike(f"%{_strip_accents(token)}%"),
-                        func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(f"%{_strip_accents(token)}%"),
-                    ])
-            query = query.filter(or_(*conditions))
+        has_wildcard = '%' in termo
+        like = termo if has_wildcard else f"%{termo}%"
+        like_normalized = _strip_accents(termo).lower()
+        like_normalized = like_normalized if has_wildcard else f"%{like_normalized}%"
+
+        conditions = [
+            Boletim.titulo.ilike(like),
+            Boletim.ocr_text.ilike(like),
+            _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
+            _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
+        ]
+        if is_postgresql and supports_unaccent:
+            conditions.extend([
+                func.unaccent(Boletim.titulo).ilike(like_normalized),
+                func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(like_normalized),
+            ])
+        query = query.filter(or_(*conditions))
 
     pagination = query.order_by(Boletim.data_boletim.desc(), Boletim.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
     return render_template(
