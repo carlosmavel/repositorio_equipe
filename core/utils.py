@@ -189,22 +189,85 @@ def log_article_exception(
 #-------------------------------------------------------------------------------------------
 # Configura o campo de texto para se comportar corretamente quando recebe tags HTML
 #-------------------------------------------------------------------------------------------
+_SAFE_DATA_IMAGE_RE = re.compile(
+    r"^data:image/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$",
+    re.IGNORECASE,
+)
+_QUILL_CLASS_RE = re.compile(
+    r"^ql-(?:align-(?:center|right|justify)|indent-[1-8]|direction-rtl|list-.+)$"
+)
+_URL_SCHEME_RE = re.compile(r"^([a-z0-9+.-]+):", re.IGNORECASE)
+
+
+def _url_scheme(value: str) -> str | None:
+    normalized = re.sub(r"[\x00-\x20]+", "", value or "").lower()
+    match = _URL_SCHEME_RE.match(normalized)
+    return match.group(1) if match else None
+
+
+def _is_safe_link(value: str) -> bool:
+    return _url_scheme(value) in {None, "http", "https", "mailto"}
+
+
+def _is_safe_image_src(value: str) -> bool:
+    stripped = (value or "").strip()
+    if _SAFE_DATA_IMAGE_RE.match(stripped):
+        return True
+    return _url_scheme(stripped) in {None, "http", "https"}
+
+
+def _has_only_safe_quill_classes(value: str) -> bool:
+    classes = (value or "").split()
+    return bool(classes) and all(
+        _QUILL_CLASS_RE.match(class_name) for class_name in classes
+    )
+
+
+def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
+    allowed_attrs_by_tag = {
+        "a": {"href", "title", "target", "rel"},
+        "img": {"src", "alt", "title", "width", "height"},
+        "th": {"colspan", "rowspan"},
+        "td": {"colspan", "rowspan"},
+    }
+
+    if name == "class":
+        return _has_only_safe_quill_classes(value)
+
+    if name not in allowed_attrs_by_tag.get(tag, set()):
+        return False
+
+    if tag == "a" and name == "href":
+        return _is_safe_link(value)
+
+    if tag == "a" and name == "target":
+        return value in {"_blank", "_self", "_parent", "_top"}
+
+    if tag == "img" and name == "src":
+        return _is_safe_image_src(value)
+
+    if tag == "img" and name in {"width", "height"}:
+        return bool(re.fullmatch(r"(?:\d{1,4}|\d{1,3}%)", value or ""))
+
+    if tag in {"th", "td"} and name in {"colspan", "rowspan"}:
+        return bool(re.fullmatch(r"\d{1,2}", value or ""))
+
+    return True
+
+
 def sanitize_html(text: str) -> str:
     allowed_tags = [
-        'p', 'br', 'strong', 'em', 'u', 's', 'sub', 'sup',
-        'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a'
+        "h1", "h2", "h3", "p", "br", "ul", "ol", "li",
+        "strong", "b", "em", "i", "u", "blockquote", "a", "img",
+        "table", "thead", "tbody", "tr", "th", "td",
     ]
-    allowed_attrs = {
-        '*': ['class'],
-        'a': ['href', 'title'],
-    }
 
     return bleach.clean(
         text,
         tags=allowed_tags,
-        attributes=allowed_attrs,
+        attributes=_sanitize_html_attribute,
         strip=True,
-        protocols=['http', 'https', 'mailto']
+        protocols=["http", "https", "mailto", "data"],
     )
 
 """
