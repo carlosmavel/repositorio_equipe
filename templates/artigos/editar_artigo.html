@@ -207,7 +207,8 @@
   const visChecks = document.querySelectorAll('.vis-check');
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
-  const STORAGE_KEY = 'draft_editar_artigo_{{ artigo.id }}';
+  const STORAGE_KEY = 'artigo_edicao_autosave_{{ artigo.id }}';
+  const ARTICLE_VIEW_PATH = {{ url_for('artigo', artigo_id=artigo.id) | tojson }};
   const DRASTIC_REDUCTION_MESSAGE = 'Esta alteração reduz significativamente o conteúdo do artigo. Confirme se deseja continuar.';
   const previousArticleCharCount = Number({{ previous_char_count | default(0) | tojson }}) || 0;
 
@@ -390,6 +391,61 @@
     resetProgressMessages();
   };
 
+  function isArticleViewUrl(url, expectedPath = ARTICLE_VIEW_PATH) {
+    if (!url) return false;
+    try {
+      const parsed = new URL(url, window.location.origin);
+      return parsed.pathname === expectedPath;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function hasArticleSaveSuccessMarker(html) {
+    return typeof html === 'string' && (
+      html.includes('data-artigo-save-success="true"') ||
+      html.includes('id="artigo-save-success"') ||
+      html.includes('artigo-save-success')
+    );
+  }
+
+  async function resolveEditSubmitResult(response, expectedPath = ARTICLE_VIEW_PATH) {
+    if (response.redirected) {
+      return {
+        shouldClearAutosave: isArticleViewUrl(response.url, expectedPath),
+        redirectUrl: response.url,
+        html: null
+      };
+    }
+
+    if (!response.ok) {
+      return { shouldClearAutosave: false, redirectUrl: null, html: null };
+    }
+
+    const contentType = response.headers?.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        return { shouldClearAutosave: false, redirectUrl: null, html: null };
+      }
+      const success = data?.success === true || data?.ok === true || data?.status === 'success';
+      return {
+        shouldClearAutosave: success,
+        redirectUrl: success ? (data.redirect_url || data.redirectUrl || null) : null,
+        html: null
+      };
+    }
+
+    const html = await response.text();
+    return {
+      shouldClearAutosave: hasArticleSaveSuccessMarker(html),
+      redirectUrl: null,
+      html
+    };
+  }
+
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
   if (form) {
@@ -411,7 +467,6 @@
       resetProgressMessages();
       setOverlayState('Salvando artigo e anexos...', 0);
       startProgressPolling(progressId);
-      localStorage.removeItem(STORAGE_KEY);
 
       try {
         const formData = new FormData(form);
@@ -423,19 +478,35 @@
           method: 'POST',
           body: formData
         });
+        const submitResult = await resolveEditSubmitResult(response);
 
-        if (response.redirected) {
+        if (submitResult.shouldClearAutosave) {
+          localStorage.removeItem(STORAGE_KEY);
           completeBar();
-          window.location.href = response.url;
+          if (submitResult.redirectUrl) {
+            window.location.href = submitResult.redirectUrl;
+          } else {
+            setTimeout(() => window.location.reload(), 400);
+          }
+          return;
+        }
+
+        if (submitResult.redirectUrl) {
+          window.location.href = submitResult.redirectUrl;
+          return;
+        }
+
+        if (submitResult.html) {
+          document.open();
+          document.write(submitResult.html);
+          document.close();
           return;
         }
       } catch (err) {
         console.error('Falha ao salvar artigo', err);
       }
 
-      completeBar();
-      stopProgressPolling();
-      setTimeout(() => window.location.reload(), 400);
+      hideOverlay();
     });
   }
 
