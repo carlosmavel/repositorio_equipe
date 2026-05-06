@@ -54,6 +54,20 @@ except ImportError:  # pragma: no cover
         enqueue_attachment_for_ocr,
         is_pdf_ocr_eligible,
     )
+
+try:
+    from ..core.services.article_versions import (
+        article_relevant_state_changed,
+        calculate_text_char_count,
+        create_article_version_snapshot,
+    )
+except ImportError:  # pragma: no cover
+    from core.services.article_versions import (
+        article_relevant_state_changed,
+        calculate_text_char_count,
+        create_article_version_snapshot,
+    )
+
 try:
     from ..core.progress import (
         clear_progress,
@@ -278,6 +292,15 @@ def novo_artigo():
             )
             db.session.add(artigo)
             db.session.flush()
+            create_article_version_snapshot(
+                artigo,
+                user,
+                "create_initial",
+                source_status_after=status,
+                force_version=0,
+                force_revision=1,
+                correlation_id=correlation_id,
+            )
 
             # 3) Salva arquivos com nome único, extrai texto e cria Attachments
             filenames = []
@@ -328,7 +351,18 @@ def novo_artigo():
             # 4) Atualiza o campo JSON de nomes no artigo
             artigo.arquivos = json.dumps(filenames) if filenames else None
 
-            # 5) Persiste tudo num único commit
+            # 5) Notifica responsáveis/admins, se necessário
+            if status is ArticleStatus.PENDENTE:
+                destinatarios = eligible_review_notification_users(artigo)
+                for dest in destinatarios:
+                    notif = Notification(
+                        user_id = dest.id,
+                        message = f'Novo artigo pendente para revisão: “{artigo.titulo}”',
+                        url     = url_for('aprovacao_detail', artigo_id=artigo.id)
+                    )
+                    db.session.add(notif)
+
+            # 6) Persiste artigo, anexos, snapshot e notificações num único commit
             db.session.commit()
             mark_progress_done(progress_id)
             log_article_event(
@@ -341,18 +375,6 @@ def novo_artigo():
                 progress_id=progress_id,
                 correlation_id=correlation_id,
             )
-
-            # 6) Notifica responsáveis/admins, se necessário
-            if status is ArticleStatus.PENDENTE:
-                destinatarios = eligible_review_notification_users(artigo)
-                for dest in destinatarios:
-                    notif = Notification(
-                        user_id = dest.id,
-                        message = f'Novo artigo pendente para revisão: “{artigo.titulo}”',
-                        url     = url_for('aprovacao_detail', artigo_id=artigo.id)
-                    )
-                    db.session.add(notif)
-                db.session.commit()
         except RequestEntityTooLarge:
             db.session.rollback()
             flash('Erro de upload: o tamanho dos anexos excede o limite permitido.', 'danger')
@@ -457,8 +479,33 @@ def artigo(artigo_id):
             flash('Permissão negada.', 'danger')
             return redirect(url_for('artigo', artigo_id=artigo_id))
         # 1) campos básicos
-        artigo.titulo = request.form['titulo']
-        artigo.texto  = request.form['texto']
+        novo_titulo = request.form['titulo']
+        novo_texto = request.form['texto']
+        status_before = artigo.status
+        if article_relevant_state_changed(
+            artigo,
+            titulo=novo_titulo,
+            texto=novo_texto,
+            status=ArticleStatus.PENDENTE,
+        ):
+            snapshot_action = (
+                "edit_after_approved"
+                if status_before is ArticleStatus.APROVADO
+                else "submit_for_approval"
+            )
+            create_article_version_snapshot(
+                artigo,
+                user,
+                snapshot_action,
+                source_status_before=status_before,
+                source_status_after=ArticleStatus.PENDENTE,
+                correlation_id=getattr(g, "request_correlation_id", None),
+                drastic_reduction_data={
+                    "previous_text_char_count": calculate_text_char_count(artigo.texto),
+                },
+            )
+        artigo.titulo = novo_titulo
+        artigo.texto  = novo_texto
         artigo.status = ArticleStatus.PENDENTE
         artigo.updated_at = datetime.now(timezone.utc)
 
@@ -697,6 +744,7 @@ def editar_artigo(artigo_id):
         ArticleStatus.EM_REVISAO.value,
         ArticleStatus.EM_AJUSTE.value,
         ArticleStatus.REJEITADO.value,
+        ArticleStatus.APROVADO.value,
     }
     can_submit_actions = True
 
@@ -742,12 +790,9 @@ def editar_artigo(artigo_id):
             flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
-        artigo.titulo = titulo
-        artigo.texto  = texto
-        artigo.tipo_id = request.form.get('tipo_id', type=int)
-        artigo.area_id = request.form.get('area_id', type=int)
-        artigo.sistema_id = request.form.get('sistema_id', type=int)
-        artigo.updated_at = datetime.now(timezone.utc)
+        tipo_id = request.form.get('tipo_id', type=int)
+        area_id = request.form.get('area_id', type=int)
+        sistema_id = request.form.get('sistema_id', type=int)
 
         # visibilidade
         user = User.query.filter_by(username=session["username"]).first()
@@ -766,13 +811,55 @@ def editar_artigo(artigo_id):
         elif vis is ArticleVisibility.CELULA:
             vis_cel_id = user.celula_id
 
-        artigo.visibility = vis
-        artigo.instituicao_id = inst_id
-        artigo.estabelecimento_id = est_id
-        artigo.setor_id = setor_vis_id
-        artigo.vis_celula_id = vis_cel_id
+        status_before = artigo.status
+        status_after = ArticleStatus.PENDENTE if acao == "enviar" else artigo.status
+        relevant_change = article_relevant_state_changed(
+            artigo,
+            titulo=titulo,
+            texto=texto,
+            tipo_id=tipo_id,
+            area_id=area_id,
+            sistema_id=sistema_id,
+            visibility=vis,
+            instituicao_id=inst_id,
+            estabelecimento_id=est_id,
+            setor_id=setor_vis_id,
+            vis_celula_id=vis_cel_id,
+            status=status_after,
+        )
 
         try:
+            if relevant_change:
+                if acao == "enviar":
+                    snapshot_action = "submit_for_approval"
+                elif status_value == ArticleStatus.APROVADO.value:
+                    snapshot_action = "edit_after_approved"
+                else:
+                    snapshot_action = "edit"
+                create_article_version_snapshot(
+                    artigo,
+                    user,
+                    snapshot_action,
+                    source_status_before=status_before,
+                    source_status_after=status_after,
+                    correlation_id=correlation_id,
+                    drastic_reduction_data={
+                        "previous_text_char_count": calculate_text_char_count(artigo.texto),
+                    },
+                )
+
+            artigo.titulo = titulo
+            artigo.texto  = texto
+            artigo.tipo_id = tipo_id
+            artigo.area_id = area_id
+            artigo.sistema_id = sistema_id
+            artigo.updated_at = datetime.now(timezone.utc)
+            artigo.visibility = vis
+            artigo.instituicao_id = inst_id
+            artigo.estabelecimento_id = est_id
+            artigo.setor_id = setor_vis_id
+            artigo.vis_celula_id = vis_cel_id
+
             # anexos ─ exclusões + novos
             existing = json.loads(artigo.arquivos or "[]")
 
@@ -1033,37 +1120,65 @@ def aprovacao_detail(artigo_id):
             flash('Comentário é obrigatório.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
-        # 1) Atualiza o status -------------------------------------------------
+        # 1) Define a decisão de status ---------------------------------------
+        status_before = artigo.status
         if acao == 'aprovar':
             if not user_can_approve_article(user, artigo):
                 flash('Permissão negada.', 'danger')
                 return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
-            artigo.status = ArticleStatus.APROVADO
+            target_status = ArticleStatus.APROVADO
             msg = f"Artigo '{artigo.titulo}' aprovado!"
         elif acao == 'ajustar':
             if not user_can_review_article(user, artigo):
                 flash('Permissão negada.', 'danger')
                 return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
-            artigo.status = ArticleStatus.EM_AJUSTE
+            target_status = ArticleStatus.EM_AJUSTE
             msg = f"Artigo '{artigo.titulo}' marcado como Em Ajuste."
         elif acao == 'rejeitar':
             if not user_can_review_article(user, artigo):
                 flash('Permissão negada.', 'danger')
                 return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
-            artigo.status = ArticleStatus.REJEITADO
+            target_status = ArticleStatus.REJEITADO
             msg = f"Artigo '{artigo.titulo}' rejeitado!"
         else:
             flash('Ação desconhecida.', 'warning')
             return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
 
-        # 2) Registra comentário de ajuste/aprovação/rejeição ------------------
+        # 2) Versiona a decisão e registra comentário/notificação no mesmo commit
+        snapshot_action = {
+            'aprovar': 'approve',
+            'ajustar': 'request_adjustment',
+            'rejeitar': 'reject',
+        }[acao]
+        if acao == 'aprovar':
+            artigo.status = target_status
+            create_article_version_snapshot(
+                artigo,
+                user,
+                snapshot_action,
+                change_reason=comentario,
+                source_status_before=status_before,
+                source_status_after=target_status,
+                correlation_id=getattr(g, "request_correlation_id", None),
+            )
+        else:
+            create_article_version_snapshot(
+                artigo,
+                user,
+                snapshot_action,
+                change_reason=comentario,
+                source_status_before=status_before,
+                source_status_after=target_status,
+                correlation_id=getattr(g, "request_correlation_id", None),
+            )
+            artigo.status = target_status
+
         novo_comment = Comment(
             artigo_id = artigo.id,
             user_id   = user.id,
             texto     = comentario
         )
         db.session.add(novo_comment)
-        db.session.commit()
 
         # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
@@ -1118,8 +1233,17 @@ def solicitar_revisao(artigo_id):
         )
         db.session.add(rr)
 
+        status_before = artigo.status
+        create_article_version_snapshot(
+            artigo,
+            user,
+            "request_revision",
+            change_reason=comentario,
+            source_status_before=status_before,
+            source_status_after=ArticleStatus.EM_REVISAO,
+            correlation_id=getattr(g, "request_correlation_id", None),
+        )
         artigo.status = ArticleStatus.EM_REVISAO
-        db.session.commit()
 
         destinatarios = [artigo.author] + [u for u in User.query.all() if u.has_permissao('admin')]
         for u in destinatarios:

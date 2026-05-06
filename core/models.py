@@ -439,6 +439,10 @@ class ArticleVersion(db.Model):
     changed_by_username = db.Column(db.String(80), nullable=True)
     changed_by_email = db.Column(db.String(120), nullable=True)
     changed_by_nome_completo = db.Column(db.String(255), nullable=True)
+    changed_by_cargo_nome = db.Column(db.String(200), nullable=True)
+    changed_by_setor_nome = db.Column(db.String(200), nullable=True)
+    changed_by_celula_nome = db.Column(db.String(200), nullable=True)
+    changed_by_estabelecimento_nome_fantasia = db.Column(db.String(200), nullable=True)
 
     change_action = db.Column(db.String(64), nullable=False)
     change_reason = db.Column(db.Text, nullable=True)
