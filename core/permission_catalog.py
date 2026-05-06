@@ -20,6 +20,7 @@ class PermissionCatalogItem:
 
 
 FRIENDLY_NAMES: dict[str, str] = {
+    Permissao.ARTIGO_RESTAURAR_VERSAO.value: "Restaurar versão de artigo",
     Permissao.BOLETIM_VISUALIZAR.value: "Boletim visualizar",
     Permissao.BOLETIM_BUSCAR.value: "Boletim buscar",
     Permissao.BOLETIM_GERENCIAR.value: "Boletim gerenciar",

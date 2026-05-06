@@ -8,6 +8,7 @@ from core.utils import (
     user_can_edit_article,
     user_can_approve_article,
     user_can_review_article,
+    user_can_restore_article_version,
     user_can_view_article,
 )
 
@@ -135,6 +136,16 @@ def test_valid_user_permissions_keep_current_behavior():
     assert user_can_review_article(admin, article) is True
     assert user_can_view_article(admin, article) is True
     assert user_can_approve_article(admin, article) is True
+    assert user_can_restore_article_version(admin) is True
+
+
+def test_user_can_restore_article_version_requires_admin_or_specific_permission():
+    assert user_can_restore_article_version(None) is False
+    assert user_can_restore_article_version(_FakeUser(perms=set())) is False
+    assert user_can_restore_article_version(_FakeUser(perms={'admin'})) is True
+    assert user_can_restore_article_version(
+        _FakeUser(perms={Permissao.ARTIGO_RESTAURAR_VERSAO.value})
+    ) is True
 
 
 def test_pesquisar_filter_with_none_user_does_not_raise_exception():
