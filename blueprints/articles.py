@@ -59,14 +59,20 @@ except ImportError:  # pragma: no cover
 try:
     from ..core.services.article_versions import (
         article_relevant_state_changed,
+        calculate_plain_text_char_count,
+        calculate_reduction_percent,
         calculate_text_char_count,
         create_article_version_snapshot,
+        is_drastic_content_reduction,
     )
 except ImportError:  # pragma: no cover
     from core.services.article_versions import (
         article_relevant_state_changed,
+        calculate_plain_text_char_count,
+        calculate_reduction_percent,
         calculate_text_char_count,
         create_article_version_snapshot,
+        is_drastic_content_reduction,
     )
 
 
@@ -164,8 +170,30 @@ def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=N
         areas_artigo=areas_artigo,
         sistemas_artigo=sistemas_artigo,
         can_submit_actions=can_submit_actions,
+        previous_char_count=calculate_plain_text_char_count(artigo.texto),
         form_data=form_data,
     )
+
+def _build_drastic_reduction_data(previous_text, new_text):
+    previous_char_count = calculate_plain_text_char_count(previous_text)
+    new_char_count = calculate_plain_text_char_count(new_text)
+    reduction_percent = calculate_reduction_percent(previous_char_count, new_char_count)
+    drastic_reduction = is_drastic_content_reduction(
+        previous_char_count,
+        new_char_count,
+        reduction_percent,
+    )
+    return {
+        "drastic_reduction": drastic_reduction,
+        "previous_char_count": previous_char_count,
+        "new_char_count": new_char_count,
+        "reduction_percent": reduction_percent,
+        # Compatibilidade com campos legados do ArticleVersion.
+        "previous_text_char_count": previous_char_count,
+        "text_reduction_percent": reduction_percent,
+        "drastic_reduction_detected": drastic_reduction,
+    }
+
 
 def _has_required_text_content(sanitized_text):
     text_without_tags = re.sub(r"<[^>]*>", " ", sanitized_text or "")
@@ -947,6 +975,13 @@ def editar_artigo(artigo_id):
             flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
+        drastic_reduction_data = _build_drastic_reduction_data(artigo.texto, texto)
+        drastic_reduction_confirmed = request.form.get('drastic_reduction_confirmed') == 'true'
+        if drastic_reduction_data["drastic_reduction"] and not drastic_reduction_confirmed:
+            flash('Esta alteração reduz significativamente o conteúdo do artigo. Confirme se deseja continuar.', 'warning')
+            flash('Se você selecionou anexos, será necessário reenviá-los após confirmar a alteração (limitação de multipart).', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
+
         tipo_id = request.form.get('tipo_id', type=int)
         area_id = request.form.get('area_id', type=int)
         sistema_id = request.form.get('sistema_id', type=int)
@@ -993,17 +1028,6 @@ def editar_artigo(artigo_id):
                     snapshot_action = "edit_after_approved"
                 else:
                     snapshot_action = "edit"
-                create_article_version_snapshot(
-                    artigo,
-                    user,
-                    snapshot_action,
-                    source_status_before=status_before,
-                    source_status_after=status_after,
-                    correlation_id=correlation_id,
-                    drastic_reduction_data={
-                        "previous_text_char_count": calculate_text_char_count(artigo.texto),
-                    },
-                )
 
             artigo.titulo = titulo
             artigo.texto  = texto
@@ -1094,6 +1118,17 @@ def editar_artigo(artigo_id):
                 flash("Artigo enviado para revisão!", "success")
             else:
                 flash("Artigo salvo!", "success")
+
+            if relevant_change:
+                create_article_version_snapshot(
+                    artigo,
+                    user,
+                    snapshot_action,
+                    source_status_before=status_before,
+                    source_status_after=status_after,
+                    correlation_id=correlation_id,
+                    drastic_reduction_data=drastic_reduction_data,
+                )
 
             db.session.commit()
             mark_progress_done(progress_id)

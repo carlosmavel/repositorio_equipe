@@ -42,6 +42,10 @@
           {% set form_texto = f.get('texto', artigo.texto) %}
           {% set vis = f.get('visibility', artigo.visibility.value) %}
           <input type="hidden" name="progress_id" id="progress-id">
+          <input type="hidden" name="drastic_reduction_confirmed" id="drastic-reduction-confirmed" value="false">
+          <input type="hidden" name="previous_char_count" id="previous-char-count">
+          <input type="hidden" name="new_char_count" id="new-char-count">
+          <input type="hidden" name="reduction_percent" id="reduction-percent">
           <div class="mb-3">
             <label class="form-label">Título</label>
             <input name="titulo" class="form-control" value="{{ form_titulo }}" required>
@@ -204,6 +208,34 @@
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
   const STORAGE_KEY = 'draft_editar_artigo_{{ artigo.id }}';
+  const DRASTIC_REDUCTION_MESSAGE = 'Esta alteração reduz significativamente o conteúdo do artigo. Confirme se deseja continuar.';
+  const previousArticleCharCount = Number({{ previous_char_count | default(0) | tojson }}) || 0;
+
+  function normalizePlainTextForCount(text) {
+    return (text || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function plainTextFromHtmlForCount(html) {
+    const holder = document.createElement('div');
+    holder.innerHTML = html || '';
+    return normalizePlainTextForCount(holder.textContent || holder.innerText || '');
+  }
+
+  function calculateReductionPercent(previousCount, newCount) {
+    if (!previousCount || previousCount <= 0 || newCount >= previousCount) return 0;
+    return ((previousCount - newCount) / previousCount) * 100;
+  }
+
+  function updateReductionFields({ confirmed = false } = {}) {
+    const newText = normalizePlainTextForCount(quill.getText ? quill.getText() : plainTextFromHtmlForCount(quill.root.innerHTML));
+    const newCharCount = newText.length;
+    const reductionPercent = calculateReductionPercent(previousArticleCharCount, newCharCount);
+    document.getElementById('drastic-reduction-confirmed').value = confirmed ? 'true' : 'false';
+    document.getElementById('previous-char-count').value = String(previousArticleCharCount);
+    document.getElementById('new-char-count').value = String(newCharCount);
+    document.getElementById('reduction-percent').value = reductionPercent.toFixed(2);
+    return { newCharCount, reductionPercent };
+  }
   function saveDraft() {
     localStorage.setItem(
       STORAGE_KEY,
@@ -366,6 +398,13 @@
       const hiddenTexto = document.getElementById('hidden-texto');
       if (hiddenTexto) {
         hiddenTexto.value = quill.root.innerHTML;
+      }
+      const reductionMetrics = updateReductionFields();
+      const hasDrasticReduction = reductionMetrics.reductionPercent > 70 || (previousArticleCharCount > 2000 && reductionMetrics.newCharCount < 300);
+      if (hasDrasticReduction) {
+        const confirmed = window.confirm(DRASTIC_REDUCTION_MESSAGE);
+        if (!confirmed) return;
+        updateReductionFields({ confirmed: true });
       }
       const progressId = progressIdInput?.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
       if (progressIdInput) progressIdInput.value = progressId;
