@@ -62,6 +62,7 @@ try:
         calculate_plain_text_char_count,
         calculate_reduction_percent,
         calculate_text_char_count,
+        compare_article_versions,
         create_article_version_snapshot,
         is_drastic_content_reduction,
     )
@@ -71,6 +72,7 @@ except ImportError:  # pragma: no cover
         calculate_plain_text_char_count,
         calculate_reduction_percent,
         calculate_text_char_count,
+        compare_article_versions,
         create_article_version_snapshot,
         is_drastic_content_reduction,
     )
@@ -662,6 +664,56 @@ def historico_versoes_artigo(artigo_id):
         artigo=artigo,
         versoes=versoes,
         can_restore_versions=user_can_restore_article_version(user),
+        ArticleStatus=ArticleStatus,
+    )
+
+
+@articles_bp.route('/artigo/<int:artigo_id>/versoes/comparar', methods=['GET'], endpoint='comparar_versoes_artigo')
+def comparar_versoes_artigo(artigo_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
+
+    user = User.query.filter_by(username=session['username']).first()
+    if not user_can_view_article(user, artigo):
+        flash('Você não tem permissão para ver este artigo.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    from_id = request.args.get('from', type=int)
+    to_id = request.args.get('to', type=int)
+    if not from_id or not to_id or from_id == to_id:
+        flash('Selecione duas versões diferentes para comparar.', 'warning')
+        return redirect(url_for('historico_versoes_artigo', artigo_id=artigo.id))
+
+    versoes = (
+        ArticleVersion.query
+        .filter(
+            ArticleVersion.article_id == artigo.id,
+            ArticleVersion.id.in_([from_id, to_id]),
+        )
+        .all()
+    )
+    if len(versoes) != 2:
+        flash('Uma ou mais versões selecionadas não pertencem a este artigo.', 'danger')
+        return redirect(url_for('historico_versoes_artigo', artigo_id=artigo.id))
+
+    versoes_por_id = {versao.id: versao for versao in versoes}
+    from_version = versoes_por_id[from_id]
+    to_version = versoes_por_id[to_id]
+    for versao in (from_version, to_version):
+        versao.local_created_at = _local_datetime(versao.created_at)
+
+    comparacao = compare_article_versions(from_version, to_version)
+
+    return render_template(
+        'artigos/comparar_versoes.html',
+        artigo=artigo,
+        from_version=from_version,
+        to_version=to_version,
+        comparacao=comparacao,
         ArticleStatus=ArticleStatus,
     )
 
