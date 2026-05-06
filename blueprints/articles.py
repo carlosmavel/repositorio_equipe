@@ -10,9 +10,9 @@ except ImportError:
     from core.database import db
 
 try:
-    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article
+    from ..core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article, ArticleVersion
 except ImportError:
-    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article
+    from core.models import Article, Attachment, Comment, Notification, User, RevisionRequest, ArtigoTipo, ArtigoArea, ArtigoSistema, ArticleDeletionAudit, ProcessoEtapa, Processo, processo_etapa_article, ArticleVersion
 
 try:
     from ..core.enums import ArticleStatus, ArticleVisibility, Permissao
@@ -31,6 +31,7 @@ try:
         log_article_exception,
         build_like_pattern,
         strip_accents,
+        user_can_restore_article_version,
     )
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
@@ -44,6 +45,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
         log_article_exception,
         build_like_pattern,
         strip_accents,
+        user_can_restore_article_version,
     )
 try:
     from ..core.services.ocr_queue import (
@@ -77,11 +79,6 @@ except ImportError:  # pragma: no cover
         is_drastic_content_reduction,
     )
 
-
-# Importados separadamente após a definição/carregamento dos modelos para evitar
-# acoplamento com a lista principal de modelos do blueprint.
-from core.models import ArticleVersion
-from core.utils import user_can_restore_article_version
 
 try:
     from ..core.progress import (
