@@ -22,6 +22,87 @@ def test_sanitize_html_removes_disallowed_tags():
     assert "<div" not in cleaned
 
 
+def test_sanitize_html_allows_quill_headings_lists_and_formatting():
+    html = (
+        '<h1>Título</h1><h2>Seção</h2><h3>Subseção</h3>'
+        '<p class="ql-align-center">Texto <b>negrito</b> '
+        '<i>itálico</i> <u>sublinhado</u></p>'
+        '<ul><li class="ql-indent-1">Item</li></ul>'
+        '<ol><li>Primeiro</li></ol>'
+        '<blockquote>Citação</blockquote>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<h1>Título</h1>' in cleaned
+    assert '<h2>Seção</h2>' in cleaned
+    assert '<h3>Subseção</h3>' in cleaned
+    assert (
+        '<p class="ql-align-center">Texto <b>negrito</b> '
+        '<i>itálico</i> <u>sublinhado</u></p>'
+    ) in cleaned
+    assert '<ul><li class="ql-indent-1">Item</li></ul>' in cleaned
+    assert '<ol><li>Primeiro</li></ol>' in cleaned
+    assert '<blockquote>Citação</blockquote>' in cleaned
+
+
+def test_sanitize_html_allows_safe_links_and_blocks_javascript():
+    html = (
+        '<a href="https://example.com" title="Site" target="_blank" '
+        'rel="noopener noreferrer">seguro</a>'
+        '<a href="javascript:alert(1)" title="Ataque">perigoso</a>'
+        '<a href="data:text/html;base64,PGgxPkF0YXF1ZTwvaDE+">data</a>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert (
+        '<a href="https://example.com" title="Site" target="_blank" '
+        'rel="noopener noreferrer">seguro</a>'
+    ) in cleaned
+    assert '<a title="Ataque">perigoso</a>' in cleaned
+    assert '<a>data</a>' in cleaned
+    assert 'javascript:' not in cleaned
+    assert 'data:text/html' not in cleaned
+
+
+def test_sanitize_html_removes_inline_events_and_styles():
+    html = (
+        '<p onclick="alert(1)" style="color:red">Texto</p>'
+        '<img src="https://example.com/image.png" onerror="alert(1)" '
+        'style="width:100px" alt="Imagem">'
+        '<iframe src="https://example.com"></iframe>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<p>Texto</p>' in cleaned
+    assert '<img src="https://example.com/image.png" alt="Imagem">' in cleaned
+    assert 'onclick' not in cleaned
+    assert 'onerror' not in cleaned
+    assert 'style=' not in cleaned
+    assert '<iframe' not in cleaned
+
+
+def test_sanitize_html_allows_safe_png_data_image_only_on_img_src():
+    html = (
+        '<img src="data:image/png;base64,iVBORw0KGgo=" alt="PNG" '
+        'title="Imagem" width="120" height="80">'
+        '<a href="data:image/png;base64,iVBORw0KGgo=">link</a>'
+        '<img src="data:image/svg+xml;base64,PHN2Zy8+" alt="SVG">'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert (
+        '<img src="data:image/png;base64,iVBORw0KGgo=" alt="PNG" '
+        'title="Imagem" width="120" height="80">'
+    ) in cleaned
+    assert '<a>link</a>' in cleaned
+    assert '<img alt="SVG">' in cleaned
+    assert 'data:image/svg+xml' not in cleaned
+
+
 def test_extract_text_image_pdf(monkeypatch, tmp_path):
     pdf_file = tmp_path / "dummy.pdf"
     pdf_file.write_bytes(b"%PDF-1.4")
