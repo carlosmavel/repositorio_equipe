@@ -114,20 +114,22 @@ def test_novo_artigo_persiste_campos_no_html_em_erro_validacao(client):
 
 
 
-def test_novo_artigo_accepts_attachment_without_text(client):
+def test_novo_artigo_rejects_attachment_without_text(client):
     _login_user(client, ['artigo_criar'])
-    client.post('/novo-artigo', data={
+    response = client.post('/novo-artigo', data={
         'titulo': 'OCR sem texto',
         'texto': '',
         'visibility': 'celula',
         'acao': 'enviar',
         'files': (BytesIO(b'conteudo teste ocr'), 'ocr.txt'),
-    }, content_type='multipart/form-data', follow_redirects=True)
+    }, content_type='multipart/form-data', follow_redirects=False)
 
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'título e conteúdo textual são obrigatórios' in html
     with app.app_context():
         artigo = Article.query.filter_by(titulo='OCR sem texto').first()
-        assert artigo is not None
-        assert artigo.status == ArticleStatus.PENDENTE
+        assert artigo is None
 
 def test_editar_artigo_requires_fields(client):
     uid = _login_user(client, ['artigo_criar', Permissao.ARTIGO_EDITAR_CELULA])
@@ -175,6 +177,61 @@ def test_editar_artigo_persiste_campos_no_html_em_erro_validacao(client):
     assert response.status_code == 200
     assert 'value="Novo Título Não Persistido"' in html
     assert 'name="visibility" id="visibilityInput" value="setor"' in html
+
+
+def test_editar_artigo_rejects_sanitized_empty_text(client):
+    uid = _login_user(client, ['artigo_criar', Permissao.ARTIGO_EDITAR_CELULA])
+    with app.app_context():
+        user = User.query.get(uid)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Titulo Original', texto='Texto original', status=ArticleStatus.RASCUNHO,
+            user_id=uid, celula_id=user.celula_id, setor_id=user.setor_id,
+            estabelecimento_id=user.estabelecimento_id, instituicao_id=inst.id
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.post(f'/artigo/{aid}/editar', data={
+        'titulo': 'Novo Título Não Persistido',
+        'texto': '<img src=x>',
+        'visibility': 'celula',
+        'acao': 'salvar',
+    }, follow_redirects=False)
+
+    assert response.status_code == 200
+    with app.app_context():
+        art = Article.query.get(aid)
+        assert art.titulo == 'Titulo Original'
+        assert art.texto == 'Texto original'
+
+
+def test_artigo_post_rejects_sanitized_empty_text(client):
+    uid = _login_user(client, ['artigo_criar', Permissao.ARTIGO_EDITAR_CELULA])
+    with app.app_context():
+        user = User.query.get(uid)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Titulo Original', texto='Texto original', status=ArticleStatus.RASCUNHO,
+            user_id=uid, celula_id=user.celula_id, setor_id=user.setor_id,
+            estabelecimento_id=user.estabelecimento_id, instituicao_id=inst.id
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.post(f'/artigo/{aid}', data={
+        'titulo': 'Novo Título Não Persistido',
+        'texto': '<img src=x>',
+    }, follow_redirects=False)
+
+    assert response.status_code == 302
+    with app.app_context():
+        art = Article.query.get(aid)
+        assert art.titulo == 'Titulo Original'
+        assert art.texto == 'Texto original'
+        assert art.status == ArticleStatus.RASCUNHO
 
 def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
     author_id = _login_user(client, ['artigo_criar'])

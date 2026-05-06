@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app as app, g
 from sqlalchemy import or_, func, text, and_
+import html
 import math
 import re
 
@@ -166,6 +167,12 @@ def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=N
         form_data=form_data,
     )
 
+def _has_required_text_content(sanitized_text):
+    text_without_tags = re.sub(r"<[^>]*>", " ", sanitized_text or "")
+    text_without_nbsp = html.unescape(text_without_tags).replace("\xa0", " ")
+    return bool(text_without_nbsp.strip())
+
+
 def _render_artigo_indisponivel(artigo_id):
     auditoria_exclusao = (
         ArticleDeletionAudit.query
@@ -222,10 +229,9 @@ def novo_artigo():
             'visibility': request.form.get('visibility') or 'celula',
         }
 
-        # Campos obrigatórios: título e ao menos texto ou anexo
-        has_uploads = any(f and f.filename for f in files)
-        if not titulo or (not texto_limpo and not has_uploads):
-            flash('Erro de validação: título e conteúdo são obrigatórios (texto ou anexo).', 'warning')
+        # Campos obrigatórios: título e conteúdo textual sanitizado
+        if not titulo or not _has_required_text_content(texto_limpo):
+            flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
             flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
             return _render_novo_artigo_form(form_data)
 
@@ -485,8 +491,13 @@ def artigo(artigo_id):
             flash('Permissão negada.', 'danger')
             return redirect(url_for('artigo', artigo_id=artigo_id))
         # 1) campos básicos
-        novo_titulo = request.form['titulo']
-        novo_texto = request.form['texto']
+        novo_titulo = request.form['titulo'].strip()
+        novo_texto_raw = request.form['texto']
+        novo_texto = sanitize_html(novo_texto_raw).strip()
+        if not novo_titulo or not _has_required_text_content(novo_texto):
+            flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
+            return redirect(url_for('artigo', artigo_id=artigo_id))
+
         status_before = artigo.status
         if article_relevant_state_changed(
             artigo,
@@ -921,17 +932,18 @@ def editar_artigo(artigo_id):
 
         # campos básicos
         titulo = request.form["titulo"].strip()
-        texto  = request.form["texto"].strip()
+        texto_raw = request.form["texto"]
+        texto = sanitize_html(texto_raw).strip()
         form_data = {
             'titulo': titulo,
-            'texto': texto,
+            'texto': texto_raw,
             'tipo_id': request.form.get('tipo_id') or '',
             'area_id': request.form.get('area_id') or '',
             'sistema_id': request.form.get('sistema_id') or '',
             'visibility': request.form.get('visibility') or artigo.visibility.value,
         }
-        if not titulo or not texto:
-            flash('Erro de validação: título e texto são obrigatórios.', 'warning')
+        if not titulo or not _has_required_text_content(texto):
+            flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
             flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
