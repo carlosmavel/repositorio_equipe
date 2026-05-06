@@ -216,6 +216,9 @@
           <i class="bi bi-chat-left-text" aria-hidden="true"></i> Solicitar Revisão
         </a>
         {% endif %}
+        <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+          <i class="bi bi-clock-history" aria-hidden="true"></i> Histórico de versões
+        </a>
         {% if artigo.status == ArticleStatus.APROVADO %}
         <i
           class="bi bi-copy text-secondary copy-link-icon"
