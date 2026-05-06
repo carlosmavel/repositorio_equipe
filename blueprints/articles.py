@@ -526,31 +526,23 @@ def artigo(artigo_id):
             return redirect(url_for('artigo', artigo_id=artigo_id))
 
         status_before = artigo.status
-        if article_relevant_state_changed(
+        status_after = ArticleStatus.PENDENTE
+        relevant_change = article_relevant_state_changed(
             artigo,
             titulo=novo_titulo,
             texto=novo_texto,
-            status=ArticleStatus.PENDENTE,
-        ):
-            snapshot_action = (
-                "edit_after_approved"
-                if status_before is ArticleStatus.APROVADO
-                else "submit_for_approval"
-            )
-            create_article_version_snapshot(
-                artigo,
-                user,
-                snapshot_action,
-                source_status_before=status_before,
-                source_status_after=ArticleStatus.PENDENTE,
-                correlation_id=getattr(g, "request_correlation_id", None),
-                drastic_reduction_data={
-                    "previous_text_char_count": calculate_text_char_count(artigo.texto),
-                },
-            )
+            status=status_after,
+        )
+        previous_text_char_count = calculate_text_char_count(artigo.texto)
+        snapshot_action = (
+            "edit_after_approved"
+            if status_before is ArticleStatus.APROVADO
+            else "submit_for_approval"
+        )
+
         artigo.titulo = novo_titulo
         artigo.texto  = novo_texto
-        artigo.status = ArticleStatus.PENDENTE
+        artigo.status = status_after
         artigo.updated_at = datetime.now(timezone.utc)
 
         # 2) arquivos existentes
@@ -581,6 +573,19 @@ def artigo(artigo_id):
                 existing.append(original)
 
         artigo.arquivos = json.dumps(existing) if existing else None
+
+        if relevant_change:
+            create_article_version_snapshot(
+                artigo,
+                user,
+                snapshot_action,
+                source_status_before=status_before,
+                source_status_after=status_after,
+                correlation_id=getattr(g, "request_correlation_id", None),
+                drastic_reduction_data={
+                    "previous_text_char_count": previous_text_char_count,
+                },
+            )
 
         db.session.commit()
         flash('Artigo enviado para revisão!', 'success')
