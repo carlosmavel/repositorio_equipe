@@ -456,6 +456,10 @@ class ArticleVersion(db.Model):
     previous_text_char_count = db.Column(db.Integer, nullable=True)
     text_reduction_percent = db.Column(db.Float, nullable=True)
     drastic_reduction_detected = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    previous_char_count = db.Column(db.Integer, nullable=True)
+    new_char_count = db.Column(db.Integer, nullable=True)
+    reduction_percent = db.Column(db.Float, nullable=True)
+    drastic_reduction = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
     correlation_id = db.Column(db.String(255), nullable=True)
 
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())

@@ -8,6 +8,7 @@ limite transacional.
 from __future__ import annotations
 
 import hashlib
+import html
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -33,9 +34,34 @@ def _enum_value(value: Any) -> str | None:
     return str(value)
 
 
+def extract_plain_text_for_count(text: str | None) -> str:
+    """Extrai texto legível de HTML/texto e normaliza espaços para contagem segura."""
+    without_tags = re.sub(r"<[^>]*>", " ", text or "")
+    unescaped = html.unescape(without_tags).replace("\xa0", " ")
+    return re.sub(r"\s+", " ", unescaped).strip()
+
+
+def calculate_plain_text_char_count(text: str | None) -> int:
+    """Conta caracteres do conteúdo textual legível, ignorando marcação HTML."""
+    return len(extract_plain_text_for_count(text))
+
+
 def calculate_text_char_count(text: str | None) -> int:
     """Conta caracteres do texto persistido no snapshot."""
     return len(text or "")
+
+
+def calculate_reduction_percent(previous_count: int | None, new_count: int | None) -> float:
+    """Calcula percentual de redução entre duas contagens textuais."""
+    if previous_count is None or new_count is None or previous_count <= 0 or new_count >= previous_count:
+        return 0.0
+    return ((previous_count - new_count) / previous_count) * 100
+
+
+def is_drastic_content_reduction(previous_count: int, new_count: int, reduction_percent: float | None) -> bool:
+    """Aplica regras de redução significativa usadas no cliente e no backend."""
+    percent_reduction = reduction_percent or 0
+    return percent_reduction > 70 or (previous_count > 2000 and new_count < 300)
 
 
 def calculate_text_word_count(text: str | None) -> int:
@@ -114,28 +140,56 @@ def _next_version_revision(article: Any, change_action: str) -> tuple[int, int]:
     return current_version, current_revision + 1
 
 
+def _safe_int(value: Any | None) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_float(value: Any | None) -> float | None:
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _drastic_reduction_metrics(text_char_count: int, drastic_reduction_data: dict[str, Any] | None) -> dict[str, Any]:
     previous_count = None
-    threshold_percent = 50.0
-    if drastic_reduction_data:
-        previous_count = drastic_reduction_data.get("previous_text_char_count")
-        threshold_percent = float(drastic_reduction_data.get("threshold_percent", threshold_percent))
-
-    try:
-        previous_count = int(previous_count) if previous_count is not None else None
-    except (TypeError, ValueError):
-        previous_count = None
-
+    new_count = None
     reduction_percent = None
     detected = False
-    if previous_count and previous_count > 0 and text_char_count < previous_count:
-        reduction_percent = ((previous_count - text_char_count) / previous_count) * 100
+    threshold_percent = 50.0
+
+    if drastic_reduction_data:
+        previous_count = _safe_int(
+            drastic_reduction_data.get("previous_char_count")
+            if "previous_char_count" in drastic_reduction_data
+            else drastic_reduction_data.get("previous_text_char_count")
+        )
+        new_count = _safe_int(drastic_reduction_data.get("new_char_count"))
+        reduction_percent = _safe_float(drastic_reduction_data.get("reduction_percent"))
+        detected = bool(drastic_reduction_data.get("drastic_reduction", False))
+        threshold_percent = float(drastic_reduction_data.get("threshold_percent", threshold_percent))
+
+    if new_count is None:
+        new_count = text_char_count
+    if reduction_percent is None:
+        reduction_percent = calculate_reduction_percent(previous_count, new_count)
+
+    if drastic_reduction_data and "drastic_reduction" in drastic_reduction_data:
+        detected = bool(drastic_reduction_data.get("drastic_reduction"))
+    elif reduction_percent is not None:
         detected = reduction_percent >= threshold_percent
 
     return {
         "previous_text_char_count": previous_count,
         "text_reduction_percent": reduction_percent,
         "drastic_reduction_detected": detected,
+        "previous_char_count": previous_count,
+        "new_char_count": new_count,
+        "reduction_percent": reduction_percent,
+        "drastic_reduction": detected,
     }
 
 
