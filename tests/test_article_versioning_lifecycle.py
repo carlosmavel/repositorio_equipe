@@ -13,6 +13,7 @@ from core.models import (
     User,
 )
 from core.services.article_versions import create_article_version_snapshot
+from core.utils import sanitize_html
 
 
 @pytest.fixture
@@ -132,6 +133,45 @@ def test_article_creation_route_creates_initial_snapshot(app_ctx, client, articl
     assert (snapshots[0].version_number, snapshots[0].revision_number) == (0, 1)
     assert snapshots[0].titulo == article.titulo
     assert snapshots[0].texto == "<p>Conteúdo inicial do artigo.</p>"
+
+
+def test_artigo_post_edit_submission_snapshots_new_sanitized_rich_html(app_ctx, client, article_org):
+    author = _create_user("autor_artigo_post_rich_html", article_org)
+    previous_html = "<p>Texto anterior que não deve ir para o snapshot de edição.</p>"
+    article = _create_article(author, article_org, texto=previous_html)
+    create_article_version_snapshot(article, author, "create_initial")
+    db.session.commit()
+    _login(client, author)
+
+    new_rich_html = (
+        '<h2>Novo HTML</h2>'
+        '<p><strong>Conteúdo</strong> <em>rico</em> '
+        '<a href="javascript:alert(1)" onclick="alert(1)">link</a></p>'
+        '<ul><li>Item novo</li></ul>'
+        '<img src="https://example.test/imagem.png" onerror="alert(1)">'
+    )
+    expected_sanitized_html = sanitize_html(new_rich_html).strip()
+
+    response = client.post(
+        f"/artigo/{article.id}",
+        data={
+            "titulo": "Título com HTML rico atualizado",
+            "texto": new_rich_html,
+        },
+    )
+
+    assert response.status_code == 302
+    article = Article.query.get(article.id)
+    latest_snapshot = _versions(article.id)[-1]
+    assert article.status == ArticleStatus.PENDENTE
+    assert article.texto == expected_sanitized_html
+    assert latest_snapshot.change_action == "submit_for_approval"
+    assert latest_snapshot.source_status_before == ArticleStatus.RASCUNHO.value
+    assert latest_snapshot.source_status_after == ArticleStatus.PENDENTE.value
+    assert latest_snapshot.texto == expected_sanitized_html
+    assert previous_html not in latest_snapshot.texto
+    assert 'href="javascript:' not in latest_snapshot.texto
+    assert "onerror" not in latest_snapshot.texto
 
 
 def test_editing_title_text_and_metadata_snapshots_state_before_overwrite_and_increments_revision(article_org):
