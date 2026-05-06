@@ -141,7 +141,7 @@ def _new_article_form_defaults():
     }
 
 
-def _render_novo_artigo_form(form_data=None):
+def _render_novo_artigo_form(form_data=None, clear_autosave=False):
     data = _new_article_form_defaults()
     if form_data:
         data.update(form_data)
@@ -154,6 +154,7 @@ def _render_novo_artigo_form(form_data=None):
         areas_artigo=areas_artigo,
         sistemas_artigo=sistemas_artigo,
         form_data=data,
+        clear_novo_artigo_autosave=clear_autosave,
     )
 
 
@@ -471,11 +472,13 @@ def novo_artigo():
             else 'Artigo criado e enviado para revisão!',
             'success'
         )
+        session['artigo_novo_autosave_sucesso'] = True
         time.sleep(1)
         return redirect(url_for('meus_artigos'))
 
     # GET → exibe formulário
-    return _render_novo_artigo_form()
+    clear_autosave = bool(session.pop('artigo_novo_autosave_sucesso', False))
+    return _render_novo_artigo_form(clear_autosave=clear_autosave)
 
 @articles_bp.route('/meus-artigos', endpoint='meus_artigos')
 def meus_artigos():
