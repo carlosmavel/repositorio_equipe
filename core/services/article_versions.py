@@ -193,6 +193,86 @@ def _drastic_reduction_metrics(text_char_count: int, drastic_reduction_data: dic
     }
 
 
+def _words_for_comparison(text: str | None) -> list[str]:
+    """Normaliza texto legível para comparar palavras entre versões."""
+    plain_text = extract_plain_text_for_count(text).casefold()
+    return re.findall(r"\w+", plain_text, re.UNICODE)
+
+
+def _counter_delta_items(from_words: list[str], to_words: list[str]) -> list[dict[str, int | str]]:
+    from collections import Counter
+
+    removed_counter = Counter(from_words) - Counter(to_words)
+    added_counter = Counter(to_words) - Counter(from_words)
+    words = sorted(set(removed_counter) | set(added_counter))
+    return [
+        {
+            "word": word,
+            "removed": int(removed_counter.get(word, 0)),
+            "added": int(added_counter.get(word, 0)),
+        }
+        for word in words
+    ]
+
+
+def compare_article_versions(from_version: ArticleVersion, to_version: ArticleVersion) -> dict[str, Any]:
+    """Compara dois snapshots do mesmo artigo usando apenas texto e metadados.
+
+    A comparação é propositalmente simples: calcula deltas de caracteres em
+    título/texto, contagens de palavras adicionadas/removidas e uma lista de
+    metadados textuais que mudaram entre os snapshots. Anexos não participam.
+    """
+    if from_version.article_id != to_version.article_id:
+        raise ValueError("As versões comparadas devem pertencer ao mesmo artigo.")
+
+    from_text = from_version.texto or ""
+    to_text = to_version.texto or ""
+    from_title = from_version.titulo or ""
+    to_title = to_version.titulo or ""
+    from_words = _words_for_comparison(from_text)
+    to_words = _words_for_comparison(to_text)
+    word_deltas = _counter_delta_items(from_words, to_words)
+
+    metadata_fields = (
+        ("status", "Status"),
+        ("visibility", "Visibilidade"),
+        ("tipo_id", "Tipo"),
+        ("area_id", "Área"),
+        ("sistema_id", "Sistema"),
+        ("instituicao_id", "Instituição"),
+        ("estabelecimento_id", "Estabelecimento"),
+        ("setor_id", "Setor"),
+        ("vis_celula_id", "Célula de visibilidade"),
+        ("celula_id", "Célula autora"),
+        ("user_id_original_author", "Autor original"),
+    )
+    metadata_changes = []
+    for field, label in metadata_fields:
+        from_value = getattr(from_version, field, None)
+        to_value = getattr(to_version, field, None)
+        if from_value != to_value:
+            metadata_changes.append({
+                "field": field,
+                "label": label,
+                "from": from_value,
+                "to": to_value,
+            })
+
+    return {
+        "char_delta": len(to_text) - len(from_text),
+        "title_char_delta": len(to_title) - len(from_title),
+        "text_char_delta": len(to_text) - len(from_text),
+        "from_text_char_count": len(from_text),
+        "to_text_char_count": len(to_text),
+        "from_title_char_count": len(from_title),
+        "to_title_char_count": len(to_title),
+        "words_added_count": sum(item["added"] for item in word_deltas),
+        "words_removed_count": sum(item["removed"] for item in word_deltas),
+        "word_deltas": word_deltas,
+        "metadata_changes": metadata_changes,
+    }
+
+
 def create_article_version_snapshot(
     article,
     changed_by_user,

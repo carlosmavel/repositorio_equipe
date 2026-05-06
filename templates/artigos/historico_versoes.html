@@ -38,6 +38,37 @@
 
           <hr>
 
+          {% if versoes|length >= 2 %}
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body">
+              <form class="row g-2 align-items-end" method="get" action="{{ url_for('comparar_versoes_artigo', artigo_id=artigo.id) }}">
+                <div class="col-md-5">
+                  <label for="compareFrom" class="form-label">Comparar de</label>
+                  <select class="form-select" id="compareFrom" name="from" required>
+                    {% for versao in versoes %}
+                    <option value="{{ versao.id }}" {% if loop.index0 == 1 %}selected{% endif %}>v{{ versao.version_number }}.r{{ versao.revision_number }} — {% if versao.local_created_at %}{{ versao.local_created_at.strftime('%d/%m/%Y %H:%M') }}{% else %}sem data{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label for="compareTo" class="form-label">Comparar para</label>
+                  <select class="form-select" id="compareTo" name="to" required>
+                    {% for versao in versoes %}
+                    <option value="{{ versao.id }}">v{{ versao.version_number }}.r{{ versao.revision_number }} — {% if versao.local_created_at %}{{ versao.local_created_at.strftime('%d/%m/%Y %H:%M') }}{% else %}sem data{% endif %}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                  <button type="submit" class="btn btn-app btn-app-primary">
+                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Comparar
+                  </button>
+                </div>
+              </form>
+              <p class="text-muted small mt-2 mb-0">A comparação considera apenas título, texto e metadados; anexos não são incluídos.</p>
+            </div>
+          </div>
+          {% endif %}
+
           {% if versoes %}
           <div class="table-responsive">
             <table class="table table-hover align-middle">
