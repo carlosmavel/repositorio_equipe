@@ -68,6 +68,12 @@ except ImportError:  # pragma: no cover
         create_article_version_snapshot,
     )
 
+
+# Importados separadamente após a definição/carregamento dos modelos para evitar
+# acoplamento com a lista principal de modelos do blueprint.
+from core.models import ArticleVersion
+from core.utils import user_can_restore_article_version
+
 try:
     from ..core.progress import (
         clear_progress,
@@ -563,6 +569,145 @@ def artigo(artigo_id):
         can_reprocess_ocr=can_reprocess_ocr,
         can_delete_definitive=can_delete_definitive,
     )
+
+
+def _article_status_from_snapshot(status_value):
+    if status_value in ArticleStatus._value2member_map_:
+        return ArticleStatus(status_value)
+    return ArticleStatus.RASCUNHO
+
+
+def _article_visibility_from_snapshot(visibility_value):
+    if visibility_value in ArticleVisibility._value2member_map_:
+        return ArticleVisibility(visibility_value)
+    return ArticleVisibility.CELULA
+
+
+def _local_datetime(dt):
+    if not dt:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(ZoneInfo("America/Sao_Paulo"))
+
+
+@articles_bp.route('/artigo/<int:artigo_id>/versoes', methods=['GET'], endpoint='historico_versoes_artigo')
+def historico_versoes_artigo(artigo_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
+
+    user = User.query.filter_by(username=session['username']).first()
+    if not user_can_view_article(user, artigo):
+        flash('Você não tem permissão para ver este artigo.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    versoes = (
+        ArticleVersion.query
+        .filter_by(article_id=artigo.id)
+        .order_by(
+            ArticleVersion.version_number.desc(),
+            ArticleVersion.revision_number.desc(),
+            ArticleVersion.created_at.desc(),
+        )
+        .all()
+    )
+    for versao in versoes:
+        versao.local_created_at = _local_datetime(versao.created_at)
+
+    return render_template(
+        'artigos/historico_versoes.html',
+        artigo=artigo,
+        versoes=versoes,
+        can_restore_versions=user_can_restore_article_version(user),
+        ArticleStatus=ArticleStatus,
+    )
+
+
+@articles_bp.route('/artigo/<int:artigo_id>/versoes/<int:version_id>', methods=['GET'], endpoint='visualizar_versao_artigo')
+def visualizar_versao_artigo(artigo_id, version_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
+
+    user = User.query.filter_by(username=session['username']).first()
+    if not user_can_view_article(user, artigo):
+        flash('Você não tem permissão para ver este artigo.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+
+    versao = ArticleVersion.query.filter_by(id=version_id, article_id=artigo.id).first_or_404()
+    versao.local_created_at = _local_datetime(versao.created_at)
+
+    return render_template(
+        'artigos/visualizar_versao.html',
+        artigo=artigo,
+        versao=versao,
+        can_restore_versions=user_can_restore_article_version(user),
+        ArticleStatus=ArticleStatus,
+    )
+
+
+@articles_bp.route('/artigo/<int:artigo_id>/versoes/<int:version_id>/restaurar', methods=['POST'], endpoint='restaurar_versao_artigo')
+def restaurar_versao_artigo(artigo_id, version_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    artigo = Article.query.get(artigo_id)
+    if not artigo:
+        return _render_artigo_indisponivel(artigo_id)
+
+    user = User.query.filter_by(username=session['username']).first()
+    if not user_can_view_article(user, artigo):
+        flash('Você não tem permissão para ver este artigo.', 'danger')
+        return redirect(url_for('pagina_inicial'))
+    if not user_can_restore_article_version(user):
+        flash('Permissão negada para restaurar versões de artigos.', 'danger')
+        return redirect(url_for('historico_versoes_artigo', artigo_id=artigo.id))
+
+    versao = ArticleVersion.query.filter_by(id=version_id, article_id=artigo.id).first_or_404()
+    motivo = (request.form.get('motivo') or '').strip() or None
+    status_before = artigo.status
+    status_after = _article_status_from_snapshot(versao.status)
+    previous_text_char_count = calculate_text_char_count(artigo.texto)
+
+    artigo.titulo = versao.titulo
+    artigo.texto = versao.texto
+    artigo.status = status_after
+    artigo.visibility = _article_visibility_from_snapshot(versao.visibility)
+    artigo.tipo_id = versao.tipo_id
+    artigo.area_id = versao.area_id
+    artigo.sistema_id = versao.sistema_id
+    artigo.instituicao_id = versao.instituicao_id
+    artigo.estabelecimento_id = versao.estabelecimento_id
+    artigo.setor_id = versao.setor_id
+    artigo.vis_celula_id = versao.vis_celula_id
+    artigo.celula_id = versao.celula_id or artigo.celula_id
+    if versao.user_id_original_author:
+        artigo.user_id = versao.user_id_original_author
+    artigo.updated_at = datetime.now(timezone.utc)
+
+    create_article_version_snapshot(
+        artigo,
+        user,
+        "restore_version",
+        change_reason=motivo,
+        source_status_before=status_before,
+        source_status_after=status_after,
+        correlation_id=getattr(g, "request_correlation_id", None),
+        drastic_reduction_data={
+            "previous_text_char_count": previous_text_char_count,
+        },
+    )
+    db.session.commit()
+
+    flash('Versão restaurada com sucesso. Um novo snapshot de restauração foi criado.', 'success')
+    return redirect(url_for('artigo', artigo_id=artigo.id))
 
 
 @articles_bp.route('/artigo/<int:artigo_id>/excluir-definitivo', methods=['POST'])

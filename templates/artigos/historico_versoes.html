@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Histórico de versões - {{ artigo.titulo }}{% endblock %}
+
+{% block content %}
+{% set status_labels = {
+  'rascunho': 'Rascunho',
+  'pendente': 'Pendente',
+  'aprovado': 'Aprovado',
+  'rejeitado': 'Rejeitado'
+} %}
+{% set action_labels = {
+  'create_initial': 'Criação inicial',
+  'initial_create': 'Criação inicial',
+  'submit_for_approval': 'Enviado para aprovação',
+  'edit_after_approved': 'Edição pós-aprovação',
+  'approve': 'Aprovação',
+  'reject': 'Rejeição',
+  'request_revision': 'Solicitação de revisão',
+  'restore_version': 'Restauração de versão'
+} %}
+<div class="container-fluid page-root">
+  <div class="row">
+    <div class="col-12 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+              <h3 class="mb-1">Histórico de versões</h3>
+              <p class="text-muted mb-0">
+                <strong>Artigo:</strong> {{ artigo.titulo }}
+                <span class="ms-2"><strong>Versão atual:</strong> v{{ artigo.current_version_number }}.r{{ artigo.current_revision_number }}</span>
+              </p>
+            </div>
+            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+              <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao artigo
+            </a>
+          </div>
+
+          <hr>
+
+          {% if versoes %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Versão/Revisão</th>
+                  <th>Data/hora</th>
+                  <th>Usuário</th>
+                  <th>Cargo</th>
+                  <th>Ação</th>
+                  <th>Status antes</th>
+                  <th>Status depois</th>
+                  <th>Tamanho do texto</th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for versao in versoes %}
+                <tr>
+                  <td><span class="badge bg-secondary">v{{ versao.version_number }}.r{{ versao.revision_number }}</span></td>
+                  <td>
+                    {% if versao.local_created_at %}
+                    {{ versao.local_created_at.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                    —
+                    {% endif %}
+                  </td>
+                  <td>{{ versao.changed_by_nome_completo or versao.changed_by_username or 'Não informado' }}</td>
+                  <td>{{ versao.changed_by_cargo_nome or 'Cargo não informado' }}</td>
+                  <td>{{ action_labels.get(versao.change_action, versao.change_action) }}</td>
+                  <td>{{ status_labels.get(versao.source_status_before, versao.source_status_before or '—') }}</td>
+                  <td>{{ status_labels.get(versao.source_status_after, versao.source_status_after or status_labels.get(versao.status, versao.status)) }}</td>
+                  <td>{{ versao.text_char_count }} caracteres</td>
+                  <td class="text-end">
+                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                      <a href="{{ url_for('visualizar_versao_artigo', artigo_id=artigo.id, version_id=versao.id) }}" class="btn btn-sm btn-app btn-app-secondary">
+                        <i class="bi bi-eye" aria-hidden="true"></i> Visualizar
+                      </a>
+                      {% if can_restore_versions %}
+                      <button type="button" class="btn btn-sm btn-app btn-app-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal{{ versao.id }}">
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar
+                      </button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-info mb-0" role="alert">Nenhum snapshot de versão foi encontrado para este artigo.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_restore_versions %}
+  {% for versao in versoes %}
+  <div class="modal fade" id="restoreVersionModal{{ versao.id }}" tabindex="-1" aria-labelledby="restoreVersionModalLabel{{ versao.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{{ url_for('restaurar_versao_artigo', artigo_id=artigo.id, version_id=versao.id) }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="restoreVersionModalLabel{{ versao.id }}">Restaurar v{{ versao.version_number }}.r{{ versao.revision_number }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            {% if csrf_token is defined %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% endif %}
+            <div class="alert alert-warning" role="alert">
+              A restauração atualizará apenas o artigo atual com este snapshot e criará um novo registro de auditoria de restauração.
+            </div>
+            <div class="mb-3">
+              <label for="motivoRestore{{ versao.id }}" class="form-label">Motivo da restauração (opcional)</label>
+              <textarea class="form-control" id="motivoRestore{{ versao.id }}" name="motivo" rows="3" placeholder="Descreva o motivo, se necessário"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-app btn-app-primary">Confirmar restauração</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Versão v{{ versao.version_number }}.r{{ versao.revision_number }} - {{ versao.titulo }}{% endblock %}
+
+{% block content %}
+{% set status_labels = {
+  'rascunho': 'Rascunho',
+  'pendente': 'Pendente',
+  'aprovado': 'Aprovado',
+  'rejeitado': 'Rejeitado'
+} %}
+{% set action_labels = {
+  'create_initial': 'Criação inicial',
+  'initial_create': 'Criação inicial',
+  'submit_for_approval': 'Enviado para aprovação',
+  'edit_after_approved': 'Edição pós-aprovação',
+  'approve': 'Aprovação',
+  'reject': 'Rejeição',
+  'request_revision': 'Solicitação de revisão',
+  'restore_version': 'Restauração de versão'
+} %}
+<div class="container-fluid page-root">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="alert alert-secondary d-flex align-items-center gap-2" role="alert">
+        <i class="bi bi-lock" aria-hidden="true"></i>
+        <div>Você está visualizando uma versão antiga em modo somente leitura.</div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body position-relative">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <h3>{{ versao.titulo }}</h3>
+              <p class="text-muted mb-0">
+                <strong>Snapshot:</strong> v{{ versao.version_number }}.r{{ versao.revision_number }}
+                <strong class="ms-2">Criado em:</strong>
+                {% if versao.local_created_at %}{{ versao.local_created_at.strftime('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
+                <strong class="ms-2">Usuário:</strong> {{ versao.changed_by_nome_completo or versao.changed_by_username or 'Não informado' }}
+                <strong class="ms-2">Cargo:</strong> {{ versao.changed_by_cargo_nome or 'Cargo não informado' }}
+              </p>
+            </div>
+            <span class="badge bg-secondary fs-6 mt-1">{{ status_labels.get(versao.status, versao.status) }}</span>
+          </div>
+
+          <hr>
+
+          <dl class="row small text-muted">
+            <dt class="col-sm-2">Ação</dt>
+            <dd class="col-sm-10">{{ action_labels.get(versao.change_action, versao.change_action) }}</dd>
+            <dt class="col-sm-2">Status antes</dt>
+            <dd class="col-sm-10">{{ status_labels.get(versao.source_status_before, versao.source_status_before or '—') }}</dd>
+            <dt class="col-sm-2">Status depois</dt>
+            <dd class="col-sm-10">{{ status_labels.get(versao.source_status_after, versao.source_status_after or status_labels.get(versao.status, versao.status)) }}</dd>
+            <dt class="col-sm-2">Tamanho</dt>
+            <dd class="col-sm-10">{{ versao.text_char_count }} caracteres • {{ versao.text_word_count }} palavras</dd>
+            {% if versao.change_reason %}
+            <dt class="col-sm-2">Motivo</dt>
+            <dd class="col-sm-10">{{ versao.change_reason }}</dd>
+            {% endif %}
+          </dl>
+
+          <hr>
+
+          <div class="article-version-readonly border rounded p-3 bg-light">
+            {{ versao.texto.replace('\n', '<br>')|safe }}
+          </div>
+
+          <hr>
+
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+              <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao histórico
+            </a>
+            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+              <i class="bi bi-file-text" aria-hidden="true"></i> Ver artigo atual
+            </a>
+            {% if can_restore_versions %}
+            <button type="button" class="btn btn-app btn-app-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal">
+              <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar esta versão
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_restore_versions %}
+<div class="modal fade" id="restoreVersionModal" tabindex="-1" aria-labelledby="restoreVersionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('restaurar_versao_artigo', artigo_id=artigo.id, version_id=versao.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="restoreVersionModalLabel">Restaurar v{{ versao.version_number }}.r{{ versao.revision_number }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {% if csrf_token is defined %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% endif %}
+          <div class="alert alert-warning" role="alert">
+            A versão selecionada não será alterada; a aplicação atualizará o artigo atual e criará um novo snapshot de restauração.
+          </div>
+          <div class="mb-3">
+            <label for="motivoRestore" class="form-label">Motivo da restauração (opcional)</label>
+            <textarea class="form-control" id="motivoRestore" name="motivo" rows="3" placeholder="Descreva o motivo, se necessário"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-app btn-app-primary">Confirmar restauração</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
