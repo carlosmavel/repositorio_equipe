@@ -379,6 +379,8 @@ class Article(db.Model):
     )
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    current_version_number = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    current_revision_number = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     arquivos = db.Column(db.Text, nullable=True)  # JSON list of filenames (se for o caso, ou remover se Attachment substitui)
     review_comment = db.Column(db.Text, nullable=True) # Comentário da última revisão
     tipo_id = db.Column(db.Integer, db.ForeignKey('artigo_tipo.id'), nullable=True)
@@ -400,12 +402,68 @@ class Article(db.Model):
     revision_requests = db.relationship('RevisionRequest', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='artigo', lazy='dynamic', cascade='all, delete-orphan')
+    versions = db.relationship('ArticleVersion', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     tipo = db.relationship('ArtigoTipo')
     area = db.relationship('ArtigoArea')
     sistema = db.relationship('ArtigoSistema')
 
     def __repr__(self):
         return f"<Article {self.titulo}>"
+
+
+class ArticleVersion(db.Model):
+    __tablename__ = "article_version"
+
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
+    version_number = db.Column(db.Integer, nullable=False)
+    revision_number = db.Column(db.Integer, nullable=False)
+
+    # Snapshot textual e metadados do artigo no momento da alteração.
+    titulo = db.Column(db.String(200), nullable=False)
+    texto = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(32), nullable=False)
+    visibility = db.Column(db.String(32), nullable=False)
+    tipo_id = db.Column(db.Integer, nullable=True)
+    area_id = db.Column(db.Integer, nullable=True)
+    sistema_id = db.Column(db.Integer, nullable=True)
+    instituicao_id = db.Column(db.Integer, nullable=True)
+    estabelecimento_id = db.Column(db.Integer, nullable=True)
+    setor_id = db.Column(db.Integer, nullable=True)
+    vis_celula_id = db.Column(db.Integer, nullable=True)
+    celula_id = db.Column(db.Integer, nullable=True)
+    user_id_original_author = db.Column(db.Integer, nullable=True)
+
+    # Snapshot do usuário que provocou a mudança para preservar auditoria histórica.
+    changed_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    changed_by_username = db.Column(db.String(80), nullable=True)
+    changed_by_email = db.Column(db.String(120), nullable=True)
+    changed_by_nome_completo = db.Column(db.String(255), nullable=True)
+
+    change_action = db.Column(db.String(64), nullable=False)
+    change_reason = db.Column(db.Text, nullable=True)
+    source_status_before = db.Column(db.String(32), nullable=True)
+    source_status_after = db.Column(db.String(32), nullable=True)
+
+    title_char_count = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    text_char_count = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    text_word_count = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    content_hash = db.Column(db.String(64), nullable=True)
+    previous_text_char_count = db.Column(db.Integer, nullable=True)
+    text_reduction_percent = db.Column(db.Float, nullable=True)
+    drastic_reduction_detected = db.Column(db.Boolean, nullable=False, default=False, server_default='false')
+    correlation_id = db.Column(db.String(255), nullable=True)
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    article = db.relationship('Article', back_populates='versions')
+    changed_by = db.relationship('User', foreign_keys=[changed_by_user_id])
+
+    def __repr__(self):
+        return (
+            f"<ArticleVersion article_id={self.article_id} "
+            f"v={self.version_number} r={self.revision_number}>"
+        )
 
 class RevisionRequest(db.Model):
     __tablename__ = 'revision_request'
