@@ -35,8 +35,8 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label">Tipo de artigo</label>
-              <select name="tipo_id" class="form-select">
+              <label class="form-label" for="tipo-id">Tipo de artigo</label>
+              <select name="tipo_id" id="tipo-id" class="form-select">
                 <option value="">Selecione</option>
                 {% for tipo in tipos_artigo %}
                 <option value="{{ tipo.id }}" {% if f.get('tipo_id')|string == tipo.id|string %}selected{% endif %}>{{ tipo.nome }}</option>
@@ -44,8 +44,8 @@
               </select>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Área</label>
-              <select name="area_id" class="form-select">
+              <label class="form-label" for="area-id">Área</label>
+              <select name="area_id" id="area-id" class="form-select">
                 <option value="">Selecione</option>
                 {% for area in areas_artigo %}
                 <option value="{{ area.id }}" {% if f.get('area_id')|string == area.id|string %}selected{% endif %}>{{ area.nome }}</option>
@@ -53,8 +53,8 @@
               </select>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Sistema</label>
-              <select name="sistema_id" class="form-select">
+              <label class="form-label" for="sistema-id">Sistema</label>
+              <select name="sistema_id" id="sistema-id" class="form-select">
                 <option value="">Selecione</option>
                 {% for sistema in sistemas_artigo %}
                 <option value="{{ sistema.id }}" {% if f.get('sistema_id')|string == sistema.id|string %}selected{% endif %}>{{ sistema.nome }}</option>
@@ -137,24 +137,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const visChecks = document.querySelectorAll('.vis-check');
   const visInput = document.getElementById('visibilityInput');
   const visDisplay = document.getElementById('visibilityDisplay');
-  const STORAGE_KEY = 'draft_novo_artigo';
+  const tituloInput = document.getElementById('titulo');
+  const tipoInput = document.getElementById('tipo-id');
+  const areaInput = document.getElementById('area-id');
+  const sistemaInput = document.getElementById('sistema-id');
+  const STORAGE_KEY = 'artigo_novo_autosave';
+  const SHOULD_CLEAR_AUTOSAVE = {{ clear_novo_artigo_autosave | default(false) | tojson }};
+
+  if (SHOULD_CLEAR_AUTOSAVE) {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   function saveDraft() {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        titulo: document.getElementById('titulo').value,
+        titulo: tituloInput.value,
         texto: quill.root.innerHTML,
-        visibility: visInput.value
+        visibility: visInput.value,
+        tipo_id: tipoInput.value,
+        area_id: areaInput.value,
+        sistema_id: sistemaInput.value
       })
     );
   }
   function loadDraft() {
+    if (SHOULD_CLEAR_AUTOSAVE) return;
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     try {
       const data = JSON.parse(raw);
-      if (data.titulo) document.getElementById('titulo').value = data.titulo;
-      if (data.texto) quill.root.innerHTML = data.texto;
+      if (typeof data.titulo === 'string') tituloInput.value = data.titulo;
+      if (typeof data.texto === 'string') quill.root.innerHTML = data.texto;
+      if (typeof data.tipo_id === 'string') tipoInput.value = data.tipo_id;
+      if (typeof data.area_id === 'string') areaInput.value = data.area_id;
+      if (typeof data.sistema_id === 'string') sistemaInput.value = data.sistema_id;
       if (data.visibility) {
         visInput.value = data.visibility;
         const parts = data.visibility.split(',');
@@ -173,7 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
   visChecks.forEach(cb => cb.addEventListener('change', updateVisibility));
   updateVisibility();
   loadDraft();
-  document.getElementById('titulo').addEventListener('input', saveDraft);
+  tituloInput.addEventListener('input', saveDraft);
+  [tipoInput, areaInput, sistemaInput].forEach(input => input.addEventListener('change', saveDraft));
   quill.on('text-change', saveDraft);
   visChecks.forEach(cb => cb.addEventListener('change', saveDraft));
 

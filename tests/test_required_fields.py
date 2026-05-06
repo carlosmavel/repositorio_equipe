@@ -114,6 +114,53 @@ def test_novo_artigo_persiste_campos_no_html_em_erro_validacao(client):
 
 
 
+
+def test_novo_artigo_sinaliza_limpeza_autosave_apenas_apos_sucesso(client, monkeypatch):
+    monkeypatch.setattr('blueprints.articles.time.sleep', lambda _seconds: None)
+    _login_user(client, ['artigo_criar'])
+
+    response = client.post('/novo-artigo', data={
+        'titulo': 'Artigo com sucesso',
+        'texto': '<p>Conteúdo válido</p>',
+        'tipo_id': '',
+        'area_id': '',
+        'sistema_id': '',
+        'visibility': 'celula',
+        'acao': 'rascunho',
+    }, follow_redirects=False)
+
+    assert response.status_code == 302
+    with client.session_transaction() as sess:
+        assert sess.get('artigo_novo_autosave_sucesso') is True
+
+    response = client.get('/novo-artigo')
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'const SHOULD_CLEAR_AUTOSAVE = true;' in html
+    with client.session_transaction() as sess:
+        assert 'artigo_novo_autosave_sucesso' not in sess
+
+
+def test_novo_artigo_erro_validacao_nao_sinaliza_limpeza_autosave(client):
+    _login_user(client, ['artigo_criar'])
+
+    response = client.post('/novo-artigo', data={
+        'titulo': 'Sem texto válido',
+        'texto': '',
+        'tipo_id': '',
+        'area_id': '',
+        'sistema_id': '',
+        'visibility': 'celula',
+        'acao': 'enviar',
+    }, follow_redirects=False)
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'const SHOULD_CLEAR_AUTOSAVE = false;' in html
+    with client.session_transaction() as sess:
+        assert 'artigo_novo_autosave_sucesso' not in sess
+
 def test_novo_artigo_rejects_attachment_without_text(client):
     _login_user(client, ['artigo_criar'])
     response = client.post('/novo-artigo', data={
