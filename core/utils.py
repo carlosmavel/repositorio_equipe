@@ -958,6 +958,17 @@ def user_can_view_article(user, article):
     return False
 
 
+def user_can_restore_article_version(user):
+    """Verifica se o usuário pode restaurar versões de artigos."""
+    return bool(
+        user
+        and (
+            user.has_permissao("admin")
+            or user.has_permissao(Permissao.ARTIGO_RESTAURAR_VERSAO.value)
+        )
+    )
+
+
 def eligible_review_notification_users(article):
     """Retorna os usuários que devem ser notificados sobre a revisão do artigo."""
     try:
