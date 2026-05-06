@@ -114,7 +114,7 @@ v{{ versao.version_number }}.r{{ versao.revision_number }}
               {{ version_metadata(from_version) }}
               <hr>
               <div class="article-version-readonly border rounded p-3 bg-light">
-                {{ from_version.texto.replace('\n', '<br>')|safe }}
+                {{ from_version.texto|safe }}
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@ v{{ versao.version_number }}.r{{ versao.revision_number }}
               {{ version_metadata(to_version) }}
               <hr>
               <div class="article-version-readonly border rounded p-3 bg-light">
-                {{ to_version.texto.replace('\n', '<br>')|safe }}
+                {{ to_version.texto|safe }}
               </div>
             </div>
           </div>

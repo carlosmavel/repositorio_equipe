@@ -20,8 +20,8 @@
           {% if artigo.area %}<strong class="ms-2">Área:</strong> {{ artigo.area.nome }}{% endif %}{% if artigo.sistema %}<strong class="ms-2">Sistema:</strong> {{ artigo.sistema.nome }}{% endif %}
         </p>
         <hr>
-        {# escapa tudo que não for texto e só depois converte quebras em <br> #}
-        <div>{{ artigo.texto.replace('\n','<br>')|safe }}</div>
+        {# Conteúdo previamente sanitizado no backend. #}
+        <div>{{ artigo.texto|safe }}</div>
         {% if arquivos %}
         <hr>
         <h5>Anexos</h5>
