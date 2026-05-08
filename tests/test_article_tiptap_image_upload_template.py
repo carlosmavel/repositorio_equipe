@@ -57,3 +57,18 @@ def test_tiptap_evita_upload_duplicado_e_inicializacao_repetida():
         assert "activeEditorImageUploadKeys.has(uploadKey)" in source, name
         assert ".finally(() => activeEditorImageUploadKeys.delete(uploadKey))" in source, name
         assert "setSubmitButtonsDisabled(true);" in source, name
+
+
+def test_novo_artigo_preserva_acao_apos_uploads_do_tiptap():
+    source = (ROOT / "templates" / "artigos" / "novo_artigo.html").read_text(encoding="utf-8")
+    submit_listener = source[source.index("form.addEventListener('submit'"):]
+
+    assert 'id="submit-action"' in source
+    assert 'name="acao" id="submit-action"' not in source
+    assert "let lastSubmitter = null;" in source
+    assert "const submitter = event.submitter || lastSubmitter;" in submit_listener
+    assert "submitActionInput.name = 'acao';" in submit_listener
+    assert "submitActionInput.value = submitter?.name === 'acao' ? submitter.value : 'rascunho';" in submit_listener
+    assert submit_listener.index("submitActionInput.value") < submit_listener.index("setSubmitButtonsDisabled(true);")
+    assert "form.requestSubmit(submitter);" not in submit_listener
+    assert "form.submit();" in submit_listener
