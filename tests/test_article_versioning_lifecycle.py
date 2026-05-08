@@ -366,3 +366,83 @@ def test_drastic_reduction_snapshot_records_flags_counts_and_percent(article_org
     assert snapshot.new_char_count == 250
     assert snapshot.reduction_percent == 75
     assert snapshot.text_reduction_percent == 75
+
+
+def test_pending_article_opened_for_edit_leaves_approval_queue_and_can_be_resubmitted(
+    app_ctx, client, article_org
+):
+    author = _create_user("autor_withdraw_pending", article_org)
+    reviewer = _create_user(
+        "reviewer_withdraw_pending",
+        article_org,
+        [Permissao.ARTIGO_APROVAR_CELULA],
+    )
+    article = _create_article(
+        author,
+        article_org,
+        titulo="Artigo pendente retirado para edição",
+        texto="Conteúdo pendente original",
+        status=ArticleStatus.PENDENTE,
+    )
+    create_article_version_snapshot(
+        article,
+        author,
+        "submit_for_approval",
+        source_status_before=ArticleStatus.RASCUNHO,
+        source_status_after=ArticleStatus.PENDENTE,
+    )
+    db.session.commit()
+    article_id = article.id
+
+    _login(client, author)
+    response = client.get(f"/artigo/{article_id}/editar")
+
+    assert response.status_code == 200
+    article = Article.query.get(article_id)
+    withdraw_snapshot = _versions(article_id)[-1]
+    assert article.status == ArticleStatus.EM_AJUSTE
+    assert withdraw_snapshot.change_action == "withdraw_for_edit"
+    assert withdraw_snapshot.source_status_before == ArticleStatus.PENDENTE.value
+    assert withdraw_snapshot.source_status_after == ArticleStatus.EM_AJUSTE.value
+
+    _login(client, reviewer)
+    approval_response = client.get("/aprovacao")
+    assert approval_response.status_code == 200
+    assert "Artigo pendente retirado para edição" not in approval_response.get_data(as_text=True)
+
+    _login(client, author)
+    save_response = client.post(
+        f"/artigo/{article_id}/editar",
+        data={
+            "titulo": "Artigo pendente alterado",
+            "texto": "Conteúdo pendente alterado com texto suficiente",
+            "visibility": "celula",
+            "acao": "salvar",
+        },
+    )
+
+    assert save_response.status_code == 302
+    article = Article.query.get(article_id)
+    assert article.status == ArticleStatus.EM_AJUSTE
+    assert article.titulo == "Artigo pendente alterado"
+    assert article.texto == "Conteúdo pendente alterado com texto suficiente"
+
+    submit_response = client.post(
+        f"/artigo/{article_id}/editar",
+        data={
+            "titulo": "Artigo pendente alterado reenviado",
+            "texto": "Conteúdo pendente alterado reenviado com texto suficiente",
+            "visibility": "celula",
+            "acao": "enviar",
+        },
+    )
+
+    assert submit_response.status_code == 302
+    article = Article.query.get(article_id)
+    resubmit_snapshot = _versions(article_id)[-1]
+    assert article.status == ArticleStatus.PENDENTE
+    assert article.titulo == "Artigo pendente alterado reenviado"
+    assert article.texto == "Conteúdo pendente alterado reenviado com texto suficiente"
+    assert resubmit_snapshot.change_action == "submit_for_approval"
+    assert resubmit_snapshot.source_status_before == ArticleStatus.EM_AJUSTE.value
+    assert resubmit_snapshot.source_status_after == ArticleStatus.PENDENTE.value

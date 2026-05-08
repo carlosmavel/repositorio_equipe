@@ -1252,6 +1252,21 @@ def editar_artigo(artigo_id):
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
     # GET
+    if artigo.status == ArticleStatus.PENDENTE:
+        status_before = artigo.status
+        status_after = ArticleStatus.EM_AJUSTE
+        artigo.status = status_after
+        artigo.updated_at = datetime.now(timezone.utc)
+        create_article_version_snapshot(
+            artigo,
+            user,
+            "withdraw_for_edit",
+            source_status_before=status_before,
+            source_status_after=status_after,
+            correlation_id=getattr(g, "request_correlation_id", None),
+        )
+        db.session.commit()
+
     arquivos = json.loads(artigo.arquivos or "[]")
     return _render_editar_artigo_form(artigo, arquivos, can_submit_actions)
 
