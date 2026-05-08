@@ -18,7 +18,8 @@ def test_sanitize_html_removes_disallowed_tags():
     assert "<strong>World</strong>" in cleaned
     assert "<a href" in cleaned
     assert "<script" not in cleaned
-    assert "<span" not in cleaned
+    assert "<span>color</span>" in cleaned
+    assert "color:red" not in cleaned
     assert "<div" not in cleaned
 
 
@@ -61,6 +62,22 @@ def test_sanitize_html_allows_tiptap_code_block_and_highlight():
         'style="background-color: #ffe066; color: inherit;">marcado</mark>'
     ) in cleaned
 
+
+
+def test_sanitize_html_allows_tiptap_color_subscript_superscript_and_rule():
+    html = (
+        '<p>Texto <span style="color: #0d6efd">azul</span> '
+        '<sub>2</sub><sup>3</sup></p><hr>'
+        '<span style="background-image: url(javascript:alert(1))">ruim</span>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<span style="color: #0d6efd;">azul</span>' in cleaned
+    assert '<sub>2</sub><sup>3</sup>' in cleaned
+    assert '<hr>' in cleaned
+    assert 'background-image' not in cleaned
+    assert 'javascript:' not in cleaned
 
 def test_sanitize_html_allows_tiptap_checklist():
     html = (
