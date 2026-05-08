@@ -21,7 +21,7 @@
         </p>
         <hr>
         {# Conteúdo previamente sanitizado no backend. #}
-        <div>{{ artigo.texto|safe }}</div>
+        <div class="article-content tiptap-content">{{ artigo.texto|safe }}</div>
         {% if arquivos %}
         <hr>
         <h5>Anexos</h5>

@@ -807,16 +807,197 @@
   }
 }
 
-/* Quill editor dark adjustments */
-[data-bs-theme="dark"] .ql-container,
-[data-bs-theme="dark"] .ql-editor {
-  background-color: var(--bg-default);
-  color: var(--text-default);
-  border-color: var(--border-default);
+/* TipTap editor and rendered article content */
+.tiptap-editor {
+  min-height: 300px;
+  overflow: auto;
 }
 
-[data-bs-theme="dark"] .ql-bubble .ql-editor.ql-blank::before {
+.tiptap-editor .ProseMirror,
+.tiptap-content,
+.article-content,
+.article-version-readonly {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.tiptap-editor .ProseMirror {
+  min-height: 300px;
+  padding: 1rem;
+  outline: none;
+}
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
+.tiptap-editor .ProseMirror p.is-empty::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-content table,
+.article-content table,
+.article-version-readonly table,
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.tiptap-content td,
+.tiptap-content th,
+.article-content td,
+.article-content th,
+.article-version-readonly td,
+.article-version-readonly th,
+.ProseMirror td,
+.ProseMirror th {
+  border: 1px solid var(--bs-border-color, var(--border-default));
+  padding: 0.5rem;
+  vertical-align: top;
+}
+
+.tiptap-content th,
+.article-content th,
+.article-version-readonly th,
+.ProseMirror th {
+  background: var(--bs-tertiary-bg, var(--bg-muted));
+  font-weight: 600;
+}
+
+.tiptap-content img,
+.article-content img,
+.article-version-readonly img,
+.ProseMirror img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.tiptap-content blockquote,
+.article-content blockquote,
+.article-version-readonly blockquote,
+.ProseMirror blockquote {
+  border-left: 0.25rem solid var(--bs-border-color, var(--border-default));
+  color: var(--text-muted);
+  margin: 1rem 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.tiptap-content pre,
+.article-content pre,
+.article-version-readonly pre,
+.ProseMirror pre {
+  background: var(--bs-tertiary-bg, var(--bg-muted));
+  border: 1px solid var(--bs-border-color, var(--border-default));
+  border-radius: 0.375rem;
   color: var(--text-default);
+  overflow-x: auto;
+  padding: 0.75rem;
+}
+
+.tiptap-content code,
+.article-content code,
+.article-version-readonly code,
+.ProseMirror code {
+  background: var(--bs-tertiary-bg, var(--bg-muted));
+  border-radius: 0.25rem;
+  color: var(--text-default);
+  padding: 0.125rem 0.25rem;
+}
+
+.tiptap-content pre code,
+.article-content pre code,
+.article-version-readonly pre code,
+.ProseMirror pre code {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+.tiptap-content ul[data-type="taskList"],
+.article-content ul[data-type="taskList"],
+.article-version-readonly ul[data-type="taskList"],
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-content ul[data-type="taskList"] li,
+.article-content ul[data-type="taskList"] li,
+.article-version-readonly ul[data-type="taskList"] li,
+.ProseMirror ul[data-type="taskList"] li {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tiptap-content ul[data-type="taskList"] li > label,
+.article-content ul[data-type="taskList"] li > label,
+.article-version-readonly ul[data-type="taskList"] li > label,
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+}
+
+.tiptap-content ul[data-type="taskList"] li > div,
+.article-content ul[data-type="taskList"] li > div,
+.article-version-readonly ul[data-type="taskList"] li > div,
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.tiptap-content mark,
+.article-content mark,
+.article-version-readonly mark,
+.ProseMirror mark {
+  background-color: #fff3cd;
+  border-radius: 0.2rem;
+  color: inherit;
+  padding: 0 0.125rem;
+}
+
+.tiptap-content [style*="text-align: center"],
+.article-content [style*="text-align: center"],
+.article-version-readonly [style*="text-align: center"],
+.ProseMirror [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.tiptap-content [style*="text-align: right"],
+.article-content [style*="text-align: right"],
+.article-version-readonly [style*="text-align: right"],
+.ProseMirror [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.tiptap-content [style*="text-align: justify"],
+.article-content [style*="text-align: justify"],
+.article-version-readonly [style*="text-align: justify"],
+.ProseMirror [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+[data-bs-theme="dark"] .tiptap-editor .ProseMirror,
+[data-bs-theme="dark"] .tiptap-content,
+[data-bs-theme="dark"] .article-content,
+[data-bs-theme="dark"] .article-version-readonly {
+  background-color: var(--bg-default);
+  color: var(--text-default);
+}
+
+[data-bs-theme="dark"] .article-version-readonly.bg-light {
+  background-color: var(--bg-default) !important;
+}
+
+[data-bs-theme="dark"] .tiptap-content mark,
+[data-bs-theme="dark"] .article-content mark,
+[data-bs-theme="dark"] .article-version-readonly mark,
+[data-bs-theme="dark"] .ProseMirror mark {
+  background-color: #664d03;
+  color: #fff3cd;
 }
 
 /* Dark mode card and typography adjustments */
