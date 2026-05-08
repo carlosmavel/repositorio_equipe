@@ -1,6 +1,7 @@
 # utils.py
 
 import bleach
+from bleach.css_sanitizer import CSSSanitizer
 import re
 import unicodedata
 from typing import Any, TypedDict
@@ -193,10 +194,28 @@ _SAFE_DATA_IMAGE_RE = re.compile(
     r"^data:image/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$",
     re.IGNORECASE,
 )
-_QUILL_CLASS_RE = re.compile(
-    r"^ql-(?:align-(?:center|right|justify)|indent-[1-8]|direction-rtl|list-.+)$"
+_SAFE_EDITOR_CLASS_RE = re.compile(
+    r"^(?:"
+    r"tiptap-content|"
+    r"text-align-(?:left|center|right|justify)|"
+    r"has-text-align-(?:left|center|right|justify)|"
+    r"highlight-(?:yellow|green|blue|red|purple)|"
+    r"language-[a-z0-9_+-]+|"
+    r"task-list|task-item|"
+    r"ql-(?:align-(?:center|right|justify)|indent-[1-8]|direction-rtl|list-.+)"
+    r")$"
 )
 _URL_SCHEME_RE = re.compile(r"^([a-z0-9+.-]+):", re.IGNORECASE)
+_SAFE_UPLOAD_IMAGE_RE = re.compile(
+    r"^/uploads/editor/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%/-]*$"
+)
+_SAFE_CSS_COLOR_RE = re.compile(
+    r"^(?:#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$",
+    re.IGNORECASE,
+)
+_EDITOR_CSS_SANITIZER = CSSSanitizer(
+    allowed_css_properties={"text-align", "background-color", "color"}
+)
 
 
 def _url_scheme(value: str) -> str | None:
@@ -213,29 +232,90 @@ def _is_safe_image_src(value: str) -> bool:
     stripped = (value or "").strip()
     if _SAFE_DATA_IMAGE_RE.match(stripped):
         return True
-    return _url_scheme(stripped) in {None, "http", "https"}
+    if _SAFE_UPLOAD_IMAGE_RE.match(stripped):
+        return ".." not in stripped and "\\" not in stripped
+    return _url_scheme(stripped) in {"http", "https"}
 
 
-def _has_only_safe_quill_classes(value: str) -> bool:
+def _is_safe_css_color(value: str) -> bool:
+    return bool(_SAFE_CSS_COLOR_RE.fullmatch((value or "").strip()))
+
+
+def _has_only_safe_editor_classes(value: str) -> bool:
     classes = (value or "").split()
     return bool(classes) and all(
-        _QUILL_CLASS_RE.match(class_name) for class_name in classes
+        _SAFE_EDITOR_CLASS_RE.match(class_name) for class_name in classes
     )
+
+
+def _has_only_safe_editor_styles(tag: str, value: str) -> bool:
+    allowed_properties_by_tag = {
+        "p": {"text-align"},
+        "h1": {"text-align"},
+        "h2": {"text-align"},
+        "h3": {"text-align"},
+        "h4": {"text-align"},
+        "h5": {"text-align"},
+        "h6": {"text-align"},
+        "mark": {"background-color", "color"},
+    }
+    allowed_properties = allowed_properties_by_tag.get(tag)
+    if not allowed_properties:
+        return False
+
+    declarations = [part.strip() for part in (value or "").split(";") if part.strip()]
+    if not declarations:
+        return False
+
+    for declaration in declarations:
+        if ":" not in declaration:
+            return False
+        property_name, property_value = [part.strip() for part in declaration.split(":", 1)]
+        property_name = property_name.lower()
+        normalized_value = property_value.lower()
+        if property_name not in allowed_properties:
+            return False
+        if any(token in normalized_value for token in ("javascript:", "data:", "url(", "expression", "@import")):
+            return False
+        if property_name == "text-align" and normalized_value not in {"left", "center", "right", "justify"}:
+            return False
+        if property_name == "background-color" and not _is_safe_css_color(property_value):
+            return False
+        if property_name == "color" and normalized_value != "inherit":
+            return False
+
+    return True
 
 
 def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
     allowed_attrs_by_tag = {
         "a": {"href", "title", "target", "rel"},
         "img": {"src", "alt", "title", "width", "height"},
-        "th": {"colspan", "rowspan"},
-        "td": {"colspan", "rowspan"},
+        "p": {"style"},
+        "h1": {"style"},
+        "h2": {"style"},
+        "h3": {"style"},
+        "h4": {"style"},
+        "h5": {"style"},
+        "h6": {"style"},
+        "code": {"spellcheck"},
+        "mark": {"data-color", "style"},
+        "ul": {"data-type"},
+        "li": {"data-type", "data-checked"},
+        "input": {"type", "checked", "disabled"},
+        "th": {"colspan", "rowspan", "colwidth"},
+        "td": {"colspan", "rowspan", "colwidth"},
+        "col": {"width"},
     }
 
     if name == "class":
-        return _has_only_safe_quill_classes(value)
+        return _has_only_safe_editor_classes(value)
 
     if name not in allowed_attrs_by_tag.get(tag, set()):
         return False
+
+    if name == "style":
+        return _has_only_safe_editor_styles(tag, value)
 
     if tag == "a" and name == "href":
         return _is_safe_link(value)
@@ -249,17 +329,42 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
     if tag == "img" and name in {"width", "height"}:
         return bool(re.fullmatch(r"(?:\d{1,4}|\d{1,3}%)", value or ""))
 
+    if tag == "mark" and name == "data-color":
+        return _is_safe_css_color(value)
+
+    if tag == "ul" and name == "data-type":
+        return value == "taskList"
+
+    if tag == "li" and name == "data-type":
+        return value == "taskItem"
+
+    if tag == "li" and name == "data-checked":
+        return value in {"true", "false"}
+
+    if tag == "input" and name == "type":
+        return value == "checkbox"
+
+    if tag == "input" and name in {"checked", "disabled"}:
+        return value in {"", name, "true", "checked", "disabled"}
+
     if tag in {"th", "td"} and name in {"colspan", "rowspan"}:
         return bool(re.fullmatch(r"\d{1,2}", value or ""))
+
+    if tag in {"th", "td"} and name == "colwidth":
+        return bool(re.fullmatch(r"\d{1,4}(?:,\d{1,4})*", value or ""))
+
+    if tag == "col" and name == "width":
+        return bool(re.fullmatch(r"(?:\d{1,4}|\d{1,3}%)", value or ""))
 
     return True
 
 
 def sanitize_html(text: str) -> str:
     allowed_tags = [
-        "h1", "h2", "h3", "p", "br", "ul", "ol", "li",
-        "strong", "b", "em", "i", "u", "blockquote", "a", "img",
-        "table", "thead", "tbody", "tr", "th", "td",
+        "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "pre", "code",
+        "ul", "ol", "li", "strong", "b", "em", "i", "u", "s", "mark",
+        "blockquote", "a", "img", "table", "thead", "tbody", "tfoot", "tr",
+        "th", "td", "colgroup", "col", "label", "input",
     ]
 
     return bleach.clean(
@@ -268,6 +373,7 @@ def sanitize_html(text: str) -> str:
         attributes=_sanitize_html_attribute,
         strip=True,
         protocols=["http", "https", "mailto", "data"],
+        css_sanitizer=_EDITOR_CSS_SANITIZER,
     )
 
 """
