@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app import db
 from core.enums import Permissao
 from core.models import (
@@ -154,3 +156,13 @@ def test_rich_article_html_is_preserved_in_view_approval_and_history(client):
         RICH_FROM_VERSION_HTML,
         RICH_TO_VERSION_HTML,
     )
+
+
+def test_rendered_article_code_blocks_keep_tiptap_dark_theme():
+    stylesheet = Path("static/css/custom.css").read_text()
+
+    assert ".article-content pre," in stylesheet
+    assert "background: var(--bs-dark, #212529);" in stylesheet
+    assert "color: var(--bs-light, #f8f9fa);" in stylesheet
+    assert ".article-content pre code," in stylesheet
+    assert "color: inherit;" in stylesheet
