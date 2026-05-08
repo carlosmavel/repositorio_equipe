@@ -240,6 +240,80 @@ def upload_progress(progress_id):
     if state.done:
         clear_progress(progress_id)
     return jsonify(payload)
+
+EDITOR_IMAGE_ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
+EDITOR_IMAGE_ALLOWED_MIMES = {'image/png', 'image/jpeg', 'image/webp'}
+EDITOR_IMAGE_DEFAULT_MAX_BYTES = 2 * 1024 * 1024
+
+
+def _json_error(message, status_code):
+    response = jsonify({'error': message})
+    response.status_code = status_code
+    return response
+
+
+def _editor_image_max_bytes():
+    configured_limit = app.config.get(
+        'EDITOR_IMAGE_MAX_CONTENT_LENGTH',
+        app.config.get('EDITOR_IMAGE_MAX_BYTES', EDITOR_IMAGE_DEFAULT_MAX_BYTES),
+    )
+    try:
+        return int(configured_limit)
+    except (TypeError, ValueError):
+        return EDITOR_IMAGE_DEFAULT_MAX_BYTES
+
+
+def _editor_upload_file_from_request():
+    upload = request.files.get('file') or request.files.get('upload')
+    if upload is not None:
+        return upload
+    if request.files:
+        return next(iter(request.files.values()))
+    return None
+
+
+def _is_allowed_editor_image(upload):
+    filename = secure_filename(upload.filename or '')
+    _, extension = os.path.splitext(filename.lower())
+    mimetype = (upload.mimetype or '').lower()
+    return extension in EDITOR_IMAGE_ALLOWED_EXTENSIONS and mimetype in EDITOR_IMAGE_ALLOWED_MIMES
+
+
+@articles_bp.route('/artigos/editor-image-upload', methods=['POST'])
+def editor_image_upload():
+    if 'user_id' not in session:
+        return _json_error('Faça login para enviar imagens.', 401)
+
+    user = db.session.get(User, session['user_id'])
+    if user is None:
+        session.pop('user_id', None)
+        session.pop('username', None)
+        return _json_error('Sessão inválida ou expirada. Faça login novamente.', 401)
+
+    upload = _editor_upload_file_from_request()
+    if upload is None or not upload.filename:
+        return _json_error('Nenhum arquivo de imagem foi enviado.', 400)
+
+    original_filename = secure_filename(upload.filename)
+    if not _is_allowed_editor_image(upload):
+        return _json_error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG ou WebP.', 415)
+
+    image_bytes = upload.read()
+    upload.stream.seek(0)
+    max_bytes = _editor_image_max_bytes()
+    if max_bytes > 0 and len(image_bytes) > max_bytes:
+        return _json_error('Imagem acima do limite permitido.', 413)
+
+    _, extension = os.path.splitext(original_filename.lower())
+    unique_filename = f'{uuid.uuid4().hex}{extension}'
+    editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor')
+    os.makedirs(editor_folder, exist_ok=True)
+    destination = os.path.join(editor_folder, unique_filename)
+    with open(destination, 'wb') as image_file:
+        image_file.write(image_bytes)
+
+    return jsonify({'url': f'/uploads/editor/{unique_filename}'})
+
 @articles_bp.route('/novo-artigo', methods=['GET', 'POST'], endpoint='novo_artigo')
 def novo_artigo():
     if 'user_id' not in session:
