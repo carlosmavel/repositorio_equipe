@@ -228,6 +228,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialContent = {{ (form_data or {}).get('texto', '') | tojson | safe }} || '<p></p>';
 
   const pendingEditorImageUploads = new Set();
+  const EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const EDITOR_IMAGE_UPLOAD_TIMEOUT_MS = 30000;
+  const EDITOR_IMAGE_MAX_BYTES = Number({{ config.get('EDITOR_IMAGE_MAX_CONTENT_LENGTH', config.get('EDITOR_IMAGE_MAX_BYTES', 2097152)) | tojson }}) || 2097152;
+
+  function describeEditorImageFile(file) {
+    return {
+      name: file.name || 'imagem-colada',
+      type: file.type || 'sem-mime',
+      size: file.size || 0
+    };
+  }
+
+  function validateEditorImageFile(file) {
+    if (!EDITOR_IMAGE_ALLOWED_MIME_TYPES.includes(file.type)) {
+      throw new Error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG ou WebP.');
+    }
+    if (EDITOR_IMAGE_MAX_BYTES > 0 && file.size > EDITOR_IMAGE_MAX_BYTES) {
+      const limitMb = (EDITOR_IMAGE_MAX_BYTES / 1024 / 1024).toFixed(1).replace('.0', '');
+      throw new Error(`Imagem acima do limite permitido (${limitMb} MB). Reduza o print ou envie como anexo.`);
+    }
+  }
 
   function editorImageFilename(file) {
     if (file.name) return file.name;
@@ -240,22 +261,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function uploadEditorImage(file) {
-    const formData = new FormData();
-    formData.append('file', file, editorImageFilename(file));
-    const response = await fetch('/artigos/editor-image-upload', {
-      method: 'POST',
-      body: formData
-    });
-    let payload = null;
+    validateEditorImageFile(file);
+    const uploadStartedAt = performance.now();
+    const fileInfo = describeEditorImageFile(file);
+    console.info('[editor-image-upload:start]', fileInfo);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), EDITOR_IMAGE_UPLOAD_TIMEOUT_MS);
+
     try {
-      payload = await response.json();
-    } catch (e) {
-      // Mantém mensagem genérica quando a resposta não é JSON.
+      const formData = new FormData();
+      formData.append('file', file, editorImageFilename(file));
+      const response = await fetch('/artigos/editor-image-upload', {
+        method: 'POST',
+        body: formData,
+        headers: { Accept: 'application/json' },
+        signal: controller.signal
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (e) {
+        // Mantém mensagem genérica quando a resposta não é JSON.
+      }
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || 'Não foi possível enviar a imagem colada.');
+      }
+      return payload.url;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Tempo esgotado ao enviar a imagem colada. Tente novamente com uma imagem menor ou use anexos.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      console.info('[editor-image-upload:end]', {
+        ...fileInfo,
+        durationMs: Math.round(performance.now() - uploadStartedAt)
+      });
     }
-    if (!response.ok || !payload?.url) {
-      throw new Error(payload?.error || 'Não foi possível enviar a imagem colada.');
-    }
-    return payload.url;
   }
 
   function trackEditorImageUpload(uploadPromise) {
