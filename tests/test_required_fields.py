@@ -1,5 +1,6 @@
 import pytest
 from io import BytesIO
+from pathlib import Path
 from app import app, db
 from core.models import (
     Instituicao,
@@ -160,6 +161,22 @@ def test_novo_artigo_erro_validacao_nao_sinaliza_limpeza_autosave(client):
     assert 'const SHOULD_CLEAR_AUTOSAVE = false;' in html
     with client.session_transaction() as sess:
         assert 'artigo_novo_autosave_sucesso' not in sess
+
+
+def test_novo_artigo_remove_autosave_ao_submeter():
+    source = (
+        Path(__file__).resolve().parents[1] / "templates" / "artigos" / "novo_artigo.html"
+    ).read_text(encoding="utf-8")
+    submit_listener = source[source.index("form.addEventListener('submit'"):]
+
+    assert "localStorage.removeItem(STORAGE_KEY);" in submit_listener
+    assert submit_listener.index("document.getElementById('hidden-texto').value") < submit_listener.index(
+        "localStorage.removeItem(STORAGE_KEY);"
+    )
+    assert submit_listener.index("localStorage.removeItem(STORAGE_KEY);") < submit_listener.index(
+        "const progressId ="
+    )
+
 
 def test_novo_artigo_rejects_attachment_without_text(client):
     _login_user(client, ['artigo_criar'])
