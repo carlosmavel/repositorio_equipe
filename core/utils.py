@@ -299,6 +299,7 @@ def _has_only_safe_editor_styles(tag: str, value: str) -> bool:
         "h5": {"text-align"},
         "h6": {"text-align"},
         "mark": {"background-color", "color"},
+        "span": {"color"},
     }
     allowed_properties = allowed_properties_by_tag.get(tag)
     if not allowed_properties:
@@ -322,7 +323,7 @@ def _has_only_safe_editor_styles(tag: str, value: str) -> bool:
             return False
         if property_name == "background-color" and not _is_safe_css_color(property_value):
             return False
-        if property_name == "color" and normalized_value != "inherit":
+        if property_name == "color" and normalized_value != "inherit" and not _is_safe_css_color(property_value):
             return False
 
     return True
@@ -341,6 +342,7 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
         "h6": {"style"},
         "code": {"spellcheck"},
         "mark": {"data-color", "style"},
+        "span": {"style"},
         "ul": {"data-type"},
         "li": {"data-type", "data-checked"},
         "input": {"type", "checked", "disabled"},
@@ -405,7 +407,7 @@ def sanitize_html(text: str) -> str:
         "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "pre", "code",
         "ul", "ol", "li", "strong", "b", "em", "i", "u", "s", "mark",
         "blockquote", "a", "img", "figure", "figcaption", "table", "thead", "tbody", "tfoot", "tr",
-        "th", "td", "colgroup", "col", "label", "input",
+        "th", "td", "colgroup", "col", "label", "input", "span", "sub", "sup", "hr",
     ]
 
     return bleach.clean(

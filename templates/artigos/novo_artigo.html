@@ -63,6 +63,32 @@
     height: auto;
   }
 
+  .tiptap-editor .tiptap hr {
+    border: 0;
+    border-top: 2px solid var(--bs-border-color, #dee2e6);
+    margin: 1.25rem 0;
+  }
+
+  .tiptap-editor .tiptap code {
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.25rem;
+  }
+
+  .tiptap-editor .tiptap pre {
+    background: var(--bs-dark, #212529);
+    border-radius: 0.5rem;
+    color: var(--bs-light, #f8f9fa);
+    padding: 0.75rem;
+    white-space: pre-wrap;
+  }
+
+  .tiptap-editor .tiptap pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+
   .tiptap-editor .tiptap ul[data-type="taskList"] {
     list-style: none;
     padding-left: 0;
@@ -140,14 +166,26 @@
               <div class="btn-group btn-group-sm" role="group" aria-label="Estilos de texto">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="bold" aria-label="Negrito"><i class="bi bi-type-bold" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="italic" aria-label="Itálico"><i class="bi bi-type-italic" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="underline" aria-label="Sublinhado"><i class="bi bi-type-underline" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="strike" aria-label="Tachado"><i class="bi bi-type-strikethrough" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="code" aria-label="Código inline"><i class="bi bi-code" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="subscript" aria-label="Subscrito">X<sub>2</sub></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="superscript" aria-label="Sobrescrito">X<sup>2</sup></button>
+              </div>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Cores">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="highlight" aria-label="Destacar texto"><i class="bi bi-highlighter" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="textColor" aria-label="Cor do texto"><i class="bi bi-palette" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="unsetColor" aria-label="Remover cor"><i class="bi bi-eraser" aria-hidden="true"></i></button>
               </div>
               <div class="btn-group btn-group-sm" role="group" aria-label="Blocos">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="paragraph">Parágrafo</button>
-                <button type="button" class="btn btn-outline-secondary" data-editor-command="heading2">Título</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="heading1">H1</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="heading2">H2</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="heading3">H3</button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="blockquote" aria-label="Citação"><i class="bi bi-blockquote-left" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="codeBlock" aria-label="Bloco de código"><i class="bi bi-code-square" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="horizontalRule" aria-label="Linha horizontal"><i class="bi bi-hr" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="hardBreak" aria-label="Quebra de linha"><i class="bi bi-arrow-return-left" aria-hidden="true"></i></button>
               </div>
               <div class="btn-group btn-group-sm" role="group" aria-label="Listas">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="bulletList" aria-label="Lista com marcadores"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
@@ -160,8 +198,26 @@
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="alignRight" aria-label="Alinhar à direita"><i class="bi bi-text-right" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="alignJustify" aria-label="Justificar"><i class="bi bi-justify" aria-hidden="true"></i></button>
               </div>
-              <div class="btn-group btn-group-sm" role="group" aria-label="Tabela e histórico">
+              <div class="btn-group btn-group-sm" role="group" aria-label="Links e limpeza">
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="setLink" aria-label="Adicionar link"><i class="bi bi-link-45deg" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="unsetLink" aria-label="Remover link"><i class="bi bi-link-45deg text-decoration-line-through" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="clearFormat" aria-label="Limpar formatação"><i class="bi bi-x-square" aria-hidden="true"></i></button>
+              </div>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Tabela">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="insertTable" aria-label="Inserir tabela"><i class="bi bi-table" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="addColumnBefore" aria-label="Adicionar coluna antes">+Col ←</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="addColumnAfter" aria-label="Adicionar coluna depois">+Col →</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="deleteColumn" aria-label="Excluir coluna">−Col</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="addRowBefore" aria-label="Adicionar linha antes">+Lin ↑</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="addRowAfter" aria-label="Adicionar linha depois">+Lin ↓</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="deleteRow" aria-label="Excluir linha">−Lin</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="mergeCells" aria-label="Mesclar células"><i class="bi bi-intersect" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="splitCell" aria-label="Dividir célula"><i class="bi bi-layout-split" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="toggleHeaderRow" aria-label="Alternar linha de cabeçalho">Cabeç. linha</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="toggleHeaderColumn" aria-label="Alternar coluna de cabeçalho">Cabeç. col.</button>
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="deleteTable" aria-label="Excluir tabela"><i class="bi bi-trash" aria-hidden="true"></i></button>
+              </div>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Histórico">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="undo" aria-label="Desfazer"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="redo" aria-label="Refazer"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
               </div>
@@ -218,6 +274,11 @@
 import { Editor } from 'https://esm.sh/@tiptap/core@3';
 import StarterKit from 'https://esm.sh/@tiptap/starter-kit@3';
 import { Image } from 'https://esm.sh/@tiptap/extension-image@3';
+import { Link } from 'https://esm.sh/@tiptap/extension-link@3';
+import { Subscript } from 'https://esm.sh/@tiptap/extension-subscript@3';
+import { Superscript } from 'https://esm.sh/@tiptap/extension-superscript@3';
+import { TextStyle, Color } from 'https://esm.sh/@tiptap/extension-text-style@3';
+import { Underline } from 'https://esm.sh/@tiptap/extension-underline@3';
 import { Table, TableRow, TableCell, TableHeader } from 'https://esm.sh/@tiptap/extension-table@3';
 import { TaskList, TaskItem } from 'https://esm.sh/@tiptap/extension-list@3';
 import { Placeholder } from 'https://esm.sh/@tiptap/extensions@3';
@@ -361,6 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
     extensions: [
       StarterKit,
       Image.configure({ allowBase64: false }),
+      Link.configure({ openOnClick: false, defaultProtocol: 'https' }),
+      Subscript,
+      Superscript,
+      TextStyle,
+      Color,
+      Underline,
       Table.configure({ resizable: true }),
       TableRow,
       TableCell,
@@ -389,17 +456,71 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const toolbarButtons = document.querySelectorAll('[data-editor-command]');
+  const promptPositiveInteger = (message, defaultValue, min = 1, max = 20) => {
+    const raw = prompt(message, String(defaultValue));
+    if (raw === null) return null;
+    const value = Number.parseInt(raw, 10);
+    if (!Number.isInteger(value) || value < min || value > max) {
+      alert(`Informe um número entre ${min} e ${max}.`);
+      return null;
+    }
+    return value;
+  };
+  const normalizeUrl = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    if (/^(https?:|mailto:)/i.test(trimmed)) return trimmed;
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return `mailto:${trimmed}`;
+    return `https://${trimmed}`;
+  };
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href || '';
+    const rawUrl = prompt('URL do link:', previousUrl);
+    if (rawUrl === null) return;
+    const href = normalizeUrl(rawUrl);
+    if (!href) {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+  };
+  const setTextColor = () => {
+    const color = prompt('Cor do texto em hexadecimal (ex.: #0d6efd):', editor.getAttributes('textStyle').color || '#0d6efd');
+    if (color === null) return;
+    if (!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(color.trim())) {
+      alert('Use uma cor hexadecimal válida, como #0d6efd.');
+      return;
+    }
+    editor.chain().focus().setColor(color.trim()).run();
+  };
+  const insertConfiguredTable = () => {
+    const rows = promptPositiveInteger('Quantas linhas a tabela deve ter?', 3, 1, 20);
+    if (rows === null) return;
+    const cols = promptPositiveInteger('Quantas colunas a tabela deve ter?', 3, 1, 10);
+    if (cols === null) return;
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+  };
   const runEditorCommand = (command) => {
     const chain = editor.chain().focus();
     const commands = {
       bold: () => chain.toggleBold().run(),
       italic: () => chain.toggleItalic().run(),
+      underline: () => chain.toggleUnderline().run(),
       strike: () => chain.toggleStrike().run(),
+      code: () => chain.toggleCode().run(),
+      subscript: () => chain.toggleSubscript().run(),
+      superscript: () => chain.toggleSuperscript().run(),
       highlight: () => chain.toggleHighlight({ color: '#fff3cd' }).run(),
+      textColor: () => setTextColor(),
+      unsetColor: () => chain.unsetColor().run(),
       paragraph: () => chain.setParagraph().run(),
+      heading1: () => chain.toggleHeading({ level: 1 }).run(),
       heading2: () => chain.toggleHeading({ level: 2 }).run(),
+      heading3: () => chain.toggleHeading({ level: 3 }).run(),
       blockquote: () => chain.toggleBlockquote().run(),
       codeBlock: () => chain.toggleCodeBlock().run(),
+      horizontalRule: () => chain.setHorizontalRule().run(),
+      hardBreak: () => chain.setHardBreak().run(),
       bulletList: () => chain.toggleBulletList().run(),
       orderedList: () => chain.toggleOrderedList().run(),
       taskList: () => chain.toggleTaskList().run(),
@@ -407,7 +528,21 @@ document.addEventListener('DOMContentLoaded', () => {
       alignCenter: () => chain.setTextAlign('center').run(),
       alignRight: () => chain.setTextAlign('right').run(),
       alignJustify: () => chain.setTextAlign('justify').run(),
-      insertTable: () => chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+      setLink: () => setLink(),
+      unsetLink: () => chain.extendMarkRange('link').unsetLink().run(),
+      clearFormat: () => chain.unsetAllMarks().clearNodes().run(),
+      insertTable: () => insertConfiguredTable(),
+      addColumnBefore: () => chain.addColumnBefore().run(),
+      addColumnAfter: () => chain.addColumnAfter().run(),
+      deleteColumn: () => chain.deleteColumn().run(),
+      addRowBefore: () => chain.addRowBefore().run(),
+      addRowAfter: () => chain.addRowAfter().run(),
+      deleteRow: () => chain.deleteRow().run(),
+      mergeCells: () => chain.mergeCells().run(),
+      splitCell: () => chain.splitCell().run(),
+      toggleHeaderRow: () => chain.toggleHeaderRow().run(),
+      toggleHeaderColumn: () => chain.toggleHeaderColumn().run(),
+      deleteTable: () => chain.deleteTable().run(),
       undo: () => chain.undo().run(),
       redo: () => chain.redo().run()
     };
@@ -415,14 +550,22 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function updateToolbarState(editorInstance = editor) {
+    const passiveCommands = [
+      'paragraph', 'textColor', 'unsetColor', 'horizontalRule', 'hardBreak', 'setLink', 'unsetLink',
+      'clearFormat', 'insertTable', 'addColumnBefore', 'addColumnAfter', 'deleteColumn', 'addRowBefore',
+      'addRowAfter', 'deleteRow', 'mergeCells', 'splitCell', 'toggleHeaderRow', 'toggleHeaderColumn',
+      'deleteTable', 'undo', 'redo'
+    ];
     document.querySelectorAll('[data-editor-command]').forEach((button) => {
       const command = button.dataset.editorCommand;
-      const active = (command === 'heading2' && editorInstance.isActive('heading', { level: 2 })) ||
+      const active = (command === 'heading1' && editorInstance.isActive('heading', { level: 1 })) ||
+        (command === 'heading2' && editorInstance.isActive('heading', { level: 2 })) ||
+        (command === 'heading3' && editorInstance.isActive('heading', { level: 3 })) ||
         (command === 'alignLeft' && editorInstance.isActive({ textAlign: 'left' })) ||
         (command === 'alignCenter' && editorInstance.isActive({ textAlign: 'center' })) ||
         (command === 'alignRight' && editorInstance.isActive({ textAlign: 'right' })) ||
         (command === 'alignJustify' && editorInstance.isActive({ textAlign: 'justify' })) ||
-        (!['paragraph', 'heading2', 'alignLeft', 'alignCenter', 'alignRight', 'alignJustify', 'insertTable', 'undo', 'redo'].includes(command) && editorInstance.isActive(command));
+        (!passiveCommands.includes(command) && editorInstance.isActive(command));
       button.classList.toggle('active', Boolean(active));
       button.setAttribute('aria-pressed', Boolean(active).toString());
     });

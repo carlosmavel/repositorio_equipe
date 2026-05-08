@@ -72,3 +72,39 @@ def test_novo_artigo_preserva_acao_apos_uploads_do_tiptap():
     assert submit_listener.index("submitActionInput.value") < submit_listener.index("setSubmitButtonsDisabled(true);")
     assert "form.requestSubmit(submitter);" not in submit_listener
     assert "form.submit();" in submit_listener
+
+
+def test_tiptap_toolbar_expande_formatacoes_gratuitas_e_tabelas():
+    for name, source in _template_sources().items():
+        for import_name in [
+            "@tiptap/extension-link@3",
+            "@tiptap/extension-subscript@3",
+            "@tiptap/extension-superscript@3",
+            "@tiptap/extension-text-style@3",
+            "@tiptap/extension-underline@3",
+        ]:
+            assert import_name in source, name
+
+        for command in [
+            'data-editor-command="underline"',
+            'data-editor-command="code"',
+            'data-editor-command="subscript"',
+            'data-editor-command="superscript"',
+            'data-editor-command="horizontalRule"',
+            'data-editor-command="setLink"',
+            'data-editor-command="addColumnBefore"',
+            'data-editor-command="addColumnAfter"',
+            'data-editor-command="deleteColumn"',
+            'data-editor-command="addRowBefore"',
+            'data-editor-command="addRowAfter"',
+            'data-editor-command="deleteRow"',
+            'data-editor-command="mergeCells"',
+            'data-editor-command="splitCell"',
+            'data-editor-command="deleteTable"',
+        ]:
+            assert command in source, name
+
+        assert "insertConfiguredTable" in source, name
+        assert "Quantas colunas a tabela deve ter?" in source, name
+        assert "chain.addColumnAfter().run()" in source, name
+        assert "chain.deleteColumn().run()" in source, name
