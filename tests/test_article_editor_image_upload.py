@@ -119,3 +119,48 @@ def test_editor_image_upload_handles_missing_file(logged_client):
     assert response.status_code == 400
     assert response.is_json
     assert 'nenhum arquivo' in response.get_json()['error'].lower()
+
+
+def test_uploaded_editor_file_serves_logged_user_from_editor_folder(upload_app, logged_client):
+    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor')
+    os.makedirs(editor_folder, exist_ok=True)
+    image_path = os.path.join(editor_folder, 'inline.png')
+    with open(image_path, 'wb') as image_file:
+        image_file.write(b'inline image')
+
+    response = logged_client.get('/uploads/editor/inline.png')
+
+    assert response.status_code == 200
+    assert response.data == b'inline image'
+
+
+def test_uploaded_editor_file_serves_nested_legacy_inline_images(upload_app, logged_client):
+    legacy_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor', 'artigo-1')
+    os.makedirs(legacy_folder, exist_ok=True)
+    image_path = os.path.join(legacy_folder, 'imagem.png')
+    with open(image_path, 'wb') as image_file:
+        image_file.write(b'legacy inline image')
+
+    response = logged_client.get('/uploads/editor/artigo-1/imagem.png')
+
+    assert response.status_code == 200
+    assert response.data == b'legacy inline image'
+
+
+def test_uploaded_editor_file_blocks_anonymous_user(client, upload_app):
+    response = client.get('/uploads/editor/inline.png')
+
+    assert response.status_code == 401
+
+
+def test_uploaded_editor_file_blocks_path_traversal(upload_app, logged_client):
+    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor')
+    os.makedirs(editor_folder, exist_ok=True)
+    secret_path = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'secret.png')
+    with open(secret_path, 'wb') as secret_file:
+        secret_file.write(b'secret image')
+
+    response = logged_client.get('/uploads/editor/%2e%2e/secret.png')
+
+    assert response.status_code == 404
+    assert response.data != b'secret image'

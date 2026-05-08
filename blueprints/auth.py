@@ -322,6 +322,33 @@ def profile_pics(filename):
         return abort(401)
     return send_from_directory(app.config['PROFILE_PICS_FOLDER'], filename)
 
+def _is_safe_upload_filename(filename):
+    if not filename or '\x00' in filename:
+        return False
+    if filename.startswith('/') or filename.startswith('\\'):
+        return False
+    if '\\' in filename:
+        return False
+
+    parts = filename.split('/')
+    if not parts or any(part in {'', '.', '..'} for part in parts):
+        return False
+
+    return all(part == secure_filename(part) for part in parts)
+
+
+@auth_bp.route('/uploads/editor/<path:filename>', endpoint='uploaded_editor_file')
+def uploaded_editor_file(filename):
+    if 'user_id' not in session:
+        app.logger.warning("Tentativa anônima de acesso a upload do editor: %s", filename)
+        return abort(401)
+    if not _is_safe_upload_filename(filename):
+        app.logger.warning("Tentativa de acesso a upload do editor com caminho inválido: %s", filename)
+        return abort(404)
+    editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor')
+    return send_from_directory(editor_folder, filename)
+
+
 @auth_bp.route('/uploads/<filename>', endpoint='uploaded_file')
 def uploaded_file(filename):
     if 'user_id' not in session:
