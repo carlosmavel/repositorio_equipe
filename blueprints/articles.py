@@ -1375,6 +1375,10 @@ def aprovacao_detail(artigo_id):
         return redirect(url_for("aprovacao"))
 
     if request.method=='POST':
+        if artigo.status != ArticleStatus.PENDENTE:
+            flash("Este artigo não está mais pendente de aprovação.", "warning")
+            return redirect(url_for('aprovacao_detail', artigo_id=artigo_id))
+
         acao       = request.form['acao']                 # aprovar / ajustar / rejeitar
         raw_comment = request.form.get('comentario', '').strip()
         comentario = re.sub(r'<[^>]*?>', '', raw_comment).strip()
