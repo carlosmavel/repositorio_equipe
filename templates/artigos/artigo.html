@@ -220,7 +220,7 @@
           </a>
           {% endif %}
 
-        {% if session.get('username') and artigo.status == ArticleStatus.APROVADO %}
+        {% if can_request_revision %}
         <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
           <i class="bi bi-chat-left-text" aria-hidden="true"></i> Solicitar Revisão
         </a>

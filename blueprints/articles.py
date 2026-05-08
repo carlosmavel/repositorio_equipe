@@ -712,6 +712,11 @@ def artigo(artigo_id):
         artigo=artigo,
         arquivos=arquivos,
         can_edit_article=user_can_edit_article(user, artigo),
+        can_request_revision=bool(
+            user
+            and artigo.status == ArticleStatus.APROVADO
+            and user.id != artigo.user_id
+        ),
         can_reprocess_ocr=can_reprocess_ocr,
         can_delete_definitive=can_delete_definitive,
     )
@@ -1598,6 +1603,10 @@ def solicitar_revisao(artigo_id):
         return redirect(url_for('login'))
     artigo = Article.query.get_or_404(artigo_id)
     user    = User.query.filter_by(username=session['username']).first()
+
+    if user and user.id == artigo.user_id:
+        flash('Você é o autor deste artigo. Use o botão Editar para fazer ajustes.', 'info')
+        return redirect(url_for('artigo', artigo_id=artigo.id))
 
     if request.method=='POST':
         comentario = request.form.get('comentario','').strip()

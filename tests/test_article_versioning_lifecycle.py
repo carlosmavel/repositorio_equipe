@@ -265,10 +265,11 @@ def test_adjustment_and_rejection_snapshots_store_source_status_before_and_after
 
 def test_revision_request_snapshot_stores_source_status_before_and_after(app_ctx, client, article_org):
     author = _create_user("autor_revision_request", article_org)
+    requester = _create_user("requester_revision_request", article_org)
     article = _create_article(author, article_org, status=ArticleStatus.APROVADO)
     create_article_version_snapshot(article, author, "create_initial")
     db.session.commit()
-    _login(client, author)
+    _login(client, requester)
 
     response = client.post(
         f"/solicitar_revisao/{article.id}",

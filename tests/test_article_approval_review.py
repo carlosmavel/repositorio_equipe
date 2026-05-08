@@ -450,3 +450,88 @@ def test_aprovacao_detail_shows_adjustment_and_revision_history(app_ctx, client)
     assert b'Precisa ajustar introdu\xc3\xa7\xc3\xa3o' in resp.data
     assert b'Hist\xc3\xb3rico de Solicita\xc3\xa7\xc3\xb5es de Revis\xc3\xa3o' in resp.data
     assert b'Solicito nova revis\xc3\xa3o ap\xc3\xb3s ajustes' in resp.data
+
+
+def _create_approved_article_with_viewer():
+    inst = Instituicao(codigo='I1', nome='Inst')
+    est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+    setor = Setor(nome='S', estabelecimento=est)
+    cel = Celula(nome='C', estabelecimento=est, setor=setor)
+    db.session.add_all([inst, est, setor, cel])
+    db.session.flush()
+
+    autor = User(
+        username='autor', email='a@test', password_hash='x',
+        estabelecimento=est, setor=setor, celula=cel
+    )
+    leitor = User(
+        username='leitor', email='l@test', password_hash='x',
+        estabelecimento=est, setor=setor, celula=cel
+    )
+    db.session.add_all([autor, leitor])
+    db.session.flush()
+
+    art = Article(
+        titulo='Titulo aprovado', texto='Conteudo aprovado', status=ArticleStatus.APROVADO,
+        user_id=autor.id, celula_id=cel.id, estabelecimento_id=est.id,
+        setor_id=setor.id, instituicao_id=inst.id, visibility=ArticleVisibility.CELULA,
+    )
+    db.session.add(art)
+    db.session.commit()
+    return autor.id, leitor.id, art.id
+
+
+def test_author_does_not_see_request_revision_button_on_own_approved_article(app_ctx, client):
+    with app.app_context():
+        autor_id, _, art_id = _create_approved_article_with_viewer()
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = autor_id
+        sess['username'] = 'autor'
+
+    resp = client.get(f'/artigo/{art_id}')
+
+    assert resp.status_code == 200
+    assert b'Editar' in resp.data
+    assert b'Solicitar Revisao' not in resp.data
+    assert b'Solicitar Revis\xc3\xa3o' not in resp.data
+
+
+def test_non_author_still_sees_request_revision_button_on_approved_article(app_ctx, client):
+    with app.app_context():
+        _, leitor_id, art_id = _create_approved_article_with_viewer()
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = leitor_id
+        sess['username'] = 'leitor'
+
+    resp = client.get(f'/artigo/{art_id}')
+
+    assert resp.status_code == 200
+    assert b'Solicitar Revis\xc3\xa3o' in resp.data
+
+
+def test_author_cannot_request_revision_of_own_article_directly(app_ctx, client):
+    with app.app_context():
+        autor_id, _, art_id = _create_approved_article_with_viewer()
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = autor_id
+        sess['username'] = 'autor'
+
+    resp = client.post(
+        f'/solicitar_revisao/{art_id}',
+        data={'comentario': 'Quero revisar meu artigo'},
+    )
+
+    assert resp.status_code == 302
+    assert resp.location.endswith(f'/artigo/{art_id}')
+    with client.session_transaction() as sess:
+        assert (
+            'info',
+            'Você é o autor deste artigo. Use o botão Editar para fazer ajustes.',
+        ) in sess['_flashes']
+
+    with app.app_context():
+        assert RevisionRequest.query.count() == 0
+        assert Article.query.get(art_id).status == ArticleStatus.APROVADO
