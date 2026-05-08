@@ -98,6 +98,7 @@
           {% set f = form_data or {} %}
           {% set selected_visibility = (f.get('visibility') or 'celula').split(',') %}
           <input type="hidden" name="progress_id" id="progress-id">
+          <input type="hidden" id="submit-action" value="rascunho">
           <div class="mb-3">
             <label for="titulo" class="form-label">Título</label>
             <input type="text" class="form-control" id="titulo" name="titulo" value="{{ f.get('titulo', '') }}" required>
@@ -614,6 +615,12 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const form = document.querySelector('form');
+  let lastSubmitter = null;
+  form?.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+    button.addEventListener('click', () => {
+      lastSubmitter = button;
+    });
+  });
   const setSubmitButtonsDisabled = (disabled) => {
     form?.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
       button.disabled = disabled;
@@ -626,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     event.preventDefault();
-    const submitter = event.submitter;
+    const submitter = event.submitter || lastSubmitter;
 
     if (pendingEditorImageUploads.size) {
       setOverlayState('Enviando imagens coladas no texto...', null);
@@ -655,16 +662,20 @@ document.addEventListener('DOMContentLoaded', () => {
       startProgressPolling(progressId);
     }
 
-    setSubmitButtonsDisabled(true);
-    isResubmittingAfterEditorUploads = true;
-    if (submitter && typeof form.requestSubmit === 'function') {
-      form.requestSubmit(submitter);
-    } else {
-      form.submit();
+    const submitActionInput = document.getElementById('submit-action');
+    if (submitActionInput) {
+      submitActionInput.name = 'acao';
+      submitActionInput.value = submitter?.name === 'acao' ? submitter.value : 'rascunho';
     }
 
+    setSubmitButtonsDisabled(true);
+    isResubmittingAfterEditorUploads = true;
+    form.submit();
+
     // Observação: a submissão nativa do formulário é preservada após o envio
-    // das imagens coladas para manter redirects/flash do servidor.
+    // das imagens coladas para manter redirects/flash do servidor. A ação do
+    // botão é copiada para um hidden antes de desabilitar os botões, pois
+    // controles desabilitados não são enviados no POST.
   });
 
   // Preview de anexos
