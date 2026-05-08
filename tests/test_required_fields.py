@@ -301,3 +301,111 @@ def test_editar_artigo_buttons_visible_for_editor_with_permission(client):
     html = response.get_data(as_text=True)
     assert 'name="acao" value="salvar"' in html
     assert 'name="acao" value="enviar"' in html
+
+def test_artigo_pendente_editavel_exibe_aviso_de_retirada_da_aprovacao(client):
+    author_id = _login_user(client, ['artigo_criar'])
+    with app.app_context():
+        author = User.query.get(author_id)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Artigo pendente editável', texto='Conteúdo', status=ArticleStatus.PENDENTE,
+            user_id=author_id, celula_id=author.celula_id, setor_id=author.setor_id,
+            estabelecimento_id=author.estabelecimento_id, instituicao_id=inst.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.get(f'/artigo/{aid}')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Editar e retirar da aprovação' in html
+    assert 'Ao editar, este artigo sairá temporariamente da fila de aprovação.' in html
+
+
+def test_artigo_nao_pendente_editavel_nao_exibe_aviso_de_retirada_da_aprovacao(client):
+    author_id = _login_user(client, ['artigo_criar'])
+    with app.app_context():
+        author = User.query.get(author_id)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Rascunho editável', texto='Conteúdo', status=ArticleStatus.RASCUNHO,
+            user_id=author_id, celula_id=author.celula_id, setor_id=author.setor_id,
+            estabelecimento_id=author.estabelecimento_id, instituicao_id=inst.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.get(f'/artigo/{aid}')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Editar e retirar da aprovação' not in html
+    assert 'Ao editar, este artigo sairá temporariamente da fila de aprovação.' not in html
+    assert '<i class="bi bi-pencil-square" aria-hidden="true"></i>\n            Editar' in html
+
+
+def test_artigo_pendente_nao_editavel_nao_exibe_aviso_de_retirada_da_aprovacao(client):
+    ids = client.base_ids
+    with app.app_context():
+        inst = Instituicao.query.first()
+        author = User(
+            username='autor_pendente', email='autor_pendente@test', password_hash='x',
+            estabelecimento_id=ids['est'], setor_id=ids['setor'], celula_id=ids['cel'],
+        )
+        viewer = User(
+            username='visualizador', email='visualizador@test', password_hash='x',
+            estabelecimento_id=ids['est'], setor_id=ids['setor'], celula_id=ids['cel'],
+        )
+        db.session.add_all([author, viewer])
+        db.session.flush()
+        art = Article(
+            titulo='Artigo pendente apenas visível', texto='Conteúdo', status=ArticleStatus.PENDENTE,
+            user_id=author.id, celula_id=author.celula_id, setor_id=author.setor_id,
+            estabelecimento_id=author.estabelecimento_id, instituicao_id=inst.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+        viewer_id = viewer.id
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = viewer_id
+        sess['username'] = 'visualizador'
+
+    response = client.get(f'/artigo/{aid}')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Editar e retirar da aprovação' not in html
+    assert 'Ao editar, este artigo sairá temporariamente da fila de aprovação.' not in html
+
+
+def test_editar_artigo_retirado_de_pendente_orienta_reenvio_para_aprovacao(client):
+    author_id = _login_user(client, ['artigo_criar'])
+    with app.app_context():
+        author = User.query.get(author_id)
+        inst = Instituicao.query.first()
+        art = Article(
+            titulo='Artigo pendente para edição', texto='Conteúdo', status=ArticleStatus.PENDENTE,
+            user_id=author_id, celula_id=author.celula_id, setor_id=author.setor_id,
+            estabelecimento_id=author.estabelecimento_id, instituicao_id=inst.id,
+        )
+        db.session.add(art)
+        db.session.commit()
+        aid = art.id
+
+    response = client.get(f'/artigo/{aid}/editar')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Este artigo saiu temporariamente da fila de aprovação para edição.' in html
+    assert 'clique em "Enviar para Aprovação" para reenviá-lo.' in html
+
+    response = client.get(f'/artigo/{aid}/editar')
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'Este artigo saiu temporariamente da fila de aprovação para edição.' not in html

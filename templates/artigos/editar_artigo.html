@@ -24,6 +24,11 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <h3>Editar Artigo</h3>
+        {% if withdrawn_for_edit %}
+        <div class="alert alert-warning py-2 px-3 small mb-3" role="alert">
+          Este artigo saiu temporariamente da fila de aprovação para edição. Após terminar, clique em "Enviar para Aprovação" para reenviá-lo.
+        </div>
+        {% endif %}
         <p class="text-muted mb-0">
           <strong>Criado em:</strong>
           {{ artigo.created_at.strftime('%d/%m/%Y %H:%M') }}
