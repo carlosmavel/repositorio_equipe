@@ -243,13 +243,13 @@ def upload_progress(progress_id):
         clear_progress(progress_id)
     return jsonify(payload)
 
-EDITOR_IMAGE_ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
-EDITOR_IMAGE_ALLOWED_MIMES = {'image/png', 'image/jpeg', 'image/webp'}
+EDITOR_IMAGE_ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+EDITOR_IMAGE_ALLOWED_MIMES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
 EDITOR_IMAGE_DEFAULT_MAX_BYTES = 2 * 1024 * 1024
 
 
 def _json_error(message, status_code):
-    response = jsonify({'error': message})
+    response = jsonify({'success': False, 'error': message})
     response.status_code = status_code
     return response
 
@@ -274,11 +274,36 @@ def _editor_upload_file_from_request():
     return None
 
 
-def _is_allowed_editor_image(upload):
+def _detect_editor_image_mime(image_bytes):
+    if image_bytes.startswith(b'\xff\xd8\xff'):
+        return 'image/jpeg'
+    if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'image/png'
+    if image_bytes.startswith((b'GIF87a', b'GIF89a')):
+        return 'image/gif'
+    if len(image_bytes) >= 12 and image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP':
+        return 'image/webp'
+    return None
+
+
+def _is_allowed_editor_image(upload, image_bytes):
     filename = secure_filename(upload.filename or '')
     _, extension = os.path.splitext(filename.lower())
-    mimetype = (upload.mimetype or '').lower()
-    return extension in EDITOR_IMAGE_ALLOWED_EXTENSIONS and mimetype in EDITOR_IMAGE_ALLOWED_MIMES
+    declared_mimetype = (upload.mimetype or '').lower()
+    detected_mimetype = _detect_editor_image_mime(image_bytes)
+    expected_mimes_by_extension = {
+        '.jpg': {'image/jpeg'},
+        '.jpeg': {'image/jpeg'},
+        '.png': {'image/png'},
+        '.gif': {'image/gif'},
+        '.webp': {'image/webp'},
+    }
+    return (
+        extension in EDITOR_IMAGE_ALLOWED_EXTENSIONS
+        and declared_mimetype in EDITOR_IMAGE_ALLOWED_MIMES
+        and detected_mimetype == declared_mimetype
+        and detected_mimetype in expected_mimes_by_extension.get(extension, set())
+    )
 
 
 @articles_bp.route('/artigos/editor-image-upload', methods=['POST'])
@@ -297,24 +322,24 @@ def editor_image_upload():
         return _json_error('Nenhum arquivo de imagem foi enviado.', 400)
 
     original_filename = secure_filename(upload.filename)
-    if not _is_allowed_editor_image(upload):
-        return _json_error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG ou WebP.', 415)
-
     image_bytes = upload.read()
     upload.stream.seek(0)
     max_bytes = _editor_image_max_bytes()
     if max_bytes > 0 and len(image_bytes) > max_bytes:
         return _json_error('Imagem acima do limite permitido.', 413)
 
+    if not _is_allowed_editor_image(upload, image_bytes):
+        return _json_error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG, GIF ou WebP.', 415)
+
     _, extension = os.path.splitext(original_filename.lower())
     unique_filename = f'{uuid.uuid4().hex}{extension}'
-    editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor')
+    editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor-images')
     os.makedirs(editor_folder, exist_ok=True)
     destination = os.path.join(editor_folder, unique_filename)
     with open(destination, 'wb') as image_file:
         image_file.write(image_bytes)
 
-    return jsonify({'url': f'/uploads/editor/{unique_filename}'})
+    return jsonify({'success': True, 'url': f'/uploads/editor-images/{unique_filename}'})
 
 @articles_bp.route('/novo-artigo', methods=['GET', 'POST'], endpoint='novo_artigo')
 def novo_artigo():

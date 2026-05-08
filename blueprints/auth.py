@@ -337,6 +337,18 @@ def _is_safe_upload_filename(filename):
     return all(part == secure_filename(part) for part in parts)
 
 
+
+@auth_bp.route('/uploads/editor-images/<path:filename>', endpoint='uploaded_editor_image_file')
+def uploaded_editor_image_file(filename):
+    if 'user_id' not in session:
+        app.logger.warning("Tentativa anônima de acesso a imagem do editor: %s", filename)
+        return abort(401)
+    if not _is_safe_upload_filename(filename):
+        app.logger.warning("Tentativa de acesso a imagem do editor com caminho inválido: %s", filename)
+        return abort(404)
+    editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor-images')
+    return send_from_directory(editor_folder, filename)
+
 @auth_bp.route('/uploads/editor/<path:filename>', endpoint='uploaded_editor_file')
 def uploaded_editor_file(filename):
     if 'user_id' not in session:

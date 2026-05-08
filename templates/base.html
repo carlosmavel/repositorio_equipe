@@ -597,11 +597,33 @@
           }
         }
 
+        function ensureSafeFacebookPixelStub(scriptUrl) {
+          if (!scriptUrl || scriptUrl.indexOf('connect.facebook.net') === -1 || scriptUrl.indexOf('fbevents.js') === -1) {
+            return;
+          }
+          if (typeof window.fbq === "function") {
+            return;
+          }
+          window.fbq = function () {
+            window.fbq.queue = window.fbq.queue || [];
+            window.fbq.queue.push(arguments);
+          };
+          window.fbq.queue = window.fbq.queue || [];
+          window.fbq.loaded = false;
+        }
+
+        function callFacebookPixelSafely() {
+          if (typeof window.fbq === "function") {
+            window.fbq.apply(window, arguments);
+          }
+        }
+
         function loadConditionalScriptsByCategory(categoryName) {
           document.querySelectorAll('script[data-consent-category="' + categoryName + '"][data-src]').forEach(function (placeholderScript) {
             if (placeholderScript.dataset.loaded === '1') {
               return;
             }
+            ensureSafeFacebookPixelStub(placeholderScript.dataset.src);
             var script = document.createElement('script');
             script.src = placeholderScript.dataset.src;
             script.defer = true;

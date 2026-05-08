@@ -293,10 +293,16 @@ import { Highlight } from 'https://esm.sh/@tiptap/extension-highlight@3';
 import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
 
   document.addEventListener("DOMContentLoaded", () => {
+    const editorElement = document.querySelector('#tiptap-editor');
+    if (!editorElement || editorElement.dataset.tiptapInitialized === '1') {
+      return;
+    }
+    editorElement.dataset.tiptapInitialized = '1';
     const initialContent = {{ (form_data.get('texto') if form_data else artigo.texto) | tojson | safe }} || '<p></p>';
 
     const pendingEditorImageUploads = new Set();
-    const EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const activeEditorImageUploadKeys = new Set();
+    const EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const EDITOR_IMAGE_UPLOAD_TIMEOUT_MS = 30000;
     const EDITOR_IMAGE_MAX_BYTES = Number({{ config.get('EDITOR_IMAGE_MAX_CONTENT_LENGTH', config.get('EDITOR_IMAGE_MAX_BYTES', 2097152)) | tojson }}) || 2097152;
 
@@ -310,7 +316,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
 
     function validateEditorImageFile(file) {
       if (!EDITOR_IMAGE_ALLOWED_MIME_TYPES.includes(file.type)) {
-        throw new Error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG ou WebP.');
+        throw new Error('Tipo de imagem inválido. Envie apenas PNG, JPG/JPEG, GIF ou WebP.');
       }
       if (EDITOR_IMAGE_MAX_BYTES > 0 && file.size > EDITOR_IMAGE_MAX_BYTES) {
         const limitMb = (EDITOR_IMAGE_MAX_BYTES / 1024 / 1024).toFixed(1).replace('.0', '');
@@ -318,11 +324,16 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       }
     }
 
+    function editorImageUploadKey(file) {
+      return [file.name || 'imagem-colada', file.type || 'sem-mime', file.size || 0, file.lastModified || 0].join(':');
+    }
+
     function editorImageFilename(file) {
       if (file.name) return file.name;
       const extensionsByMime = {
         'image/jpeg': 'jpg',
         'image/png': 'png',
+        'image/gif': 'gif',
         'image/webp': 'webp'
       };
       return `imagem-colada.${extensionsByMime[file.type] || 'png'}`;
@@ -388,6 +399,11 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       Array.from(files)
         .filter(file => file.type.startsWith('image/'))
         .forEach(file => {
+          const uploadKey = editorImageUploadKey(file);
+          if (activeEditorImageUploadKeys.has(uploadKey)) {
+            return;
+          }
+          activeEditorImageUploadKeys.add(uploadKey);
           const uploadPromise = uploadEditorImage(file)
             .then((url) => {
               const image = { type: 'image', attrs: { src: url, alt: file.name } };
@@ -401,13 +417,14 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
               console.error('Falha ao enviar imagem do editor', error);
               alert(error.message || 'Não foi possível enviar a imagem colada.');
               throw error;
-            });
+            })
+            .finally(() => activeEditorImageUploadKeys.delete(uploadKey));
           trackEditorImageUpload(uploadPromise);
         });
     };
 
     const editor = new Editor({
-      element: document.querySelector('#tiptap-editor'),
+      element: editorElement,
       extensions: [
         StarterKit,
         Image.configure({ allowBase64: false }),
@@ -421,7 +438,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Highlight.configure({ multicolor: true }),
         FileHandler.configure({
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
           onPaste: (editorInstance, files) => insertImageFiles(editorInstance, files),
           onDrop: (editorInstance, files, pos) => insertImageFiles(editorInstance, files, pos)
         })
@@ -729,6 +746,11 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
 
   // Sincroniza conteúdo no hidden antes de submeter
   const form = document.querySelector('form');
+  const setSubmitButtonsDisabled = (disabled) => {
+    form?.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+      button.disabled = disabled;
+    });
+  };
   if (form) {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -738,6 +760,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
           await waitForEditorImageUploads();
         } catch (error) {
           hideOverlay();
+          setSubmitButtonsDisabled(false);
           return;
         }
       }
@@ -761,6 +784,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
         startProgressPolling(progressId);
       }
 
+      setSubmitButtonsDisabled(true);
       try {
         const formData = new FormData(form);
         const submitter = event.submitter;
@@ -800,6 +824,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       }
 
       hideOverlay();
+      setSubmitButtonsDisabled(false);
     });
   }
 

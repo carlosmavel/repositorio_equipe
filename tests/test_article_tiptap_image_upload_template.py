@@ -26,9 +26,9 @@ def test_tiptap_cola_imagens_via_upload_em_vez_de_base64():
 
 def test_tiptap_mimes_do_cliente_refletem_endpoint_de_upload():
     for name, source in _template_sources().items():
-        assert "EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']" in source, name
-        assert "allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']" in source, name
-        assert "image/gif" not in source, name
+        assert "EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']" in source, name
+        assert "allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']" in source, name
+        assert "image/gif" in source, name
 
 
 def test_tiptap_upload_de_imagem_tem_diagnostico_e_timeout():
@@ -48,3 +48,12 @@ def test_progresso_de_upload_so_consulta_endpoint_quando_ha_anexos():
         assert "const hasPendingAttachmentFiles = () => Boolean(document.getElementById('files')?.files?.length);" in source, name
         assert "if (hasPendingAttachmentFiles()) {" in source, name
         assert "startProgressPolling(progressId);" in source, name
+
+
+def test_tiptap_evita_upload_duplicado_e_inicializacao_repetida():
+    for name, source in _template_sources().items():
+        assert "dataset.tiptapInitialized" in source, name
+        assert "const activeEditorImageUploadKeys = new Set();" in source, name
+        assert "activeEditorImageUploadKeys.has(uploadKey)" in source, name
+        assert ".finally(() => activeEditorImageUploadKeys.delete(uploadKey))" in source, name
+        assert "setSubmitButtonsDisabled(true);" in source, name

@@ -248,7 +248,7 @@ _SAFE_EDITOR_CLASS_RE = re.compile(
 )
 _URL_SCHEME_RE = re.compile(r"^([a-z0-9+.-]+):", re.IGNORECASE)
 _SAFE_UPLOAD_IMAGE_RE = re.compile(
-    r"^/uploads/editor/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%/-]*$"
+    r"^/uploads/(?:editor|editor-images)/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%/-]*$"
 )
 _SAFE_CSS_COLOR_RE = re.compile(
     r"^(?:#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$",
@@ -331,7 +331,7 @@ def _has_only_safe_editor_styles(tag: str, value: str) -> bool:
 def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
     allowed_attrs_by_tag = {
         "a": {"href", "title", "target", "rel"},
-        "img": {"src", "alt", "title", "width", "height"},
+        "img": {"src", "alt", "title", "width", "height", "class"},
         "p": {"style"},
         "h1": {"style"},
         "h2": {"style"},
@@ -404,7 +404,7 @@ def sanitize_html(text: str) -> str:
     allowed_tags = [
         "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "pre", "code",
         "ul", "ol", "li", "strong", "b", "em", "i", "u", "s", "mark",
-        "blockquote", "a", "img", "table", "thead", "tbody", "tfoot", "tr",
+        "blockquote", "a", "img", "figure", "figcaption", "table", "thead", "tbody", "tfoot", "tr",
         "th", "td", "colgroup", "col", "label", "input",
     ]
 
