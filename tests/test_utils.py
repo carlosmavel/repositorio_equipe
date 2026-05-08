@@ -22,28 +22,88 @@ def test_sanitize_html_removes_disallowed_tags():
     assert "<div" not in cleaned
 
 
-def test_sanitize_html_allows_quill_headings_lists_and_formatting():
+def test_sanitize_html_allows_tiptap_headings_lists_and_formatting():
     html = (
-        '<h1>Título</h1><h2>Seção</h2><h3>Subseção</h3>'
-        '<p class="ql-align-center">Texto <b>negrito</b> '
+        '<h1 style="text-align: center">Título</h1><h2>Seção</h2><h3>Subseção</h3>'
+        '<p style="text-align: right">Texto <b>negrito</b> '
         '<i>itálico</i> <u>sublinhado</u></p>'
-        '<ul><li class="ql-indent-1">Item</li></ul>'
+        '<ul><li>Item</li></ul>'
         '<ol><li>Primeiro</li></ol>'
         '<blockquote>Citação</blockquote>'
     )
 
     cleaned = sanitize_html(html)
 
-    assert '<h1>Título</h1>' in cleaned
+    assert '<h1 style="text-align: center;">Título</h1>' in cleaned
     assert '<h2>Seção</h2>' in cleaned
     assert '<h3>Subseção</h3>' in cleaned
     assert (
-        '<p class="ql-align-center">Texto <b>negrito</b> '
+        '<p style="text-align: right;">Texto <b>negrito</b> '
         '<i>itálico</i> <u>sublinhado</u></p>'
     ) in cleaned
-    assert '<ul><li class="ql-indent-1">Item</li></ul>' in cleaned
+    assert '<ul><li>Item</li></ul>' in cleaned
     assert '<ol><li>Primeiro</li></ol>' in cleaned
     assert '<blockquote>Citação</blockquote>' in cleaned
+
+
+def test_sanitize_html_allows_tiptap_code_block_and_highlight():
+    html = (
+        '<pre><code class="language-python">print(&quot;ok&quot;)</code></pre>'
+        '<p>Texto <mark data-color="#ffe066" '
+        'style="background-color: #ffe066; color: inherit">marcado</mark></p>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<pre><code class="language-python">print(&quot;ok&quot;)</code></pre>' in cleaned
+    assert (
+        '<mark data-color="#ffe066" '
+        'style="background-color: #ffe066; color: inherit;">marcado</mark>'
+    ) in cleaned
+
+
+def test_sanitize_html_allows_tiptap_checklist():
+    html = (
+        '<ul data-type="taskList"><li data-type="taskItem" data-checked="true">'
+        '<label><input type="checkbox" checked="checked" disabled="disabled">'
+        '<span></span></label><div><p>Tarefa concluída</p></div></li></ul>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<ul data-type="taskList">' in cleaned
+    assert '<li data-type="taskItem" data-checked="true">' in cleaned
+    assert '<input type="checkbox" checked disabled>' in cleaned
+    assert '<p>Tarefa concluída</p>' in cleaned
+
+
+def test_sanitize_html_allows_tiptap_table():
+    html = (
+        '<table><tbody><tr>'
+        '<th colspan="1" rowspan="1"><p>Cabeçalho</p></th>'
+        '<td colspan="2" rowspan="1"><p>Célula</p></td>'
+        '</tr></tbody></table>'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<table><tbody><tr>' in cleaned
+    assert '<th colspan="1" rowspan="1"><p>Cabeçalho</p></th>' in cleaned
+    assert '<td colspan="2" rowspan="1"><p>Célula</p></td>' in cleaned
+
+
+def test_sanitize_html_allows_tiptap_uploaded_editor_image():
+    html = (
+        '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem" title="Upload">'
+        '<img src="/uploads/not-editor/imagem.png" alt="Fora">'
+        '<img src="/uploads/editor/../secret.png" alt="Traversal">'
+    )
+
+    cleaned = sanitize_html(html)
+
+    assert '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem" title="Upload">' in cleaned
+    assert '<img alt="Fora">' in cleaned
+    assert '<img alt="Traversal">' in cleaned
 
 
 def test_sanitize_html_allows_safe_links_and_blocks_javascript():
