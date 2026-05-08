@@ -14,6 +14,7 @@ from core.models import (
     ArticleStatus,
     Comment,
     RevisionRequest,
+    ArticleVersion,
 )
 from core.enums import Permissao
 from core.utils import (
@@ -199,6 +200,67 @@ def test_review_levels(base_setup):
         db.session.commit()
         add_perm(user, perm)
         assert user_can_review_article(user, art) is True
+
+
+@pytest.mark.parametrize('status_final', [ArticleStatus.EM_AJUSTE, ArticleStatus.RASCUNHO])
+def test_aprovacao_detail_recusa_post_quando_artigo_nao_esta_pendente(app_ctx, client, status_final):
+    with app.app_context():
+        inst = Instituicao(codigo='I1', nome='Inst')
+        est = Estabelecimento(codigo='E1', nome_fantasia='Est', instituicao=inst)
+        setor = Setor(nome='S', estabelecimento=est)
+        cel = Celula(nome='C', estabelecimento=est, setor=setor)
+        db.session.add_all([inst, est, setor, cel])
+        db.session.flush()
+
+        autor = User(username='autor', email='a@test', password_hash='x',
+                     estabelecimento=est, setor=setor, celula=cel)
+        revisor = User(username='rev', email='r@test', password_hash='x',
+                       estabelecimento=est, setor=setor, celula=cel)
+        db.session.add_all([autor, revisor])
+        db.session.flush()
+
+        art = Article(titulo='T', texto='C', status=ArticleStatus.PENDENTE,
+                      user_id=autor.id, celula_id=cel.id,
+                      estabelecimento_id=est.id, setor_id=setor.id,
+                      instituicao_id=inst.id, visibility=ArticleVisibility.CELULA)
+        db.session.add(art)
+        db.session.flush()
+
+        f = Funcao(codigo=Permissao.ARTIGO_APROVAR_CELULA.value, nome='ap')
+        db.session.add(f)
+        db.session.flush()
+        revisor.permissoes_personalizadas.append(f)
+        db.session.commit()
+
+        revisor_id = revisor.id
+        art_id = art.id
+
+        # Simula a página antiga: o aprovador abriu o artigo quando estava
+        # pendente, mas outro fluxo já retirou o artigo da fila antes do POST.
+        art.status = status_final
+        db.session.commit()
+
+    with client.session_transaction() as sess:
+        sess['user_id'] = revisor_id
+
+    resp = client.post(
+        f'/aprovacao/{art_id}',
+        data={'acao': 'aprovar', 'comentario': 'Aprovar conteúdo'},
+    )
+
+    assert resp.status_code == 302
+    assert resp.location.endswith(f'/aprovacao/{art_id}')
+    with client.session_transaction() as sess:
+        assert (
+            'warning',
+            'Este artigo não está mais pendente de aprovação.',
+        ) in sess['_flashes']
+
+    with app.app_context():
+        art_db = Article.query.get(art_id)
+        assert art_db.status == status_final
+        assert Comment.query.count() == 0
+        assert ArticleVersion.query.count() == 0
 
 
 def test_aprovacao_requer_comentario(app_ctx, client):
