@@ -204,10 +204,19 @@
             </form>
           </div>
           {% endif %}
+          {% if can_edit_article and artigo.status == ArticleStatus.PENDENTE %}
+          <div class="alert alert-warning py-2 px-3 small mb-3" role="alert">
+            Ao editar, este artigo sairá temporariamente da fila de aprovação.
+          </div>
+          {% endif %}
           <div class="article-actions-group d-flex flex-wrap gap-2">
           {% if can_edit_article %}
-          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-primary">
-            <i class="bi bi-pencil-square" aria-hidden="true"></i> Editar
+          {% set is_pending_edit = artigo.status == ArticleStatus.PENDENTE %}
+          <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}"
+             class="btn btn-app btn-app-primary"
+             {% if is_pending_edit %}title="Ao editar, este artigo sairá temporariamente da fila de aprovação."{% endif %}>
+            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+            {{ 'Editar e retirar da aprovação' if is_pending_edit else 'Editar' }}
           </a>
           {% endif %}
 

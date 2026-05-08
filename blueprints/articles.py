@@ -158,7 +158,7 @@ def _render_novo_artigo_form(form_data=None, clear_autosave=False):
     )
 
 
-def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=None):
+def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=None, withdrawn_for_edit=False):
     tipos_artigo = ArtigoTipo.query.filter_by(ativo=True).order_by(ArtigoTipo.nome).all()
     areas_artigo = ArtigoArea.query.filter_by(ativo=True).order_by(ArtigoArea.nome).all()
     sistemas_artigo = ArtigoSistema.query.filter_by(ativo=True).order_by(ArtigoSistema.nome).all()
@@ -172,6 +172,7 @@ def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=N
         can_submit_actions=can_submit_actions,
         previous_char_count=calculate_plain_text_char_count(artigo.texto),
         form_data=form_data,
+        withdrawn_for_edit=withdrawn_for_edit,
     )
 
 def _build_drastic_reduction_data(previous_text, new_text):
@@ -1252,6 +1253,7 @@ def editar_artigo(artigo_id):
             return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
 
     # GET
+    withdrawn_for_edit = False
     if artigo.status == ArticleStatus.PENDENTE:
         status_before = artigo.status
         status_after = ArticleStatus.EM_AJUSTE
@@ -1266,9 +1268,10 @@ def editar_artigo(artigo_id):
             correlation_id=getattr(g, "request_correlation_id", None),
         )
         db.session.commit()
+        withdrawn_for_edit = True
 
     arquivos = json.loads(artigo.arquivos or "[]")
-    return _render_editar_artigo_form(artigo, arquivos, can_submit_actions)
+    return _render_editar_artigo_form(artigo, arquivos, can_submit_actions, withdrawn_for_edit=withdrawn_for_edit)
 
 @articles_bp.route("/aprovacao", endpoint='aprovacao')
 def aprovacao():
