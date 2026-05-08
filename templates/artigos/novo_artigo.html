@@ -316,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
   form.addEventListener('submit', (event) => {
     document.getElementById('hidden-texto').value = quill.root.innerHTML;
+    localStorage.removeItem(STORAGE_KEY);
 
     const progressId = progressIdInput?.value || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     if (progressIdInput) progressIdInput.value = progressId;
@@ -325,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startProgressPolling(progressId);
 
     // Observação: submissão nativa do formulário é mantida para preservar
-    // redirects/flash do servidor e evitar perder estado em caso de erro.
+    // redirects/flash do servidor; em caso de validação, o servidor reidrata o formulário.
   });
 
   // Preview de anexos
