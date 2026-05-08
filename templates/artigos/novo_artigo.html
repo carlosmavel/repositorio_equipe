@@ -227,20 +227,70 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
 document.addEventListener('DOMContentLoaded', () => {
   const initialContent = {{ (form_data or {}).get('texto', '') | tojson | safe }} || '<p></p>';
 
+  const pendingEditorImageUploads = new Set();
+
+  function editorImageFilename(file) {
+    if (file.name) return file.name;
+    const extensionsByMime = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp'
+    };
+    return `imagem-colada.${extensionsByMime[file.type] || 'png'}`;
+  }
+
+  async function uploadEditorImage(file) {
+    const formData = new FormData();
+    formData.append('file', file, editorImageFilename(file));
+    const response = await fetch('/artigos/editor-image-upload', {
+      method: 'POST',
+      body: formData
+    });
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (e) {
+      // Mantém mensagem genérica quando a resposta não é JSON.
+    }
+    if (!response.ok || !payload?.url) {
+      throw new Error(payload?.error || 'Não foi possível enviar a imagem colada.');
+    }
+    return payload.url;
+  }
+
+  function trackEditorImageUpload(uploadPromise) {
+    pendingEditorImageUploads.add(uploadPromise);
+    uploadPromise.then(
+      () => pendingEditorImageUploads.delete(uploadPromise),
+      () => pendingEditorImageUploads.delete(uploadPromise)
+    );
+    return uploadPromise;
+  }
+
+  async function waitForEditorImageUploads() {
+    if (!pendingEditorImageUploads.size) return;
+    await Promise.all(Array.from(pendingEditorImageUploads));
+  }
+
   const insertImageFiles = (editorInstance, files, pos = null) => {
-    files
+    Array.from(files)
       .filter(file => file.type.startsWith('image/'))
       .forEach(file => {
-        const reader = new FileReader();
-        reader.addEventListener('load', () => {
-          const image = { type: 'image', attrs: { src: reader.result, alt: file.name } };
-          if (typeof pos === 'number') {
-            editorInstance.chain().focus().insertContentAt(pos, image).run();
-            return;
-          }
-          editorInstance.chain().focus().insertContent(image).run();
-        });
-        reader.readAsDataURL(file);
+        const uploadPromise = uploadEditorImage(file)
+          .then((url) => {
+            const image = { type: 'image', attrs: { src: url, alt: file.name } };
+            if (typeof pos === 'number') {
+              editorInstance.chain().focus().insertContentAt(pos, image).run();
+              return;
+            }
+            editorInstance.chain().focus().insertContent(image).run();
+          })
+          .catch((error) => {
+            console.error('Falha ao enviar imagem do editor', error);
+            alert(error.message || 'Não foi possível enviar a imagem colada.');
+            throw error;
+          });
+        trackEditorImageUpload(uploadPromise);
       });
   };
 
@@ -248,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     element: document.querySelector('#tiptap-editor'),
     extensions: [
       StarterKit,
-      Image.configure({ allowBase64: true }),
+      Image.configure({ allowBase64: false }),
       Table.configure({ resizable: true }),
       TableRow,
       TableCell,
@@ -259,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Highlight.configure({ multicolor: true }),
       FileHandler.configure({
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
         onPaste: (editorInstance, files) => insertImageFiles(editorInstance, files),
         onDrop: (editorInstance, files, pos) => insertImageFiles(editorInstance, files, pos)
       })
@@ -501,7 +551,25 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const form = document.querySelector('form');
-  form.addEventListener('submit', (event) => {
+  let isResubmittingAfterEditorUploads = false;
+  form.addEventListener('submit', async (event) => {
+    if (isResubmittingAfterEditorUploads) {
+      return;
+    }
+
+    event.preventDefault();
+    const submitter = event.submitter;
+
+    if (pendingEditorImageUploads.size) {
+      setOverlayState('Enviando imagens coladas no texto...', null);
+      try {
+        await waitForEditorImageUploads();
+      } catch (error) {
+        hideOverlay();
+        return;
+      }
+    }
+
     const hiddenTexto = document.getElementById('hidden-texto');
     if (hiddenTexto) {
       hiddenTexto.value = editor.getHTML();
@@ -516,8 +584,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setOverlayState('Enviando artigo e anexos...', 0);
     startProgressPolling(progressId);
 
-    // Observação: submissão nativa do formulário é mantida para preservar
-    // redirects/flash do servidor; em caso de validação, o servidor reidrata o formulário.
+    isResubmittingAfterEditorUploads = true;
+    if (submitter && typeof form.requestSubmit === 'function') {
+      form.requestSubmit(submitter);
+    } else {
+      form.submit();
+    }
+
+    // Observação: a submissão nativa do formulário é preservada após o envio
+    // das imagens coladas para manter redirects/flash do servidor.
   });
 
   // Preview de anexos
