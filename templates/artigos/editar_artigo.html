@@ -659,6 +659,8 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       overlayBar.setAttribute('aria-valuenow', value);
     }
   };
+  const hasPendingAttachmentFiles = () => Boolean(document.getElementById('files')?.files?.length);
+
   const hideOverlay = () => {
     completeBar();
     if (overlay) overlay.style.display = 'none';
@@ -755,7 +757,9 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       if (progressIdInput) progressIdInput.value = progressId;
       resetProgressMessages();
       setOverlayState('Salvando artigo e anexos...', 0);
-      startProgressPolling(progressId);
+      if (hasPendingAttachmentFiles()) {
+        startProgressPolling(progressId);
+      }
 
       try {
         const formData = new FormData(form);

@@ -41,3 +41,10 @@ def test_tiptap_upload_de_imagem_tem_diagnostico_e_timeout():
         assert "[editor-image-upload:end]" in source, name
         assert "Tempo esgotado ao enviar a imagem colada" in source, name
         assert "Reduza o print ou envie como anexo" in source, name
+
+
+def test_progresso_de_upload_so_consulta_endpoint_quando_ha_anexos():
+    for name, source in _template_sources().items():
+        assert "const hasPendingAttachmentFiles = () => Boolean(document.getElementById('files')?.files?.length);" in source, name
+        assert "if (hasPendingAttachmentFiles()) {" in source, name
+        assert "startProgressPolling(progressId);" in source, name
