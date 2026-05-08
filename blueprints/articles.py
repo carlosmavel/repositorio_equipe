@@ -22,6 +22,7 @@ except ImportError:
 try:
     from ..core.utils import (
         sanitize_html,
+        validate_article_html_inline_images,
         eligible_review_notification_users,
         user_can_view_article,
         user_can_edit_article,
@@ -36,6 +37,7 @@ try:
 except ImportError:  # pragma: no cover - fallback for direct execution
     from core.utils import (
         sanitize_html,
+        validate_article_html_inline_images,
         eligible_review_notification_users,
         user_can_view_article,
         user_can_edit_article,
@@ -345,6 +347,12 @@ def novo_artigo():
             'visibility': request.form.get('visibility') or 'celula',
         }
 
+        html_valido, mensagem_html = validate_article_html_inline_images(texto_raw)
+        if not html_valido:
+            flash(mensagem_html, 'warning')
+            flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
+            return _render_novo_artigo_form(form_data)
+
         # Campos obrigatórios: título e conteúdo textual sanitizado
         if not titulo or not _has_required_text_content(texto_limpo):
             flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
@@ -612,6 +620,10 @@ def artigo(artigo_id):
         novo_titulo = request.form['titulo'].strip()
         novo_texto_raw = request.form['texto']
         novo_texto = sanitize_html(novo_texto_raw).strip()
+        html_valido, mensagem_html = validate_article_html_inline_images(novo_texto_raw)
+        if not html_valido:
+            flash(mensagem_html, 'warning')
+            return redirect(url_for('artigo', artigo_id=artigo_id))
         if not novo_titulo or not _has_required_text_content(novo_texto):
             flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
             return redirect(url_for('artigo', artigo_id=artigo_id))
@@ -1115,6 +1127,11 @@ def editar_artigo(artigo_id):
             'sistema_id': request.form.get('sistema_id') or '',
             'visibility': request.form.get('visibility') or artigo.visibility.value,
         }
+        html_valido, mensagem_html = validate_article_html_inline_images(texto_raw)
+        if not html_valido:
+            flash(mensagem_html, 'warning')
+            flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')
+            return _render_editar_artigo_form(artigo, json.loads(artigo.arquivos or "[]"), can_submit_actions, form_data)
         if not titulo or not _has_required_text_content(texto):
             flash('Erro de validação: título e conteúdo textual são obrigatórios.', 'warning')
             flash('Se você selecionou anexos, será necessário reenviá-los após corrigir o formulário (limitação de multipart).', 'info')

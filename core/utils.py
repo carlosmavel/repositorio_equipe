@@ -194,6 +194,47 @@ _SAFE_DATA_IMAGE_RE = re.compile(
     r"^data:image/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$",
     re.IGNORECASE,
 )
+
+_INLINE_DATA_IMAGE_RE = re.compile(
+    r"data:image/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)",
+    re.IGNORECASE,
+)
+ARTICLE_INLINE_IMAGE_BASE64_MAX_CHARS = 4096
+ARTICLE_INLINE_IMAGE_BASE64_MESSAGE = (
+    "A imagem colada no texto é muito grande para salvar diretamente no artigo. "
+    "Cole novamente a imagem ou anexe o arquivo pelo botão de upload."
+)
+
+
+def article_html_has_large_inline_base64_image(
+    html_text: str,
+    *,
+    max_base64_chars: int = ARTICLE_INLINE_IMAGE_BASE64_MAX_CHARS,
+) -> bool:
+    """Retorna True quando o HTML recebido contém imagem inline base64 acima do limite."""
+    if max_base64_chars < 0:
+        return False
+
+    for match in _INLINE_DATA_IMAGE_RE.finditer(html_text or ""):
+        payload = re.sub(r"\s+", "", match.group(1) or "")
+        if len(payload) > max_base64_chars:
+            return True
+    return False
+
+
+def validate_article_html_inline_images(
+    html_text: str,
+    *,
+    max_base64_chars: int = ARTICLE_INLINE_IMAGE_BASE64_MAX_CHARS,
+) -> tuple[bool, str | None]:
+    """Valida imagens base64 coladas no HTML antes de persistir artigos."""
+    if article_html_has_large_inline_base64_image(
+        html_text,
+        max_base64_chars=max_base64_chars,
+    ):
+        return False, ARTICLE_INLINE_IMAGE_BASE64_MESSAGE
+    return True, None
+
 _SAFE_EDITOR_CLASS_RE = re.compile(
     r"^(?:"
     r"tiptap-content|"
