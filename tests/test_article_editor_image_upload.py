@@ -1,3 +1,4 @@
+import base64
 import io
 import os
 
@@ -8,6 +9,15 @@ from core.models import User
 
 
 EDITOR_UPLOAD_URL = '/artigos/editor-image-upload'
+
+PNG_BYTES = base64.b64decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR42mP8z8AARQAFAAH/3n1MAAAAAElFTkSuQmCC'
+)
+JPEG_BYTES = base64.b64decode(
+    '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAH/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/ASP/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/ASP/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/Ar//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IV//2gAMAwEAAgADAAAAEP/EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8QH//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8QH//EABQQAQAAAAAAAAAAAAAAAAAAABD/2gAIAQEAAT8QH//Z'
+)
+GIF_BYTES = base64.b64decode('R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==')
+WEBP_BYTES = base64.b64decode('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA')
 
 
 @pytest.fixture
@@ -54,14 +64,26 @@ def _saved_path(upload_app, url):
 
 
 def test_valid_editor_image_upload_saves_file_and_returns_json_url(upload_app, logged_client):
-    response = _upload(logged_client, 'foto.png', b'valid png content', 'image/png')
+    response = _upload(logged_client, 'foto.png', PNG_BYTES, 'image/png')
 
     assert response.status_code == 200
     assert response.is_json
     payload = response.get_json()
-    assert set(payload) == {'url'}
-    assert payload['url'].startswith('/uploads/editor/')
+    assert payload['success'] is True
+    assert set(payload) == {'success', 'url'}
+    assert payload['url'].startswith('/uploads/editor-images/')
     assert payload['url'].endswith('.png')
+    assert os.path.exists(_saved_path(upload_app, payload['url']))
+
+
+def test_editor_image_upload_accepts_gif(upload_app, logged_client):
+    response = _upload(logged_client, 'animacao.gif', GIF_BYTES, 'image/gif')
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['success'] is True
+    assert payload['url'].startswith('/uploads/editor-images/')
+    assert payload['url'].endswith('.gif')
     assert os.path.exists(_saved_path(upload_app, payload['url']))
 
 
@@ -76,7 +98,17 @@ def test_editor_image_upload_blocks_svg_even_with_image_mime(upload_app, logged_
     assert response.status_code == 415
     assert response.is_json
     assert 'inválido' in response.get_json()['error'].lower()
-    assert not os.path.exists(os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor'))
+    assert not os.path.exists(os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor-images'))
+
+
+def test_editor_image_upload_blocks_mime_extension_mismatch(upload_app, logged_client):
+    response = _upload(logged_client, 'foto.jpg', PNG_BYTES, 'image/png')
+
+    assert response.status_code == 415
+    assert response.is_json
+    assert response.get_json()['success'] is False
+    assert 'inválido' in response.get_json()['error'].lower()
+    assert not os.path.exists(os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor-images'))
 
 
 def test_editor_image_upload_blocks_file_above_limit(upload_app, logged_client):
@@ -87,11 +119,11 @@ def test_editor_image_upload_blocks_file_above_limit(upload_app, logged_client):
     assert response.status_code == 413
     assert response.is_json
     assert 'limite' in response.get_json()['error'].lower()
-    assert not os.path.exists(os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor'))
+    assert not os.path.exists(os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor-images'))
 
 
 def test_editor_image_upload_blocks_anonymous_user(client, upload_app):
-    response = _upload(client, 'foto.webp', b'webp content', 'image/webp')
+    response = _upload(client, 'foto.webp', WEBP_BYTES, 'image/webp')
 
     assert response.status_code == 401
     assert response.is_json
@@ -99,16 +131,16 @@ def test_editor_image_upload_blocks_anonymous_user(client, upload_app):
 
 
 def test_editor_image_upload_generates_unique_names(upload_app, logged_client):
-    first_response = _upload(logged_client, 'foto.jpeg', b'first image', 'image/jpeg')
-    second_response = _upload(logged_client, 'foto.jpeg', b'second image', 'image/jpeg')
+    first_response = _upload(logged_client, 'foto.jpeg', JPEG_BYTES, 'image/jpeg')
+    second_response = _upload(logged_client, 'foto.jpeg', JPEG_BYTES, 'image/jpeg')
 
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     first_url = first_response.get_json()['url']
     second_url = second_response.get_json()['url']
     assert first_url != second_url
-    assert first_url.startswith('/uploads/editor/')
-    assert second_url.startswith('/uploads/editor/')
+    assert first_url.startswith('/uploads/editor-images/')
+    assert second_url.startswith('/uploads/editor-images/')
     assert os.path.exists(_saved_path(upload_app, first_url))
     assert os.path.exists(_saved_path(upload_app, second_url))
 
@@ -121,14 +153,14 @@ def test_editor_image_upload_handles_missing_file(logged_client):
     assert 'nenhum arquivo' in response.get_json()['error'].lower()
 
 
-def test_uploaded_editor_file_serves_logged_user_from_editor_folder(upload_app, logged_client):
-    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor')
+def test_uploaded_editor_image_file_serves_logged_user_from_editor_folder(upload_app, logged_client):
+    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor-images')
     os.makedirs(editor_folder, exist_ok=True)
     image_path = os.path.join(editor_folder, 'inline.png')
     with open(image_path, 'wb') as image_file:
         image_file.write(b'inline image')
 
-    response = logged_client.get('/uploads/editor/inline.png')
+    response = logged_client.get('/uploads/editor-images/inline.png')
 
     assert response.status_code == 200
     assert response.data == b'inline image'
@@ -148,19 +180,19 @@ def test_uploaded_editor_file_serves_nested_legacy_inline_images(upload_app, log
 
 
 def test_uploaded_editor_file_blocks_anonymous_user(client, upload_app):
-    response = client.get('/uploads/editor/inline.png')
+    response = client.get('/uploads/editor-images/inline.png')
 
     assert response.status_code == 401
 
 
 def test_uploaded_editor_file_blocks_path_traversal(upload_app, logged_client):
-    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor')
+    editor_folder = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'editor-images')
     os.makedirs(editor_folder, exist_ok=True)
     secret_path = os.path.join(upload_app.config['UPLOAD_FOLDER'], 'secret.png')
     with open(secret_path, 'wb') as secret_file:
         secret_file.write(b'secret image')
 
-    response = logged_client.get('/uploads/editor/%2e%2e/secret.png')
+    response = logged_client.get('/uploads/editor-images/%2e%2e/secret.png')
 
     assert response.status_code == 404
     assert response.data != b'secret image'

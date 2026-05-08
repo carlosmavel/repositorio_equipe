@@ -94,14 +94,18 @@ def test_sanitize_html_allows_tiptap_table():
 
 def test_sanitize_html_allows_tiptap_uploaded_editor_image():
     html = (
-        '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem" title="Upload">'
+        '<figure><img src="/uploads/editor-images/imagem.png" alt="Imagem" title="Upload" class="tiptap-content">'
+        '<figcaption>Legenda</figcaption></figure>'
+        '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem antiga" title="Upload">'
         '<img src="/uploads/not-editor/imagem.png" alt="Fora">'
         '<img src="/uploads/editor/../secret.png" alt="Traversal">'
     )
 
     cleaned = sanitize_html(html)
 
-    assert '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem" title="Upload">' in cleaned
+    assert '<figure><img src="/uploads/editor-images/imagem.png" alt="Imagem" title="Upload" class="tiptap-content">' in cleaned
+    assert '<figcaption>Legenda</figcaption></figure>' in cleaned
+    assert '<img src="/uploads/editor/artigo-1/imagem.png" alt="Imagem antiga" title="Upload">' in cleaned
     assert '<img alt="Fora">' in cleaned
     assert '<img alt="Traversal">' in cleaned
 
