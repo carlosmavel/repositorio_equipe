@@ -574,6 +574,33 @@ def send_password_email(user: User, action: str) -> None:
     html = render_template('email/password_email.html', user=user, url=url, action=action_text)
     send_email(user.email, 'Definição de Senha', html)
 
+
+def _pending_review_article_id_from_notification_url(url):
+    """Extrai o ID de URLs de notificação da tela de aprovação."""
+    path = urlsplit(url or '').path
+    match = re.search(r'/(?:aprovacao)/(\d+)$', path)
+    return int(match.group(1)) if match else None
+
+
+def _is_visible_notification(notification):
+    """Oculta pendências de aprovação que já saíram da fila."""
+    article_id = _pending_review_article_id_from_notification_url(notification.url)
+    if article_id is None:
+        return True
+
+    article = db.session.get(Article, article_id)
+    return bool(article and article.status == ArticleStatus.PENDENTE)
+
+
+def _visible_general_notifications(user_id):
+    notifications = (
+        Notification.query
+        .filter_by(user_id=user_id, tipo='geral')
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+    return [n for n in notifications if _is_visible_notification(n)]
+
 # -------------------------------------------------------------------------
 # NOTIFICAÇÕES - API
 # -------------------------------------------------------------------------
@@ -585,14 +612,7 @@ def api_notifications():
 
     offset = int(request.args.get('offset', 0))
     limit = int(request.args.get('limit', 10))
-    notifs = (
-        Notification.query
-        .filter_by(user_id=session['user_id'], tipo='geral')
-        .order_by(Notification.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    notifs = _visible_general_notifications(session['user_id'])[offset:offset + limit]
 
     return jsonify([
         {'id': n.id, 'message': n.message, 'url': n.url, 'lido': n.lido}
@@ -629,16 +649,9 @@ def inject_notificacoes():
     if 'user_id' in session: # Usar user_id é mais seguro que username para buscar no banco
         user = User.query.get(session['user_id']) # Usar .get() é mais direto para PK
         if user:
-            q_general_unread = Notification.query.filter_by(user_id=user.id, lido=False, tipo='geral')
-            general_count = q_general_unread.count()
-
-            general_list = (
-                Notification.query
-                .filter_by(user_id=user.id, tipo='geral')
-                .order_by(Notification.created_at.desc())
-                .limit(10)
-                .all()
-            )
+            visible_notifications = _visible_general_notifications(user.id)
+            general_count = sum(1 for n in visible_notifications if not n.lido)
+            general_list = visible_notifications[:10]
 
             return {
                 'notificacoes': general_count,
