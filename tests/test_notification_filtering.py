@@ -102,3 +102,64 @@ def test_novo_artigo_sem_acao_fica_rascunho(client_with_users):
     n2 = Notification.query.filter_by(user_id=data['ap2'].id).count()
     assert n1 == 0
     assert n2 == 0
+
+
+def test_pending_review_notifications_removed_when_author_edits_pending_article(client_with_users):
+    client, data = client_with_users
+    login(client, data['author'])
+    resp = client.post('/novo-artigo', data={
+        'titulo': 'Sai da pendencia',
+        'texto': '<p>x</p>',
+        'acao': 'enviar',
+        'visibility': 'celula'
+    })
+    assert resp.status_code == 302
+
+    artigo = Article.query.filter_by(titulo='Sai da pendencia').first()
+    assert artigo is not None
+    assert Notification.query.filter_by(user_id=data['ap1'].id).count() == 1
+
+    resp = client.get(f'/artigo/{artigo.id}/editar')
+    assert resp.status_code == 200
+
+    db.session.refresh(artigo)
+    assert artigo.status == ArticleStatus.EM_AJUSTE
+    assert Notification.query.filter_by(user_id=data['ap1'].id).count() == 0
+
+    login(client, data['ap1'])
+    api_resp = client.get('/api/notifications')
+    assert api_resp.status_code == 200
+    assert api_resp.get_json() == []
+
+
+def test_stale_pending_review_notifications_are_hidden_from_badge_and_api(client_with_users):
+    client, data = client_with_users
+    with app.app_context():
+        artigo = Article(
+            titulo='Ja saiu da fila',
+            texto='x',
+            status=ArticleStatus.EM_AJUSTE,
+            user_id=data['author'].id,
+            celula_id=data['author'].celula_id,
+            estabelecimento_id=data['author'].estabelecimento_id,
+            setor_id=data['author'].setor_id,
+            instituicao_id=data['author'].estabelecimento.instituicao_id,
+        )
+        db.session.add(artigo)
+        db.session.flush()
+        db.session.add(Notification(
+            user_id=data['ap1'].id,
+            message='Novo artigo pendente para revisão: “Ja saiu da fila”',
+            url=f'/aprovacao/{artigo.id}',
+        ))
+        db.session.commit()
+
+    login(client, data['ap1'])
+    api_resp = client.get('/api/notifications')
+    assert api_resp.status_code == 200
+    assert api_resp.get_json() == []
+
+    page_resp = client.get('/aprovacao')
+    assert page_resp.status_code == 200
+    assert b'data-server-count="0"' in page_resp.data
+    assert b'Ja saiu da fila' not in page_resp.data

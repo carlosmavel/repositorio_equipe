@@ -175,6 +175,19 @@ def _render_editar_artigo_form(artigo, arquivos, can_submit_actions, form_data=N
         withdrawn_for_edit=withdrawn_for_edit,
     )
 
+
+def _delete_pending_review_notifications(artigo):
+    """Remove notificações de aprovadores para uma pendência que não existe mais."""
+    if not artigo or not getattr(artigo, "id", None):
+        return 0
+
+    review_url = url_for('aprovacao_detail', artigo_id=artigo.id)
+    return (
+        Notification.query
+        .filter_by(url=review_url, tipo='geral')
+        .delete(synchronize_session=False)
+    )
+
 def _build_drastic_reduction_data(previous_text, new_text):
     previous_char_count = calculate_plain_text_char_count(previous_text)
     new_char_count = calculate_plain_text_char_count(new_text)
@@ -1164,6 +1177,7 @@ def editar_artigo(artigo_id):
             # se usuário clicou “Enviar para revisão”
             if acao == "enviar":
                 artigo.status = ArticleStatus.PENDENTE
+                _delete_pending_review_notifications(artigo)
                 # 🔔 notifica responsáveis / admins
                 destinatarios = eligible_review_notification_users(artigo)
                 for dest in destinatarios:
@@ -1267,6 +1281,7 @@ def editar_artigo(artigo_id):
             source_status_after=status_after,
             correlation_id=getattr(g, "request_correlation_id", None),
         )
+        _delete_pending_review_notifications(artigo)
         db.session.commit()
         withdrawn_for_edit = True
 
@@ -1450,6 +1465,8 @@ def aprovacao_detail(artigo_id):
             texto     = comentario
         )
         db.session.add(novo_comment)
+
+        _delete_pending_review_notifications(artigo)
 
         # 3) Notifica autor com o status correto ------------------------------
         notif = Notification(
