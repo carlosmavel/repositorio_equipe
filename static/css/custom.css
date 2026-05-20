@@ -1155,6 +1155,17 @@
   z-index: 20;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tiptap-toolbar .btn-group {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .tiptap-toolbar .btn {
