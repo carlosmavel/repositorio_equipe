@@ -1143,3 +1143,107 @@
 [data-bs-theme="dark"] .boletim-pdf-thumbnail {
   border-color: var(--border-default) !important;
 }
+
+/* TipTap editor (novo/editar artigo) */
+:root {
+  --editor-toolbar-offset: 72px;
+}
+
+.tiptap-toolbar {
+  position: sticky;
+  top: var(--editor-toolbar-offset, 72px);
+  z-index: 20;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.tiptap-toolbar .btn {
+  --bs-btn-padding-y: 0.25rem;
+  --bs-btn-padding-x: 0.5rem;
+}
+
+.tiptap-toolbar .btn.active {
+  color: var(--bs-primary);
+  background-color: var(--bs-primary-bg-subtle);
+  border-color: var(--bs-primary);
+}
+
+.tiptap-editor {
+  min-height: 300px;
+  overflow: auto;
+}
+
+.tiptap-editor .tiptap {
+  min-height: 300px;
+  padding: 1rem;
+  outline: none;
+}
+
+.tiptap-editor .tiptap p.is-editor-empty:first-child::before,
+.tiptap-editor .tiptap p.is-empty::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-editor .tiptap table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.tiptap-editor .tiptap td,
+.tiptap-editor .tiptap th {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  padding: 0.5rem;
+  vertical-align: top;
+}
+
+.tiptap-editor .tiptap th {
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  font-weight: 600;
+}
+
+.tiptap-editor .tiptap img {
+  max-width: 100%;
+  height: auto;
+}
+
+.tiptap-editor .tiptap hr {
+  border: 0;
+  border-top: 2px solid var(--bs-border-color, #dee2e6);
+  margin: 1.25rem 0;
+}
+
+.tiptap-editor .tiptap code {
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.25rem;
+}
+
+.tiptap-editor .tiptap pre {
+  background: var(--bs-dark, #212529);
+  border-radius: 0.5rem;
+  color: var(--bs-light, #f8f9fa);
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.tiptap-editor .tiptap pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.tiptap-editor .tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-editor .tiptap ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5rem;
+}
