@@ -3,7 +3,14 @@
 
 {% block extra_css %}
 <style>
+  :root {
+    --editor-toolbar-offset: 72px;
+  }
+
   .tiptap-toolbar {
+    position: sticky;
+    top: var(--editor-toolbar-offset, 72px);
+    z-index: 20;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
