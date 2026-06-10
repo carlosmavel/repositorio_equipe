@@ -292,7 +292,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function applyCargoDefaults(prefix, cargoId) {
+  function applyCargoDefaults(prefix, cargoId, options = {}) {
+    const { preserveFuncoesChecked = false } = options;
     const defs = cargoDefaults[cargoId] || { estabelecimentos: [], setores: [], celulas: [], funcoes: [] };
     const form = prefix === 'edit_' ? document.getElementById('edit_cargo_id')?.closest('form') : document.getElementById('create-user-form');
     const hiddenEstabelecimento = document.getElementById(`${prefix}hidden_estabelecimento_id`);
@@ -334,11 +335,15 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(`input[id^='${prefix}celula']`).forEach((chk) => {
       chk.checked = defs.celulas.includes(parseInt(chk.value));
     });
-    document.querySelectorAll(`input[id^='${prefix}func']`).forEach((chk) => {
-      const isDefault = defs.funcoes.includes(parseInt(chk.value));
-      chk.checked = isDefault;
-      chk.disabled = isDefault;
-    });
+    if (preserveFuncoesChecked && prefix === 'edit_') {
+      setCargoFuncoesDisabled(prefix, cargoId);
+    } else {
+      document.querySelectorAll(`input[id^='${prefix}func']`).forEach((chk) => {
+        const isDefault = defs.funcoes.includes(parseInt(chk.value));
+        chk.checked = isDefault;
+        chk.disabled = isDefault;
+      });
+    }
 
     if (prefix === '') {
       validateCreateUserForm();
@@ -358,7 +363,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   const selectedCargoEdit = document.getElementById('edit_cargo_id')?.value;
   if (selectedCargoEdit) {
-    applyCargoDefaults('edit_', selectedCargoEdit);
+    applyCargoDefaults('edit_', selectedCargoEdit, { preserveFuncoesChecked: true });
   }
 
   // Expose helper for inline scripts
