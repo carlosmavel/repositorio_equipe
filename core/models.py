@@ -552,6 +552,7 @@ class Boletim(db.Model):
 
     ocr_status = db.Column(db.String(32), nullable=False, default='nao_aplicavel', server_default='nao_aplicavel')
     ocr_text = db.Column(db.Text, nullable=True)
+    search_text_normalized = db.Column(db.Text, nullable=True)
     ocr_processed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     ocr_error_message = db.Column(db.Text, nullable=True)
     ocr_page_count = db.Column(db.Integer, nullable=True)

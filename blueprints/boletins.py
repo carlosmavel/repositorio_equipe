@@ -4,19 +4,19 @@ import re
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, case, false, func, literal_column, or_, text
+from sqlalchemy import case, false, func, literal_column, or_
 from werkzeug.utils import secure_filename
 
 try:
     from ..core.database import db
     from ..core.models import Boletim, User
     from ..core.services.ocr_queue import enqueue_boletim_for_ocr
-    from ..core.utils import build_like_pattern, strip_accents
+    from ..core.utils import build_like_pattern, normalize_search_text
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Boletim, User
     from core.services.ocr_queue import enqueue_boletim_for_ocr
-    from core.utils import build_like_pattern, strip_accents
+    from core.utils import build_like_pattern, normalize_search_text
 
 boletins_bp = Blueprint('boletins_bp', __name__)
 
@@ -151,19 +151,9 @@ def buscar_boletins():
 
     bind = db.session.get_bind()
     is_postgresql = bool(bind and bind.dialect.name == 'postgresql')
-    supports_unaccent = False
-    if is_postgresql:
-        try:
-            supports_unaccent = bool(
-                db.session.execute(
-                    text("SELECT 1 FROM pg_extension WHERE extname='unaccent'")
-                ).scalar()
-            )
-        except Exception:
-            supports_unaccent = False
 
     def _normalize_for_search(value):
-        return strip_accents(re.sub(r'\s+', ' ', value or '').lower())
+        return normalize_search_text(value)
 
     if not is_postgresql:
         try:
@@ -199,52 +189,60 @@ def buscar_boletins():
 
     query = Boletim.query
     order_by = [Boletim.data_boletim.desc(), Boletim.id.desc()]
+    pagination = None
     if termo:
         has_wildcard = '%' in termo
         termo_busca = termo if has_wildcard else re.sub(r'\s+', ' ', termo)
-        like_normalized = build_like_pattern(strip_accents(termo_busca).lower())
-        exact_normalized = strip_accents(re.sub(r'\s+', ' ', termo).lower())
+        like_normalized = build_like_pattern(normalize_search_text(termo_busca))
+        exact_normalized = normalize_search_text(termo)
         exact_like_normalized = build_like_pattern(exact_normalized)
 
-        titulo_normalizado = _sql_normalize_whitespace(Boletim.titulo)
-        ocr_normalizado = _sql_normalize_whitespace(Boletim.ocr_text)
+        normalized_search_text = func.coalesce(Boletim.search_text_normalized, '')
         titulo_sem_acento = _sql_strip_accents(Boletim.titulo)
-        ocr_sem_acento = _sql_strip_accents(Boletim.ocr_text)
-        conditions = []
+        # Bancos usados em testes locais não têm a coluna materializada populada por OCR/migration.
+        # Neles, mantemos a normalização em consulta apenas como compatibilidade fora de PostgreSQL.
+        if not is_postgresql:
+            normalized_search_text = _sql_strip_accents(
+                func.coalesce(Boletim.titulo, '') + ' ' + func.coalesce(Boletim.ocr_text, '')
+            )
+
+        def _apply_like_fallback(base_query):
+            return base_query.filter(or_(
+                titulo_sem_acento.ilike(like_normalized),
+                normalized_search_text.ilike(like_normalized),
+            ))
+
         phrase_tsquery = None
         if is_postgresql and not has_wildcard:
             phrase_tsquery = func.phraseto_tsquery(BOLETIM_FTS_CONFIG, termo_busca)
-            conditions.append(_boletim_tsvector_expression().op('@@')(phrase_tsquery))
-        conditions.extend([
-            titulo_sem_acento.ilike(like_normalized),
-            ocr_sem_acento.ilike(like_normalized),
-        ])
-        if is_postgresql and supports_unaccent:
-            conditions.extend([
-                func.unaccent(titulo_normalizado).ilike(like_normalized),
-                func.unaccent(ocr_normalizado).ilike(like_normalized),
-            ])
-        query = query.filter(or_(*conditions))
+            fts_match = _boletim_tsvector_expression().op('@@')(phrase_tsquery)
+            query = query.filter(fts_match)
+        else:
+            query = _apply_like_fallback(query)
 
-        # Ranking simples: título exato/normalizado, OCR exato/normalizado,
-        # match aproximado com %, usado apenas como desempate entre boletins da mesma data.
         titulo_exact_match = false() if has_wildcard else titulo_sem_acento.ilike(exact_like_normalized)
-        ocr_exact_match = false() if has_wildcard else ocr_sem_acento.ilike(exact_like_normalized)
+        normalized_exact_match = false() if has_wildcard else normalized_search_text.ilike(exact_like_normalized)
         titulo_approx_match = titulo_sem_acento.ilike(like_normalized)
-        ocr_approx_match = ocr_sem_acento.ilike(like_normalized)
+        normalized_approx_match = normalized_search_text.ilike(like_normalized)
         relevance_score = case(
             (titulo_exact_match, 300),
-            (ocr_exact_match, 200),
+            (normalized_exact_match, 200),
             (titulo_approx_match, 100),
-            (ocr_approx_match, 50),
+            (normalized_approx_match, 50),
             else_=0,
         )
         if is_postgresql and phrase_tsquery is not None:
             relevance_score = relevance_score + func.ts_rank_cd(_boletim_tsvector_expression(), phrase_tsquery)
 
         order_by = [Boletim.data_boletim.desc(), relevance_score.desc(), Boletim.id.desc()]
+        pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
 
-    pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
+        if is_postgresql and not has_wildcard and pagination.total == 0:
+            query = _apply_like_fallback(Boletim.query)
+            pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
+
+    if pagination is None:
+        pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
     return render_template(
         'boletins/busca.html',
         boletins=pagination.items,

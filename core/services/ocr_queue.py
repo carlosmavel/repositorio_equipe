@@ -11,11 +11,11 @@ from pypdf import PdfReader
 try:
     from ..database import db
     from ..models import Attachment, Boletim, OCRReprocessAudit
-    from ..utils import extract_text, log_article_event, log_article_exception
+    from ..utils import extract_text, log_article_event, log_article_exception, normalize_search_text
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Attachment, Boletim, OCRReprocessAudit
-    from core.utils import extract_text, log_article_event, log_article_exception
+    from core.utils import extract_text, log_article_event, log_article_exception, normalize_search_text
 
 OCR_STATUS_PENDENTE = "pendente"
 OCR_STATUS_PROCESSANDO = "processando"
@@ -348,6 +348,7 @@ def process_pending_ocr_boletins(
             extraction = _normalize_extract_result(_extract_text_with_metadata(file_path))
             content = extraction["text"]
             boletim.ocr_text = content
+            boletim.search_text_normalized = normalize_search_text(f"{boletim.titulo or ''} {content or ''}")
             finished_at = datetime.now(timezone.utc)
             boletim.ocr_finished_at = finished_at
             boletim.ocr_processed_at = finished_at
