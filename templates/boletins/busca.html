@@ -8,7 +8,8 @@
           <h1 class="h2 mb-3">Buscar boletins</h1>
           <form method="get" class="row g-2 align-items-end">
             <div class="col-md-10">
-              <input class="form-control" type="text" name="q" placeholder="Título ou texto OCR" value="{{ termo or '' }}">
+              <input class="form-control" type="text" name="q" placeholder="Digite uma frase; use % para busca aproximada" value="{{ termo or '' }}" aria-describedby="busca-help">
+              <div id="busca-help" class="form-text">Ex.: bem acolher busca a frase. Use bem%acolher para permitir termos entre as palavras.</div>
             </div>
             <div class="col-md-2">
               <label for="per_page" class="form-label mb-1">Por página:</label>
