@@ -66,6 +66,19 @@ def test_busca_boletim_match_ocr(client):
     assert b'Atualiza' in resp.data
 
 
+def test_busca_boletim_frase_normalizada_em_ocr(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Programa Social', 'Texto sobre bem\nacolher pessoas', date(2026, 1, 9))
+        _create_boletim(user, 'Programa Social Alternativo', 'Texto sobre bem sempre acolher pessoas', date(2026, 1, 10))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'bem acolher'})
+
+    assert resp.status_code == 200
+    assert b'Programa Social' in resp.data
+    assert b'Programa Social Alternativo' not in resp.data
+
+
 
 def test_busca_boletim_ignora_acentos(client):
     with app.app_context():
