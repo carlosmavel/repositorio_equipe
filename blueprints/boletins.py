@@ -80,13 +80,21 @@ def listar_boletins():
     if denied:
         return denied
 
-    boletins = Boletim.query.order_by(Boletim.data_boletim.desc(), Boletim.id.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = min(max(request.args.get('per_page', 20, type=int), 1), 100)
+    pagination = Boletim.query.order_by(
+        Boletim.data_boletim.desc(),
+        Boletim.id.desc(),
+    ).paginate(page=page, per_page=per_page, error_out=False)
+
     return render_template(
         'boletins/listagem.html',
-        boletins=boletins,
+        boletins=pagination.items,
         can_manage=user.has_permissao('boletim_gerenciar'),
         can_search=user.has_permissao('boletim_buscar'),
         badge_for=_ocr_status_badge,
+        pagination=pagination,
+        per_page=per_page,
     )
 
 

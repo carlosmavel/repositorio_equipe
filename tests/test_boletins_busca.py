@@ -184,6 +184,28 @@ def test_listagem_oculta_atalho_buscar_sem_permissao(client):
     assert b'>Buscar<' not in resp.data
 
 
+
+def test_listagem_boletins_paginada(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_visualizar'])
+        for index in range(3):
+            _create_boletim(user, f'Boletim Paginado {index + 1}', 'Texto irrelevante', date(2026, 3, index + 1))
+
+    resp = client.get('/boletins', query_string={'per_page': 2, 'page': 1})
+
+    assert resp.status_code == 200
+    assert b'Boletim Paginado 3' in resp.data
+    assert b'Boletim Paginado 2' in resp.data
+    assert b'Boletim Paginado 1' not in resp.data
+    assert b'P\xc3\xa1gina 1 de 2' in resp.data
+    assert b'Por p\xc3\xa1gina:' in resp.data
+
+    resp_page_2 = client.get('/boletins', query_string={'per_page': 2, 'page': 2})
+
+    assert resp_page_2.status_code == 200
+    assert b'Boletim Paginado 1' in resp_page_2.data
+    assert b'Boletim Paginado 3' not in resp_page_2.data
+
 def test_busca_boletim_frase_exata_sem_percentual(client):
     with app.app_context():
         user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
