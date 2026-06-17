@@ -4,7 +4,7 @@ import re
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, func, or_, text
+from sqlalchemy import and_, func, literal_column, or_, text
 from werkzeug.utils import secure_filename
 
 try:
@@ -19,6 +19,23 @@ except ImportError:  # pragma: no cover
     from core.utils import build_like_pattern, strip_accents
 
 boletins_bp = Blueprint('boletins_bp', __name__)
+
+
+BOLETIM_FTS_CONFIG = literal_column("'portuguese'")
+
+
+def _boletim_titulo_ocr_text_expression():
+    return func.coalesce(Boletim.titulo, '') + ' ' + func.coalesce(Boletim.ocr_text, '')
+
+
+def _boletim_tsvector_expression():
+    return func.to_tsvector(BOLETIM_FTS_CONFIG, _boletim_titulo_ocr_text_expression())
+
+
+def _boletim_phrase_tsquery_condition(termo: str):
+    return _boletim_tsvector_expression().op('@@')(
+        func.phraseto_tsquery(BOLETIM_FTS_CONFIG, termo)
+    )
 
 
 def _require_permission(permission_name: str, redirect_endpoint: str = 'pagina_inicial'):
@@ -187,10 +204,13 @@ def buscar_boletins():
 
         titulo_normalizado = _sql_normalize_whitespace(Boletim.titulo)
         ocr_normalizado = _sql_normalize_whitespace(Boletim.ocr_text)
-        conditions = [
+        conditions = []
+        if is_postgresql and '%' not in termo:
+            conditions.append(_boletim_phrase_tsquery_condition(termo_busca))
+        conditions.extend([
             _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
             _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
-        ]
+        ])
         if is_postgresql and supports_unaccent:
             conditions.extend([
                 func.unaccent(titulo_normalizado).ilike(like_normalized),

@@ -207,3 +207,37 @@ def test_busca_boletim_percentual_prefixo_sufixo(client):
     assert resp_sufixo.status_code == 200
     assert b'Comunicado Dia dos pais' in resp_prefixo.data
     assert b'Comunicado Dia dos pais' in resp_sufixo.data
+
+
+def _compile_postgresql_expression(expression):
+    from sqlalchemy.dialects import postgresql
+
+    return str(
+        expression.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={'literal_binds': True},
+        )
+    )
+
+
+def test_boletim_postgresql_fts_usa_phraseto_tsquery_para_termo_sem_percentual():
+    from blueprints.boletins import _boletim_phrase_tsquery_condition
+
+    sql = _compile_postgresql_expression(_boletim_phrase_tsquery_condition('bem acolher'))
+
+    assert "phraseto_tsquery('portuguese', 'bem acolher')" in sql
+    assert 'plainto_tsquery' not in sql
+    assert 'websearch_to_tsquery' not in sql
+    assert "'bem'" not in sql
+    assert "'acolher'" not in sql
+
+
+def test_boletim_postgresql_fts_expression_corresponde_ao_indice():
+    from blueprints.boletins import _boletim_tsvector_expression
+
+    sql = _compile_postgresql_expression(_boletim_tsvector_expression())
+
+    assert sql == (
+        "to_tsvector('portuguese', "
+        "coalesce(boletim.titulo, '') || ' ' || coalesce(boletim.ocr_text, ''))"
+    )
