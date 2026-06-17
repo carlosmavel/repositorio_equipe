@@ -198,7 +198,7 @@ def buscar_boletins():
         return normalized
 
     query = Boletim.query
-    order_by = [Boletim.data_boletim.desc(), Boletim.created_at.desc()]
+    order_by = [Boletim.data_boletim.desc(), Boletim.id.desc()]
     if termo:
         has_wildcard = '%' in termo
         termo_busca = termo if has_wildcard else re.sub(r'\s+', ' ', termo)
@@ -227,7 +227,7 @@ def buscar_boletins():
         query = query.filter(or_(*conditions))
 
         # Ranking simples: título exato/normalizado, OCR exato/normalizado,
-        # match aproximado com %, e por fim boletim mais recente como desempate.
+        # match aproximado com %, usado apenas como desempate entre boletins da mesma data.
         titulo_exact_match = false() if has_wildcard else titulo_sem_acento.ilike(exact_like_normalized)
         ocr_exact_match = false() if has_wildcard else ocr_sem_acento.ilike(exact_like_normalized)
         titulo_approx_match = titulo_sem_acento.ilike(like_normalized)
@@ -242,7 +242,7 @@ def buscar_boletins():
         if is_postgresql and phrase_tsquery is not None:
             relevance_score = relevance_score + func.ts_rank_cd(_boletim_tsvector_expression(), phrase_tsquery)
 
-        order_by = [relevance_score.desc(), *order_by]
+        order_by = [Boletim.data_boletim.desc(), relevance_score.desc(), Boletim.id.desc()]
 
     pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
     return render_template(

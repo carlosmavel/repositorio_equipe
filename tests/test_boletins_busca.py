@@ -129,7 +129,7 @@ def test_busca_boletim_ignora_acentos(client):
     assert b'Boletim de A' in resp.data
 
 
-def test_busca_boletim_prioriza_titulo_antes_de_ocr_mesmo_mais_antigo(client):
+def test_busca_boletim_prioriza_data_mais_recente_antes_do_ranking(client):
     with app.app_context():
         user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
         _create_boletim(user, 'Resumo Operacional', 'Texto com comunicado interno', date(2026, 1, 20))
@@ -138,10 +138,10 @@ def test_busca_boletim_prioriza_titulo_antes_de_ocr_mesmo_mais_antigo(client):
     resp = client.get('/boletins/buscar', query_string={'q': 'comunicado interno'})
 
     assert resp.status_code == 200
-    assert resp.data.index(b'Comunicado Interno') < resp.data.index(b'Resumo Operacional')
+    assert resp.data.index(b'Resumo Operacional') < resp.data.index(b'Comunicado Interno')
 
 
-def test_busca_boletim_usa_data_mais_recente_como_desempate_de_ranking(client):
+def test_busca_boletim_usa_data_mais_recente_como_criterio_principal(client):
     with app.app_context():
         user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
         _create_boletim(user, 'Comunicado Antigo', 'Texto irrelevante', date(2026, 1, 1))
