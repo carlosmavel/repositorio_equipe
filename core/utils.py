@@ -64,6 +64,15 @@ _RESERVED_LOG_RECORD_FIELDS = set(logging.makeLogRecord({}).__dict__.keys())
 _POSTGRES_UNACCENT_SUPPORT: bool | None = None
 
 
+def normalize_ocr_text_for_search(text: str | None) -> str:
+    """Normaliza texto OCR armazenado para busca, preservando conteúdo legível.
+
+    O campo ``ocr_text`` passa a guardar a versão normalizada para busca;
+    texto bruto do OCR não é persistido separadamente.
+    """
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
 def reset_postgres_unaccent_support_cache() -> None:
     """Limpa o cache de suporte à extensão unaccent. Uso principal: testes."""
     global _POSTGRES_UNACCENT_SUPPORT

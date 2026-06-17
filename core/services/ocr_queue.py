@@ -11,11 +11,23 @@ from pypdf import PdfReader
 try:
     from ..database import db
     from ..models import Attachment, Boletim, OCRReprocessAudit
-    from ..utils import extract_text, log_article_event, log_article_exception, normalize_search_text
+    from ..utils import (
+        extract_text,
+        log_article_event,
+        log_article_exception,
+        normalize_ocr_text_for_search,
+        normalize_search_text,
+    )
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Attachment, Boletim, OCRReprocessAudit
-    from core.utils import extract_text, log_article_event, log_article_exception, normalize_search_text
+    from core.utils import (
+        extract_text,
+        log_article_event,
+        log_article_exception,
+        normalize_ocr_text_for_search,
+        normalize_search_text,
+    )
 
 OCR_STATUS_PENDENTE = "pendente"
 OCR_STATUS_PROCESSANDO = "processando"
@@ -218,14 +230,15 @@ def process_pending_ocr_attachments(
         try:
             extraction = _normalize_extract_result(_extract_text_with_metadata(file_path))
             content = extraction["text"]
-            attachment.content = content
-            attachment.ocr_text = content
+            normalized_content = normalize_ocr_text_for_search(content)
+            attachment.content = normalized_content
+            attachment.ocr_text = normalized_content
             finished_at = datetime.now(timezone.utc)
             attachment.ocr_finished_at = finished_at
             attachment.ocr_processed_at = finished_at
             attachment.ocr_last_error = None
             attachment.ocr_error_message = None
-            ocr_char_count = len((content or "").strip())
+            ocr_char_count = len(normalized_content)
             attachment.ocr_char_count = ocr_char_count
             if is_pdf_ocr_eligible(attachment.filename, attachment.mime_type):
                 attachment.ocr_page_count = extraction["total_pages"]
@@ -347,14 +360,17 @@ def process_pending_ocr_boletins(
         try:
             extraction = _normalize_extract_result(_extract_text_with_metadata(file_path))
             content = extraction["text"]
-            boletim.ocr_text = content
-            boletim.search_text_normalized = normalize_search_text(f"{boletim.titulo or ''} {content or ''}")
+            normalized_content = normalize_ocr_text_for_search(content)
+            boletim.ocr_text = normalized_content
+            boletim.search_text_normalized = normalize_search_text(
+                f"{boletim.titulo or ''} {normalized_content}"
+            )
             finished_at = datetime.now(timezone.utc)
             boletim.ocr_finished_at = finished_at
             boletim.ocr_processed_at = finished_at
             boletim.ocr_last_error = None
             boletim.ocr_error_message = None
-            ocr_char_count = len((content or "").strip())
+            ocr_char_count = len(normalized_content)
             boletim.ocr_char_count = ocr_char_count
             boletim.ocr_page_count = extraction["total_pages"]
             boletim.ocr_pages_success = extraction["pages_success"]
