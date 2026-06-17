@@ -4,7 +4,7 @@ import re
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
-from sqlalchemy import and_, func, literal_column, or_, text
+from sqlalchemy import and_, case, false, func, literal_column, or_, text
 from werkzeug.utils import secure_filename
 
 try:
@@ -198,18 +198,26 @@ def buscar_boletins():
         return normalized
 
     query = Boletim.query
+    order_by = [Boletim.data_boletim.desc(), Boletim.created_at.desc()]
     if termo:
-        termo_busca = termo if '%' in termo else re.sub(r'\s+', ' ', termo)
+        has_wildcard = '%' in termo
+        termo_busca = termo if has_wildcard else re.sub(r'\s+', ' ', termo)
         like_normalized = build_like_pattern(strip_accents(termo_busca).lower())
+        exact_normalized = strip_accents(re.sub(r'\s+', ' ', termo).lower())
+        exact_like_normalized = build_like_pattern(exact_normalized)
 
         titulo_normalizado = _sql_normalize_whitespace(Boletim.titulo)
         ocr_normalizado = _sql_normalize_whitespace(Boletim.ocr_text)
+        titulo_sem_acento = _sql_strip_accents(Boletim.titulo)
+        ocr_sem_acento = _sql_strip_accents(Boletim.ocr_text)
         conditions = []
-        if is_postgresql and '%' not in termo:
-            conditions.append(_boletim_phrase_tsquery_condition(termo_busca))
+        phrase_tsquery = None
+        if is_postgresql and not has_wildcard:
+            phrase_tsquery = func.phraseto_tsquery(BOLETIM_FTS_CONFIG, termo_busca)
+            conditions.append(_boletim_tsvector_expression().op('@@')(phrase_tsquery))
         conditions.extend([
-            _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
-            _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
+            titulo_sem_acento.ilike(like_normalized),
+            ocr_sem_acento.ilike(like_normalized),
         ])
         if is_postgresql and supports_unaccent:
             conditions.extend([
@@ -218,7 +226,25 @@ def buscar_boletins():
             ])
         query = query.filter(or_(*conditions))
 
-    pagination = query.order_by(Boletim.data_boletim.desc(), Boletim.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        # Ranking simples: título exato/normalizado, OCR exato/normalizado,
+        # match aproximado com %, e por fim boletim mais recente como desempate.
+        titulo_exact_match = false() if has_wildcard else titulo_sem_acento.ilike(exact_like_normalized)
+        ocr_exact_match = false() if has_wildcard else ocr_sem_acento.ilike(exact_like_normalized)
+        titulo_approx_match = titulo_sem_acento.ilike(like_normalized)
+        ocr_approx_match = ocr_sem_acento.ilike(like_normalized)
+        relevance_score = case(
+            (titulo_exact_match, 300),
+            (ocr_exact_match, 200),
+            (titulo_approx_match, 100),
+            (ocr_approx_match, 50),
+            else_=0,
+        )
+        if is_postgresql and phrase_tsquery is not None:
+            relevance_score = relevance_score + func.ts_rank_cd(_boletim_tsvector_expression(), phrase_tsquery)
+
+        order_by = [relevance_score.desc(), *order_by]
+
+    pagination = query.order_by(*order_by).paginate(page=page, per_page=per_page, error_out=False)
     return render_template(
         'boletins/busca.html',
         boletins=pagination.items,
