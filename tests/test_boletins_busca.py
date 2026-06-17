@@ -265,3 +265,56 @@ def test_boletim_postgresql_fts_expression_corresponde_ao_indice():
         "to_tsvector('portuguese', "
         "coalesce(boletim.titulo, '') || ' ' || coalesce(boletim.ocr_text, ''))"
     )
+
+
+def test_supports_postgres_unaccent_retorna_false_sem_postgresql(app_ctx, monkeypatch):
+    from types import SimpleNamespace
+
+    from core import utils
+
+    utils.reset_postgres_unaccent_support_cache()
+    monkeypatch.setattr(
+        utils.db.session,
+        'get_bind',
+        lambda: SimpleNamespace(dialect=SimpleNamespace(name='sqlite')),
+    )
+
+    def fail_execute(*args, **kwargs):
+        raise AssertionError('pg_extension não deve ser consultada fora de PostgreSQL')
+
+    monkeypatch.setattr(utils.db.session, 'execute', fail_execute)
+
+    assert utils.supports_postgres_unaccent() is False
+
+
+def test_supports_postgres_unaccent_cacheia_consulta_pg_extension(app_ctx, monkeypatch):
+    from types import SimpleNamespace
+
+    from core import utils
+
+    utils.reset_postgres_unaccent_support_cache()
+    calls = {'execute': 0}
+    monkeypatch.setattr(
+        utils.db.session,
+        'get_bind',
+        lambda: SimpleNamespace(dialect=SimpleNamespace(name='postgresql')),
+    )
+
+    class Result:
+        def scalar(self):
+            return 1
+
+    def fake_execute(statement):
+        calls['execute'] += 1
+        assert "pg_extension" in str(statement)
+        return Result()
+
+    monkeypatch.setattr(utils.db.session, 'execute', fake_execute)
+
+    assert utils.supports_postgres_unaccent() is True
+    assert utils.supports_postgres_unaccent() is True
+    assert calls['execute'] == 1
+
+    # Se a extensão unaccent for instalada/removida, reinicie o processo web
+    # para que este cache em memória por processo seja recalculado.
+    utils.reset_postgres_unaccent_support_cache()
