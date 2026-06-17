@@ -11,12 +11,12 @@ try:
     from ..core.database import db
     from ..core.models import Boletim, User
     from ..core.services.ocr_queue import enqueue_boletim_for_ocr
-    from ..core.utils import build_like_pattern, normalize_search_text
+    from ..core.utils import build_like_pattern, normalize_search_text, supports_postgres_unaccent
 except ImportError:  # pragma: no cover
     from core.database import db
     from core.models import Boletim, User
     from core.services.ocr_queue import enqueue_boletim_for_ocr
-    from core.utils import build_like_pattern, normalize_search_text
+    from core.utils import build_like_pattern, normalize_search_text, supports_postgres_unaccent
 
 boletins_bp = Blueprint('boletins_bp', __name__)
 
@@ -151,6 +151,7 @@ def buscar_boletins():
 
     bind = db.session.get_bind()
     is_postgresql = bool(bind and bind.dialect.name == 'postgresql')
+    supports_unaccent = supports_postgres_unaccent() if is_postgresql else False
 
     def _normalize_for_search(value):
         return normalize_search_text(value)
@@ -176,6 +177,9 @@ def buscar_boletins():
             return func.normalize_search(expression)
 
         normalized = func.lower(_sql_normalize_whitespace(expression))
+        if supports_unaccent:
+            return func.unaccent(normalized)
+
         for accented, plain in (
             ('á', 'a'), ('à', 'a'), ('â', 'a'), ('ã', 'a'), ('ä', 'a'),
             ('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),

@@ -55,12 +55,49 @@ except ImportError:  # pragma: no cover
     from core.database import db  # type: ignore
     from core.models import OrdemServico  # type: ignore
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 logger = logging.getLogger(__name__)
 _RESERVED_LOG_RECORD_FIELDS = set(logging.makeLogRecord({}).__dict__.keys())
 
 
+_POSTGRES_UNACCENT_SUPPORT: bool | None = None
+
+
+def reset_postgres_unaccent_support_cache() -> None:
+    """Limpa o cache de suporte à extensão unaccent. Uso principal: testes."""
+    global _POSTGRES_UNACCENT_SUPPORT
+    _POSTGRES_UNACCENT_SUPPORT = None
+
+
+def supports_postgres_unaccent() -> bool:
+    """Retorna se o banco PostgreSQL atual possui a extensão unaccent.
+
+    A detecção é cacheada em memória por processo para evitar consultar
+    pg_extension em cada requisição. Se a extensão unaccent for instalada ou
+    removida em produção, reinicie os processos web para atualizar este cache.
+    Ambientes sem PostgreSQL retornam False sem consultar o banco.
+    """
+    global _POSTGRES_UNACCENT_SUPPORT
+
+    if _POSTGRES_UNACCENT_SUPPORT is not None:
+        return _POSTGRES_UNACCENT_SUPPORT
+
+    bind = db.session.get_bind()
+    if not bind or bind.dialect.name != 'postgresql':
+        _POSTGRES_UNACCENT_SUPPORT = False
+        return False
+
+    try:
+        _POSTGRES_UNACCENT_SUPPORT = bool(
+            db.session.execute(
+                text("SELECT 1 FROM pg_extension WHERE extname='unaccent'")
+            ).scalar()
+        )
+    except Exception:
+        _POSTGRES_UNACCENT_SUPPORT = False
+
+    return _POSTGRES_UNACCENT_SUPPORT
 
 
 def strip_accents(value: str) -> str:
