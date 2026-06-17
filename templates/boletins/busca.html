@@ -6,19 +6,28 @@
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h1 class="h2 mb-3">Buscar boletins</h1>
-          <form method="get" class="row g-2 align-items-start">
+          <form id="boletim-search-form" method="get" class="row g-2 align-items-start" data-loading-text="Buscando...">
             <div class="col-md">
-              <input class="form-control" type="text" name="q" placeholder="Digite uma frase; use % para busca aproximada" value="{{ termo or '' }}" aria-describedby="busca-help">
+              <input id="boletim-search-input" class="form-control" type="text" name="q" placeholder="Digite uma frase; use % para busca aproximada" value="{{ termo or '' }}" aria-describedby="busca-help">
               <div id="busca-help" class="form-text">Ex.: Unimed São Carlos busca a frase. Use Unimed%Carlos para permitir termos entre as palavras.</div>
             </div>
             <div class="col-md-auto">
               <div class="d-flex align-items-center gap-2">
                 <label for="per_page" class="form-label mb-0 text-nowrap">Por página:</label>
-                <select id="per_page" name="per_page" class="form-select" style="width: 96px;" onchange="this.form.submit()">
+                <select id="per_page" name="per_page" class="form-select" style="width: 96px;">
                   {% for option in [10, 20, 50, 100] %}
                   <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
                   {% endfor %}
                 </select>
+              </div>
+            </div>
+            <div class="col-md-auto">
+              <button id="boletim-search-button" class="btn btn-primary" type="submit">Buscar</button>
+            </div>
+            <div class="col-12">
+              <div id="boletim-search-loading" class="d-none d-flex align-items-center gap-2 text-body-secondary" aria-live="polite">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <span>Buscando boletins com o termo informado...</span>
               </div>
             </div>
           </form>
@@ -94,4 +103,69 @@
     </div>
   </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('boletim-search-form');
+
+    if (!form) {
+      return;
+    }
+
+    const searchInput = document.getElementById('boletim-search-input');
+    const perPageSelect = document.getElementById('per_page');
+    const submitButton = document.getElementById('boletim-search-button');
+    const loadingIndicator = document.getElementById('boletim-search-loading');
+    const loadingText = form.dataset.loadingText || 'Buscando...';
+
+    function preserveFieldValue(field) {
+      if (!field || !field.name) {
+        return;
+      }
+
+      const mirrorName = field.name + '_loading_mirror';
+      let mirror = form.querySelector('input[data-loading-mirror="' + mirrorName + '"]');
+
+      if (!mirror) {
+        mirror = document.createElement('input');
+        mirror.type = 'hidden';
+        mirror.name = field.name;
+        mirror.dataset.loadingMirror = mirrorName;
+        form.appendChild(mirror);
+      }
+
+      mirror.value = field.value;
+    }
+
+    function showSearchLoading() {
+      form.setAttribute('aria-busy', 'true');
+
+      if (loadingIndicator) {
+        loadingIndicator.classList.remove('d-none');
+      }
+
+      if (searchInput) {
+        preserveFieldValue(searchInput);
+        searchInput.disabled = true;
+      }
+
+      if (perPageSelect) {
+        preserveFieldValue(perPageSelect);
+        perPageSelect.disabled = true;
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = loadingText;
+      }
+    }
+
+    form.addEventListener('submit', showSearchLoading);
+
+    if (perPageSelect) {
+      perPageSelect.addEventListener('change', function () {
+        form.requestSubmit();
+      });
+    }
+  });
+</script>
 {% endblock %}
