@@ -69,15 +69,53 @@ def test_busca_boletim_match_ocr(client):
 def test_busca_boletim_frase_normalizada_em_ocr(client):
     with app.app_context():
         user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
-        _create_boletim(user, 'Programa Social', 'Texto sobre bem\nacolher pessoas', date(2026, 1, 9))
-        _create_boletim(user, 'Programa Social Alternativo', 'Texto sobre bem sempre acolher pessoas', date(2026, 1, 10))
+        _create_boletim(user, 'Boletim OCR Primeiro', 'programa bem acolher foi divulgado', date(2026, 1, 9))
+        _create_boletim(user, 'Boletim OCR Segundo', 'programa bem rapidamente acolher famílias', date(2026, 1, 10))
 
     resp = client.get('/boletins/buscar', query_string={'q': 'bem acolher'})
 
     assert resp.status_code == 200
-    assert b'Programa Social' in resp.data
-    assert b'Programa Social Alternativo' not in resp.data
+    assert b'Boletim OCR Primeiro' in resp.data
+    assert b'Boletim OCR Segundo' not in resp.data
 
+
+def test_busca_boletim_percentual_sem_bordas_em_ocr(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Boletim OCR Exato', 'programa bem acolher foi divulgado', date(2026, 1, 11))
+        _create_boletim(user, 'Boletim OCR Separado', 'programa bem rapidamente acolher famílias', date(2026, 1, 12))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'bem%acolher'})
+
+    assert resp.status_code == 200
+    assert b'Boletim OCR Exato' in resp.data
+    assert b'Boletim OCR Separado' in resp.data
+
+
+def test_busca_boletim_percentual_com_bordas_em_ocr(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Boletim OCR Borda Exato', 'programa bem acolher foi divulgado', date(2026, 1, 13))
+        _create_boletim(user, 'Boletim OCR Borda Separado', 'programa bem rapidamente acolher famílias', date(2026, 1, 14))
+
+    resp = client.get('/boletins/buscar', query_string={'q': '%bem%acolher%'})
+
+    assert resp.status_code == 200
+    assert b'Boletim OCR Borda Exato' in resp.data
+    assert b'Boletim OCR Borda Separado' in resp.data
+
+
+def test_busca_boletim_ignora_acentos_em_ocr(client):
+    with app.app_context():
+        user = _setup_user(client, ['boletim_buscar', 'boletim_visualizar'])
+        _create_boletim(user, 'Boletim OCR Acentuado', 'relatório sobre ação integrada', date(2026, 1, 15))
+        _create_boletim(user, 'Boletim OCR Sem Acento', 'relatorio sobre acao integrada', date(2026, 1, 16))
+
+    resp = client.get('/boletins/buscar', query_string={'q': 'acao integrada'})
+
+    assert resp.status_code == 200
+    assert b'Boletim OCR Acentuado' in resp.data
+    assert b'Boletim OCR Sem Acento' in resp.data
 
 
 def test_busca_boletim_ignora_acentos(client):
