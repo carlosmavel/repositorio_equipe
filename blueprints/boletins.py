@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import re
 import uuid
 
 from flask import Blueprint, current_app as app, flash, redirect, render_template, request, session, url_for
@@ -144,8 +145,30 @@ def buscar_boletins():
         except Exception:
             supports_unaccent = False
 
+    def _normalize_for_search(value):
+        return strip_accents(re.sub(r'\s+', ' ', value or '').lower())
+
+    if not is_postgresql:
+        try:
+            db.session.connection().connection.create_function('normalize_search', 1, _normalize_for_search)
+        except Exception:
+            pass
+
+    def _sql_normalize_whitespace(expression):
+        coalesced = func.coalesce(expression, '')
+        if is_postgresql:
+            return func.regexp_replace(coalesced, r'\s+', ' ', 'g')
+
+        normalized = coalesced
+        for char in ('\n', '\r', '\t'):
+            normalized = func.replace(normalized, char, ' ')
+        return normalized
+
     def _sql_strip_accents(expression):
-        normalized = func.lower(func.coalesce(expression, ''))
+        if not is_postgresql:
+            return func.normalize_search(expression)
+
+        normalized = func.lower(_sql_normalize_whitespace(expression))
         for accented, plain in (
             ('á', 'a'), ('à', 'a'), ('â', 'a'), ('ã', 'a'), ('ä', 'a'),
             ('é', 'e'), ('è', 'e'), ('ê', 'e'), ('ë', 'e'),
@@ -159,19 +182,19 @@ def buscar_boletins():
 
     query = Boletim.query
     if termo:
-        like = build_like_pattern(termo)
-        like_normalized = build_like_pattern(strip_accents(termo).lower())
+        termo_busca = termo if '%' in termo else re.sub(r'\s+', ' ', termo)
+        like_normalized = build_like_pattern(strip_accents(termo_busca).lower())
 
+        titulo_normalizado = _sql_normalize_whitespace(Boletim.titulo)
+        ocr_normalizado = _sql_normalize_whitespace(Boletim.ocr_text)
         conditions = [
-            Boletim.titulo.ilike(like),
-            Boletim.ocr_text.ilike(like),
             _sql_strip_accents(Boletim.titulo).ilike(like_normalized),
             _sql_strip_accents(Boletim.ocr_text).ilike(like_normalized),
         ]
         if is_postgresql and supports_unaccent:
             conditions.extend([
-                func.unaccent(Boletim.titulo).ilike(like_normalized),
-                func.unaccent(func.coalesce(Boletim.ocr_text, '')).ilike(like_normalized),
+                func.unaccent(titulo_normalizado).ilike(like_normalized),
+                func.unaccent(ocr_normalizado).ilike(like_normalized),
             ])
         query = query.filter(or_(*conditions))
 
