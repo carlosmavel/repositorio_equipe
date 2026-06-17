@@ -68,6 +68,11 @@ def strip_accents(value: str) -> str:
     return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
 
 
+def normalize_search_text(value: str) -> str:
+    """Normalize text once for accent-insensitive fallback searches."""
+    return strip_accents(re.sub(r'\s+', ' ', value or '').lower()).strip()
+
+
 def build_like_pattern(term: str) -> str:
     cleaned = (term or '').strip()
     if not cleaned:
