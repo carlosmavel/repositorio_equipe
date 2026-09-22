@@ -37,20 +37,13 @@ def test_scrollbars_have_theme_tokens_and_cross_browser_rules():
     root = css.split(":root {", 1)[1].split("}", 1)[0]
     dark = css.split('[data-bs-theme="dark"] {', 1)[1].split("}", 1)[0]
 
-    for token in (
-        "--oq-scrollbar-track",
-        "--oq-scrollbar-thumb",
-        "--oq-scrollbar-thumb-hover",
-        "--oq-scrollbar-thumb-focus",
-    ):
+    for token in ("--oq-scrollbar-track", "--oq-scrollbar-thumb"):
         assert token in root
         assert token in dark
 
     assert "@media (hover: hover) and (pointer: fine)" in css
     shared_selector = ":where(.app-scrollbar, #osNotificationMenu, .editor-container)"
     assert shared_selector in css
-    assert f"{shared_selector}:hover" in css
-    assert f"{shared_selector}:focus-within" in css
     assert f"{shared_selector}::-webkit-scrollbar" in css
     assert "scrollbar-width: auto" in css
     assert "scrollbar-color:" in css
@@ -59,9 +52,29 @@ def test_scrollbars_have_theme_tokens_and_cross_browser_rules():
     assert "::-webkit-scrollbar-thumb {" in css
     assert "width: 12px" in css
     assert "height: 12px" in css
+    assert "min-height: 44px" in css
     assert "border: 3px solid transparent" in css
     assert "border-radius: 999px" in css
-    assert ":focus-within::-webkit-scrollbar-thumb" in css
+
+
+def test_scrollbar_indicator_color_is_constant_during_interaction():
+    css = _source(FUTURISTIC_CSS)
+    root = css.split(":root {", 1)[1].split("}", 1)[0]
+    dark = css.split('[data-bs-theme="dark"] {', 1)[1].split("}", 1)[0]
+    scrollbar_rules = css.split("@media (hover: hover) and (pointer: fine) {", 1)[1].split("\n}", 1)[0]
+
+    # A single indicator token per theme keeps its color identical in the
+    # normal, hover and focus states whenever an overlay scrollbar is visible.
+    assert root.count("--oq-scrollbar-thumb:") == 1
+    assert dark.count("--oq-scrollbar-thumb:") == 1
+    assert "--oq-scrollbar-thumb-hover" not in css
+    assert "--oq-scrollbar-thumb-focus" not in css
+    assert "scrollbar-color: var(--oq-scrollbar-thumb) var(--oq-scrollbar-track)" in scrollbar_rules
+    assert "background: var(--oq-scrollbar-thumb) padding-box" in scrollbar_rules
+
+    for state in (":hover", ":focus-visible", ":focus-within"):
+        assert f"{state} {{\n    scrollbar-color:" not in scrollbar_rules
+        assert f"{state}::-webkit-scrollbar-thumb" not in scrollbar_rules
 
 
 def test_all_scrollable_application_containers_use_shared_scrollbar_utility():
