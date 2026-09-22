@@ -3,6 +3,32 @@
 {% block title %}Admin - Gerenciar Cargos{% endblock %}
 
 {% block content %}
+{% macro cargo_linha(cargo, setor, celula, instituicao) -%}
+<li class="cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor }}" data-celula="{{ celula }}" data-instituicao="{{ instituicao }}">
+    <div class="linha-cargo">
+        <div class="cargo-meta">
+            <i class="bi bi-briefcase cargo-icon" aria-hidden="true"></i>
+            <span class="nome-cargo cargo-name" data-name="{{ cargo.nome }}">{{ cargo.nome }}</span>
+            <span class="cargo-status {{ 'cargo-status--ativo' if cargo.ativo else 'cargo-status--inativo' }}">
+                <i class="bi {{ 'bi-check-circle-fill' if cargo.ativo else 'bi-dash-circle-fill' }}" aria-hidden="true"></i>
+                {{ 'Ativo' if cargo.ativo else 'Inativo' }}
+            </span>
+        </div>
+        <div class="acoes-cargo">
+            <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}" class="btn btn-sm cargo-edit-btn" aria-label="Editar cargo {{ cargo.nome }}">
+                <i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Editar</span>
+            </a>
+            {% set acao = 'Desativar' if cargo.ativo else 'Ativar' %}
+            {% set cargo_nome_js = cargo.nome | tojson %}
+            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ acao|upper }} o cargo ' + {{ cargo_nome_js }} + '?');">
+                <button type="submit" class="btn btn-sm cargo-action-btn {{ 'btn-outline-secondary' if cargo.ativo else 'btn-outline-primary' }}" aria-label="{{ acao }} cargo {{ cargo.nome }}">
+                    <i class="bi {{ 'bi-toggle-on' if cargo.ativo else 'bi-toggle-off' }}" aria-hidden="true"></i><span class="visually-hidden">{{ acao }}</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</li>
+{%- endmacro %}
 {% macro permissao_descricao(funcao) -%}
     {%- if 'editar' in funcao.codigo -%}
         Permite editar artigos
@@ -37,156 +63,104 @@
         .
     {%- endif -%}
 {%- endmacro %}
-<div class="container-fluid page-root">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-1 border-bottom">
-        <h1 class="h2">Gerenciar Cargos</h1>
-    </div>
+{% set metricas = namespace(ids=[], ativos=0, inativos=0) %}
+{% for inst in estrutura %}{% for est in inst.estabelecimentos %}{% for setor in est.setores %}
+    {% for cargo in setor.cargos %}{% if cargo.id not in metricas.ids %}{% set _ = metricas.ids.append(cargo.id) %}{% if cargo.ativo %}{% set metricas.ativos = metricas.ativos + 1 %}{% else %}{% set metricas.inativos = metricas.inativos + 1 %}{% endif %}{% endif %}{% endfor %}
+    {% for cel in setor.celulas %}{% for cargo in cel.cargos %}{% if cargo.id not in metricas.ids %}{% set _ = metricas.ids.append(cargo.id) %}{% if cargo.ativo %}{% set metricas.ativos = metricas.ativos + 1 %}{% else %}{% set metricas.inativos = metricas.inativos + 1 %}{% endif %}{% endif %}{% endfor %}{% endfor %}
+{% endfor %}{% endfor %}{% endfor %}
+<div class="container-fluid page-root py-3">
+    <main class="cargo-surface" aria-labelledby="cargoPageTitle">
+        <header class="cargo-toolbar">
+            <div>
+                <h1 class="h3 mb-1" id="cargoPageTitle">Cargos</h1>
+                <div class="cargo-metrics" aria-label="Resumo dos cargos">
+                    <span><strong>{{ metricas.ids|length }}</strong> total</span>
+                    <span><strong>{{ metricas.ativos }}</strong> ativos</span>
+                    <span><strong>{{ metricas.inativos }}</strong> inativos</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoCargo">
+                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Novo cargo
+            </button>
+        </header>
 
-    <ul class="nav nav-tabs" id="tabCargo" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab">Consulta</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" id="cadastro-tab" data-bs-toggle="tab" data-bs-target="#cadastro" type="button" role="tab">Cadastro</button>
-        </li>
-    </ul>
+        <section class="cargo-explorer" aria-labelledby="cargoExplorerTitle">
+            <h2 class="visually-hidden" id="cargoExplorerTitle">Explorador de cargos</h2>
+            <div class="cargo-controls">
+                <label class="visually-hidden" for="cargoSearch">Buscar cargos</label>
+                <div class="input-group cargo-search">
+                    <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input type="search" id="cargoSearch" class="form-control" placeholder="Buscar cargo, setor, célula ou instituição" autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-outline-secondary" id="toggleAllCargos" aria-controls="cargoContainer">Expandir tudo</button>
+                <output id="cargoResultCount" class="cargo-result-count" aria-live="polite">{{ metricas.ids|length }} cargos</output>
+            </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="tab-content" id="tabCargoContent">
-                <div class="tab-pane fade show active p-3" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Cargos Cadastrados</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if estrutura %}
-                                <div class="mb-3">
-                                    <div class="input-group">
-                                        <input type="text" id="cargoSearch" class="form-control" placeholder="Buscar por cargo, setor, célula ou instituição">
-                                    </div>
-                                </div>
-                                <div class="cargo-tree" id="cargoContainer">
-                                    {% for inst in estrutura %}
-                                        <section class="hier-node level-instituicao instituicao-container">
-                                            <header class="hier-header d-flex align-items-center">
-                                                <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="estabelecimentos" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                <i class="bi bi-building me-2 hier-level-icon" aria-hidden="true"></i>
-                                                <h5 class="mb-0 hier-title">Instituição <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h5>
+            {% if estrutura %}
+            <div class="cargo-tree" id="cargoContainer">
+                {% for inst in estrutura %}
+                <section class="hier-node level-instituicao instituicao-container">
+                    <header class="hier-header">
+                        <button class="btn btn-sm btn-link toggle-section caret-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#inst-{{ inst.obj.id }}" aria-expanded="false" aria-controls="inst-{{ inst.obj.id }}" aria-label="Expandir instituição {{ inst.obj.nome }}"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></button>
+                        <i class="bi bi-building hier-level-icon" aria-hidden="true"></i>
+                        <h3 class="hier-title">Instituição <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h3>
+                    </header>
+                    <div id="inst-{{ inst.obj.id }}" class="collapse hier-children">
+                        {% for est in inst.estabelecimentos %}
+                        <article class="hier-node level-estabelecimento estabelecimento-wrapper">
+                            <header class="hier-header">
+                                <button class="btn btn-sm btn-link toggle-section caret-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#est-{{ est.obj.id }}" aria-expanded="false" aria-controls="est-{{ est.obj.id }}" aria-label="Expandir estabelecimento {{ est.obj.nome_fantasia }}"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></button>
+                                <i class="bi bi-shop hier-level-icon" aria-hidden="true"></i>
+                                <h4 class="hier-title">Estabelecimento <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h4>
+                            </header>
+                            <div id="est-{{ est.obj.id }}" class="collapse hier-children">
+                                {% for setor in est.setores %}
+                                <section class="hier-node level-setor setor-container">
+                                    <header class="hier-header">
+                                        <button class="btn btn-sm btn-link toggle-section caret-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="false" aria-controls="setor-{{ setor.obj.id }}" aria-label="Expandir setor {{ setor.obj.nome }}"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></button>
+                                        <i class="bi bi-diagram-3 hier-level-icon" aria-hidden="true"></i>
+                                        <h5 class="hier-title">Setor <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></h5>
+                                    </header>
+                                    <div id="setor-{{ setor.obj.id }}" class="collapse hier-children">
+                                        {% if setor.cargos %}<ul class="cargo-list">{% for cargo in setor.cargos %}{{ cargo_linha(cargo, setor.obj.nome, '', inst.obj.nome) }}{% endfor %}</ul>{% endif %}
+                                        {% for cel in setor.celulas %}
+                                        <section class="hier-node level-celula celula-container">
+                                            <header class="hier-header">
+                                                <button class="btn btn-sm btn-link toggle-section caret-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="false" aria-controls="cel-{{ cel.obj.id }}" aria-label="Expandir célula {{ cel.obj.nome }}"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></button>
+                                                <i class="bi bi-grid-3x3-gap hier-level-icon" aria-hidden="true"></i>
+                                                <h6 class="hier-title">Célula <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></h6>
                                             </header>
-                                            <div id="inst-{{ inst.obj.id }}" class="collapse show hier-children">
-                                                {% for est in inst.estabelecimentos %}
-                                                    <article class="hier-node level-estabelecimento estabelecimento-wrapper">
-                                                        <header class="hier-header d-flex align-items-center">
-                                                            <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="setores" data-bs-toggle="collapse" data-bs-target="#est-{{ est.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                            <i class="bi bi-shop me-2 hier-level-icon" aria-hidden="true"></i>
-                                                            <h6 class="mb-0 hier-title">Estabelecimento <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h6>
-                                                        </header>
-                                                        <div id="est-{{ est.obj.id }}" class="collapse show hier-children">
-                                                            {% for setor in est.setores %}
-                                                                <section class="hier-node level-setor setor-container">
-                                                                    <header class="hier-header d-flex align-items-center">
-                                                                        <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="celulas" data-bs-toggle="collapse" data-bs-target="#setor-{{ setor.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                                        <i class="bi bi-diagram-3 me-2 hier-level-icon" aria-hidden="true"></i>
-                                                                        <h6 class="mb-0 hier-title">Setor <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></h6>
-                                                                    </header>
-                                                                    <div id="setor-{{ setor.obj.id }}" class="collapse show hier-children">
-                                                                        {% if setor.cargos %}
-                                                                            <ul class="list-group list-group-flush mb-2 cargo-list">
-                                                                                {% for cargo in setor.cargos %}
-                                                                                    <li class="list-group-item cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="" data-instituicao="{{ inst.obj.nome }}">
-                                                                                        <div class="linha-cargo">
-                                                                                            <div class="cargo-meta">
-                                                                                                <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
-                                                                                                <div class="cargo-meta-inline">
-                                                                                                    <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
-                                                                                                    <span class="cargo-status {{ 'cargo-status--ativo' if cargo.ativo else 'cargo-status--inativo' }}" title="{{ 'Ativo' if cargo.ativo else 'Inativo' }}" aria-label="Status: {{ 'Ativo' if cargo.ativo else 'Inativo' }}">
-                                                                                                        <i class="bi bi-circle-fill" aria-hidden="true"></i>
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <div class="acoes-cargo">
-                                                                                            <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm cargo-edit-btn" title="Editar Cargo" aria-label="Editar Cargo">
-                                                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                                                            </a>
-                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                <button type="submit" class="btn btn-sm cargo-action-btn {{ 'btn-outline-secondary' if cargo.ativo else 'btn-outline-primary' }}" title="{{ 'Desativar Cargo' if cargo.ativo else 'Ativar Cargo' }}">
-                                                                                                    <i class="bi {{ 'bi-toggle-on' if cargo.ativo else 'bi-toggle-off' }}"></i>
-                                                                                                </button>
-                                                                                            </form>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </li>
-                                                                                {% endfor %}
-                                                                            </ul>
-                                                                        {% endif %}
-                                                                        {% for cel in setor.celulas %}
-                                                                            <section class="hier-node level-celula celula-container">
-                                                                                <header class="hier-header d-flex align-items-center">
-                                                                                    <button class="btn btn-sm btn-link p-0 me-2 toggle-section caret-toggle expanded" data-level="cargos" data-bs-toggle="collapse" data-bs-target="#cel-{{ cel.obj.id }}" aria-expanded="true"><i class="bi bi-caret-right-fill"></i></button>
-                                                                                    <i class="bi bi-grid-3x3-gap me-2 hier-level-icon" aria-hidden="true"></i>
-                                                                                    <p class="mb-0 hier-title">Célula <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></p>
-                                                                                </header>
-                                                                                <div id="cel-{{ cel.obj.id }}" class="collapse show hier-children">
-                                                                                    {% if cel.cargos %}
-                                                                                        <ul class="list-group list-group-flush cargo-list">
-                                                                                            {% for cargo in cel.cargos %}
-                                                                                                <li class="list-group-item cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor.obj.nome }}" data-celula="{{ cel.obj.nome }}" data-instituicao="{{ inst.obj.nome }}">
-                                                                                                    <div class="linha-cargo">
-                                                                                                        <div class="cargo-meta">
-                                                                                                            <i class="bi bi-briefcase me-2 cargo-icon" aria-hidden="true"></i>
-                                                                                                            <div class="cargo-meta-inline">
-                                                                                                                <div class="nome-cargo cargo-name" data-name="{{ cargo.nome }}" data-url="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro">{{ cargo.nome }}</div>
-                                                                                                                <span class="cargo-status {{ 'cargo-status--ativo' if cargo.ativo else 'cargo-status--inativo' }}" title="{{ 'Ativo' if cargo.ativo else 'Inativo' }}" aria-label="Status: {{ 'Ativo' if cargo.ativo else 'Inativo' }}">
-                                                                                                                    <i class="bi bi-circle-fill" aria-hidden="true"></i>
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                        <div class="acoes-cargo">
-                                                                                                            <a href="{{ url_for('admin_cargos', edit_id=cargo.id) }}#cadastro" class="btn btn-sm cargo-edit-btn" title="Editar Cargo" aria-label="Editar Cargo">
-                                                                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                                                                            </a>
-                                                                                                            {% set confirm_message_text = 'DESATIVAR' if cargo.ativo else 'ATIVAR' %}
-                                                                                                            {% set cargo_nome_js = cargo.nome | tojson %}
-                                                                                                            <form action="{{ url_for('admin_toggle_ativo_cargo', id=cargo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja {{ confirm_message_text }} o cargo ' + {{ cargo_nome_js }} + '?');">
-                                                                                                                <button type="submit" class="btn btn-sm cargo-action-btn {{ 'btn-outline-secondary' if cargo.ativo else 'btn-outline-primary' }}" title="{{ 'Desativar Cargo' if cargo.ativo else 'Ativar Cargo' }}">
-                                                                                                                    <i class="bi {{ 'bi-toggle-on' if cargo.ativo else 'bi-toggle-off' }}"></i>
-                                                                                                                </button>
-                                                                                                            </form>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </li>
-                                                                                            {% endfor %}
-                                                                                        </ul>
-                                                                                    {% else %}
-                                                                                        <p class="text-muted ms-3">Nenhum cargo nesta célula.</p>
-                                                                                    {% endif %}
-                                                                                </div>
-                                                                            </section>
-                                                                        {% endfor %}
-                                                                    </div>
-                                                                </section>
-                                                            {% endfor %}
-                                                        </div>
-                                                    </article>
-                                                {% endfor %}
+                                            <div id="cel-{{ cel.obj.id }}" class="collapse hier-children">
+                                                {% if cel.cargos %}<ul class="cargo-list">{% for cargo in cel.cargos %}{{ cargo_linha(cargo, setor.obj.nome, cel.obj.nome, inst.obj.nome) }}{% endfor %}</ul>{% else %}<p class="cargo-node-empty">Nenhum cargo nesta célula.</p>{% endif %}
                                             </div>
                                         </section>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="text-muted">Nenhum cargo cadastrado ainda. Adicione um acima!</p>
-                            {% endif %}
-                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </section>
+                                {% endfor %}
+                            </div>
+                        </article>
+                        {% endfor %}
                     </div>
-                </div>
-                <div class="tab-pane fade p-3" id="cadastro" role="tabpanel" aria-labelledby="cadastro-tab">
-                    <h5 class="mb-3">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Adicionar Novo Cargo
-                    </h5>
+                </section>
+                {% endfor %}
+            </div>
+            <div id="cargoSearchEmpty" class="cargo-empty" hidden>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <p>Nenhum cargo corresponde à busca.</p>
+            </div>
+            {% else %}
+            <div class="cargo-empty"><i class="bi bi-briefcase" aria-hidden="true"></i><p>Nenhum cargo cadastrado ainda.</p></div>
+            {% endif %}
+        </section>
+    </main>
+</div>
 
+<div class="modal fade" id="modalNovoCargo" tabindex="-1" aria-labelledby="modalNovoCargoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h2 class="modal-title h5" id="modalNovoCargoLabel">Novo cargo</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+            <div class="modal-body">
                     <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form js-cargo-hierarquia-form">
                         <div class="row">
                             <div class="col-md-8 mb-1">
@@ -321,7 +295,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
             </div>
         </div>
     </div>
@@ -465,88 +438,111 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('[data-bs-toggle=\"tooltip\"]').forEach(function(el) { new bootstrap.Tooltip(el); });
-    document.querySelectorAll('.toggle-section').forEach(function(btn) {
-        const icon = btn.querySelector('i');
-        if (btn.getAttribute('aria-expanded') === 'true') {
-            icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
-        }
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => new bootstrap.Tooltip(el));
 
-        btn.addEventListener('click', function() {
-            setTimeout(function() {
-                if (btn.getAttribute('aria-expanded') === 'true') {
-                    icon.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
-                } else {
-                    icon.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
-                }
-            }, 150);
+    const collapses = Array.from(document.querySelectorAll('.cargo-tree .collapse'));
+    const manualOpened = new Set();
+    const autoOpened = new Set();
+
+    function toggleFor(panel) {
+        return document.querySelector('[data-bs-target="#' + panel.id + '"]');
+    }
+    function updateToggle(panel, expanded) {
+        const button = toggleFor(panel);
+        if (!button) return;
+        button.classList.toggle('expanded', expanded);
+        button.setAttribute('aria-expanded', String(expanded));
+        const entityName = button.getAttribute('aria-label').replace(/^(Expandir|Recolher) /, '');
+        button.setAttribute('aria-label', (expanded ? 'Recolher ' : 'Expandir ') + entityName);
+        const icon = button.querySelector('i');
+        icon.classList.toggle('bi-caret-right-fill', !expanded);
+        icon.classList.toggle('bi-caret-down-fill', expanded);
+    }
+
+    collapses.forEach(function(panel) {
+        panel.addEventListener('shown.bs.collapse', function() {
+            updateToggle(panel, true);
+            const reason = panel.dataset.collapseReason;
+            delete panel.dataset.collapseReason;
+            if (reason === 'search') autoOpened.add(panel.id);
+            else if (reason !== 'clear') manualOpened.add(panel.id);
+        });
+        panel.addEventListener('hidden.bs.collapse', function() {
+            updateToggle(panel, false);
+            const reason = panel.dataset.collapseReason;
+            delete panel.dataset.collapseReason;
+            autoOpened.delete(panel.id);
+            if (reason !== 'search') manualOpened.delete(panel.id);
         });
     });
 
-    document.querySelectorAll('.cargo-name').forEach(function(el) {
-        el.addEventListener('click', function() {
-            const cargoItem = el.closest('.cargo-item');
-            if (cargoItem) {
-                document.querySelectorAll('.cargo-item.is-active').forEach(function(item) {
-                    item.classList.remove('is-active');
-                });
-                cargoItem.classList.add('is-active');
-            }
-        });
+    function setPanel(panel, open, reason) {
+        panel.dataset.collapseReason = reason;
+        bootstrap.Collapse.getOrCreateInstance(panel, {toggle: false})[open ? 'show' : 'hide']();
+    }
+
+    const toggleAll = document.getElementById('toggleAllCargos');
+    if (toggleAll) toggleAll.addEventListener('click', function() {
+        const expand = toggleAll.textContent.trim() === 'Expandir tudo';
+        collapses.forEach((panel) => setPanel(panel, expand, 'bulk'));
+        toggleAll.textContent = expand ? 'Recolher tudo' : 'Expandir tudo';
     });
 
     const searchInput = document.getElementById('cargoSearch');
-    if (searchInput) {
-        const highlightText = (term) => {
-            document.querySelectorAll('.inst-name, .setor-name, .celula-name, .cargo-name').forEach(function(el) {
-                const text = el.dataset.name;
-                if (term && text.toLowerCase().includes(term)) {
-                    const regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + ')', 'gi');
-                    el.innerHTML = text.replace(regex, '<span class="search-highlight">$1</span>');
-                } else {
-                    el.textContent = text;
-                }
-            });
-        };
+    const count = document.getElementById('cargoResultCount');
+    const empty = document.getElementById('cargoSearchEmpty');
+    if (!searchInput) return;
 
-        searchInput.addEventListener('input', function() {
-            const term = searchInput.value.toLowerCase();
-
-            document.querySelectorAll('.cargo-item').forEach(function(item) {
-                const cargo = item.dataset.cargo.toLowerCase();
-                const setor = item.dataset.setor.toLowerCase();
-                const celula = item.dataset.celula.toLowerCase();
-                const inst = item.dataset.instituicao.toLowerCase();
-                const match = cargo.includes(term) || setor.includes(term) || celula.includes(term) || inst.includes(term);
-                item.style.display = match ? '' : 'none';
-            });
-
-            document.querySelectorAll('.celula-container').forEach(function(cel) {
-                const hasVisible = Array.from(cel.querySelectorAll('.cargo-item')).some(li => li.style.display !== 'none');
-                cel.style.display = hasVisible ? '' : 'none';
-            });
-
-            document.querySelectorAll('.setor-container').forEach(function(setor) {
-                const hasVisible = Array.from(setor.querySelectorAll('.cargo-item, .celula-container')).some(el => el.style.display !== 'none');
-                setor.style.display = hasVisible ? '' : 'none';
-            });
-
-            document.querySelectorAll('.instituicao-container').forEach(function(inst) {
-                const hasVisible = Array.from(inst.querySelectorAll('.cargo-item')).some(el => el.style.display !== 'none');
-                inst.style.display = hasVisible ? '' : 'none';
-            });
-
-            highlightText(term);
+    function normalize(value) {
+        return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+    function highlight(term) {
+        document.querySelectorAll('[data-name]').forEach(function(el) {
+            const text = el.dataset.name;
+            const normalized = normalize(text);
+            const index = normalized.indexOf(term);
+            if (term && index >= 0) {
+                el.replaceChildren(document.createTextNode(text.slice(0, index)), Object.assign(document.createElement('mark'), {className: 'search-highlight', textContent: text.slice(index, index + term.length)}), document.createTextNode(text.slice(index + term.length)));
+            } else el.textContent = text;
         });
     }
+    function ancestors(item) {
+        const result = [];
+        let panel = item.closest('.collapse');
+        while (panel) {
+            result.push(panel);
+            panel = panel.parentElement.closest('.collapse');
+        }
+        return result.reverse();
+    }
+    function filterTree() {
+        const term = normalize(searchInput.value.trim());
+        const items = Array.from(document.querySelectorAll('.cargo-item'));
+        let matches = 0;
+        items.forEach(function(item) {
+            const match = !term || ['cargo', 'setor', 'celula', 'instituicao'].some((key) => normalize(item.dataset[key]).includes(term));
+            item.hidden = !match;
+            if (match) {
+                matches += 1;
+                if (term) ancestors(item).forEach((panel) => { if (!panel.classList.contains('show')) setPanel(panel, true, 'search'); });
+            }
+        });
+        ['.celula-container', '.setor-container', '.estabelecimento-wrapper', '.instituicao-container'].forEach(function(selector) {
+            document.querySelectorAll(selector).forEach((node) => { node.hidden = term !== '' && !node.querySelector('.cargo-item:not([hidden])'); });
+        });
+        if (!term) {
+            autoOpened.forEach(function(id) {
+                const panel = document.getElementById(id);
+                if (panel && !manualOpened.has(id)) setPanel(panel, false, 'clear');
+            });
+            autoOpened.clear();
+        }
+        count.textContent = matches + (matches === 1 ? ' cargo encontrado' : ' cargos encontrados');
+        if (empty) empty.hidden = matches !== 0;
+        highlight(term);
+    }
+    searchInput.addEventListener('input', filterTree);
 });
 </script>
-{% if cargo_editar %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var modal = new bootstrap.Modal(document.getElementById('modalEditarCargo'));
-    modal.show();
-});
-</script>
-{% endif %}
+{% if cargo_editar %}<script>document.addEventListener('DOMContentLoaded', () => new bootstrap.Modal(document.getElementById('modalEditarCargo')).show());</script>{% endif %}
 {% endblock %}

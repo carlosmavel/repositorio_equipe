@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 
 from app import app, db
@@ -73,3 +74,37 @@ def test_create_cargo(client):
         assert cargo.default_setores.filter_by(id=ids['setor']).count() == 1
         assert cargo.default_celulas.filter_by(id=ids['cel']).count() == 1
         assert cargo.permissoes.filter_by(id=fid).count() == 1
+
+
+def test_cargo_explorer_starts_collapsed_with_accessible_controls(client):
+    login_admin(client)
+    response = client.get('/admin/cargos')
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'class="collapse show hier-children"' not in html
+    assert 'class="collapse hier-children"' in html
+    assert 'aria-expanded="false"' in html
+    assert 'aria-label="Expandir instituição Inst"' in html
+    assert 'aria-label="Expandir estabelecimento Estab"' in html
+    assert 'aria-label="Expandir setor Setor1"' in html
+    assert 'aria-label="Expandir célula Cel1"' in html
+    assert 'id="toggleAllCargos"' in html
+    assert 'id="cargoResultCount"' in html
+    assert 'id="cargoSearchEmpty"' in html
+
+
+def test_cargo_template_uses_single_surface_macro_and_event_driven_search():
+    source = (Path(__file__).parents[1] / 'templates' / 'admin' / 'cargos.html').read_text(encoding='utf-8')
+
+    assert '{% macro cargo_linha(' in source
+    assert source.count('class="cargo-item"') == 1
+    assert 'card-body p-0' not in source
+    assert 'tab-content' not in source
+    assert 'tab-pane' not in source
+    assert 'shown.bs.collapse' in source
+    assert 'hidden.bs.collapse' in source
+    assert "setTimeout(function()" not in source
+    assert "ancestors(item).forEach" in source
+    assert "autoOpened.forEach" in source
+    assert "manualOpened.has(id)" in source
