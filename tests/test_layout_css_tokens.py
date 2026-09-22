@@ -45,3 +45,24 @@ def test_legacy_inline_and_theme_chrome_rules_are_removed():
     assert "has-sidebar-layout" not in inline_style
     assert "Navbar and sidebar colors" not in custom_css
     assert "#globalSidebarOffcanvas" not in custom_css
+
+
+def test_topbar_controls_and_account_menu_are_accessible():
+    template = _source(BASE_TEMPLATE)
+    css = _source(FUTURISTIC_CSS)
+
+    assert '<button class="nav-link position-relative" type="button" id="notificationDropdown"' in template
+    assert 'aria-label="Abrir notificações"' in template
+    assert 'id="notificationBadge"' in template
+    assert 'aria-live="polite"' in template
+    assert 'id="accountDropdown"' in template
+    assert 'aria-label="Abrir menu da conta de {{ current_user.username }}"' in template
+    assert '>Meu perfil</a>' in template
+    assert '>Sair</a>' in template
+    assert 'aria-label="Fechar"' in template
+
+    assert ".app-topbar .account-menu-toggle { min-width: 44px; min-height: 44px; }" in css
+    assert ".app-topbar .dropdown-item:focus-visible" in css
+    assert "#notificationMenu {" in css
+    assert "overflow-y: auto" in css
+    assert "overflow-wrap: anywhere" in css

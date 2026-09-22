@@ -104,6 +104,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const unread = Math.max(serverCount, domCount);
     badge.style.display = unread > 0 ? "inline-block" : "none";
     badge.textContent = unread;
+    if (unread > 0) {
+      const description = `${unread} ${unread === 1 ? "notificação não lida" : "notificações não lidas"}`;
+      badge.setAttribute("aria-label", description);
+      if (dropdownToggle) {
+        dropdownToggle.setAttribute("aria-label", `Abrir notificações: ${description}`);
+      }
+    } else {
+      badge.removeAttribute("aria-label");
+      if (dropdownToggle) {
+        dropdownToggle.setAttribute("aria-label", "Abrir notificações");
+      }
+    }
   }
 
   // Função auxiliar para marcar uma notificação como lida (interna ao main.js)
