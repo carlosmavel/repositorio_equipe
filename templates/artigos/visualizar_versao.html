@@ -68,14 +68,14 @@
           <hr>
 
           <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+            <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">
               <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao histórico
             </a>
-            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">
               <i class="bi bi-file-text" aria-hidden="true"></i> Ver artigo atual
             </a>
             {% if can_restore_versions %}
-            <button type="button" class="btn btn-app btn-app-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal">
               <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar esta versão
             </button>
             {% endif %}
@@ -108,8 +108,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-app btn-app-primary">Confirmar restauração</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar restauração</button>
         </div>
       </form>
     </div>

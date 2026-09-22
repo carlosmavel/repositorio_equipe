@@ -99,7 +99,7 @@
                   {% if is_processing %}
                   <button
                     type="button"
-                    class="btn btn-sm btn-app btn-app-secondary w-100 opacity-50"
+                    class="btn btn-sm btn-outline-secondary w-100 opacity-50"
                     disabled
                     title="OCR em processamento"
                     aria-disabled="true">
@@ -107,7 +107,7 @@
                   </button>
                   {% else %}
                   <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_attachment', attachment_id=att.id) }}" class="mt-1">
-                    <button type="submit" class="btn btn-sm btn-app btn-app-secondary w-100"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button>
                   </form>
                   {% endif %}
                 </div>
@@ -198,7 +198,7 @@
           <div class="article-actions-group mb-3">
             <small class="text-muted d-block mb-2">Ações de OCR</small>
             <form method="post" action="{{ url_for('admin_bp.admin_reprocess_ocr_article', article_id=artigo.id) }}" class="d-inline">
-              <button type="submit" class="btn btn-app btn-app-primary">
+              <button type="submit" class="btn btn-primary">
                 <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR deste artigo
               </button>
             </form>
@@ -213,7 +213,7 @@
           {% if can_edit_article %}
           {% set is_pending_edit = artigo.status == ArticleStatus.PENDENTE %}
           <a href="{{ url_for('editar_artigo', artigo_id=artigo.id) }}"
-             class="btn btn-app btn-app-primary"
+             class="btn btn-primary"
              {% if is_pending_edit %}title="Ao editar, este artigo sairá temporariamente da fila de aprovação."{% endif %}>
             <i class="bi bi-pencil-square" aria-hidden="true"></i>
             {{ 'Editar e retirar da aprovação' if is_pending_edit else 'Editar' }}
@@ -221,11 +221,11 @@
           {% endif %}
 
         {% if can_request_revision %}
-        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+        <a href="{{ url_for('solicitar_revisao', artigo_id=artigo.id) }}" class="btn btn-secondary">
           <i class="bi bi-chat-left-text" aria-hidden="true"></i> Solicitar Revisão
         </a>
         {% endif %}
-        <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+        <a href="{{ url_for('historico_versoes_artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">
           <i class="bi bi-clock-history" aria-hidden="true"></i> Histórico de versões
         </a>
         {% if artigo.status == ArticleStatus.APROVADO %}
@@ -235,11 +235,11 @@
           style="position:absolute; bottom:10px; right:10px; cursor:pointer; font-size:1.3rem;"
         ></i>
         {% endif %}
-        <a href="{{ url_for('meus_artigos') }}" class="btn btn-app btn-app-secondary">
+        <a href="{{ url_for('meus_artigos') }}" class="btn btn-secondary">
           <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar para Meus Artigos
         </a>
         {% if can_delete_definitive %}
-        <button type="button" class="btn btn-app btn-app-danger" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDefinitiveModal">
           <i class="bi bi-trash3" aria-hidden="true"></i> Excluir definitivamente
         </button>
         {% endif %}
@@ -286,8 +286,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
-          <button type="submit" class="btn btn-app btn-app-danger"><i class="bi bi-check-circle" aria-hidden="true"></i> Confirmar exclusão definitiva</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle" aria-hidden="true"></i> Cancelar</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-check-circle" aria-hidden="true"></i> Confirmar exclusão definitiva</button>
         </div>
       </form>
     </div>
