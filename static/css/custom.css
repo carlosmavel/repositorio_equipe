@@ -812,6 +812,12 @@
   word-break: normal;
 }
 
+/* Give rendered articles the same comfortable text inset in both themes. */
+.article-content {
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
 .tiptap-editor .ProseMirror {
   min-height: 300px;
   padding: 1rem;
