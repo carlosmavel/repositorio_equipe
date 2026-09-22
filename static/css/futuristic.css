@@ -189,3 +189,26 @@ body:not(.layout-active-nav-sidebar) .main-page-content { justify-content: cente
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Orquetask symbol: transparent artwork with a neutral halo for either theme. */
+.brand-mark img,
+.login-logo {
+  display: block;
+  object-fit: contain;
+  aspect-ratio: 1;
+}
+.brand-mark img { width: 34px; height: 34px; }
+.login-logo {
+  width: 88px;
+  height: 88px;
+  max-width: none;
+  max-height: none;
+  margin-inline: auto;
+  filter: drop-shadow(0 8px 16px rgba(20, 25, 60, .18));
+}
+[data-bs-theme="dark"] .login-logo {
+  filter: drop-shadow(0 0 18px rgba(89, 216, 229, .18)) drop-shadow(0 8px 18px rgba(0, 0, 0, .28));
+}
+@media (max-width: 576px) {
+  .login-brand .login-logo { width: 76px; height: 76px; max-height: none; }
+}
