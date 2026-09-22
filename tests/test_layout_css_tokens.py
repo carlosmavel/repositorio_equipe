@@ -31,6 +31,34 @@ def test_native_color_scheme_tracks_the_selected_theme():
     assert "color-scheme: dark" in dark
 
 
+def test_scrollbars_have_theme_tokens_and_cross_browser_rules():
+    css = _source(FUTURISTIC_CSS)
+    root = css.split(":root {", 1)[1].split("}", 1)[0]
+    dark = css.split('[data-bs-theme="dark"] {', 1)[1].split("}", 1)[0]
+
+    for token in (
+        "--oq-scrollbar-track",
+        "--oq-scrollbar-thumb",
+        "--oq-scrollbar-thumb-hover",
+        "--oq-scrollbar-thumb-focus",
+    ):
+        assert token in root
+        assert token in dark
+
+    assert "@media (hover: hover) and (pointer: fine)" in css
+    assert ":where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body)" in css
+    assert "scrollbar-width: auto" in css
+    assert "scrollbar-color:" in css
+    assert "::-webkit-scrollbar {" in css
+    assert "::-webkit-scrollbar-track {" in css
+    assert "::-webkit-scrollbar-thumb {" in css
+    assert "width: 12px" in css
+    assert "height: 12px" in css
+    assert "border: 3px solid transparent" in css
+    assert "border-radius: 999px" in css
+    assert ":focus-within::-webkit-scrollbar-thumb" in css
+
+
 def test_app_chrome_dimensions_have_one_source_of_truth():
     css = _source(FUTURISTIC_CSS)
 
