@@ -118,7 +118,7 @@
             }
         }
 
-        footer {
+        .app-footer {
             flex-shrink: 0;
             margin-top: auto;
         }
@@ -324,12 +324,22 @@
         {% block content %}{% endblock content %}
     </main>
 
-    <footer class="border-top bg-body-tertiary py-3">
-        <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-            <small class="text-muted">&copy; 2026 Orquetask</small>
-            <button type="button" class="btn btn-link btn-sm p-0 d-inline-flex align-items-center cookie-manage-trigger" data-cookie-open-preferences="true" data-bs-toggle="tooltip" data-bs-placement="top" title="Gerenciar cookies" aria-label="Gerenciar cookies">
-                <i class="bi bi-cookie fs-5" aria-hidden="true"></i>
-            </button>
+    <footer class="app-footer" aria-label="Rodapé">
+        <div class="app-footer__inner">
+            <div class="app-footer__meta">
+                <small>&copy; 2026 Orquetask</small>
+                {% if config.get('APP_VERSION') %}
+                    <small class="app-footer__version">v{{ config.get('APP_VERSION') }}</small>
+                {% endif %}
+            </div>
+            <nav class="app-footer__links" aria-label="Links utilitários">
+                <button type="button" class="app-footer__link cookie-manage-trigger" data-cookie-open-preferences="true">
+                    <i class="bi bi-cookie" aria-hidden="true"></i>
+                    <span>Preferências de cookies</span>
+                </button>
+                <a class="app-footer__link" href="{{ url_for('politica_cookies') }}">Política de Privacidade</a>
+                <a class="app-footer__link" href="{{ url_for('politica_cookies') }}#contato">Ajuda e suporte</a>
+            </nav>
         </div>
     </footer>
 
