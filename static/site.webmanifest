@@ -3,10 +3,10 @@
   "short_name": "Orquetask",
   "icons": [
     {
-      "src": "/static/icons/orquetask-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/static/icons/LogoNova.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "theme_color": "#0a1020",
