@@ -917,8 +917,8 @@
   color: var(--text-default);
 }
 
-/* Keep rendered article text away from the edge of its contrasting dark surface. */
-[data-bs-theme="dark"] .article-content {
+/* Keep rendered article text away from the edge of its surface in both themes. */
+.article-content {
   border-radius: 0.375rem;
   padding: 1rem;
 }
