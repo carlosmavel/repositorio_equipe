@@ -160,7 +160,7 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header"><h2 class="modal-title h5" id="modalNovoCargoLabel">Novo cargo</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
-            <div class="modal-body">
+            <div class="modal-body app-scrollbar">
                     <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form js-cargo-hierarquia-form">
                         <div class="row">
                             <div class="col-md-8 mb-1">
@@ -308,7 +308,7 @@
                 <h5 class="modal-title" id="modalEditarCargoLabel">Editar Cargo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body app-scrollbar">
                 <form method="POST" action="{{ url_for('admin_cargos') }}" novalidate class="compact-form js-cargo-hierarquia-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ cargo_editar.id }}">
                     <div class="row">

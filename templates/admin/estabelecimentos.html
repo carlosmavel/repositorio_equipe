@@ -246,7 +246,7 @@
                 <h5 class="modal-title" id="modalEditarEstabelecimentoLabel">Editar Estabelecimento</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body app-scrollbar">
                 <form method="POST" action="{{ url_for('admin_estabelecimentos') }}" novalidate class="compact-form">
                     <input type="hidden" name="id_para_atualizar" value="{{ est_editar.id }}">
 
