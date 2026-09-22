@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Orquetask</title>
+  <desc id="description">Símbolo geométrico de fluxo orquestrado</desc>
+  <defs>
+    <linearGradient id="violet" x1="80" y1="390" x2="385" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6251ef"/>
+      <stop offset="0.52" stop-color="#745cef"/>
+      <stop offset="1" stop-color="#8a68ec"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="125" y1="390" x2="445" y2="155" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#23b6c1"/>
+      <stop offset="0.55" stop-color="#20aebb"/>
+      <stop offset="1" stop-color="#18a4b2"/>
+    </linearGradient>
+  </defs>
+  <path d="M76 389C24 281 53 156 141 84C224 16 344 28 399 103" fill="none" stroke="url(#violet)" stroke-width="82" stroke-linecap="round"/>
+  <path d="M112 300C128 408 221 465 317 438C418 409 466 305 438 211" fill="none" stroke="url(#cyan)" stroke-width="82" stroke-linecap="round"/>
+  <path d="M322 176L371 225L466 130" fill="none" stroke="url(#cyan)" stroke-width="70" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

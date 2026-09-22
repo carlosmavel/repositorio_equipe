@@ -1,0 +1,15 @@
+{
+  "name": "Orquetask",
+  "short_name": "Orquetask",
+  "icons": [
+    {
+      "src": "/static/icons/orquetask-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#0a1020",
+  "background_color": "#0a1020",
+  "display": "standalone"
+}
