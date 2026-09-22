@@ -202,6 +202,7 @@
         #flash-container { margin-bottom: 1.5rem; }
 
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/futuristic.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -210,16 +211,16 @@
     {# Navbar e Sidebar só são renderizadas se o usuário estiver logado e não for a página de login #}
     {% if session.get('user_id') and not is_auth_local_flash_page %}
         
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top app-topbar">
             <div class="container-fluid">
                 {# Botão Hambúrguer para a Sidebar Global (visível só em telas pequenas) #}
                 <button class="navbar-toggler d-lg-none me-2 navbar-global-sidebar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#globalSidebarOffcanvas" aria-controls="globalSidebarOffcanvas" aria-label="Toggle Global Sidebar">
                     <i class="bi bi-list"></i>
                 </button>
                 
-                <a class="navbar-brand d-flex align-items-center ms-3" href="{{ url_for('pagina_inicial') }}"> {# Link do brand pode ser o dashboard ou meus_artigos #}
-                    <img src="{{ url_for('static', filename='icons/favicon.png') }}" alt="Logo Orquetask" height="30" class="me-2">
-                    <span>Orquetask</span>
+                <a class="navbar-brand d-flex align-items-center ms-2 ms-lg-3" href="{{ url_for('pagina_inicial') }}"> {# Link do brand pode ser o dashboard ou meus_artigos #}
+                    <span class="brand-mark"><img src="{{ url_for('static', filename='icons/favicon.png') }}" alt="" height="28"></span>
+                    <span class="brand-copy"><strong>Orquetask</strong><small>Knowledge OS</small></span>
                 </a>
                 
                 {# O BOTÃO HAMBÚRGUER DO MENU PRINCIPAL E O <div class="collapse navbar-collapse" id="navbarNav"> FORAM REMOVIDOS #}
@@ -250,14 +251,14 @@
                         </ul>
                     </li>
 
-                    <li class="nav-item me-2">
-                        <a class="nav-link" href="#" id="themeToggle" title="Alternar tema">
+                    <li class="nav-item me-2 topbar-action">
+                        <a class="nav-link" href="#" id="themeToggle" title="Alternar tema" aria-label="Alternar tema claro ou escuro">
                             <i class="bi bi-moon-fill"></i>
                         </a>
                     </li>
 
                     {# Foto/Nome do Usuário como LINK DIRETO para o Perfil #}
-                    <li class="nav-item">
+                    <li class="nav-item profile-action">
                         <a class="nav-link d-flex align-items-center p-0" href="{{ url_for('perfil') }}" title="Meu Perfil"> {# Link direto para o perfil #}
                             {% if current_user.is_authenticated and current_user.foto %}
                                 <img src="{{ url_for('profile_pics', filename=current_user.foto) }}" class="rounded-circle" style="width:32px; height:32px; object-fit:cover; margin-right: 8px;" alt="{{ current_user.username }}">
@@ -273,10 +274,14 @@
 
         <div class="offcanvas offcanvas-start text-bg-dark" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="globalSidebarOffcanvasLabel">Menu Orquetask</h5>
+                <h5 class="offcanvas-title" id="globalSidebarOffcanvasLabel">Navegação</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
+                <div class="sidebar-context px-3">
+                    <span class="status-pulse"></span>
+                    <div><small>AMBIENTE</small><strong>Workspace ativo</strong></div>
+                </div>
                 <ul class="nav flex-column nav-pills">
                     {% set endpoint_base = request.endpoint.split('.')[-1] %}
 

@@ -3,42 +3,53 @@
 {% block title %}Início - Orquetask{% endblock %}
 
 {% block content %}
-<div class="container-fluid page-root"> {# Usa container-fluid para ocupar o espaço do main-page-content #}
-    {# Saudação #}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Bem-vindo(a) de volta, {{ current_user.nome_completo or current_user.username }}!</h1>
-        {# Aqui poderiam entrar botões de ação globais ou um seletor de período para o dashboard #}
-    </div>
+<div class="container-fluid page-root home-dashboard">
+    <section class="welcome-hero">
+        <div class="hero-content">
+            <span class="eyebrow"><i class="bi bi-stars"></i> Central de conhecimento</span>
+            <h1>Olá, <span>{{ current_user.nome_completo or current_user.username }}</span>.</h1>
+            <p>Conhecimento conectado, decisões mais rápidas e toda a sua operação em um só fluxo.</p>
+        </div>
+        <div class="hero-orbit" aria-hidden="true">
+            <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+            <i class="bi bi-command"></i>
+        </div>
+    </section>
 
-    {# Atalhos Rápidos - Exemplo com cards #}
-    <h5 class="mb-3">Acesso Rápido</h5>
-    <div class="row">
+    <div class="section-heading">
+        <div><span class="section-kicker">ATALHOS</span><h2>Comece por aqui</h2></div>
+        <span class="section-line"></span>
+    </div>
+    <div class="row g-3 quick-grid">
         <div class="col-md-4 col-lg-3 mb-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 quick-card quick-card-primary">
                 <div class="card-body">
                     <a href="{{ url_for('novo_artigo') }}" class="text-decoration-none stretched-link">
-                        <i class="bi bi-file-earmark-plus-fill display-4 text-primary mb-2"></i>
+                        <span class="quick-icon"><i class="bi bi-file-earmark-plus-fill"></i></span>
                         <h6 class="card-title">Novo Artigo</h6>
+                        <small>Registre conhecimento</small>
                     </a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 col-lg-3 mb-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 quick-card quick-card-cyan">
                 <div class="card-body">
                     <a href="{{ url_for('pesquisar') }}" class="text-decoration-none stretched-link">
-                        <i class="bi bi-search display-4 text-info mb-2"></i>
+                        <span class="quick-icon"><i class="bi bi-search"></i></span>
                         <h6 class="card-title">Pesquisar Artigos</h6>
+                        <small>Explore a biblioteca</small>
                     </a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 col-lg-3 mb-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 quick-card quick-card-violet">
                 <div class="card-body">
                     <a href="{{ url_for('boletins_buscar') }}" class="text-decoration-none stretched-link">
-                        <i class="bi bi-journal-text display-4 text-secondary mb-2"></i>
+                        <span class="quick-icon"><i class="bi bi-journal-text"></i></span>
                         <h6 class="card-title">Pesquisar Boletins</h6>
+                        <small>Consulte documentos</small>
                     </a>
                 </div>
             </div>
@@ -64,11 +75,12 @@
             {% endfor %}
             {% if ns.show %}
         <div class="col-md-4 col-lg-3 mb-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 quick-card quick-card-amber">
                 <div class="card-body">
                     <a href="{{ url_for('aprovacao') }}" class="text-decoration-none stretched-link">
-                        <i class="bi bi-check2-square display-4 text-warning mb-2"></i>
+                        <span class="quick-icon"><i class="bi bi-check2-square"></i></span>
                         <h6 class="card-title">Aprovações de Artigos</h6>
+                        <small>Revise publicações</small>
                     </a>
                 </div>
             </div>
@@ -77,17 +89,9 @@
         {% endif %}
     </div>
 
-    {# Espaço para futuras seções: "Minhas Pendências", "Comunicados Recentes", etc. #}
-    <hr class="my-4">
-    <div class="row">
-        <div class="col-md-6">
-            <h4>Minhas Pendências (Exemplo)</h4>
-            <p class="text-muted">Em breve: artigos aguardando revisão ou aprovação aparecerão aqui.</p>
-        </div>
-        <div class="col-md-6">
-            <h4>Comunicados Recentes (Exemplo)</h4>
-            <p class="text-muted">Em breve: As últimas novidades da empresa e do seu setor.</p>
-        </div>
+    <div class="row g-3 mt-2 dashboard-panels">
+        <div class="col-md-6"><div class="insight-panel"><span class="panel-icon"><i class="bi bi-inboxes"></i></span><div><small>SEU FLUXO</small><h3>Minhas pendências</h3><p>Seus itens para revisão e aprovação aparecerão aqui.</p></div><i class="bi bi-arrow-up-right panel-arrow"></i></div></div>
+        <div class="col-md-6"><div class="insight-panel"><span class="panel-icon"><i class="bi bi-broadcast"></i></span><div><small>NOVIDADES</small><h3>Comunicados recentes</h3><p>Acompanhe atualizações da empresa e do seu setor.</p></div><i class="bi bi-arrow-up-right panel-arrow"></i></div></div>
     </div>
 
 </div>
