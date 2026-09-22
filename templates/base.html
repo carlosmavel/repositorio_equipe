@@ -220,8 +220,7 @@
                     {% set current_endpoint = request.endpoint.split('.')[-1] %}
                     {% set overview_active = current_endpoint == 'pagina_inicial' %}
                     {% set boletins_active = current_endpoint in ['boletins_listar', 'boletins_novo', 'boletins_buscar', 'boletins_visualizar', 'boletins_editar'] %}
-                    {% set biblioteca_active = current_endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'artigo', 'editar_artigo'] %}
-                    {% set operacoes_active = current_endpoint == 'aprovacao' %}
+                    {% set biblioteca_active = current_endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'aprovacao_detail', 'artigo', 'editar_artigo', 'solicitar_revisao', 'historico_versoes_artigo', 'visualizar_versao_artigo', 'comparar_versoes_artigo', 'restaurar_versao_artigo'] %}
                     {% set admin_menu_active = 'admin_' in current_endpoint %}
                     {% set cadastros_artigos_active = current_endpoint in ['admin_artigo_tipos', 'admin_artigo_areas', 'admin_artigo_sistemas'] %}
                     {% set cadastros_active = current_endpoint in ['admin_instituicoes', 'admin_estabelecimentos', 'admin_setores', 'admin_celulas', 'admin_cargos', 'admin_artigo_tipos', 'admin_artigo_areas', 'admin_artigo_sistemas'] %}
@@ -242,38 +241,6 @@
                             </ul>
                         </div>
                     </li>
-
-                    <li class="nav-item sidebar-section {{ 'is-current-group' if biblioteca_active or boletins_active }}">
-                        <span class="sidebar-section-label">Conteúdo</span>
-                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not (biblioteca_active or boletins_active) }}" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#collapseConteudo"
-                                aria-expanded="{{ 'true' if biblioteca_active or boletins_active else 'false' }}" aria-controls="collapseConteudo"
-                                title="Conteúdo" aria-label="Conteúdo">
-                            <span><i class="bi bi-collection-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Conteúdo</span></span>
-                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
-                        </button>
-                        <div class="collapse {{ 'show' if biblioteca_active or boletins_active }}" id="collapseConteudo" data-bs-parent="#sidebarNavigation">
-                            <ul class="nav flex-column sidebar-group-links">
-                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'meus_artigos' }}" href="{{ url_for('meus_artigos') }}" title="Meus Artigos"{% if current_endpoint == 'meus_artigos' %} aria-current="page"{% endif %}><i class="bi bi-journals me-2" aria-hidden="true"></i><span class="sidebar-link-label">Meus Artigos</span></a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'novo_artigo' }}" href="{{ url_for('novo_artigo') }}" title="Novo Artigo"{% if current_endpoint == 'novo_artigo' %} aria-current="page"{% endif %}><i class="bi bi-file-earmark-plus-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Novo Artigo</span></a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'pesquisar' }}" href="{{ url_for('pesquisar') }}" title="Pesquisar artigos"{% if current_endpoint == 'pesquisar' %} aria-current="page"{% endif %}><i class="bi bi-search me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar artigos</span></a></li>
-                                {% if current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin') %}<li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_novo' }}" href="{{ url_for('boletins_novo') }}" title="Cadastrar boletim"{% if current_endpoint == 'boletins_novo' %} aria-current="page"{% endif %}><i class="bi bi-journal-plus me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cadastrar boletim</span></a></li>{% endif %}
-                                {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}<li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' }}" href="{{ url_for('boletins_buscar') }}" title="Pesquisar boletins"{% if current_endpoint == 'boletins_buscar' %} aria-current="page"{% endif %}><i class="bi bi-journal-richtext me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar boletins</span></a></li>{% endif %}
-                            </ul>
-                        </div>
-                    </li>
-
-                    {% set codes = [Permissao.ARTIGO_APROVAR_CELULA.value, Permissao.ARTIGO_APROVAR_SETOR.value, Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value, Permissao.ARTIGO_APROVAR_INSTITUICAO.value, Permissao.ARTIGO_APROVAR_TODAS.value, Permissao.ARTIGO_REVISAR_CELULA.value, Permissao.ARTIGO_REVISAR_SETOR.value, Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value, Permissao.ARTIGO_REVISAR_INSTITUICAO.value, Permissao.ARTIGO_REVISAR_TODAS.value] %}
-                    {% set ns = namespace(show=current_user.has_permissao('admin')) %}{% for c in codes %}{% if current_user.has_permissao(c) %}{% set ns.show = True %}{% endif %}{% endfor %}
-                    {% if ns.show %}
-                    <li class="nav-item sidebar-section {{ 'is-current-group' if operacoes_active }}">
-                        <span class="sidebar-section-label">Operações</span>
-                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not operacoes_active }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOperacoes" aria-expanded="{{ 'true' if operacoes_active else 'false' }}" aria-controls="collapseOperacoes" title="Operações" aria-label="Operações">
-                            <span><i class="bi bi-kanban-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Operações</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
-                        </button>
-                        <div class="collapse {{ 'show' if operacoes_active }}" id="collapseOperacoes" data-bs-parent="#sidebarNavigation"><ul class="nav flex-column sidebar-group-links"><li class="nav-item"><a class="nav-link {{ 'active' if operacoes_active }}" href="{{ url_for('aprovacao') }}" title="Aprovação"{% if operacoes_active %} aria-current="page"{% endif %}><i class="bi bi-check2-square me-2" aria-hidden="true"></i><span class="sidebar-link-label">Aprovação</span></a></li></ul></div>
-                    </li>
-                    {% endif %}
 
                     {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
                     {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
@@ -328,6 +295,54 @@
                             </div>
                         </li>
                     {% endif %} {# Fim do if admin permission #}
+
+                    {# Bloco BOLETINS #}
+                    {% if current_user.is_authenticated and (current_user.has_permissao('boletim_visualizar') or current_user.has_permissao('boletim_buscar') or current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin')) %}
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if boletins_active }}">
+                        <span class="sidebar-section-label">Boletins</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not boletins_active }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseBoletins"
+                                aria-expanded="{{ 'true' if boletins_active else 'false' }}" aria-controls="collapseBoletins"
+                                title="Boletins" aria-label="Boletins">
+                            <span><i class="bi bi-journal-richtext me-2" aria-hidden="true"></i><span class="sidebar-link-label">Boletins</span></span>
+                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if boletins_active }}" id="collapseBoletins" data-bs-parent="#sidebarNavigation">
+                            <ul class="nav flex-column sidebar-group-links">
+                                {% if current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_novo' }}" href="{{ url_for('boletins_novo') }}" title="Cadastrar boletim"{% if current_endpoint == 'boletins_novo' %} aria-current="page"{% endif %}><i class="bi bi-journal-plus me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cadastrar boletim</span></a></li>
+                                {% endif %}
+                                {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' }}" href="{{ url_for('boletins_buscar') }}" title="Pesquisar boletins"{% if current_endpoint == 'boletins_buscar' %} aria-current="page"{% endif %}><i class="bi bi-search me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar boletins</span></a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    {# Bloco BIBLIOTECA #}
+                    {% set codes = [Permissao.ARTIGO_APROVAR_CELULA.value, Permissao.ARTIGO_APROVAR_SETOR.value, Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value, Permissao.ARTIGO_APROVAR_INSTITUICAO.value, Permissao.ARTIGO_APROVAR_TODAS.value, Permissao.ARTIGO_REVISAR_CELULA.value, Permissao.ARTIGO_REVISAR_SETOR.value, Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value, Permissao.ARTIGO_REVISAR_INSTITUICAO.value, Permissao.ARTIGO_REVISAR_TODAS.value] %}
+                    {% set ns = namespace(show=current_user.has_permissao('admin')) %}{% for c in codes %}{% if current_user.has_permissao(c) %}{% set ns.show = True %}{% endif %}{% endfor %}
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if biblioteca_active }}">
+                        <span class="sidebar-section-label">Biblioteca</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not biblioteca_active }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseBiblioteca"
+                                aria-expanded="{{ 'true' if biblioteca_active else 'false' }}" aria-controls="collapseBiblioteca"
+                                title="Biblioteca" aria-label="Biblioteca">
+                            <span><i class="bi bi-book-half me-2" aria-hidden="true"></i><span class="sidebar-link-label">Biblioteca</span></span>
+                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if biblioteca_active }}" id="collapseBiblioteca" data-bs-parent="#sidebarNavigation">
+                            <ul class="nav flex-column sidebar-group-links">
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'meus_artigos' }}" href="{{ url_for('meus_artigos') }}" title="Meus Artigos"{% if current_endpoint == 'meus_artigos' %} aria-current="page"{% endif %}><i class="bi bi-journals me-2" aria-hidden="true"></i><span class="sidebar-link-label">Meus Artigos</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'novo_artigo' }}" href="{{ url_for('novo_artigo') }}" title="Novo Artigo"{% if current_endpoint == 'novo_artigo' %} aria-current="page"{% endif %}><i class="bi bi-file-earmark-plus-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Novo Artigo</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'pesquisar' }}" href="{{ url_for('pesquisar') }}" title="Pesquisar artigos"{% if current_endpoint == 'pesquisar' %} aria-current="page"{% endif %}><i class="bi bi-search me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar artigos</span></a></li>
+                                {% if ns.show %}
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint in ['aprovacao', 'aprovacao_detail'] }}" href="{{ url_for('aprovacao') }}" title="Aprovação"{% if current_endpoint in ['aprovacao', 'aprovacao_detail'] %} aria-current="page"{% endif %}><i class="bi bi-check2-square me-2" aria-hidden="true"></i><span class="sidebar-link-label">Aprovação</span></a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </li>
 
                     {# Item de Sair - no final da sidebar #}
                     <li class="nav-item mt-auto"> 

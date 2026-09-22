@@ -61,3 +61,42 @@ def test_active_article_route_expands_every_ancestor_and_marks_only_destination(
     admin_fragment = BASE_TEMPLATE[admin_start:admin_end]
     assert admin_fragment.count('aria-current="page"') == 10
     assert 'aria-current="page"' not in BASE_TEMPLATE[BASE_TEMPLATE.index('title="Cadastros"') : BASE_TEMPLATE.index('id="collapseCadastros"')]
+
+
+def test_main_groups_are_independent_and_in_the_expected_order():
+    administration = BASE_TEMPLATE.index('<span class="sidebar-section-label">Administração</span>')
+    boletins = BASE_TEMPLATE.index('<span class="sidebar-section-label">Boletins</span>')
+    biblioteca = BASE_TEMPLATE.index('<span class="sidebar-section-label">Biblioteca</span>')
+
+    assert administration < boletins < biblioteca
+    assert "collapseConteudo" not in BASE_TEMPLATE
+    assert "collapseOperacoes" not in BASE_TEMPLATE
+
+    for active_name, collapse_id in (
+        ("admin_menu_active", "collapseAdministracao"),
+        ("boletins_active", "collapseBoletins"),
+        ("biblioteca_active", "collapseBiblioteca"),
+    ):
+        assert BASE_TEMPLATE.count(f'id="{collapse_id}"') == 1
+        assert f'data-bs-target="#{collapse_id}"' in BASE_TEMPLATE
+        assert f'aria-controls="{collapse_id}"' in BASE_TEMPLATE
+        assert f'aria-expanded="{{{{ \'true\' if {active_name} else \'false\' }}}}"' in BASE_TEMPLATE
+        assert f'collapse {{{{ \'show\' if {active_name} }}}}" id="{collapse_id}" data-bs-parent="#sidebarNavigation"' in BASE_TEMPLATE
+
+
+def test_boletins_and_biblioteca_keep_their_permission_boundaries():
+    boletins_start = BASE_TEMPLATE.index("{# Bloco BOLETINS #}")
+    biblioteca_start = BASE_TEMPLATE.index("{# Bloco BIBLIOTECA #}")
+    boletins = BASE_TEMPLATE[boletins_start:biblioteca_start]
+    biblioteca = BASE_TEMPLATE[biblioteca_start:]
+
+    for permission in ("boletim_visualizar", "boletim_buscar", "boletim_gerenciar", "admin"):
+        assert f"current_user.has_permissao('{permission}')" in boletins
+    assert "boletins_novo" in boletins
+    assert "boletins_buscar" in boletins
+    assert "Meus Artigos" not in boletins
+
+    for label in ("Meus Artigos", "Novo Artigo", "Pesquisar artigos", "Aprovação"):
+        assert label in biblioteca
+    assert "{% if ns.show %}" in biblioteca
+    assert "'aprovacao', 'aprovacao_detail'" in BASE_TEMPLATE

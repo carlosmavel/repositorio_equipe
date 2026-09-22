@@ -174,7 +174,7 @@ def test_topbar_controls_and_account_menu_are_accessible():
 def test_sidebar_has_labeled_groups_and_nested_admin_semantics():
     template = _source(BASE_TEMPLATE)
 
-    for label in ("Visão geral", "Conteúdo", "Operações", "Administração"):
+    for label in ("Visão geral", "Administração", "Boletins", "Biblioteca"):
         assert f'<span class="sidebar-section-label">{label}</span>' in template
 
     assert 'data-bs-parent="#sidebarNavigation"' in template
