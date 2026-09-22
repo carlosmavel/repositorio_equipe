@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 
     <style>
-        /* === ESTILOS GLOBAIS PARA LAYOUT COM NAVBAR FIXA E SIDEBAR FIXA/OFFCANVAS === */
         html, body {
             height: 100%;
         }
@@ -21,89 +20,6 @@
             min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            background-color: var(--page-bg); /* Ajuste conforme tema */
-        }
-
-        /* Classe aplicada ao HTML ou BODY para layout com navbar e sidebar */
-        html.has-sidebar-layout body, body.has-sidebar-layout { /* Aplica padding se a classe estiver no body ou html */
-            padding-top: 64px; /* Altura da navbar fixed-top (ajuste se a sua for diferente) */
-        }
-
-        @media (min-width: 992px) { /* Telas grandes (lg e acima) */
-            html.has-sidebar-layout body, body.has-sidebar-layout {
-                padding-left: 280px; /* Largura da sidebar */
-            }
-        }
-        /* Em telas pequenas, o padding-left do body é zero (offcanvas cuida do resto) */
-        @media (max-width: 991.98px) {
-             html.has-sidebar-layout body, body.has-sidebar-layout {
-                padding-left: 0;
-            }
-        }
-
-        /* Sidebar Global (Offcanvas que vira fixa) */
-        #globalSidebarOffcanvas {
-            width: 280px;
-            background-color: #202124; /* Fundo escuro */
-            color: #e8eaed;
-            border-right: 1px solid #3a3f44; /* Borda um pouco mais visível */
-            transition: transform .3s ease-in-out, visibility .3s ease-in-out;
-            z-index: 1030; /* Mesmo z-index da navbar, ou um pouco abaixo se quiser que a navbar fique por cima em algum caso */
-        }
-        #globalSidebarOffcanvas .offcanvas-header { border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0.9rem 1.25rem; }
-        #globalSidebarOffcanvas .offcanvas-title { color: #e8eaed; font-size: 1.1rem; }
-        #globalSidebarOffcanvas .offcanvas-body { padding: 0; }
-        #globalSidebarOffcanvas .nav-pills { padding-top: 2rem; }
-        #globalSidebarOffcanvas .nav-link { color: #adb5bd; padding: 0.65rem 1.25rem; border-radius: 0; display: flex; align-items: center; font-size: 0.9rem; }
-        #globalSidebarOffcanvas .nav-link i.bi { color: #8A929A; margin-right: 0.9rem; font-size: 1.1rem; width: 22px; text-align: center; }
-        
-        #globalSidebarOffcanvas .nav-link.active,
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"][aria-expanded="true"].nav-link { /* Link do grupo ativo */
-            font-weight: 500;
-            background-color: rgba(255, 255, 255, 0.07);
-            color: #ffffff;
-            border-left: 3px solid var(--bs-primary); /* Destaque na borda esquerda */
-            padding-left: calc(1.25rem - 3px);
-        }
-        #globalSidebarOffcanvas .nav-link.active i.bi,
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"][aria-expanded="true"].nav-link i.bi {
-            color: #ffffff;
-        }
-
-        #globalSidebarOffcanvas .nav-link:not(.active):hover { background-color: rgba(255, 255, 255, 0.04); color: #f0f2f5; }
-        #globalSidebarOffcanvas .nav-link:not(.active):hover i.bi { color: #bdc1c6; }
-
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"] { justify-content: space-between; }
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"] i.bi-chevron-down { transition: transform 0.2s ease-in-out; font-size: 0.7rem; color: #8A929A; }
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"][aria-expanded="true"] i.bi-chevron-down { color: #ffffff; }
-        #globalSidebarOffcanvas .nav-item > a[data-bs-toggle="collapse"]:not(.collapsed) i.bi-chevron-down { transform: rotate(180deg); }
-        
-        #globalSidebarOffcanvas .nav-item .collapse .nav-link { padding-left: calc(1.25rem + 22px + 0.9rem); /* Alinha com texto do pai, descontando ícone */ font-size: 0.85rem; color: #9aa0a6; }
-        #globalSidebarOffcanvas .nav-item .collapse .nav-link.active { color: #ffffff; background-color: rgba(255,255,255,0.05); border-left: none; padding-left: calc(1.25rem + 22px + 0.9rem); }
-        #globalSidebarOffcanvas .nav-item .collapse .nav-link:hover { color: #e8eaed; background-color: rgba(255, 255, 255, 0.03); }
-        
-        #globalSidebarOffcanvas hr.my-2 { border-top: 1px solid rgba(255, 255, 255, 0.15); margin: 0.75rem 1.25rem; }
-
-        @media (min-width: 992px) {
-            #globalSidebarOffcanvas {
-                position: fixed;
-                top: 56px;  /* <<< CORRIGIDO: COMEÇA ABAIXO DA NAVBAR (ajuste 56px se a altura da sua navbar for outra) */
-                left: 0;
-                height: calc(100dvh - 56px); /* <<< CORRIGIDO: ALTURA RESTANTE (ajuste 56px) */
-                width: 280px;
-                transform: none !important;
-                visibility: visible !important;
-                background-color: #202124; /* Garante o fundo escuro se não estiver no estilo principal do ID */
-                border-right: 1px solid #424242; /* Sua borda */
-                z-index: 1020; /* Z-index abaixo da navbar (Bootstrap navbar é 1030) mas acima do conteúdo */
-                overflow-y: auto;
-            }
-            #globalSidebarOffcanvas .offcanvas-header { 
-                display: none; 
-            }
-            .navbar-global-sidebar-toggler { 
-                display: none !important; 
-            }
         }
 
         .main-page-content {
@@ -211,7 +127,7 @@
     {# Navbar e Sidebar só são renderizadas se o usuário estiver logado e não for a página de login #}
     {% if session.get('user_id') and not is_auth_local_flash_page %}
         
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top app-topbar">
+        <nav class="navbar navbar-expand-lg navbar-dark fixed-top app-topbar">
             <div class="container-fluid">
                 {# Botão Hambúrguer para a Sidebar Global (visível só em telas pequenas) #}
                 <button class="navbar-toggler d-lg-none me-2 navbar-global-sidebar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#globalSidebarOffcanvas" aria-controls="globalSidebarOffcanvas" aria-label="Toggle Global Sidebar">
@@ -272,7 +188,7 @@
             </div> 
         </nav>
 
-        <div class="offcanvas offcanvas-start text-bg-dark" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
+        <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="globalSidebarOffcanvasLabel">Navegação</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
