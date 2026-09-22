@@ -291,7 +291,61 @@ html.has-sidebar-layout body {
 
 .main-page-content { padding: 2rem clamp(1.15rem, 3.2vw, 3.5rem) 2.5rem !important; }
 #flash-container { padding: 0; }
-footer { border-color: var(--oq-line) !important; background: transparent !important; }
+.app-footer {
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: auto;
+  border-top: 1px solid var(--oq-line);
+  color: var(--oq-muted);
+  background: color-mix(in srgb, var(--oq-surface) 68%, transparent);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+.app-footer__inner {
+  width: min(100%, 1440px);
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem 1.5rem;
+  margin-inline: auto;
+  padding: .6rem clamp(1.15rem, 3.2vw, 3.5rem);
+}
+.app-footer__meta,
+.app-footer__links { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem 1rem; }
+.app-footer__meta { white-space: nowrap; }
+.app-footer__version {
+  padding-left: 1rem;
+  border-left: 1px solid var(--oq-line);
+  font-variant-numeric: tabular-nums;
+}
+.app-footer__links { justify-content: flex-end; }
+.app-footer__link {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .2rem;
+  border: 0;
+  border-radius: 6px;
+  color: var(--oq-muted);
+  background: transparent;
+  font: inherit;
+  font-size: .78rem;
+  text-decoration: none;
+}
+.app-footer__link:hover { color: var(--oq-primary); text-decoration: underline; }
+.app-footer__link:focus-visible {
+  outline: 3px solid var(--oq-focus);
+  outline-offset: 2px;
+  color: var(--oq-ink);
+  box-shadow: 0 0 0 5px rgba(var(--oq-primary-rgb), .14);
+}
+
+/* In the authenticated shell, the body's sidebar offset also constrains this compact footer. */
+body.layout-active-nav-sidebar .app-footer__inner {
+  min-height: 46px;
+  padding-block: .35rem;
+}
 
 /* Global component system */
 h1, h2, h3, h4, h5, h6 { color: var(--oq-ink); font-weight: 720; letter-spacing: -.035em; }
@@ -447,6 +501,9 @@ body:not(.layout-active-nav-sidebar) .main-page-content { justify-content: cente
 
 @media (max-width: 767.98px) {
   .main-page-content { padding: 1rem !important; }
+  .app-footer__inner { align-items: flex-start; flex-direction: column; padding: .7rem 1rem; }
+  .app-footer__links { width: 100%; justify-content: flex-start; gap: .15rem .85rem; }
+  .app-footer__link { max-width: 100%; white-space: normal; }
   .welcome-hero { min-height: 230px; }
   .hero-orbit { right: -55px; opacity: .45; }
   .hero-content { max-width: 90%; }
