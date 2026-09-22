@@ -166,3 +166,13 @@ def test_rendered_article_code_blocks_keep_tiptap_dark_theme():
     assert "color: var(--bs-light, #f8f9fa);" in stylesheet
     assert ".article-content pre code," in stylesheet
     assert "color: inherit;" in stylesheet
+
+
+def test_rendered_article_content_has_spacing_in_dark_theme():
+    stylesheet = Path("static/css/custom.css").read_text()
+
+    dark_article_rule = stylesheet.split(
+        '[data-bs-theme="dark"] .article-content {', 1
+    )[1].split("}", 1)[0]
+    assert "border-radius: 0.375rem;" in dark_article_rule
+    assert "padding: 1rem;" in dark_article_rule
