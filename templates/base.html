@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br" {% if session.get('user_id') and not is_auth_local_flash_page %}class="has-sidebar-layout"{% endif %}>
+<html lang="pt-br" class="app-scrollbar{% if session.get('user_id') and not is_auth_local_flash_page %} has-sidebar-layout{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> {# Importante para responsividade #}
@@ -160,7 +160,7 @@
                             <i class="bi bi-bell-fill fs-5"></i>
                             <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; transform: translate(-100%, 40%) !important; display: none;" data-server-count="{{ notificacoes }}" aria-live="polite"{% if notificacoes %} aria-label="{{ notificacoes }} {{ 'notificação não lida' if notificacoes == 1 else 'notificações não lidas' }}"{% endif %}></span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" id="notificationMenu" aria-labelledby="notificationDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end app-scrollbar" id="notificationMenu" aria-labelledby="notificationDropdown">
                             {% if notificacoes_list %}{% for n in notificacoes_list %}
                                 <li>
                                     <a
@@ -204,7 +204,7 @@
             </div> 
         </nav>
 
-        <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
+        <div class="offcanvas offcanvas-start app-scrollbar" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="globalSidebarOffcanvasLabel">Navegação</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
@@ -397,7 +397,7 @@
             <h1 class="modal-title fs-5" id="cookiePreferencesModalLabel">Preferências de cookies</h1>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body app-scrollbar">
             <p class="small text-muted">Os cookies essenciais permanecem sempre ativos para manter autenticação e segurança.</p>
 
             <div class="border rounded p-3 mb-3">

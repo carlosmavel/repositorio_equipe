@@ -1116,6 +1116,12 @@
   color: var(--text-default);
 }
 
+.boletim-ocr-text {
+  max-height: 380px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
 [data-bs-theme="dark"] .ocr-details-panel,
 [data-bs-theme="dark"] .boletim-surface,
 [data-bs-theme="dark"] .boletim-ocr-text,

@@ -47,7 +47,11 @@ def test_scrollbars_have_theme_tokens_and_cross_browser_rules():
         assert token in dark
 
     assert "@media (hover: hover) and (pointer: fine)" in css
-    assert ":where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body)" in css
+    shared_selector = ":where(.app-scrollbar, #osNotificationMenu, .editor-container)"
+    assert shared_selector in css
+    assert f"{shared_selector}:hover" in css
+    assert f"{shared_selector}:focus-within" in css
+    assert f"{shared_selector}::-webkit-scrollbar" in css
     assert "scrollbar-width: auto" in css
     assert "scrollbar-color:" in css
     assert "::-webkit-scrollbar {" in css
@@ -58,6 +62,43 @@ def test_scrollbars_have_theme_tokens_and_cross_browser_rules():
     assert "border: 3px solid transparent" in css
     assert "border-radius: 999px" in css
     assert ":focus-within::-webkit-scrollbar-thumb" in css
+
+
+def test_all_scrollable_application_containers_use_shared_scrollbar_utility():
+    templates = {
+        "base": _source(BASE_TEMPLATE),
+        "new_article": _source(ROOT / "templates" / "artigos" / "novo_artigo.html"),
+        "edit_article": _source(ROOT / "templates" / "artigos" / "editar_artigo.html"),
+        "bulletin": _source(ROOT / "templates" / "boletins" / "visualizar.html"),
+    }
+
+    assert '<html lang="pt-br" class="app-scrollbar' in templates["base"]
+    assert 'class="offcanvas offcanvas-start app-scrollbar"' in templates["base"]
+    assert 'class="dropdown-menu dropdown-menu-end app-scrollbar" id="notificationMenu"' in templates["base"]
+    assert 'class="modal-body app-scrollbar"' in templates["base"]
+
+    all_templates = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "templates").rglob("*.html"))
+    assert all_templates.count('class="modal-body') == all_templates.count('class="modal-body app-scrollbar')
+
+    for name in ("new_article", "edit_article"):
+        assert 'class="processing-messages app-scrollbar ' in templates[name]
+        assert 'class="tiptap-toolbar app-scrollbar ' in templates[name]
+        assert 'class="tiptap-editor app-scrollbar ' in templates[name]
+
+    assert 'class="border rounded boletim-ocr-text app-scrollbar p-3"' in templates["bulletin"]
+    assert "overflow-y: auto" not in templates["bulletin"]
+
+    custom_css = _source(CUSTOM_CSS)
+    ocr_rule = custom_css.split(".boletim-ocr-text {", 1)[1].split("}", 1)[0]
+    assert "max-height: 380px" in ocr_rule
+    assert "overflow-y: auto" in ocr_rule
+    assert "white-space: pre-wrap" in ocr_rule
+
+    # These legacy containers currently have no dedicated template markup, but
+    # remain aliases of the utility and therefore receive the same theme tokens.
+    css = _source(FUTURISTIC_CSS)
+    assert "#osNotificationMenu" in css
+    assert ".editor-container" in css
 
 
 def test_app_chrome_dimensions_have_one_source_of_truth():

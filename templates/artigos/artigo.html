@@ -261,7 +261,7 @@
           <h5 class="modal-title" id="deleteDefinitiveModalLabel">Excluir artigo definitivamente</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body app-scrollbar">
           {% if csrf_token is defined %}
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% endif %}
