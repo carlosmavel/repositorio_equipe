@@ -11,6 +11,26 @@ def _source(path):
     return path.read_text(encoding="utf-8")
 
 
+def test_saved_dark_theme_is_restored_in_head_before_stylesheets_load():
+    template = _source(BASE_TEMPLATE)
+    head = template.split("<head>", 1)[1].split("</head>", 1)[0]
+    theme_restore = "localStorage.getItem('theme') === 'dark'"
+
+    assert theme_restore in head
+    assert "document.documentElement.setAttribute('data-bs-theme', 'dark')" in head
+    assert head.index(theme_restore) < head.index('<link href="https://cdn.jsdelivr.net/npm/bootstrap')
+
+
+def test_native_color_scheme_tracks_the_selected_theme():
+    css = _source(FUTURISTIC_CSS)
+
+    root = css.split(":root {", 1)[1].split("}", 1)[0]
+    dark = css.split('[data-bs-theme="dark"] {', 1)[1].split("}", 1)[0]
+
+    assert "color-scheme: light" in root
+    assert "color-scheme: dark" in dark
+
+
 def test_app_chrome_dimensions_have_one_source_of_truth():
     css = _source(FUTURISTIC_CSS)
 
