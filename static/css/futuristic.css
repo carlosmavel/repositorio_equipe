@@ -1,5 +1,6 @@
 /* Orquetask interface 2026 — global visual language */
 :root {
+  color-scheme: light;
   --oq-ink: #101828;
   --oq-muted: #667085;
   --oq-surface: rgba(255, 255, 255, .82);
@@ -55,6 +56,7 @@
 }
 
 [data-bs-theme="dark"] {
+  color-scheme: dark;
   --oq-ink: #eef2ff;
   --oq-muted: #98a2b3;
   --oq-surface: rgba(20, 28, 48, .86);

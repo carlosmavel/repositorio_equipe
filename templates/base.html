@@ -8,6 +8,9 @@
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <meta name="theme-color" content="#0a1020">
     <script>
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+      }
       if (window.matchMedia('(min-width: 992px)').matches && localStorage.getItem('orquetask_sidebar_compact') === 'true') {
         document.documentElement.classList.add('sidebar-compact');
       }
