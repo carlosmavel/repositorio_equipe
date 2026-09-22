@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE_TEMPLATE = ROOT / "templates" / "base.html"
 CUSTOM_CSS = ROOT / "static" / "css" / "custom.css"
 FUTURISTIC_CSS = ROOT / "static" / "css" / "futuristic.css"
+MAIN_JS = ROOT / "static" / "js" / "main.js"
 
 
 def _source(path):
@@ -144,3 +145,18 @@ def test_sidebar_compact_mode_is_desktop_only_persistent_and_accessible():
     assert ".sidebar-compact-toggle { display: none; }" in css
     assert "@media (prefers-reduced-motion: reduce)" in css
     assert ".sidebar-compact-toggle:focus-visible" in css
+
+
+def test_sidebar_scroll_is_saved_restored_and_keeps_the_active_link_visible():
+    template = _source(BASE_TEMPLATE)
+    javascript = _source(MAIN_JS)
+
+    assert 'data-current-user="{{ session.get(\'username\', \'\') }}"' in template
+    assert 'data-sidebar-logout="true"' in template
+    assert "orquetask_sidebar_scroll_${currentUser}_${viewportMode}" in javascript
+    assert "sessionStorage.setItem(scrollKey, String(sidebar.scrollTop))" in javascript
+    assert "sessionStorage.getItem(scrollKey)" in javascript
+    assert "requestAnimationFrame(() => requestAnimationFrame(restoreSidebarScroll))" in javascript
+    assert "sidebar.scrollTop = scrollTop" in javascript
+    assert "sidebar.querySelector('[aria-current=\"page\"]')" in javascript
+    assert 'scrollIntoView({ block: "nearest", inline: "nearest" })' in javascript

@@ -8,6 +8,54 @@ document.addEventListener("DOMContentLoaded", function () {
   const READ_KEY = `readNotifications_${currentUser}`;
   /* ------------------------------------------------------------------ */
 
+  // Mantém a navegação no mesmo ponto entre páginas, sem misturar usuários
+  // ou as alturas distintas das versões desktop e mobile da sidebar.
+  function initSidebarScrollPersistence() {
+    const sidebar = document.getElementById("globalSidebarOffcanvas");
+    if (!sidebar || !currentUser || currentUser === "anon") return;
+
+    const viewportMode = window.matchMedia("(min-width: 992px)").matches
+      ? "desktop"
+      : "mobile";
+    const scrollKey = `orquetask_sidebar_scroll_${currentUser}_${viewportMode}`;
+
+    sidebar.querySelectorAll('a[href]').forEach((link) => {
+      link.addEventListener("click", () => {
+        if (link.dataset.sidebarLogout === "true") return;
+
+        const destination = new URL(link.href, window.location.href);
+        if (destination.origin !== window.location.origin) return;
+        sessionStorage.setItem(scrollKey, String(sidebar.scrollTop));
+      });
+    });
+
+    const restoreSidebarScroll = () => {
+      const savedPosition = sessionStorage.getItem(scrollKey);
+      if (savedPosition === null) return;
+
+      const scrollTop = Number(savedPosition);
+      if (!Number.isFinite(scrollTop) || scrollTop < 0) return;
+      sidebar.scrollTop = scrollTop;
+
+      const activeLink = sidebar.querySelector('[aria-current="page"]');
+      if (!activeLink) return;
+
+      const sidebarBounds = sidebar.getBoundingClientRect();
+      const activeBounds = activeLink.getBoundingClientRect();
+      const isOutsideViewport = activeBounds.top < sidebarBounds.top ||
+        activeBounds.bottom > sidebarBounds.bottom;
+      if (isOutsideViewport) {
+        activeLink.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+    };
+
+    // Os collapses ativos vêm abertos pelo template. Dois frames permitem ao
+    // Bootstrap aplicar e medir seu estado final antes de alterar scrollTop.
+    requestAnimationFrame(() => requestAnimationFrame(restoreSidebarScroll));
+  }
+
+  initSidebarScrollPersistence();
+
   const THEME_KEY = "theme";
 
   function applyTheme(theme) {
