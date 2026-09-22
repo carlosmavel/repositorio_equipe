@@ -25,8 +25,6 @@
   --oq-disabled-text: #98a2b3;
   --oq-scrollbar-track: #e4e7ec;
   --oq-scrollbar-thumb: #667085;
-  --oq-scrollbar-thumb-hover: #475467;
-  --oq-scrollbar-thumb-focus: #007f95;
   --oq-button-shadow: 0 8px 22px rgba(var(--oq-primary-rgb), .18);
   --oq-cyan: #00b8d9;
   --oq-violet: #9b51e0;
@@ -80,8 +78,6 @@
   --oq-disabled-text: #7f8ba3;
   --oq-scrollbar-track: #101828;
   --oq-scrollbar-thumb: #7f8ba3;
-  --oq-scrollbar-thumb-hover: #a8b3c7;
-  --oq-scrollbar-thumb-focus: #62dcff;
   --oq-nav: #070b15;
   --oq-sidebar: #0a1020;
   --oq-topbar-surface: rgba(7, 11, 21, .94);
@@ -103,15 +99,6 @@ html { scroll-behavior: smooth; }
     scrollbar-width: auto;
   }
 
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):hover {
-    scrollbar-color: var(--oq-scrollbar-thumb-hover) var(--oq-scrollbar-track);
-  }
-
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):focus-visible,
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):focus-within {
-    scrollbar-color: var(--oq-scrollbar-thumb-focus) var(--oq-scrollbar-track);
-  }
-
   :where(.app-scrollbar, #osNotificationMenu, .editor-container)::-webkit-scrollbar {
     width: 12px;
     height: 12px;
@@ -128,14 +115,6 @@ html { scroll-behavior: smooth; }
     background: var(--oq-scrollbar-thumb) padding-box;
   }
 
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):hover::-webkit-scrollbar-thumb {
-    background-color: var(--oq-scrollbar-thumb-hover);
-  }
-
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):focus-visible::-webkit-scrollbar-thumb,
-  :where(.app-scrollbar, #osNotificationMenu, .editor-container):focus-within::-webkit-scrollbar-thumb {
-    background-color: var(--oq-scrollbar-thumb-focus);
-  }
 }
 body {
   color: var(--oq-ink);
