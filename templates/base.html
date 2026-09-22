@@ -148,10 +148,10 @@
                 <ul class="navbar-nav ms-auto d-flex flex-row align-items-center"> {# ms-auto para empurrar para a direita, flex-row para alinhar #}
                     {# Sino de Notificações #}
                     <li class="nav-item dropdown me-2"> {# me-2 para espaço antes do perfil #}
-                        <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="nav-link position-relative" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir notificações">
                             <i class="bi bi-bell-fill fs-5"></i>
-                            <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; transform: translate(-100%, 40%) !important; display: none;" data-server-count="{{ notificacoes }}"></span>
-                        </a>
+                            <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; transform: translate(-100%, 40%) !important; display: none;" data-server-count="{{ notificacoes }}" aria-live="polite"{% if notificacoes %} aria-label="{{ notificacoes }} {{ 'notificação não lida' if notificacoes == 1 else 'notificações não lidas' }}"{% endif %}></span>
+                        </button>
                         <ul class="dropdown-menu dropdown-menu-end" id="notificationMenu" aria-labelledby="notificationDropdown">
                             {% if notificacoes_list %}{% for n in notificacoes_list %}
                                 <li>
@@ -175,16 +175,22 @@
                         </a>
                     </li>
 
-                    {# Foto/Nome do Usuário como LINK DIRETO para o Perfil #}
-                    <li class="nav-item profile-action">
-                        <a class="nav-link d-flex align-items-center p-0" href="{{ url_for('perfil') }}" title="Meu Perfil"> {# Link direto para o perfil #}
+                    {# Menu de conta: identificação em telas largas e somente avatar nas pequenas #}
+                    <li class="nav-item dropdown profile-action">
+                        <button class="nav-link account-menu-toggle d-flex align-items-center" type="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu da conta de {{ current_user.username }}">
                             {% if current_user.is_authenticated and current_user.foto %}
-                                <img src="{{ url_for('profile_pics', filename=current_user.foto) }}" class="rounded-circle" style="width:32px; height:32px; object-fit:cover; margin-right: 8px;" alt="{{ current_user.username }}">
+                                <img src="{{ url_for('profile_pics', filename=current_user.foto) }}" class="rounded-circle" alt="">
                             {% else %}
-                                <i class="bi bi-person-circle fs-4 me-2"></i>
-                            {% endif %}                            
-                        </a>
-                        {# O dropdown do usuário foi removido daqui #}
+                                <i class="bi bi-person-circle fs-4" aria-hidden="true"></i>
+                            {% endif %}
+                            <span class="profile-user-name d-none d-lg-inline">{{ current_user.username }}</span>
+                            <i class="bi bi-chevron-down account-menu-chevron d-none d-lg-inline" aria-hidden="true"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end account-menu" aria-labelledby="accountDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('perfil') }}"><i class="bi bi-person me-2" aria-hidden="true"></i>Meu perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Sair</a></li>
+                        </ul>
                     </li>
                 </ul>
             </div> 
@@ -193,7 +199,7 @@
         <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="globalSidebarOffcanvas" aria-labelledby="globalSidebarOffcanvasLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="globalSidebarOffcanvasLabel">Navegação</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
             </div>
             <div class="offcanvas-body">
                 <div class="sidebar-context px-3">
