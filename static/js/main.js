@@ -11,11 +11,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const THEME_KEY = "theme";
 
   function applyTheme(theme) {
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = themeToggle?.querySelector("i");
     if (theme === "dark") {
       document.documentElement.setAttribute("data-bs-theme", "dark");
+      themeIcon?.classList.replace("bi-moon-fill", "bi-sun-fill");
+      if (themeToggle) themeToggle.title = "Usar tema claro";
     } else {
       document.documentElement.removeAttribute("data-bs-theme");
+      themeIcon?.classList.replace("bi-sun-fill", "bi-moon-fill");
+      if (themeToggle) themeToggle.title = "Usar tema escuro";
     }
+    themeToggle?.setAttribute("aria-label", themeToggle.title);
   }
 
   function toggleTheme() {
