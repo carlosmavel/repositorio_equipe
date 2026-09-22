@@ -66,3 +66,32 @@ def test_topbar_controls_and_account_menu_are_accessible():
     assert "#notificationMenu {" in css
     assert "overflow-y: auto" in css
     assert "overflow-wrap: anywhere" in css
+
+
+def test_sidebar_has_flat_labeled_groups_and_current_route_semantics():
+    template = _source(BASE_TEMPLATE)
+
+    for label in ("Visão geral", "Conteúdo", "Operações", "Administração"):
+        assert f'<span class="sidebar-section-label">{label}</span>' in template
+
+    assert 'data-bs-parent="#sidebarNavigation"' in template
+    assert 'aria-current="page"' in template
+    assert "collapseCadastrosArtigosSub" not in template
+    assert "collapseSegurancaSub" not in template
+    assert '<hr class="my-2">' not in template
+    assert "sidebar-subsection-label" in template
+
+
+def test_sidebar_compact_mode_is_desktop_only_persistent_and_accessible():
+    template = _source(BASE_TEMPLATE)
+    css = _source(FUTURISTIC_CSS)
+
+    assert "orquetask_sidebar_compact" in template
+    assert 'id="sidebarCompactToggle"' in template
+    assert 'aria-pressed="false"' in template
+    assert "new bootstrap.Tooltip" in template
+    assert "html.sidebar-compact #globalSidebarOffcanvas" in css
+    assert "@media (max-width: 991.98px)" in css
+    assert ".sidebar-compact-toggle { display: none; }" in css
+    assert "@media (prefers-reduced-motion: reduce)" in css
+    assert ".sidebar-compact-toggle:focus-visible" in css

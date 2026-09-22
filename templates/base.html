@@ -7,6 +7,11 @@
     <link rel="icon" href="{{ url_for('static', filename='icons/LogoNova.png') }}" type="image/png" sizes="1254x1254">
     <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <meta name="theme-color" content="#0a1020">
+    <script>
+      if (window.matchMedia('(min-width: 992px)').matches && localStorage.getItem('orquetask_sidebar_compact') === 'true') {
+        document.documentElement.classList.add('sidebar-compact');
+      }
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"> {# Bootstrap Icons atualizado #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
@@ -206,182 +211,104 @@
                     <span class="status-pulse"></span>
                     <div><small>AMBIENTE</small><strong>Workspace ativo</strong></div>
                 </div>
-                <ul class="nav flex-column nav-pills">
+                <ul class="nav flex-column nav-pills" id="sidebarNavigation">
                     {% set endpoint_base = request.endpoint.split('.')[-1] %}
 
-                    <li class="nav-item">
-                        <a id="paginaInicialLink" class="nav-link {{ 'active' if request.endpoint == 'pagina_inicial' else '' }}"
-                        href="{{ url_for('pagina_inicial') }}">
-                            <i class="bi bi-house-fill me-2"></i> Página Inicial
-                        </a>
-                    </li>
-
-                    <hr class="my-2">
-
-                    {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
-                    {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
-                        {% set admin_menu_active = 'admin_' in request.endpoint %}
-                        <li class="nav-item">
-                            <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if admin_menu_active else '' }} {{ 'collapsed' if not admin_menu_active }}"
-                            data-bs-toggle="collapse" href="#collapseAdministracao" role="button"
-                            aria-expanded="{{ 'true' if admin_menu_active else 'false' }}"
-                            aria-controls="collapseAdministracao">
-                                <span><i class="bi bi-gear-fill me-2"></i> Administração</span>
-                                <i class="bi bi-chevron-down small"></i>
-                            </a>
-                            <div class="collapse {{ 'show' if admin_menu_active }}" id="collapseAdministracao">
-                                <ul class="nav flex-column ps-3">
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_dashboard' in request.endpoint else '' }}" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Dashboard Admin</a></li>
-                                    {% set cadastros_active = (
-                                        'admin_instituicoes' in request.endpoint or
-                                        'admin_estabelecimentos' in request.endpoint or
-                                        'admin_setores' in request.endpoint or
-                                        'admin_celulas' in request.endpoint or
-                                        'admin_cargos' in request.endpoint or
-                                        'admin_artigo_tipos' in request.endpoint or
-                                        'admin_artigo_areas' in request.endpoint or
-                                        'admin_artigo_sistemas' in request.endpoint
-                                    ) %}
-                                    {% set cadastros_artigos_active = (
-                                        'admin_artigo_tipos' in request.endpoint or
-                                        'admin_artigo_areas' in request.endpoint or
-                                        'admin_artigo_sistemas' in request.endpoint
-                                    ) %}
-                                    <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if cadastros_active else '' }} {{ 'collapsed' if not cadastros_active }}"
-                                        data-bs-toggle="collapse" href="#collapseCadastros" role="button"
-                                        aria-expanded="{{ 'true' if cadastros_active else 'false' }}"
-                                        aria-controls="collapseCadastros">
-                                            <i class="bi bi-building-fill-gear me-2"></i> Cadastros
-                                            <i class="bi bi-chevron-down small ms-auto"></i>
-                                        </a>
-                                        <div class="collapse {{ 'show' if cadastros_active else '' }}" id="collapseCadastros">
-                                            <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_instituicoes' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_instituicoes') }}"><i class="bi bi-bank2 me-2"></i> Instituições</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_estabelecimentos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_estabelecimentos') }}"><i class="bi bi-buildings-fill me-2"></i> Estabelecimentos</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_setores' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_setores') }}"><i class="bi bi-diagram-3-fill me-2"></i> Setores</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_celulas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_celulas') }}"><i class="bi bi-grid-1x2-fill me-2"></i> Células</a></li>
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_cargos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_cargos') }}"><i class="bi bi-person-badge-fill me-2"></i> Cargos</a></li>
-                                                <li class="nav-item">
-                                                    <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if cadastros_artigos_active else '' }} {{ 'collapsed' if not cadastros_artigos_active else '' }}"
-                                                    data-bs-toggle="collapse" href="#collapseCadastrosArtigosSub" role="button"
-                                                    aria-expanded="{{ 'true' if cadastros_artigos_active else 'false' }}"
-                                                    aria-controls="collapseCadastrosArtigosSub">
-                                                        <i class="bi bi-journal-text me-2"></i> Cadastros Artigos
-                                                        <i class="bi bi-chevron-down small ms-auto"></i>
-                                                    </a>
-                                                    <div class="collapse {{ 'show' if cadastros_artigos_active else '' }}" id="collapseCadastrosArtigosSub">
-                                                        <ul class="nav flex-column ps-3">
-                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_tipos' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}"><i class="bi bi-tag-fill me-2"></i> Tipos de Artigo</a></li>
-                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_areas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}"><i class="bi bi-diagram-3-fill me-2"></i> Áreas</a></li>
-                                                            <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_artigo_sistemas' in request.endpoint else '' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}"><i class="bi bi-cpu-fill me-2"></i> Sistemas</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if 'admin_usuarios' in request.endpoint else '' }} {{ 'collapsed' if 'admin_usuarios' not in request.endpoint }}"
-                                        data-bs-toggle="collapse" href="#collapseSegurancaSub" role="button"
-                                        aria-expanded="{{ 'true' if 'admin_usuarios' in request.endpoint else 'false' }}"
-                                        aria-controls="collapseSegurancaSub">
-                                            <i class="bi bi-shield-lock-fill me-2"></i> Segurança
-                                            <i class="bi bi-chevron-down small ms-auto"></i>
-                                        </a>
-                                        <div class="collapse {{ 'show' if 'admin_usuarios' in request.endpoint else '' }}" id="collapseSegurancaSub">
-                                            <ul class="nav flex-column ps-3">
-                                                <li class="nav-item"><a class="nav-link {{ 'active' if 'admin_usuarios' in request.endpoint else '' }}" href="{{ url_for('admin_usuarios') }}"><i class="bi bi-people-fill me-2"></i> Gerenciar Usuários</a></li>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <hr class="my-2">
-                    {% endif %} {# Fim do if admin permission #}
-
-                    {# Bloco BIBLIOTECA #}
                     {% set current_endpoint = request.endpoint.split('.')[-1] %}
-                    {% set biblioteca_active = current_endpoint in [
-                        'meus_artigos',
-                        'novo_artigo',
-                        'pesquisar',
-                        'aprovacao',
-                        'artigo',
-                        'editar_artigo'
-                    ] %}
+                    {% set overview_active = current_endpoint == 'pagina_inicial' %}
                     {% set boletins_active = current_endpoint in ['boletins_listar', 'boletins_novo', 'boletins_buscar', 'boletins_visualizar', 'boletins_editar'] %}
-                    {% if current_user.is_authenticated and (current_user.has_permissao('boletim_visualizar') or current_user.has_permissao('boletim_buscar') or current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin')) %}
-                    <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if boletins_active else '' }} {{ 'collapsed' if not boletins_active }}"
-                        data-bs-toggle="collapse" href="#collapseBoletins" role="button"
-                        aria-expanded="{{ 'true' if boletins_active else 'false' }}"
-                        aria-controls="collapseBoletins">
-                            <span><i class="bi bi-journal-richtext me-2"></i> Boletins</span>
-                            <i class="bi bi-chevron-down small"></i>
-                        </a>
-                        <div class="collapse {{ 'show' if boletins_active }}" id="collapseBoletins">
-                            <ul class="nav flex-column ps-3">
-                                {% if current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin') %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_novo' else '' }}" href="{{ url_for('boletins_novo') }}"><i class="bi bi-plus-square me-2"></i> Cadastro de Boletins</a></li>
-                                {% endif %}
-                                {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' else '' }}" href="{{ url_for('boletins_buscar') }}"><i class="bi bi-search me-2"></i> Pesquisar boletins</a></li>
-                                {% endif %}
+                    {% set biblioteca_active = current_endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'artigo', 'editar_artigo'] %}
+                    {% set operacoes_active = current_endpoint == 'aprovacao' %}
+                    {% set admin_menu_active = 'admin_' in current_endpoint %}
+
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if overview_active }}">
+                        <span class="sidebar-section-label">Visão geral</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not overview_active }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseVisaoGeral"
+                                aria-expanded="{{ 'true' if overview_active else 'false' }}" aria-controls="collapseVisaoGeral"
+                                title="Visão geral" aria-label="Visão geral">
+                            <span><i class="bi bi-grid-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Visão geral</span></span>
+                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if overview_active }}" id="collapseVisaoGeral" data-bs-parent="#sidebarNavigation">
+                            <ul class="nav flex-column sidebar-group-links">
+                                <li class="nav-item"><a id="paginaInicialLink" class="nav-link {{ 'active' if overview_active }}" href="{{ url_for('pagina_inicial') }}" title="Página Inicial"{% if overview_active %} aria-current="page"{% endif %}><i class="bi bi-house-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Página Inicial</span></a></li>
                             </ul>
                         </div>
+                    </li>
+
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if biblioteca_active or boletins_active }}">
+                        <span class="sidebar-section-label">Conteúdo</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not (biblioteca_active or boletins_active) }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseConteudo"
+                                aria-expanded="{{ 'true' if biblioteca_active or boletins_active else 'false' }}" aria-controls="collapseConteudo"
+                                title="Conteúdo" aria-label="Conteúdo">
+                            <span><i class="bi bi-collection-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Conteúdo</span></span>
+                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if biblioteca_active or boletins_active }}" id="collapseConteudo" data-bs-parent="#sidebarNavigation">
+                            <ul class="nav flex-column sidebar-group-links">
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'meus_artigos' }}" href="{{ url_for('meus_artigos') }}" title="Meus Artigos"{% if current_endpoint == 'meus_artigos' %} aria-current="page"{% endif %}><i class="bi bi-journals me-2" aria-hidden="true"></i><span class="sidebar-link-label">Meus Artigos</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'novo_artigo' }}" href="{{ url_for('novo_artigo') }}" title="Novo Artigo"{% if current_endpoint == 'novo_artigo' %} aria-current="page"{% endif %}><i class="bi bi-file-earmark-plus-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Novo Artigo</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'pesquisar' }}" href="{{ url_for('pesquisar') }}" title="Pesquisar artigos"{% if current_endpoint == 'pesquisar' %} aria-current="page"{% endif %}><i class="bi bi-search me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar artigos</span></a></li>
+                                {% if current_user.has_permissao('boletim_gerenciar') or current_user.has_permissao('admin') %}<li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_novo' }}" href="{{ url_for('boletins_novo') }}" title="Cadastrar boletim"{% if current_endpoint == 'boletins_novo' %} aria-current="page"{% endif %}><i class="bi bi-journal-plus me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cadastrar boletim</span></a></li>{% endif %}
+                                {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}<li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' }}" href="{{ url_for('boletins_buscar') }}" title="Pesquisar boletins"{% if current_endpoint == 'boletins_buscar' %} aria-current="page"{% endif %}><i class="bi bi-journal-richtext me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar boletins</span></a></li>{% endif %}
+                            </ul>
+                        </div>
+                    </li>
+
+                    {% set codes = [Permissao.ARTIGO_APROVAR_CELULA.value, Permissao.ARTIGO_APROVAR_SETOR.value, Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value, Permissao.ARTIGO_APROVAR_INSTITUICAO.value, Permissao.ARTIGO_APROVAR_TODAS.value, Permissao.ARTIGO_REVISAR_CELULA.value, Permissao.ARTIGO_REVISAR_SETOR.value, Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value, Permissao.ARTIGO_REVISAR_INSTITUICAO.value, Permissao.ARTIGO_REVISAR_TODAS.value] %}
+                    {% set ns = namespace(show=current_user.has_permissao('admin')) %}{% for c in codes %}{% if current_user.has_permissao(c) %}{% set ns.show = True %}{% endif %}{% endfor %}
+                    {% if ns.show %}
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if operacoes_active }}">
+                        <span class="sidebar-section-label">Operações</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not operacoes_active }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOperacoes" aria-expanded="{{ 'true' if operacoes_active else 'false' }}" aria-controls="collapseOperacoes" title="Operações" aria-label="Operações">
+                            <span><i class="bi bi-kanban-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Operações</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if operacoes_active }}" id="collapseOperacoes" data-bs-parent="#sidebarNavigation"><ul class="nav flex-column sidebar-group-links"><li class="nav-item"><a class="nav-link {{ 'active' if operacoes_active }}" href="{{ url_for('aprovacao') }}" title="Aprovação"{% if operacoes_active %} aria-current="page"{% endif %}><i class="bi bi-check2-square me-2" aria-hidden="true"></i><span class="sidebar-link-label">Aprovação</span></a></li></ul></div>
                     </li>
                     {% endif %}
 
-                    <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center {{ 'active' if biblioteca_active else '' }} {{ 'collapsed' if not biblioteca_active }}"
-                        data-bs-toggle="collapse" href="#collapseBiblioteca" role="button"
-                        aria-expanded="{{ 'true' if biblioteca_active else 'false' }}"
-                        aria-controls="collapseBiblioteca">
-                            <span><i class="bi bi-book-half me-2"></i> Biblioteca</span>
-                            <i class="bi bi-chevron-down small"></i>
-                        </a>
-                        <div class="collapse {{ 'show' if biblioteca_active }}" id="collapseBiblioteca">
-                            <ul class="nav flex-column ps-3">
-                                {% if current_user.is_authenticated %}
-                                    {% set codes = [
-                                        Permissao.ARTIGO_APROVAR_CELULA.value,
-                                        Permissao.ARTIGO_APROVAR_SETOR.value,
-                                        Permissao.ARTIGO_APROVAR_ESTABELECIMENTO.value,
-                                        Permissao.ARTIGO_APROVAR_INSTITUICAO.value,
-                                        Permissao.ARTIGO_APROVAR_TODAS.value,
-                                        Permissao.ARTIGO_REVISAR_CELULA.value,
-                                        Permissao.ARTIGO_REVISAR_SETOR.value,
-                                        Permissao.ARTIGO_REVISAR_ESTABELECIMENTO.value,
-                                        Permissao.ARTIGO_REVISAR_INSTITUICAO.value,
-                                        Permissao.ARTIGO_REVISAR_TODAS.value
-                                    ] %}
-                                    {% set ns = namespace(show=current_user.has_permissao('admin')) %}
-                                    {% for c in codes %}
-                                        {% if current_user.has_permissao(c) %}
-                                            {% set ns.show = True %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {% if ns.show %}
-                                        <li class="nav-item"><a class="nav-link {{ 'active' if 'aprovacao' in request.endpoint else '' }}" href="{{ url_for('aprovacao') }}"><i class="bi bi-check2-square me-2"></i> Aprovação</a></li>
-                                    {% endif %}
-                                {% endif %}
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'meus_artigos' in request.endpoint else '' }}" href="{{ url_for('meus_artigos') }}"><i class="bi bi-journals me-2"></i> Meus Artigos</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'novo_artigo' in request.endpoint else '' }}" href="{{ url_for('novo_artigo') }}"><i class="bi bi-file-earmark-plus-fill me-2"></i> Novo Artigo</a></li>
-                                <li class="nav-item"><a class="nav-link {{ 'active' if 'pesquisar' in request.endpoint else '' }}" href="{{ url_for('pesquisar') }}"><i class="bi bi-search me-2"></i> Pesquisar</a></li>
-                            </ul>
-                        </div>
-                    </li>
+                    {# Bloco ADMINISTRAÇÃO (Só para Admins) #}
+                    {% if current_user.is_authenticated and current_user.has_permissao('admin') %}
+                        <li class="nav-item sidebar-section {{ 'is-current-group' if admin_menu_active }}">
+                            <span class="sidebar-section-label">Administração</span>
+                            <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not admin_menu_active }}" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapseAdministracao"
+                            aria-expanded="{{ 'true' if admin_menu_active else 'false' }}"
+                            aria-controls="collapseAdministracao" title="Administração" aria-label="Administração">
+                                <span><i class="bi bi-gear-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Administração</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="collapse {{ 'show' if admin_menu_active }}" id="collapseAdministracao" data-bs-parent="#sidebarNavigation">
+                                <ul class="nav flex-column sidebar-group-links">
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}" title="Dashboard Admin"{% if current_endpoint == 'admin_dashboard' %} aria-current="page"{% endif %}><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i><span class="sidebar-link-label">Dashboard Admin</span></a></li>
+                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Cadastros organizacionais</span></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_instituicoes' }}" href="{{ url_for('admin_bp.admin_instituicoes') }}" title="Instituições"><i class="bi bi-bank2 me-2"></i><span class="sidebar-link-label">Instituições</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_estabelecimentos' }}" href="{{ url_for('admin_bp.admin_estabelecimentos') }}" title="Estabelecimentos"><i class="bi bi-buildings-fill me-2"></i><span class="sidebar-link-label">Estabelecimentos</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_setores' }}" href="{{ url_for('admin_bp.admin_setores') }}" title="Setores"><i class="bi bi-diagram-3-fill me-2"></i><span class="sidebar-link-label">Setores</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_celulas' }}" href="{{ url_for('admin_bp.admin_celulas') }}" title="Células"><i class="bi bi-grid-1x2-fill me-2"></i><span class="sidebar-link-label">Células</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_cargos' }}" href="{{ url_for('admin_bp.admin_cargos') }}" title="Cargos"><i class="bi bi-person-badge-fill me-2"></i><span class="sidebar-link-label">Cargos</span></a></li>
+                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Cadastros de artigos</span></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_tipos' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}" title="Tipos de Artigo"><i class="bi bi-tag-fill me-2"></i><span class="sidebar-link-label">Tipos de Artigo</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_areas' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}" title="Áreas"><i class="bi bi-diagram-3-fill me-2"></i><span class="sidebar-link-label">Áreas</span></a></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_sistemas' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}" title="Sistemas"><i class="bi bi-cpu-fill me-2"></i><span class="sidebar-link-label">Sistemas</span></a></li>
+                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Segurança</span></li>
+                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_usuarios' }}" href="{{ url_for('admin_usuarios') }}" title="Gerenciar Usuários"><i class="bi bi-people-fill me-2"></i><span class="sidebar-link-label">Gerenciar Usuários</span></a></li>
+                                </ul>
+                            </div>
+                        </li>
+                    {% endif %} {# Fim do if admin permission #}
 
                     {# Item de Sair - no final da sidebar #}
-                    <hr class="my-2" style="margin-top: auto !important;">
                     <li class="nav-item mt-auto"> 
-                        <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i class="bi bi-box-arrow-right me-2"></i> Sair
+                        <a class="nav-link" href="{{ url_for('logout') }}" title="Sair">
+                            <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i><span class="sidebar-link-label">Sair</span>
                         </a>
                     </li>
                 </ul>
+                <button type="button" class="sidebar-compact-toggle" id="sidebarCompactToggle" aria-pressed="false" title="Recolher menu">
+                    <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i><span class="sidebar-link-label">Recolher menu</span>
+                </button>
             </div>
         </div>
     {% endif %} {# Fim do if de layout logado em páginas não-auth #}
@@ -474,6 +401,44 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var compactToggle = document.getElementById('sidebarCompactToggle');
+        var desktopQuery = window.matchMedia('(min-width: 992px)');
+        var compactTooltips = [];
+
+        function disposeCompactTooltips() {
+          compactTooltips.forEach(function (tooltip) { tooltip.dispose(); });
+          compactTooltips = [];
+        }
+
+        function syncCompactSidebar() {
+          var isCompact = desktopQuery.matches && document.documentElement.classList.contains('sidebar-compact');
+          if (!desktopQuery.matches) document.documentElement.classList.remove('sidebar-compact');
+          if (!compactToggle) return;
+          compactToggle.setAttribute('aria-pressed', isCompact ? 'true' : 'false');
+          compactToggle.setAttribute('title', isCompact ? 'Expandir menu' : 'Recolher menu');
+          var toggleLabel = compactToggle.querySelector('.sidebar-link-label');
+          if (toggleLabel) toggleLabel.textContent = isCompact ? 'Expandir menu' : 'Recolher menu';
+          disposeCompactTooltips();
+          if (isCompact) {
+            document.querySelectorAll('#globalSidebarOffcanvas [title]').forEach(function (element) {
+              compactTooltips.push(new bootstrap.Tooltip(element, { placement: 'right', container: 'body' }));
+            });
+          }
+        }
+
+        if (compactToggle) {
+          compactToggle.addEventListener('click', function () {
+            var isCompact = document.documentElement.classList.toggle('sidebar-compact');
+            localStorage.setItem('orquetask_sidebar_compact', isCompact ? 'true' : 'false');
+            syncCompactSidebar();
+          });
+        }
+        desktopQuery.addEventListener('change', syncCompactSidebar);
+        syncCompactSidebar();
+      });
+    </script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         var consentKey = 'cookie_preferences_v1';
