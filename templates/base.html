@@ -223,6 +223,9 @@
                     {% set biblioteca_active = current_endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'artigo', 'editar_artigo'] %}
                     {% set operacoes_active = current_endpoint == 'aprovacao' %}
                     {% set admin_menu_active = 'admin_' in current_endpoint %}
+                    {% set cadastros_artigos_active = current_endpoint in ['admin_artigo_tipos', 'admin_artigo_areas', 'admin_artigo_sistemas'] %}
+                    {% set cadastros_active = current_endpoint in ['admin_instituicoes', 'admin_estabelecimentos', 'admin_setores', 'admin_celulas', 'admin_cargos', 'admin_artigo_tipos', 'admin_artigo_areas', 'admin_artigo_sistemas'] %}
+                    {% set seguranca_active = current_endpoint == 'admin_usuarios' %}
 
                     <li class="nav-item sidebar-section {{ 'is-current-group' if overview_active }}">
                         <span class="sidebar-section-label">Visão geral</span>
@@ -283,20 +286,44 @@
                                 <span><i class="bi bi-gear-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Administração</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
                             </button>
                             <div class="collapse {{ 'show' if admin_menu_active }}" id="collapseAdministracao" data-bs-parent="#sidebarNavigation">
-                                <ul class="nav flex-column sidebar-group-links">
+                                <ul class="nav flex-column sidebar-group-links sidebar-level-1">
                                     <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}" title="Dashboard Admin"{% if current_endpoint == 'admin_dashboard' %} aria-current="page"{% endif %}><i class="bi bi-speedometer2 me-2" aria-hidden="true"></i><span class="sidebar-link-label">Dashboard Admin</span></a></li>
-                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Cadastros organizacionais</span></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_instituicoes' }}" href="{{ url_for('admin_bp.admin_instituicoes') }}" title="Instituições"><i class="bi bi-bank2 me-2"></i><span class="sidebar-link-label">Instituições</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_estabelecimentos' }}" href="{{ url_for('admin_bp.admin_estabelecimentos') }}" title="Estabelecimentos"><i class="bi bi-buildings-fill me-2"></i><span class="sidebar-link-label">Estabelecimentos</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_setores' }}" href="{{ url_for('admin_bp.admin_setores') }}" title="Setores"><i class="bi bi-diagram-3-fill me-2"></i><span class="sidebar-link-label">Setores</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_celulas' }}" href="{{ url_for('admin_bp.admin_celulas') }}" title="Células"><i class="bi bi-grid-1x2-fill me-2"></i><span class="sidebar-link-label">Células</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_cargos' }}" href="{{ url_for('admin_bp.admin_cargos') }}" title="Cargos"><i class="bi bi-person-badge-fill me-2"></i><span class="sidebar-link-label">Cargos</span></a></li>
-                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Cadastros de artigos</span></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_tipos' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}" title="Tipos de Artigo"><i class="bi bi-tag-fill me-2"></i><span class="sidebar-link-label">Tipos de Artigo</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_areas' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}" title="Áreas"><i class="bi bi-diagram-3-fill me-2"></i><span class="sidebar-link-label">Áreas</span></a></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_sistemas' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}" title="Sistemas"><i class="bi bi-cpu-fill me-2"></i><span class="sidebar-link-label">Sistemas</span></a></li>
-                                    <li class="sidebar-subsection-label"><span class="sidebar-link-label">Segurança</span></li>
-                                    <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_usuarios' }}" href="{{ url_for('admin_usuarios') }}" title="Gerenciar Usuários"><i class="bi bi-people-fill me-2"></i><span class="sidebar-link-label">Gerenciar Usuários</span></a></li>
+                                    <li class="nav-item sidebar-nested-group {{ 'is-current-group' if cadastros_active }}">
+                                        <button class="nav-link sidebar-group-toggle sidebar-nested-toggle {{ 'collapsed' if not cadastros_active }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCadastros" aria-expanded="{{ 'true' if cadastros_active else 'false' }}" aria-controls="collapseCadastros" title="Cadastros">
+                                            <span><i class="bi bi-building-fill-gear me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cadastros</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="collapse {{ 'show' if cadastros_active }}" id="collapseCadastros">
+                                            <ul class="nav flex-column sidebar-group-links sidebar-level-2">
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_instituicoes' }}" href="{{ url_for('admin_bp.admin_instituicoes') }}" title="Instituições"{% if current_endpoint == 'admin_instituicoes' %} aria-current="page"{% endif %}><i class="bi bi-bank2 me-2" aria-hidden="true"></i><span class="sidebar-link-label">Instituições</span></a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_estabelecimentos' }}" href="{{ url_for('admin_bp.admin_estabelecimentos') }}" title="Estabelecimentos"{% if current_endpoint == 'admin_estabelecimentos' %} aria-current="page"{% endif %}><i class="bi bi-buildings-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Estabelecimentos</span></a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_setores' }}" href="{{ url_for('admin_bp.admin_setores') }}" title="Setores"{% if current_endpoint == 'admin_setores' %} aria-current="page"{% endif %}><i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Setores</span></a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_celulas' }}" href="{{ url_for('admin_bp.admin_celulas') }}" title="Células"{% if current_endpoint == 'admin_celulas' %} aria-current="page"{% endif %}><i class="bi bi-grid-1x2-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Células</span></a></li>
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_cargos' }}" href="{{ url_for('admin_bp.admin_cargos') }}" title="Cargos"{% if current_endpoint == 'admin_cargos' %} aria-current="page"{% endif %}><i class="bi bi-person-badge-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cargos</span></a></li>
+                                                <li class="nav-item sidebar-nested-group {{ 'is-current-group' if cadastros_artigos_active }}">
+                                                    <button class="nav-link sidebar-group-toggle sidebar-nested-toggle {{ 'collapsed' if not cadastros_artigos_active }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCadastrosArtigos" aria-expanded="{{ 'true' if cadastros_artigos_active else 'false' }}" aria-controls="collapseCadastrosArtigos" title="Cadastros Artigos">
+                                                        <span><i class="bi bi-journal-text me-2" aria-hidden="true"></i><span class="sidebar-link-label">Cadastros Artigos</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                                                    </button>
+                                                    <div class="collapse {{ 'show' if cadastros_artigos_active }}" id="collapseCadastrosArtigos">
+                                                        <ul class="nav flex-column sidebar-group-links sidebar-level-3">
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_tipos' }}" href="{{ url_for('admin_bp.admin_artigo_tipos') }}" title="Tipos de Artigo"{% if current_endpoint == 'admin_artigo_tipos' %} aria-current="page"{% endif %}><i class="bi bi-tag-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Tipos de Artigo</span></a></li>
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_areas' }}" href="{{ url_for('admin_bp.admin_artigo_areas') }}" title="Áreas"{% if current_endpoint == 'admin_artigo_areas' %} aria-current="page"{% endif %}><i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Áreas</span></a></li>
+                                                            <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_artigo_sistemas' }}" href="{{ url_for('admin_bp.admin_artigo_sistemas') }}" title="Sistemas"{% if current_endpoint == 'admin_artigo_sistemas' %} aria-current="page"{% endif %}><i class="bi bi-cpu-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Sistemas</span></a></li>
+                                                        </ul>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="nav-item sidebar-nested-group {{ 'is-current-group' if seguranca_active }}">
+                                        <button class="nav-link sidebar-group-toggle sidebar-nested-toggle {{ 'collapsed' if not seguranca_active }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeguranca" aria-expanded="{{ 'true' if seguranca_active else 'false' }}" aria-controls="collapseSeguranca" title="Segurança">
+                                            <span><i class="bi bi-shield-lock-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Segurança</span></span><i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="collapse {{ 'show' if seguranca_active }}" id="collapseSeguranca">
+                                            <ul class="nav flex-column sidebar-group-links sidebar-level-2">
+                                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'admin_usuarios' }}" href="{{ url_for('admin_usuarios') }}" title="Gerenciar Usuários"{% if current_endpoint == 'admin_usuarios' %} aria-current="page"{% endif %}><i class="bi bi-people-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Gerenciar Usuários</span></a></li>
+                                            </ul>
+                                        </div>
+                                    </li>
                                 </ul>
                             </div>
                         </li>

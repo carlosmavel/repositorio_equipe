@@ -211,6 +211,13 @@ html.has-sidebar-layout body {
   background: rgba(99, 91, 255, .08);
 }
 .sidebar-group-links { margin: .2rem 0 .25rem .85rem; padding-left: .45rem; border-left: 1px solid rgba(129, 122, 255, .2); }
+.sidebar-nested-group { margin-top: .16rem; }
+.sidebar-nested-toggle { font-weight: 650; }
+.sidebar-nested-group.is-current-group > .sidebar-nested-toggle { color: #d9dcff; background: rgba(129, 122, 255, .07); }
+.sidebar-level-2 { margin-left: .75rem; border-left-color: rgba(129, 122, 255, .3); }
+.sidebar-level-2 > .nav-item > .nav-link { font-size: .78rem; }
+.sidebar-level-3 { margin-left: .65rem; border-left-color: rgba(129, 122, 255, .42); }
+.sidebar-level-3 > .nav-item > .nav-link { font-size: .73rem; font-weight: 550; letter-spacing: .01em; }
 .sidebar-subsection-label { padding: .65rem .8rem .2rem; color: #74819d; font-size: .61rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 #globalSidebarOffcanvas .nav-link {
   min-height: 43px;
