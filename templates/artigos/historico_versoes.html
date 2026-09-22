@@ -31,7 +31,7 @@
                 <span class="ms-2"><strong>Versão atual:</strong> v{{ artigo.current_version_number }}.r{{ artigo.current_revision_number }}</span>
               </p>
             </div>
-            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-app btn-app-secondary">
+            <a href="{{ url_for('artigo', artigo_id=artigo.id) }}" class="btn btn-secondary">
               <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao artigo
             </a>
           </div>
@@ -59,7 +59,7 @@
                   </select>
                 </div>
                 <div class="col-md-2 d-grid">
-                  <button type="submit" class="btn btn-app btn-app-primary">
+                  <button type="submit" class="btn btn-primary">
                     <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Comparar
                   </button>
                 </div>
@@ -104,11 +104,11 @@
                   <td>{{ versao.text_char_count }} caracteres</td>
                   <td class="text-end">
                     <div class="d-flex justify-content-end flex-wrap gap-2">
-                      <a href="{{ url_for('visualizar_versao_artigo', artigo_id=artigo.id, version_id=versao.id) }}" class="btn btn-sm btn-app btn-app-secondary">
+                      <a href="{{ url_for('visualizar_versao_artigo', artigo_id=artigo.id, version_id=versao.id) }}" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye" aria-hidden="true"></i> Visualizar
                       </a>
                       {% if can_restore_versions %}
-                      <button type="button" class="btn btn-sm btn-app btn-app-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal{{ versao.id }}">
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#restoreVersionModal{{ versao.id }}">
                         <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar
                       </button>
                       {% endif %}
@@ -151,8 +151,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-app btn-app-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-app btn-app-primary">Confirmar restauração</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Confirmar restauração</button>
           </div>
         </form>
       </div>

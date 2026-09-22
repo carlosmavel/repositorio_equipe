@@ -6,7 +6,7 @@
     <h1>Boletins</h1>
     <div class="d-flex gap-2">
       {% if can_search %}<a class="btn btn-outline-secondary" href="{{ url_for('boletins_buscar') }}">Buscar</a>{% endif %}
-      {% if can_manage %}<a class="btn btn-primary" href="{{ url_for('boletins_novo') }}">Novo boletim</a>{% endif %}
+      {% if can_manage %}<a class="btn btn-primary" href="{{ url_for('boletins_novo') }}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Novo boletim</a>{% endif %}
     </div>
   </div>
   <form method="get" class="d-flex align-items-center gap-2 mb-3">
@@ -25,10 +25,10 @@
         <td>{{ b.id }}</td><td>{{ b.titulo }}</td><td>{{ b.data_boletim.strftime('%d/%m/%Y') }}</td>
         <td><span class="badge bg-{{ badge_for(b.ocr_status) }}">{{ b.ocr_status }}</span></td>
         <td>
-          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('boletins_visualizar', id=b.id) }}">Abrir</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('boletins_visualizar', id=b.id) }}"><i class="bi bi-eye" aria-hidden="true"></i> Abrir</a>
           {% if can_manage %}
-          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('boletins_editar', id=b.id) }}">Editar</a>
-          <form class="d-inline" method="post" action="{{ url_for('boletins_reprocessar_ocr', id=b.id) }}"><button class="btn btn-sm btn-outline-warning">Reprocessar OCR</button></form>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('boletins_editar', id=b.id) }}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</a>
+          <form class="d-inline" method="post" action="{{ url_for('boletins_reprocessar_ocr', id=b.id) }}"><button class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reprocessar OCR</button></form>
           {% endif %}
         </td>
       </tr>
