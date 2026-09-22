@@ -23,6 +23,10 @@
   --oq-focus: #00a8c7;
   --oq-disabled-bg: #e4e7ec;
   --oq-disabled-text: #98a2b3;
+  --oq-scrollbar-track: #e4e7ec;
+  --oq-scrollbar-thumb: #667085;
+  --oq-scrollbar-thumb-hover: #475467;
+  --oq-scrollbar-thumb-focus: #007f95;
   --oq-button-shadow: 0 8px 22px rgba(var(--oq-primary-rgb), .18);
   --oq-cyan: #00b8d9;
   --oq-violet: #9b51e0;
@@ -74,6 +78,10 @@
   --oq-focus: #62dcff;
   --oq-disabled-bg: #263148;
   --oq-disabled-text: #7f8ba3;
+  --oq-scrollbar-track: #101828;
+  --oq-scrollbar-thumb: #7f8ba3;
+  --oq-scrollbar-thumb-hover: #a8b3c7;
+  --oq-scrollbar-thumb-focus: #62dcff;
   --oq-nav: #070b15;
   --oq-sidebar: #0a1020;
   --oq-topbar-surface: rgba(7, 11, 21, .94);
@@ -86,6 +94,48 @@
 }
 
 html { scroll-behavior: smooth; }
+
+/* Keep native touch scrollbars; enhance conventional pointers with a 12px target. */
+@media (hover: hover) and (pointer: fine) {
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body) {
+    scrollbar-color: var(--oq-scrollbar-thumb) var(--oq-scrollbar-track);
+    scrollbar-width: auto;
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):hover {
+    scrollbar-color: var(--oq-scrollbar-thumb-hover) var(--oq-scrollbar-track);
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):focus-visible,
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):focus-within {
+    scrollbar-color: var(--oq-scrollbar-thumb-focus) var(--oq-scrollbar-track);
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body)::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body)::-webkit-scrollbar-track {
+    background: var(--oq-scrollbar-track);
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body)::-webkit-scrollbar-thumb {
+    min-height: 44px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--oq-scrollbar-thumb) padding-box;
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):hover::-webkit-scrollbar-thumb {
+    background-color: var(--oq-scrollbar-thumb-hover);
+  }
+
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):focus-visible::-webkit-scrollbar-thumb,
+  :where(html, #globalSidebarOffcanvas, #notificationMenu, .modal-body):focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--oq-scrollbar-thumb-focus);
+  }
+}
 body {
   color: var(--oq-ink);
   font-family: Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
