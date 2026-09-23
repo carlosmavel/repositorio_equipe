@@ -94,6 +94,29 @@ def test_cargo_explorer_starts_collapsed_with_accessible_controls(client):
     assert 'id="cargoSearchEmpty"' in html
 
 
+def test_cargo_linked_to_multiple_cells_is_rendered_once_at_sector_level(client):
+    login_admin(client)
+    ids = client.base_ids
+    with app.app_context():
+        segunda_celula = Celula(
+            nome='Cel2', estabelecimento_id=ids['est'], setor_id=ids['setor']
+        )
+        cargo = Cargo(nome='Gestor compartilhado', nivel_hierarquico=1, ativo=True)
+        cargo.default_estabelecimentos.append(Estabelecimento.query.get(ids['est']))
+        cargo.default_setores.append(Setor.query.get(ids['setor']))
+        cargo.default_celulas.extend([Celula.query.get(ids['cel']), segunda_celula])
+        db.session.add_all([segunda_celula, cargo])
+        db.session.commit()
+
+    html = client.get('/admin/cargos').get_data(as_text=True)
+
+    assert html.count('data-cargo="Gestor compartilhado"') == 1
+    setor_inicio = html.index('id="setor-')
+    cargo_posicao = html.index('data-cargo="Gestor compartilhado"')
+    primeira_celula = html.index('class="hier-node level-celula', setor_inicio)
+    assert setor_inicio < cargo_posicao < primeira_celula
+
+
 def test_cargo_template_uses_single_surface_macro_and_event_driven_search():
     source = (Path(__file__).parents[1] / 'templates' / 'admin' / 'cargos.html').read_text(encoding='utf-8')
 

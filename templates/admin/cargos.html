@@ -3,8 +3,8 @@
 {% block title %}Admin - Gerenciar Cargos{% endblock %}
 
 {% block content %}
-{% macro cargo_linha(cargo, setor, celula, instituicao) -%}
-<li class="cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor }}" data-celula="{{ celula }}" data-instituicao="{{ instituicao }}">
+{% macro cargo_linha(cargo, setor='', celula='', instituicao='', estabelecimento='') -%}
+<li class="cargo-item" data-cargo="{{ cargo.nome }}" data-setor="{{ setor }}" data-celula="{{ celula }}" data-instituicao="{{ instituicao }}" data-estabelecimento="{{ estabelecimento }}">
     <div class="linha-cargo">
         <div class="cargo-meta">
             <i class="bi bi-briefcase cargo-icon" aria-hidden="true"></i>
@@ -64,10 +64,7 @@
     {%- endif -%}
 {%- endmacro %}
 {% set metricas = namespace(ids=[], ativos=0, inativos=0) %}
-{% for inst in estrutura %}{% for est in inst.estabelecimentos %}{% for setor in est.setores %}
-    {% for cargo in setor.cargos %}{% if cargo.id not in metricas.ids %}{% set _ = metricas.ids.append(cargo.id) %}{% if cargo.ativo %}{% set metricas.ativos = metricas.ativos + 1 %}{% else %}{% set metricas.inativos = metricas.inativos + 1 %}{% endif %}{% endif %}{% endfor %}
-    {% for cel in setor.celulas %}{% for cargo in cel.cargos %}{% if cargo.id not in metricas.ids %}{% set _ = metricas.ids.append(cargo.id) %}{% if cargo.ativo %}{% set metricas.ativos = metricas.ativos + 1 %}{% else %}{% set metricas.inativos = metricas.inativos + 1 %}{% endif %}{% endif %}{% endfor %}{% endfor %}
-{% endfor %}{% endfor %}{% endfor %}
+{% for cargo in cargos %}{% if cargo.id not in metricas.ids %}{% set _ = metricas.ids.append(cargo.id) %}{% if cargo.ativo %}{% set metricas.ativos = metricas.ativos + 1 %}{% else %}{% set metricas.inativos = metricas.inativos + 1 %}{% endif %}{% endif %}{% endfor %}
 <div class="container-fluid page-root py-3">
     <main class="cargo-surface" aria-labelledby="cargoPageTitle">
         <header class="cargo-toolbar">
@@ -96,8 +93,9 @@
                 <output id="cargoResultCount" class="cargo-result-count" aria-live="polite">{{ metricas.ids|length }} cargos</output>
             </div>
 
-            {% if estrutura %}
+            {% if estrutura or cargos_gerais %}
             <div class="cargo-tree" id="cargoContainer">
+                {% if cargos_gerais %}<ul class="cargo-list cargo-list--geral">{% for cargo in cargos_gerais %}{{ cargo_linha(cargo) }}{% endfor %}</ul>{% endif %}
                 {% for inst in estrutura %}
                 <section class="hier-node level-instituicao instituicao-container">
                     <header class="hier-header">
@@ -106,6 +104,7 @@
                         <h3 class="hier-title">Instituição <span class="inst-name" data-name="{{ inst.obj.nome }}">{{ inst.obj.nome }}</span></h3>
                     </header>
                     <div id="inst-{{ inst.obj.id }}" class="collapse hier-children">
+                        {% if inst.cargos %}<ul class="cargo-list">{% for cargo in inst.cargos %}{{ cargo_linha(cargo, instituicao=inst.obj.nome) }}{% endfor %}</ul>{% endif %}
                         {% for est in inst.estabelecimentos %}
                         <article class="hier-node level-estabelecimento estabelecimento-wrapper">
                             <header class="hier-header">
@@ -114,6 +113,7 @@
                                 <h4 class="hier-title">Estabelecimento <span class="est-name" data-name="{{ est.obj.nome_fantasia }}">{{ est.obj.nome_fantasia }}</span></h4>
                             </header>
                             <div id="est-{{ est.obj.id }}" class="collapse hier-children">
+                                {% if est.cargos %}<ul class="cargo-list">{% for cargo in est.cargos %}{{ cargo_linha(cargo, instituicao=inst.obj.nome, estabelecimento=est.obj.nome_fantasia) }}{% endfor %}</ul>{% endif %}
                                 {% for setor in est.setores %}
                                 <section class="hier-node level-setor setor-container">
                                     <header class="hier-header">
@@ -122,7 +122,7 @@
                                         <h5 class="hier-title">Setor <span class="setor-name" data-name="{{ setor.obj.nome }}">{{ setor.obj.nome }}</span></h5>
                                     </header>
                                     <div id="setor-{{ setor.obj.id }}" class="collapse hier-children">
-                                        {% if setor.cargos %}<ul class="cargo-list">{% for cargo in setor.cargos %}{{ cargo_linha(cargo, setor.obj.nome, '', inst.obj.nome) }}{% endfor %}</ul>{% endif %}
+                                        {% if setor.cargos %}<ul class="cargo-list">{% for cargo in setor.cargos %}{{ cargo_linha(cargo, setor.obj.nome, '', inst.obj.nome, est.obj.nome_fantasia) }}{% endfor %}</ul>{% endif %}
                                         {% for cel in setor.celulas %}
                                         <section class="hier-node level-celula celula-container">
                                             <header class="hier-header">
@@ -131,7 +131,7 @@
                                                 <h6 class="hier-title">Célula <span class="celula-name" data-name="{{ cel.obj.nome }}">{{ cel.obj.nome }}</span></h6>
                                             </header>
                                             <div id="cel-{{ cel.obj.id }}" class="collapse hier-children">
-                                                {% if cel.cargos %}<ul class="cargo-list">{% for cargo in cel.cargos %}{{ cargo_linha(cargo, setor.obj.nome, cel.obj.nome, inst.obj.nome) }}{% endfor %}</ul>{% else %}<p class="cargo-node-empty">Nenhum cargo nesta célula.</p>{% endif %}
+                                                {% if cel.cargos %}<ul class="cargo-list">{% for cargo in cel.cargos %}{{ cargo_linha(cargo, setor.obj.nome, cel.obj.nome, inst.obj.nome, est.obj.nome_fantasia) }}{% endfor %}</ul>{% else %}<p class="cargo-node-empty">Nenhum cargo nesta célula.</p>{% endif %}
                                             </div>
                                         </section>
                                         {% endfor %}
@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const items = Array.from(document.querySelectorAll('.cargo-item'));
         let matches = 0;
         items.forEach(function(item) {
-            const match = !term || ['cargo', 'setor', 'celula', 'instituicao'].some((key) => normalize(item.dataset[key]).includes(term));
+            const match = !term || ['cargo', 'setor', 'celula', 'instituicao', 'estabelecimento'].some((key) => normalize(item.dataset[key]).includes(term));
             item.hidden = !match;
             if (match) {
                 matches += 1;
