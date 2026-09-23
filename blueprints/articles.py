@@ -374,7 +374,7 @@ def editor_video_upload():
         os.replace(prepared, published_path)
         return jsonify({
             'success': True,
-            'url': f'/uploads/editor-videos/{unique_filename}',
+            'url': url_for('auth_bp.uploaded_editor_video_file', filename=unique_filename),
             'mime_type': 'video/mp4' if output_extension == '.mp4' else 'video/webm',
             'converted': extension == '.avi',
         })

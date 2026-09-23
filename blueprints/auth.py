@@ -349,6 +349,20 @@ def uploaded_editor_image_file(filename):
     editor_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor-images')
     return send_from_directory(editor_folder, filename)
 
+
+@auth_bp.route('/uploads/editor-videos/<filename>', endpoint='uploaded_editor_video_file')
+def uploaded_editor_video_file(filename):
+    """Entrega somente os vídeos publicados pelo editor para usuários autenticados."""
+    if 'user_id' not in session:
+        app.logger.warning("Tentativa anônima de acesso a vídeo do editor: %s", filename)
+        return abort(401)
+    if not re.fullmatch(r'[a-f0-9]{32}\.(?:mp4|webm)', filename):
+        app.logger.warning("Tentativa de acesso a vídeo do editor com nome inválido: %s", filename)
+        return abort(404)
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor-videos')
+    return send_from_directory(video_folder, filename, conditional=True)
+
+
 @auth_bp.route('/uploads/editor/<path:filename>', endpoint='uploaded_editor_file')
 def uploaded_editor_file(filename):
     if 'user_id' not in session:
