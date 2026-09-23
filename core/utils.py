@@ -301,6 +301,9 @@ _URL_SCHEME_RE = re.compile(r"^([a-z0-9+.-]+):", re.IGNORECASE)
 _SAFE_UPLOAD_IMAGE_RE = re.compile(
     r"^/uploads/(?:editor|editor-images)/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%/-]*$"
 )
+_SAFE_UPLOAD_VIDEO_RE = re.compile(
+    r"^/uploads/editor-videos/[a-f0-9]{32}\.(?:mp4|webm)$"
+)
 _SAFE_CSS_COLOR_RE = re.compile(
     r"^(?:#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$",
     re.IGNORECASE,
@@ -327,6 +330,11 @@ def _is_safe_image_src(value: str) -> bool:
     if _SAFE_UPLOAD_IMAGE_RE.match(stripped):
         return ".." not in stripped and "\\" not in stripped
     return _url_scheme(stripped) in {"http", "https"}
+
+
+def _is_safe_video_src(value: str) -> bool:
+    stripped = (value or "").strip()
+    return bool(_SAFE_UPLOAD_VIDEO_RE.fullmatch(stripped)) and ".." not in stripped
 
 
 def _is_safe_css_color(value: str) -> bool:
@@ -384,6 +392,7 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
     allowed_attrs_by_tag = {
         "a": {"href", "title", "target", "rel"},
         "img": {"src", "alt", "title", "width", "height", "class"},
+        "video": {"src", "controls", "preload", "playsinline", "data-article-video"},
         "p": {"style"},
         "h1": {"style"},
         "h2": {"style"},
@@ -419,6 +428,18 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
 
     if tag == "img" and name == "src":
         return _is_safe_image_src(value)
+
+    if tag == "video" and name == "src":
+        return _is_safe_video_src(value)
+
+    if tag == "video" and name == "controls":
+        return value in {"", "controls", "true"}
+
+    if tag == "video" and name == "preload":
+        return value in {"none", "metadata"}
+
+    if tag == "video" and name in {"playsinline", "data-article-video"}:
+        return value in {"", name, "true"}
 
     if tag == "img" and name in {"width", "height"}:
         return bool(re.fullmatch(r"(?:\d{1,4}|\d{1,3}%)", value or ""))
@@ -458,7 +479,7 @@ def sanitize_html(text: str) -> str:
         "h1", "h2", "h3", "h4", "h5", "h6", "p", "br", "pre", "code",
         "ul", "ol", "li", "strong", "b", "em", "i", "u", "s", "mark",
         "blockquote", "a", "img", "figure", "figcaption", "table", "thead", "tbody", "tfoot", "tr",
-        "th", "td", "colgroup", "col", "label", "input", "span", "sub", "sup", "hr",
+        "th", "td", "colgroup", "col", "label", "input", "span", "sub", "sup", "hr", "video",
     ]
 
     return bleach.clean(
