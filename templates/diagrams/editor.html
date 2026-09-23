@@ -6,3 +6,7 @@
   <div id="diagram-editor" data-version="{{ diagram.current_version }}"></div>
 </main>
 {% endblock %}
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/diagrams/editor.js') }}"></script>
+{% endblock %}
