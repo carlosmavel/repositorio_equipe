@@ -105,6 +105,9 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import os
 import json
 import uuid
+import shutil
+import subprocess
+import tempfile
 
 articles_bp = Blueprint('articles_bp', __name__)
 
@@ -246,6 +249,13 @@ def upload_progress(progress_id):
 EDITOR_IMAGE_ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
 EDITOR_IMAGE_ALLOWED_MIMES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
 EDITOR_IMAGE_DEFAULT_MAX_BYTES = 2 * 1024 * 1024
+EDITOR_VIDEO_ALLOWED_EXTENSIONS = {'.mp4', '.webm', '.avi'}
+EDITOR_VIDEO_ALLOWED_MIMES = {
+    '.mp4': {'video/mp4'},
+    '.webm': {'video/webm'},
+    '.avi': {'video/x-msvideo', 'video/avi', 'application/x-troff-msvideo'},
+}
+EDITOR_VIDEO_DEFAULT_MAX_BYTES = 100 * 1024 * 1024
 
 
 def _json_error(message, status_code):
@@ -272,6 +282,116 @@ def _editor_upload_file_from_request():
     if request.files:
         return next(iter(request.files.values()))
     return None
+
+
+def _editor_video_max_bytes():
+    configured_limit = app.config.get(
+        'EDITOR_VIDEO_MAX_CONTENT_LENGTH',
+        app.config.get('EDITOR_VIDEO_MAX_BYTES', EDITOR_VIDEO_DEFAULT_MAX_BYTES),
+    )
+    try:
+        return int(configured_limit)
+    except (TypeError, ValueError):
+        return EDITOR_VIDEO_DEFAULT_MAX_BYTES
+
+
+def _copy_upload_with_limit(upload, destination, max_bytes):
+    total = 0
+    with open(destination, 'wb') as output:
+        while True:
+            chunk = upload.stream.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if max_bytes > 0 and total > max_bytes:
+                raise RequestEntityTooLarge()
+            output.write(chunk)
+    return total
+
+
+def _probe_video(path):
+    ffprobe = shutil.which(app.config.get('FFPROBE_BINARY', 'ffprobe'))
+    if not ffprobe:
+        raise RuntimeError('ffprobe não está disponível no servidor.')
+    result = subprocess.run(
+        [ffprobe, '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+         'stream=codec_type', '-of', 'default=nw=1:nk=1', path],
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    if result.returncode != 0 or 'video' not in result.stdout.splitlines():
+        raise ValueError('O arquivo não contém um fluxo de vídeo válido.')
+
+
+def _convert_avi_to_mp4(source, destination):
+    ffmpeg = shutil.which(app.config.get('FFMPEG_BINARY', 'ffmpeg'))
+    if not ffmpeg:
+        raise RuntimeError('ffmpeg não está disponível no servidor para converter AVI.')
+    result = subprocess.run(
+        [ffmpeg, '-nostdin', '-v', 'error', '-y', '-i', source,
+         '-map', '0:v:0', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'medium',
+         '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-movflags', '+faststart',
+         destination],
+        capture_output=True, text=True,
+        timeout=int(app.config.get('EDITOR_VIDEO_CONVERSION_TIMEOUT', 600)), check=False,
+    )
+    if result.returncode != 0 or not os.path.isfile(destination) or os.path.getsize(destination) == 0:
+        raise ValueError('Não foi possível converter o vídeo AVI para reprodução web.')
+
+
+@articles_bp.route('/artigos/editor-video-upload', methods=['POST'])
+def editor_video_upload():
+    """Valida vídeos do editor e converte AVI para MP4 antes de publicá-los."""
+    if 'user_id' not in session:
+        return _json_error('Faça login para enviar vídeos.', 401)
+    if db.session.get(User, session['user_id']) is None:
+        session.clear()
+        return _json_error('Sessão inválida ou expirada. Faça login novamente.', 401)
+
+    upload = _editor_upload_file_from_request()
+    if upload is None or not upload.filename:
+        return _json_error('Nenhum arquivo de vídeo foi enviado.', 400)
+    filename = secure_filename(upload.filename)
+    extension = os.path.splitext(filename.lower())[1]
+    declared_mime = (upload.mimetype or '').lower().split(';', 1)[0]
+    if extension not in EDITOR_VIDEO_ALLOWED_EXTENSIONS or declared_mime not in EDITOR_VIDEO_ALLOWED_MIMES.get(extension, set()):
+        return _json_error('Tipo de vídeo inválido. Envie apenas MP4, WebM ou AVI.', 415)
+
+    video_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'editor-videos')
+    os.makedirs(video_folder, exist_ok=True)
+    temp_dir = tempfile.mkdtemp(prefix='.video-', dir=video_folder)
+    source = os.path.join(temp_dir, f'input{extension}')
+    try:
+        _copy_upload_with_limit(upload, source, _editor_video_max_bytes())
+        _probe_video(source)
+        output_extension = '.mp4' if extension == '.avi' else extension
+        prepared = source
+        if extension == '.avi':
+            prepared = os.path.join(temp_dir, 'converted.mp4')
+            _convert_avi_to_mp4(source, prepared)
+            _probe_video(prepared)
+        unique_filename = f'{uuid.uuid4().hex}{output_extension}'
+        published_path = os.path.join(video_folder, unique_filename)
+        os.replace(prepared, published_path)
+        return jsonify({
+            'success': True,
+            'url': f'/uploads/editor-videos/{unique_filename}',
+            'mime_type': 'video/mp4' if output_extension == '.mp4' else 'video/webm',
+            'converted': extension == '.avi',
+        })
+    except RequestEntityTooLarge:
+        return _json_error('Vídeo acima do limite permitido.', 413)
+    except subprocess.TimeoutExpired:
+        return _json_error('A validação ou conversão do vídeo excedeu o tempo permitido.', 422)
+    except RuntimeError as error:
+        app.logger.error('Dependência de processamento de vídeo indisponível: %s', error)
+        return _json_error(str(error), 503)
+    except ValueError as error:
+        return _json_error(str(error), 415)
+    except OSError:
+        app.logger.exception('Falha ao armazenar vídeo do editor.')
+        return _json_error('Não foi possível armazenar o vídeo.', 500)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def _detect_editor_image_mime(image_bytes):

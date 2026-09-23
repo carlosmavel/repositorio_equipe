@@ -141,6 +141,10 @@
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="toggleHeaderColumn" aria-label="Alternar coluna de cabeçalho">Cabeç. col.</button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="deleteTable" aria-label="Excluir tabela"><i class="bi bi-trash" aria-hidden="true"></i></button>
               </div>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Mídia">
+                <button type="button" class="btn btn-outline-secondary" data-editor-command="insertVideo" aria-label="Inserir vídeo" title="Inserir vídeo (MP4, WebM ou AVI)"><i class="bi bi-camera-video" aria-hidden="true"></i> Inserir vídeo</button>
+                <input type="file" class="visually-hidden" data-editor-video-input accept="video/mp4,video/webm,video/x-msvideo,.mp4,.webm,.avi" tabindex="-1">
+              </div>
               <div class="btn-group btn-group-sm" role="group" aria-label="Histórico">
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="undo" aria-label="Desfazer"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                 <button type="button" class="btn btn-outline-secondary" data-editor-command="redo" aria-label="Refazer"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
@@ -240,7 +244,7 @@
 {% endblock %}
 {% block extra_js %}
 <script type="module">
-import { Editor } from 'https://esm.sh/@tiptap/core@3';
+import { Editor, Node } from 'https://esm.sh/@tiptap/core@3';
 import StarterKit from 'https://esm.sh/@tiptap/starter-kit@3';
 import { Image } from 'https://esm.sh/@tiptap/extension-image@3';
 import { Link } from 'https://esm.sh/@tiptap/extension-link@3';
@@ -264,6 +268,18 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
     const initialContent = {{ (form_data.get('texto') if form_data else artigo.texto) | tojson | safe }} || '<p></p>';
 
     const pendingEditorImageUploads = new Set();
+    const pendingEditorVideoUploads = new Set();
+    const EDITOR_VIDEO_ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/x-msvideo', 'video/avi', 'application/x-troff-msvideo'];
+    const EDITOR_VIDEO_MAX_BYTES = Number({{ config.get('EDITOR_VIDEO_MAX_CONTENT_LENGTH', config.get('EDITOR_VIDEO_MAX_BYTES', 104857600)) | tojson }}) || 104857600;
+    const VideoNode = Node.create({
+      name: 'articleVideo', group: 'block', atom: true, draggable: true,
+      addAttributes() { return { src: { default: null } }; },
+      parseHTML() { return [{ tag: 'video[data-article-video]' }]; },
+      renderHTML({ HTMLAttributes }) {
+        return ['video', { ...HTMLAttributes, controls: 'controls', preload: 'metadata', playsinline: 'true', 'data-article-video': 'true' }];
+      }
+    });
+
     const activeEditorImageUploadKeys = new Set();
     const EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const EDITOR_IMAGE_UPLOAD_TIMEOUT_MS = 30000;
@@ -386,11 +402,32 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
         });
     };
 
+    function validateEditorVideoFile(file) {
+      const extension = (file.name.split('.').pop() || '').toLowerCase();
+      if (!['mp4', 'webm', 'avi'].includes(extension) || !EDITOR_VIDEO_ALLOWED_TYPES.includes(file.type)) {
+        throw new Error('Tipo de vídeo inválido. Envie apenas MP4, WebM ou AVI.');
+      }
+      if (EDITOR_VIDEO_MAX_BYTES > 0 && file.size > EDITOR_VIDEO_MAX_BYTES) {
+        throw new Error(`Vídeo acima do limite permitido (${Math.round(EDITOR_VIDEO_MAX_BYTES / 1024 / 1024)} MB).`);
+      }
+    }
+
+    async function uploadEditorVideo(file) {
+      validateEditorVideoFile(file);
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      const response = await fetch('/artigos/editor-video-upload', { method: 'POST', body: formData, headers: { Accept: 'application/json' } });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.url) throw new Error(payload.error || 'Não foi possível enviar o vídeo.');
+      return payload;
+    }
+
     const editor = new Editor({
       element: editorElement,
       extensions: [
         StarterKit,
         Image.configure({ allowBase64: false }),
+        VideoNode,
         Link.configure({ openOnClick: false, defaultProtocol: 'https' }),
         Subscript,
         Superscript,
@@ -423,6 +460,25 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       onSelectionUpdate: ({ editor }) => updateToolbarState(editor),
       onTransaction: ({ editor }) => updateToolbarState(editor)
     });
+
+  const videoInput = document.querySelector('[data-editor-video-input]');
+  let videoInsertionPosition = null;
+  const selectAndUploadVideo = () => {
+    videoInsertionPosition = editor.state.selection.anchor;
+    videoInput.value = '';
+    videoInput.click();
+  };
+  videoInput.addEventListener('change', () => {
+    const file = videoInput.files?.[0];
+    if (!file) return;
+    const button = document.querySelector('[data-editor-command="insertVideo"]');
+    button.disabled = true;
+    const upload = uploadEditorVideo(file)
+      .then((payload) => editor.chain().focus().insertContentAt(videoInsertionPosition, { type: 'articleVideo', attrs: { src: payload.url } }).run())
+      .catch((error) => { console.error('Falha ao enviar vídeo', error); alert(error.message || 'Não foi possível enviar o vídeo.'); throw error; })
+      .finally(() => { pendingEditorVideoUploads.delete(upload); button.disabled = false; });
+    pendingEditorVideoUploads.add(upload);
+  });
 
   const toolbarButtons = document.querySelectorAll('[data-editor-command]');
   const promptPositiveInteger = (message, defaultValue, min = 1, max = 20) => {
@@ -501,6 +557,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
       unsetLink: () => chain.extendMarkRange('link').unsetLink().run(),
       clearFormat: () => chain.unsetAllMarks().clearNodes().run(),
       insertTable: () => insertConfiguredTable(),
+      insertVideo: () => selectAndUploadVideo(),
       addColumnBefore: () => chain.addColumnBefore().run(),
       addColumnAfter: () => chain.addColumnAfter().run(),
       deleteColumn: () => chain.deleteColumn().run(),
@@ -521,7 +578,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
   function updateToolbarState(editorInstance = editor) {
     const passiveCommands = [
       'paragraph', 'textColor', 'unsetColor', 'horizontalRule', 'hardBreak', 'setLink', 'unsetLink',
-      'clearFormat', 'insertTable', 'addColumnBefore', 'addColumnAfter', 'deleteColumn', 'addRowBefore',
+      'clearFormat', 'insertTable', 'insertVideo', 'addColumnBefore', 'addColumnAfter', 'deleteColumn', 'addRowBefore',
       'addRowAfter', 'deleteRow', 'mergeCells', 'splitCell', 'toggleHeaderRow', 'toggleHeaderColumn',
       'deleteTable', 'undo', 'redo'
     ];
@@ -803,6 +860,7 @@ import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
         setOverlayState('Enviando imagens coladas no texto...', null);
         try {
           await waitForEditorImageUploads();
+          await Promise.all(Array.from(pendingEditorVideoUploads));
         } catch (error) {
           hideOverlay();
           setSubmitButtonsDisabled(false);
