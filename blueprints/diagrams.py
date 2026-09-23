@@ -43,7 +43,7 @@ def _payload():
 
 def _serialize(diagram):
     return {
-        'id': diagram.id, 'title': diagram.title, 'document': diagram.document,
+        'id': str(diagram.id), 'title': diagram.title, 'document': diagram.document,
         'owner_id': diagram.owner_id, 'celula_id': diagram.celula_id,
         'current_version': diagram.current_version,
         'archived': diagram.archived_at is not None,
@@ -64,7 +64,7 @@ def diagrams_index(user):
     return render_template('diagrams/index.html', diagrams=diagrams)
 
 
-@diagrams_bp.get('/diagramas/<int:diagram_id>')
+@diagrams_bp.get('/diagramas/<uuid:diagram_id>')
 @authenticated
 def diagram_editor(user, diagram_id):
     diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
@@ -87,7 +87,7 @@ def api_create_diagram(user):
     return jsonify(_serialize(diagram)), 201
 
 
-@diagrams_bp.put('/api/diagramas/<int:diagram_id>')
+@diagrams_bp.put('/api/diagramas/<uuid:diagram_id>')
 @authenticated
 def api_save_diagram(user, diagram_id):
     diagram = db.get_or_404(Diagram, diagram_id)
@@ -96,14 +96,14 @@ def api_save_diagram(user, diagram_id):
     return jsonify(_serialize(diagram))
 
 
-@diagrams_bp.post('/api/diagramas/<int:diagram_id>/copiar')
+@diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/copiar')
 @authenticated
 def api_copy_diagram(user, diagram_id):
     diagram = copy_template(user, db.get_or_404(Diagram, diagram_id), title=_payload().get('title'))
     return jsonify(_serialize(diagram)), 201
 
 
-@diagrams_bp.post('/api/diagramas/<int:diagram_id>/restaurar/<int:version_number>')
+@diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/restaurar/<int:version_number>')
 @authenticated
 def api_restore_diagram(user, diagram_id, version_number):
     diagram = db.get_or_404(Diagram, diagram_id)
@@ -111,13 +111,13 @@ def api_restore_diagram(user, diagram_id, version_number):
     return jsonify(_serialize(restore_diagram(user, diagram, version)))
 
 
-@diagrams_bp.post('/api/diagramas/<int:diagram_id>/arquivar')
+@diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/arquivar')
 @authenticated
 def api_archive_diagram(user, diagram_id):
     return jsonify(_serialize(archive_diagram(user, db.get_or_404(Diagram, diagram_id))))
 
 
-@diagrams_bp.get('/api/diagramas/<int:diagram_id>/preview')
+@diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/preview')
 @authenticated
 def api_diagram_preview(user, diagram_id):
     content, content_type = get_preview(db.get_or_404(Diagram, diagram_id), user)

@@ -31,6 +31,30 @@ class ArticleVisibility(Enum):
     CELULA          = ("celula",          "Célula")
 
 
+class DiagramStatus(str, Enum):
+    """Estados persistidos de um diagrama."""
+
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class DiagramType(str, Enum):
+    """Distingue documentos comuns de modelos reutilizáveis."""
+
+    DIAGRAM = "diagram"
+    TEMPLATE = "template"
+
+
+class DiagramScope(str, Enum):
+    """Escopo primário de descoberta na biblioteca de diagramas."""
+
+    PRIVATE = "private"
+    INSTITUTION = "institution"
+    ESTABLISHMENT = "establishment"
+    SECTOR = "sector"
+    CELL = "cell"
+
+
 class Permissao(Enum):
     """Códigos de permissões relacionados a ações em artigos."""
 

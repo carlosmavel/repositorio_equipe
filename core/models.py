@@ -1,6 +1,7 @@
 # models.py
 from sqlalchemy.sql import func
 from sqlalchemy import Enum as SQLAEnum, Column, Text, ForeignKey, Date, Boolean, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, synonym
 from werkzeug.security import generate_password_hash, check_password_hash # Mantendo seus imports de User
 import uuid
@@ -10,9 +11,9 @@ try:
 except ImportError:
     from core.database import db  # type: ignore
 try:
-    from .enums import ArticleStatus, ArticleVisibility, OSStatus
+    from .enums import ArticleStatus, ArticleVisibility, DiagramScope, DiagramStatus, DiagramType, OSStatus
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from core.enums import ArticleStatus, ArticleVisibility, OSStatus
+    from core.enums import ArticleStatus, ArticleVisibility, DiagramScope, DiagramStatus, DiagramType, OSStatus
 
 # --- association tables for article visibility ---
 article_extra_celulas = db.Table(
@@ -295,6 +296,10 @@ class User(db.Model):
     revision_requests = db.relationship('RevisionRequest', foreign_keys='RevisionRequest.user_id', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', foreign_keys='Comment.user_id', back_populates='autor', lazy='dynamic', cascade='all, delete-orphan')
+    # Deliberately no delete cascade: ownership must be transferred before a
+    # user can ever be physically removed.
+    owned_diagrams = db.relationship('Diagram', foreign_keys='Diagram.owner_id',
+                                     back_populates='owner', passive_deletes=True)
 
 
 
@@ -403,6 +408,8 @@ class Article(db.Model):
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='artigo', lazy='dynamic', cascade='all, delete-orphan')
     versions = db.relationship('ArticleVersion', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
+    diagram_links = db.relationship('ArticleDiagram', back_populates='article',
+                                    cascade='all, delete-orphan', passive_deletes=True)
     tipo = db.relationship('ArtigoTipo')
     area = db.relationship('ArtigoArea')
     sistema = db.relationship('ArtigoSistema')
@@ -989,50 +996,96 @@ class Secao(db.Model):
 # --- DIAGRAMAS ------------------------------------------------------------
 
 
+# ACLs explícitas; a PK composta impede compartilhamentos duplicados.
+def _diagram_share_table(name, target):
+    return db.Table(
+        f'diagram_share_{name}',
+        db.Column('diagram_id', db.Uuid(as_uuid=True),
+                  db.ForeignKey('diagram.id', ondelete='CASCADE'), primary_key=True),
+        db.Column(f'{name}_id', db.Integer,
+                  db.ForeignKey(target, ondelete='CASCADE'), primary_key=True),
+    )
+
+
+diagram_share_user = _diagram_share_table('user', 'user.id')
+diagram_share_instituicao = _diagram_share_table('instituicao', 'instituicao.id')
+diagram_share_estabelecimento = _diagram_share_table('estabelecimento', 'estabelecimento.id')
+diagram_share_setor = _diagram_share_table('setor', 'setor.id')
+diagram_share_celula = _diagram_share_table('celula', 'celula.id')
+
+
 class Diagram(db.Model):
     """Diagrama editável e o seu escopo organizacional."""
 
     __tablename__ = 'diagram'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    document = db.Column(db.JSON, nullable=False, default=dict)
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = db.Column(db.String(200), nullable=False, index=True)
+    description = db.Column(db.Text, nullable=True)
+    scene_data = db.Column(JSONB().with_variant(db.JSON(), 'sqlite'), nullable=False, default=dict)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=False, index=True)
+    status = db.Column(SQLAEnum(DiagramStatus, values_callable=lambda e: [v.value for v in e],
+                                name='diagram_status', native_enum=False), nullable=False,
+                       default=DiagramStatus.ACTIVE, server_default=DiagramStatus.ACTIVE.value, index=True)
+    diagram_type = db.Column(SQLAEnum(DiagramType, values_callable=lambda e: [v.value for v in e],
+                                      name='diagram_type', native_enum=False), nullable=False,
+                             default=DiagramType.DIAGRAM, server_default=DiagramType.DIAGRAM.value, index=True)
+    scope = db.Column(SQLAEnum(DiagramScope, values_callable=lambda e: [v.value for v in e],
+                               name='diagram_scope', native_enum=False), nullable=False,
+                      default=DiagramScope.PRIVATE, server_default=DiagramScope.PRIVATE.value, index=True)
+    instituicao_id = db.Column(db.Integer, db.ForeignKey('instituicao.id', ondelete='RESTRICT'), index=True)
+    estabelecimento_id = db.Column(db.Integer, db.ForeignKey('estabelecimento.id', ondelete='RESTRICT'), index=True)
+    setor_id = db.Column(db.Integer, db.ForeignKey('setor.id', ondelete='RESTRICT'), index=True)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id', ondelete='RESTRICT'), index=True)
+    source_diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
     current_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), index=True)
 
-    owner = db.relationship('User', foreign_keys=[owner_id])
+    owner = db.relationship('User', foreign_keys=[owner_id], back_populates='owned_diagrams')
     celula = db.relationship('Celula', foreign_keys=[celula_id])
-    versions = db.relationship('DiagramVersion', back_populates='diagram', cascade='all, delete-orphan')
-    assets = db.relationship('DiagramAsset', back_populates='diagram', cascade='all, delete-orphan')
+    source_diagram = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_diagram_id])
+    versions = db.relationship('DiagramVersion', back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
+    assets = db.relationship('DiagramAsset', back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
+    article_links = db.relationship('ArticleDiagram', back_populates='diagram', passive_deletes=True)
+    shared_users = db.relationship('User', secondary=diagram_share_user)
+    shared_instituicoes = db.relationship('Instituicao', secondary=diagram_share_instituicao)
+    shared_estabelecimentos = db.relationship('Estabelecimento', secondary=diagram_share_estabelecimento)
+    shared_setores = db.relationship('Setor', secondary=diagram_share_setor)
+    shared_celulas = db.relationship('Celula', secondary=diagram_share_celula)
+
+    # Compatibility names used by the first editor implementation.
+    title = synonym('name')
+    document = synonym('scene_data')
 
 
 class DiagramVersion(db.Model):
     """Snapshot imutável usado para histórico e restauração."""
 
     __tablename__ = 'diagram_version'
-    __table_args__ = (db.UniqueConstraint('diagram_id', 'number', name='uq_diagram_version_number'),)
+    __table_args__ = (db.UniqueConstraint('diagram_id', 'version_number', name='uq_diagram_version_number'),)
 
-    id = db.Column(db.Integer, primary_key=True)
-    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
-    number = db.Column(db.Integer, nullable=False)
-    title = db.Column(db.String(200), nullable=False)
-    document = db.Column(db.JSON, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    version_number = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    scene_data = db.Column(JSONB().with_variant(db.JSON(), 'sqlite'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     diagram = db.relationship('Diagram', back_populates='versions')
     author = db.relationship('User', foreign_keys=[author_id])
+    number = synonym('version_number')
+    title = synonym('name')
+    document = synonym('scene_data')
 
 
 class DiagramAsset(db.Model):
     __tablename__ = 'diagram_asset'
 
-    id = db.Column(db.Integer, primary_key=True)
-    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
     storage_key = db.Column(db.String(500), nullable=False, unique=True)
     kind = db.Column(db.String(32), nullable=False, default='asset', server_default='asset')
     content_type = db.Column(db.String(120), nullable=True)
@@ -1047,10 +1100,10 @@ class ArticleDiagram(db.Model):
     __tablename__ = 'article_diagram'
     __table_args__ = (db.UniqueConstraint('article_id', 'diagram_id', name='uq_article_diagram'),)
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
-    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='RESTRICT'), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    article = db.relationship('Article')
-    diagram = db.relationship('Diagram')
+    article = db.relationship('Article', back_populates='diagram_links')
+    diagram = db.relationship('Diagram', back_populates='article_links')
