@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Diagramas{% endblock %}
+{% block content %}
+<main class="container py-4">
+  <h1>Diagramas</h1>
+  <ul class="list-group">
+    {% for diagram in diagrams %}
+      <li class="list-group-item"><a href="{{ url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id) }}">{{ diagram.title }}</a></li>
+    {% else %}
+      <li class="list-group-item text-muted">Nenhum diagrama disponível.</li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

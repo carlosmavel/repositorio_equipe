@@ -984,3 +984,73 @@ class Secao(db.Model):
         return f"<Secao {self.titulo}>"
 
 # --- FIM DOS MODELOS ---
+
+
+# --- DIAGRAMAS ------------------------------------------------------------
+
+
+class Diagram(db.Model):
+    """Diagrama editável e o seu escopo organizacional."""
+
+    __tablename__ = 'diagram'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    document = db.Column(db.JSON, nullable=False, default=dict)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    celula_id = db.Column(db.Integer, db.ForeignKey('celula.id'), nullable=True)
+    archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    current_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    owner = db.relationship('User', foreign_keys=[owner_id])
+    celula = db.relationship('Celula', foreign_keys=[celula_id])
+    versions = db.relationship('DiagramVersion', back_populates='diagram', cascade='all, delete-orphan')
+    assets = db.relationship('DiagramAsset', back_populates='diagram', cascade='all, delete-orphan')
+
+
+class DiagramVersion(db.Model):
+    """Snapshot imutável usado para histórico e restauração."""
+
+    __tablename__ = 'diagram_version'
+    __table_args__ = (db.UniqueConstraint('diagram_id', 'number', name='uq_diagram_version_number'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    number = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    document = db.Column(db.JSON, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    diagram = db.relationship('Diagram', back_populates='versions')
+    author = db.relationship('User', foreign_keys=[author_id])
+
+
+class DiagramAsset(db.Model):
+    __tablename__ = 'diagram_asset'
+
+    id = db.Column(db.Integer, primary_key=True)
+    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    storage_key = db.Column(db.String(500), nullable=False, unique=True)
+    kind = db.Column(db.String(32), nullable=False, default='asset', server_default='asset')
+    content_type = db.Column(db.String(120), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    diagram = db.relationship('Diagram', back_populates='assets')
+
+
+class ArticleDiagram(db.Model):
+    """Vínculo materializado de um nó ``articleDiagram`` a um diagrama."""
+
+    __tablename__ = 'article_diagram'
+    __table_args__ = (db.UniqueConstraint('article_id', 'diagram_id', name='uq_article_diagram'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id', ondelete='CASCADE'), nullable=False)
+    diagram_id = db.Column(db.Integer, db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    article = db.relationship('Article')
+    diagram = db.relationship('Diagram')
