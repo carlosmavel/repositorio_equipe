@@ -1232,6 +1232,79 @@ def admin_toggle_ativo_celula(id):
         flash(f'Erro ao alterar status da célula: {str(e)}', 'danger')
     return redirect(url_for('admin_bp.admin_celulas'))
 
+def _montar_estrutura_cargos(instituicoes, cargos):
+    """Monta a árvore de cargos, posicionando cada cargo no ancestral comum mais próximo."""
+    estrutura = []
+    instituicoes_por_id = {}
+    estabelecimentos_por_id = {}
+    setores_por_id = {}
+    celulas_por_id = {}
+
+    for instituicao in instituicoes:
+        instituicao_node = {'obj': instituicao, 'estabelecimentos': [], 'cargos': []}
+        estrutura.append(instituicao_node)
+        instituicoes_por_id[instituicao.id] = instituicao_node
+        for estabelecimento in instituicao.estabelecimentos.order_by(Estabelecimento.nome_fantasia).all():
+            estabelecimento_node = {'obj': estabelecimento, 'setores': [], 'cargos': []}
+            instituicao_node['estabelecimentos'].append(estabelecimento_node)
+            estabelecimentos_por_id[estabelecimento.id] = estabelecimento_node
+            for setor in estabelecimento.setores.order_by(Setor.nome).all():
+                setor_node = {'obj': setor, 'celulas': [], 'cargos': []}
+                estabelecimento_node['setores'].append(setor_node)
+                setores_por_id[setor.id] = setor_node
+                for celula in setor.celulas.order_by(Celula.nome).all():
+                    celula_node = {'obj': celula, 'cargos': []}
+                    setor_node['celulas'].append(celula_node)
+                    celulas_por_id[celula.id] = celula_node
+
+    cargos_gerais = []
+    for cargo in cargos:
+        celulas = cargo.default_celulas.all()
+        setores = cargo.default_setores.all()
+        estabelecimentos = cargo.default_estabelecimentos.all()
+        destino = None
+
+        if celulas:
+            setor_ids = {celula.setor_id for celula in celulas}
+            estabelecimento_ids = {celula.estabelecimento_id for celula in celulas}
+            instituicao_ids = {
+                estabelecimentos_por_id[estabelecimento_id]['obj'].instituicao_id
+                for estabelecimento_id in estabelecimento_ids
+                if estabelecimento_id in estabelecimentos_por_id
+            }
+            if len(celulas) == 1:
+                destino = celulas_por_id.get(celulas[0].id)
+            elif len(setor_ids) == 1:
+                destino = setores_por_id.get(next(iter(setor_ids)))
+            elif len(estabelecimento_ids) == 1:
+                destino = estabelecimentos_por_id.get(next(iter(estabelecimento_ids)))
+            elif len(instituicao_ids) == 1:
+                destino = instituicoes_por_id.get(next(iter(instituicao_ids)))
+        elif setores:
+            estabelecimento_ids = {setor.estabelecimento_id for setor in setores}
+            instituicao_ids = {
+                estabelecimentos_por_id[estabelecimento_id]['obj'].instituicao_id
+                for estabelecimento_id in estabelecimento_ids
+                if estabelecimento_id in estabelecimentos_por_id
+            }
+            if len(setores) == 1:
+                destino = setores_por_id.get(setores[0].id)
+            elif len(estabelecimento_ids) == 1:
+                destino = estabelecimentos_por_id.get(next(iter(estabelecimento_ids)))
+            elif len(instituicao_ids) == 1:
+                destino = instituicoes_por_id.get(next(iter(instituicao_ids)))
+        elif estabelecimentos:
+            instituicao_ids = {estabelecimento.instituicao_id for estabelecimento in estabelecimentos}
+            if len(estabelecimentos) == 1:
+                destino = estabelecimentos_por_id.get(estabelecimentos[0].id)
+            elif len(instituicao_ids) == 1:
+                destino = instituicoes_por_id.get(next(iter(instituicao_ids)))
+
+        (destino['cargos'] if destino else cargos_gerais).append(cargo)
+
+    return estrutura, cargos_gerais
+
+
 @admin_bp.route('/admin/cargos', methods=['GET', 'POST'])
 @admin_required
 def admin_cargos():
@@ -1346,20 +1419,7 @@ def admin_cargos():
     funcoes_por_categoria = agrupar_funcoes_por_categoria(funcoes)
 
     instituicoes = Instituicao.query.order_by(Instituicao.nome).all()
-    estrutura = []
-    for inst in instituicoes:
-        est_list = []
-        for est in inst.estabelecimentos.order_by(Estabelecimento.nome_fantasia).all():
-            setor_list = []
-            for setor in est.setores.order_by(Setor.nome).all():
-                celula_list = []
-                for cel in setor.celulas.order_by(Celula.nome).all():
-                    cargos_cel = [c for c in todos_cargos if cel in c.default_celulas]
-                    celula_list.append({'obj': cel, 'cargos': cargos_cel})
-                cargos_setor = [c for c in todos_cargos if c.default_celulas.count() == 0 and setor in c.default_setores]
-                setor_list.append({'obj': setor, 'celulas': celula_list, 'cargos': cargos_setor})
-            est_list.append({'obj': est, 'setores': setor_list})
-        estrutura.append({'obj': inst, 'estabelecimentos': est_list})
+    estrutura, cargos_gerais = _montar_estrutura_cargos(instituicoes, todos_cargos)
 
     return render_template(
         'admin/cargos.html',
@@ -1371,6 +1431,7 @@ def admin_cargos():
         funcoes=funcoes,
         funcoes_por_categoria=funcoes_por_categoria,
         estrutura=estrutura,
+        cargos_gerais=cargos_gerais,
     )
 
 
