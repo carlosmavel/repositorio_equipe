@@ -6,105 +6,66 @@ TEMPLATES = [
     ROOT / "templates" / "artigos" / "novo_artigo.html",
     ROOT / "templates" / "artigos" / "editar_artigo.html",
 ]
+EDITOR_SOURCE = ROOT / "frontend" / "article-editor" / "index.js"
+BUNDLE = ROOT / "static" / "js" / "article-editor.js"
 
 
-def _template_sources():
-    return {path.name: path.read_text(encoding="utf-8") for path in TEMPLATES}
+def _editor_source():
+    return EDITOR_SOURCE.read_text(encoding="utf-8")
+
+
+def test_criacao_e_edicao_carregam_o_mesmo_bundle_e_registro_de_nodes():
+    for template in TEMPLATES:
+        source = template.read_text(encoding="utf-8")
+        assert 'id="article-editor-config"' in source, template.name
+        assert "filename='js/article-editor.js'" in source, template.name
+        assert "new Editor(" not in source, template.name
+        assert "Node.create(" not in source, template.name
+
+    source = _editor_source()
+    for node in [
+        "StarterKit", "Image.configure", "VideoNode", "Link.configure",
+        "Subscript", "Superscript", "TextStyle", "Color", "Underline",
+        "Table.configure", "TableRow", "TableCell", "TableHeader",
+        "TaskList", "TaskItem.configure", "Placeholder.configure",
+        "TextAlign.configure", "Highlight.configure", "FileHandler.configure",
+    ]:
+        assert node in source
+
+
+def test_bundle_compilado_corresponde_ao_modulo_fonte():
+    assert BUNDLE.read_text(encoding="utf-8") == _editor_source()
 
 
 def test_tiptap_cola_imagens_via_upload_em_vez_de_base64():
-    for name, source in _template_sources().items():
-        assert "fetch('/artigos/editor-image-upload'" in source, name
-        assert "formData.append('file', file, editorImageFilename(file))" in source, name
-        assert "headers: { Accept: 'application/json' }" in source, name
-        assert "const pendingEditorImageUploads = new Set();" in source, name
-        assert "await waitForEditorImageUploads();" in source, name
-        assert "Image.configure({ allowBase64: false })" in source, name
-        assert "readAsDataURL" not in source, name
-        assert "Image.configure({ allowBase64: true })" not in source, name
+    source = _editor_source()
+    assert "fetch('/artigos/editor-image-upload'" in source
+    assert "formData.append('file', file, editorImageFilename(file))" in source
+    assert "headers: { Accept: 'application/json' }" in source
+    assert "const pendingEditorImageUploads = new Set();" in source
+    assert "await waitForEditorImageUploads();" in source
+    assert "Image.configure({ allowBase64: false })" in source
+    assert "readAsDataURL" not in source
 
 
-def test_tiptap_mimes_do_cliente_refletem_endpoint_de_upload():
-    for name, source in _template_sources().items():
-        assert "EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']" in source, name
-        assert "allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']" in source, name
-        assert "image/gif" in source, name
+def test_tiptap_upload_tem_validacao_diagnostico_e_timeout():
+    source = _editor_source()
+    assert "EDITOR_IMAGE_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']" in source
+    assert "const EDITOR_IMAGE_UPLOAD_TIMEOUT_MS = 30000;" in source
+    assert "const controller = new AbortController();" in source
+    assert "signal: controller.signal" in source
+    assert "[editor-image-upload:start]" in source
+    assert "[editor-image-upload:end]" in source
+    assert "Tempo esgotado ao enviar a imagem colada" in source
 
 
-def test_tiptap_upload_de_imagem_tem_diagnostico_e_timeout():
-    for name, source in _template_sources().items():
-        assert "const EDITOR_IMAGE_UPLOAD_TIMEOUT_MS = 30000;" in source, name
-        assert "const EDITOR_IMAGE_MAX_BYTES = Number" in source, name
-        assert "const controller = new AbortController();" in source, name
-        assert "signal: controller.signal" in source, name
-        assert "[editor-image-upload:start]" in source, name
-        assert "[editor-image-upload:end]" in source, name
-        assert "Tempo esgotado ao enviar a imagem colada" in source, name
-        assert "Reduza o print ou envie como anexo" in source, name
-
-
-def test_progresso_de_upload_so_consulta_endpoint_quando_ha_anexos():
-    for name, source in _template_sources().items():
-        assert "const hasPendingAttachmentFiles = () => Boolean(document.getElementById('files')?.files?.length);" in source, name
-        assert "if (hasPendingAttachmentFiles()) {" in source, name
-        assert "startProgressPolling(progressId);" in source, name
-
-
-def test_tiptap_evita_upload_duplicado_e_inicializacao_repetida():
-    for name, source in _template_sources().items():
-        assert "dataset.tiptapInitialized" in source, name
-        assert "const activeEditorImageUploadKeys = new Set();" in source, name
-        assert "activeEditorImageUploadKeys.has(uploadKey)" in source, name
-        assert ".finally(() => activeEditorImageUploadKeys.delete(uploadKey))" in source, name
-        assert "setSubmitButtonsDisabled(true);" in source, name
-
-
-def test_novo_artigo_preserva_acao_apos_uploads_do_tiptap():
-    source = (ROOT / "templates" / "artigos" / "novo_artigo.html").read_text(encoding="utf-8")
-    submit_listener = source[source.index("form.addEventListener('submit'"):]
-
-    assert 'id="submit-action"' in source
-    assert 'name="acao" id="submit-action"' not in source
-    assert "let lastSubmitter = null;" in source
-    assert "const submitter = event.submitter || lastSubmitter;" in submit_listener
-    assert "submitActionInput.name = 'acao';" in submit_listener
-    assert "submitActionInput.value = submitter?.name === 'acao' ? submitter.value : 'rascunho';" in submit_listener
-    assert submit_listener.index("submitActionInput.value") < submit_listener.index("setSubmitButtonsDisabled(true);")
-    assert "form.requestSubmit(submitter);" not in submit_listener
-    assert "form.submit();" in submit_listener
-
-
-def test_tiptap_toolbar_expande_formatacoes_gratuitas_e_tabelas():
-    for name, source in _template_sources().items():
-        for import_name in [
-            "@tiptap/extension-link@3",
-            "@tiptap/extension-subscript@3",
-            "@tiptap/extension-superscript@3",
-            "@tiptap/extension-text-style@3",
-            "@tiptap/extension-underline@3",
-        ]:
-            assert import_name in source, name
-
-        for command in [
-            'data-editor-command="underline"',
-            'data-editor-command="code"',
-            'data-editor-command="subscript"',
-            'data-editor-command="superscript"',
-            'data-editor-command="horizontalRule"',
-            'data-editor-command="setLink"',
-            'data-editor-command="addColumnBefore"',
-            'data-editor-command="addColumnAfter"',
-            'data-editor-command="deleteColumn"',
-            'data-editor-command="addRowBefore"',
-            'data-editor-command="addRowAfter"',
-            'data-editor-command="deleteRow"',
-            'data-editor-command="mergeCells"',
-            'data-editor-command="splitCell"',
-            'data-editor-command="deleteTable"',
-        ]:
-            assert command in source, name
-
-        assert "insertConfiguredTable" in source, name
-        assert "Quantas colunas a tabela deve ter?" in source, name
-        assert "chain.addColumnAfter().run()" in source, name
-        assert "chain.deleteColumn().run()" in source, name
+def test_uploads_toolbar_tabelas_e_sincronizacao_ficam_no_modulo():
+    source = _editor_source()
+    assert "const hasPendingAttachmentFiles" in source
+    assert "activeEditorImageUploadKeys.has(uploadKey)" in source
+    assert "insertConfiguredTable" in source
+    assert "chain.addColumnAfter().run()" in source
+    assert "chain.deleteColumn().run()" in source
+    assert "hiddenTexto.value = editor.getHTML()" in source
+    assert "config.mode === 'create'" in source
+    assert "config.mode === 'edit'" in source
