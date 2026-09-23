@@ -1040,13 +1040,19 @@ class Diagram(db.Model):
     source_diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
     current_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    current_version_id = db.Column(db.Uuid(as_uuid=True),
+                                   db.ForeignKey('diagram_version.id', ondelete='SET NULL', use_alter=True),
+                                   nullable=True)
+    lock_version = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), index=True)
 
     owner = db.relationship('User', foreign_keys=[owner_id], back_populates='owned_diagrams')
     celula = db.relationship('Celula', foreign_keys=[celula_id])
     source_diagram = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_diagram_id])
-    versions = db.relationship('DiagramVersion', back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
+    versions = db.relationship('DiagramVersion', foreign_keys='DiagramVersion.diagram_id',
+                               back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
+    current_version_record = db.relationship('DiagramVersion', foreign_keys=[current_version_id], post_update=True)
     assets = db.relationship('DiagramAsset', back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
     article_links = db.relationship('ArticleDiagram', back_populates='diagram', passive_deletes=True)
     shared_users = db.relationship('User', secondary=diagram_share_user)
@@ -1071,11 +1077,15 @@ class DiagramVersion(db.Model):
     version_number = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(200), nullable=False)
     scene_data = db.Column(JSONB().with_variant(db.JSON(), 'sqlite'), nullable=False)
+    schema_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    content_hash = db.Column(db.String(64), nullable=False, default='')
     author_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
-    diagram = db.relationship('Diagram', back_populates='versions')
+    diagram = db.relationship('Diagram', foreign_keys=[diagram_id], back_populates='versions')
     author = db.relationship('User', foreign_keys=[author_id])
+    assets = db.relationship('DiagramAsset', secondary='diagram_version_asset',
+                             back_populates='versions')
     number = synonym('version_number')
     title = synonym('name')
     document = synonym('scene_data')
@@ -1086,12 +1096,27 @@ class DiagramAsset(db.Model):
 
     id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
-    storage_key = db.Column(db.String(500), nullable=False, unique=True)
+    storage_key = db.Column(db.String(500), nullable=False)
+    sha256 = db.Column(db.String(64), nullable=False, default='')
+    byte_size = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     kind = db.Column(db.String(32), nullable=False, default='asset', server_default='asset')
     content_type = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     diagram = db.relationship('Diagram', back_populates='assets')
+    versions = db.relationship('DiagramVersion', secondary='diagram_version_asset',
+                               back_populates='assets')
+
+
+class DiagramVersionAsset(db.Model):
+    """Associação imutável entre um snapshot e seus blobs content-addressed."""
+
+    __tablename__ = 'diagram_version_asset'
+
+    version_id = db.Column(db.Uuid(as_uuid=True),
+                           db.ForeignKey('diagram_version.id', ondelete='CASCADE'), primary_key=True)
+    asset_id = db.Column(db.Uuid(as_uuid=True),
+                         db.ForeignKey('diagram_asset.id', ondelete='RESTRICT'), primary_key=True)
 
 
 class ArticleDiagram(db.Model):

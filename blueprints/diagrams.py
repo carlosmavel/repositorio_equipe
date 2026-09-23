@@ -5,6 +5,7 @@ serviços em :mod:`core.services.diagrams`.
 """
 
 from functools import wraps
+import json
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
 
@@ -12,13 +13,15 @@ try:
     from ..core.database import db
     from ..core.models import Diagram, DiagramVersion, User
     from ..core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
-    from ..core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram
+    from ..core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
+    from ..core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from ..core.services.diagrams.rendering import get_preview
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
     from core.models import Diagram, DiagramVersion, User
     from core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
-    from core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram
+    from core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
+    from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from core.services.diagrams.rendering import get_preview
 
 
@@ -46,6 +49,8 @@ def _serialize(diagram):
         'id': str(diagram.id), 'title': diagram.title, 'document': diagram.document,
         'owner_id': diagram.owner_id, 'celula_id': diagram.celula_id,
         'current_version': diagram.current_version,
+        'current_version_id': str(diagram.current_version_id) if diagram.current_version_id else None,
+        'lock_version': diagram.lock_version,
         'archived': diagram.archived_at is not None,
     }
 
@@ -91,8 +96,20 @@ def api_create_diagram(user):
 @authenticated
 def api_save_diagram(user, diagram_id):
     diagram = db.get_or_404(Diagram, diagram_id)
-    data = _payload()
-    diagram = save_diagram(user, diagram, title=data.get('title'), document=data.get('document'))
+    try:
+        if request.mimetype == 'multipart/form-data':
+            data = json.loads(request.form.get('payload', ''))
+            uploads = request.files.to_dict()
+        else:
+            data = request.get_json(silent=False)
+            uploads = {}
+        payload = validate_save_payload(data, uploads)
+        diagram = save_diagram_payload(user, diagram, payload, title=data.get('title'))
+    except (DiagramSchemaError, json.JSONDecodeError) as error:
+        return jsonify(error=str(error)), 400
+    except ValueError as error:
+        status = 409 if 'outra sessão' in str(error) else 400
+        return jsonify(error=str(error)), status
     return jsonify(_serialize(diagram))
 
 

@@ -1,6 +1,8 @@
 """Porta de armazenamento para assets e previews de diagramas."""
 
 from pathlib import Path
+import hashlib
+import os
 from uuid import uuid4
 
 from flask import current_app
@@ -18,6 +20,22 @@ class LocalDiagramStorage:
         destination = self.root / key
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(content)
+        return key
+
+    def put_sha256(self, content):
+        """Grava um blob uma única vez sob uma chave derivada de seu conteúdo."""
+        digest = hashlib.sha256(content).hexdigest()
+        key = f'assets/sha256/{digest[:2]}/{digest}'
+        destination = self.root / key
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.exists():
+            temporary = destination.with_name(f'.{digest}.{uuid4().hex}.tmp')
+            temporary.write_bytes(content)
+            try:
+                os.replace(temporary, destination)
+            finally:
+                if temporary.exists():
+                    temporary.unlink()
         return key
 
     def read(self, key):
