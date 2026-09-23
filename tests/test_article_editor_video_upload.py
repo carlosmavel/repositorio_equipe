@@ -107,6 +107,56 @@ def test_video_upload_requires_authentication(video_app, client):
     assert response.status_code == 401
 
 
+@pytest.mark.parametrize(
+    ('filename', 'mime_type'),
+    (
+        ('0123456789abcdef0123456789abcdef.mp4', 'video/mp4'),
+        ('0123456789abcdef0123456789abcdef.webm', 'video/webm'),
+    ),
+)
+def test_uploaded_editor_video_serves_metadata_and_range_requests(
+    video_app, logged_video_client, filename, mime_type
+):
+    video_folder = os.path.join(video_app.config['UPLOAD_FOLDER'], 'editor-videos')
+    os.makedirs(video_folder, exist_ok=True)
+    video_path = os.path.join(video_folder, filename)
+    with open(video_path, 'wb') as video_file:
+        video_file.write(b'0123456789')
+
+    metadata_response = logged_video_client.head(f'/uploads/editor-videos/{filename}')
+    range_response = logged_video_client.get(
+        f'/uploads/editor-videos/{filename}', headers={'Range': 'bytes=2-5'}
+    )
+
+    assert metadata_response.status_code == 200
+    assert metadata_response.headers['Content-Type'].startswith(mime_type)
+    assert metadata_response.headers['Content-Length'] == '10'
+    assert range_response.status_code == 206
+    assert range_response.data == b'2345'
+    assert range_response.headers['Accept-Ranges'] == 'bytes'
+    assert range_response.headers['Content-Range'] == 'bytes 2-5/10'
+
+
+def test_uploaded_editor_video_requires_authentication(video_app, client):
+    response = client.get('/uploads/editor-videos/0123456789abcdef0123456789abcdef.mp4')
+
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    'url',
+    (
+        '/uploads/editor-videos/not-a-published-video.mp4',
+        '/uploads/editor-videos/0123456789abcdef0123456789abcdef.avi',
+        '/uploads/editor-videos/%2e%2e/secret.mp4',
+    ),
+)
+def test_uploaded_editor_video_rejects_unpublished_names(video_app, logged_video_client, url):
+    response = logged_video_client.get(url)
+
+    assert response.status_code == 404
+
+
 def test_sanitizer_only_allows_internal_uploaded_video_reference():
     safe = '<p>Antes</p><video src="/uploads/editor-videos/0123456789abcdef0123456789abcdef.mp4" controls preload="metadata" playsinline="true" data-article-video="true"></video><p>Depois</p>'
     assert sanitize_html(safe) == safe
