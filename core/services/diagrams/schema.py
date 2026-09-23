@@ -53,6 +53,7 @@ class DiagramSavePayload:
     content_hash: str
     files: tuple[DiagramFile, ...]
     lock_version: int | None
+    preview: Any | None = None
 
 
 def canonical_json(value: Any) -> str:
@@ -67,7 +68,8 @@ def _object(value: Any, field: str) -> dict[str, Any]:
     return value
 
 
-def validate_save_payload(data: Any, uploaded_files: Mapping[str, Any] | None = None) -> DiagramSavePayload:
+def validate_save_payload(data: Any, uploaded_files: Mapping[str, Any] | None = None,
+                          preview: Any | None = None) -> DiagramSavePayload:
     """Valida e normaliza uma carga JSON/multipart para o schema atual."""
     data = _object(data, "payload")
     version = data.get("schemaVersion")
@@ -139,5 +141,5 @@ def validate_save_payload(data: Any, uploaded_files: Mapping[str, Any] | None = 
     return DiagramSavePayload(
         document=document, canonical_json=canonical,
         content_hash=hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
-        files=tuple(parsed_files), lock_version=lock_version,
+        files=tuple(parsed_files), lock_version=lock_version, preview=preview,
     )

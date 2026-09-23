@@ -5,15 +5,17 @@ from uuid import UUID
 
 from markupsafe import Markup, escape
 
-from ...models import Diagram, DiagramAsset
-from .access import can_view
+from ...models import Diagram
+from .access import can_view, require_view
 from .storage import get_storage
 
 
-def get_preview(diagram, user, *, storage=None):
-    if not can_view(user, diagram):
-        raise PermissionError('Preview fora do escopo do usuário.')
-    preview = next((asset for asset in reversed(diagram.assets) if asset.kind == 'preview'), None)
+def get_preview(diagram, user, *, version=None, storage=None):
+    require_view(user, diagram)
+    version = version or diagram.current_version_record
+    if not version or version.diagram_id != diagram.id:
+        return None, None
+    preview = next((asset for asset in version.assets if asset.kind == 'preview'), None)
     if not preview:
         return None, None
     return (storage or get_storage()).read(preview.storage_key), preview.content_type

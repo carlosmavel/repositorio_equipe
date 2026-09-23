@@ -1,9 +1,35 @@
 {% extends "base.html" %}
 {% block title %}{{ diagram.title }}{% endblock %}
+{% block extra_css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/diagram-preview.css') }}">
+{% endblock %}
 {% block content %}
 <main class="container py-4" data-diagram-id="{{ diagram.id }}">
   <h1>{{ diagram.title }}</h1>
   <div id="diagram-editor" data-version="{{ diagram.current_version }}"></div>
+  {% if diagram.current_version_record and diagram.current_version_record.assets | selectattr('kind', 'equalto', 'preview') | list %}
+  <button class="diagram-preview-frame mt-4" type="button" data-bs-toggle="modal"
+          data-bs-target="#diagramPreviewModal" aria-label="Ampliar preview do diagrama">
+    <img src="{{ url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id) }}"
+         alt="Preview de {{ diagram.title }}" class="diagram-preview-image">
+  </button>
+  <div class="modal fade diagram-preview-modal" id="diagramPreviewModal" tabindex="-1"
+       aria-labelledby="diagramPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="diagramPreviewModalLabel">{{ diagram.title }}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body app-scrollbar">
+          <img src="{{ url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id) }}"
+               alt="Preview ampliado de {{ diagram.title }}">
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </main>
 {% endblock %}
 {% block extra_js %}

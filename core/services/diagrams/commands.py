@@ -9,7 +9,7 @@ from ...models import Diagram, DiagramAsset, DiagramVersion
 from ...enums import DiagramStatus
 from .access import require_edit, require_view
 from .schema import ORQUETASK_DIAGRAM_SCHEMA_VERSION, DiagramSavePayload
-from .storage import get_storage
+from .storage import get_storage, sanitize_preview
 
 
 def _snapshot(diagram, author_id, session):
@@ -115,6 +115,16 @@ def save_diagram_payload(user, diagram, payload: DiagramSavePayload, *, title=No
                 )
                 session.add(asset)
             version.assets.append(asset)
+        if payload.preview is not None:
+            content, content_type, _, _ = sanitize_preview(payload.preview)
+            digest = hashlib.sha256(content).hexdigest()
+            preview = DiagramAsset(
+                diagram=diagram, storage_key=storage.put_sha256(content),
+                sha256=digest, byte_size=len(content), kind='preview',
+                content_type=content_type,
+            )
+            session.add(preview)
+            version.assets.append(preview)
         return diagram
 
     return _atomic(operation, session)
