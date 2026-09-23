@@ -2,12 +2,13 @@
 
 import json
 import re
+from uuid import UUID
 
 from ...database import db
 from ...models import ArticleDiagram
 
 _HTML_REFERENCE = re.compile(
-    r'(?:data-diagram-id|diagram-id)=["\'](?P<id>\d+)["\']', re.I
+    r'(?:data-diagram-id|diagram-id)=["\'](?P<id>[0-9a-fA-F-]{36})["\']', re.I
 )
 
 
@@ -15,7 +16,7 @@ def extract_diagram_ids(content):
     """Aceita HTML, JSON serializado ou a árvore JSON do editor Tiptap."""
     found = set()
     if isinstance(content, str):
-        found.update(int(match.group('id')) for match in _HTML_REFERENCE.finditer(content))
+        found.update(UUID(match.group('id')) for match in _HTML_REFERENCE.finditer(content))
         try:
             content = json.loads(content)
         except (TypeError, ValueError):
@@ -23,8 +24,11 @@ def extract_diagram_ids(content):
     if isinstance(content, dict):
         if content.get('type') == 'articleDiagram':
             value = (content.get('attrs') or {}).get('diagramId')
-            if value is not None and str(value).isdigit():
-                found.add(int(value))
+            if value is not None and value:
+                try:
+                    found.add(UUID(str(value)))
+                except (TypeError, ValueError):
+                    pass
         for value in content.values():
             found.update(extract_diagram_ids(value))
     elif isinstance(content, list):

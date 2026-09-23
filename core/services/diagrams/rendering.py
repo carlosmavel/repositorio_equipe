@@ -1,6 +1,7 @@
 """Leitura de previews e expansão de referências em artigos."""
 
 import re
+from uuid import UUID
 
 from markupsafe import Markup, escape
 
@@ -21,12 +22,12 @@ def get_preview(diagram, user, *, storage=None):
 def expand_article_references(content, user, *, url_builder=None):
     """Troca marcadores HTML por figuras; referências invisíveis não vazam dados."""
     def replacement(match):
-        diagram = Diagram.query.get(int(match.group('id')))
+        diagram = Diagram.query.get(UUID(match.group('id')))
         if not can_view(user, diagram):
             return ''
         url = url_builder(diagram) if url_builder else f'/api/diagramas/{diagram.id}/preview'
         return str(Markup('<figure class="article-diagram"><img src="{}" alt="{}"></figure>').format(
             escape(url), escape(diagram.title)))
 
-    pattern = re.compile(r'<(?:div|span)[^>]*data-diagram-id=["\'](?P<id>\d+)["\'][^>]*>.*?</(?:div|span)>', re.I | re.S)
+    pattern = re.compile(r'<(?:div|span)[^>]*data-diagram-id=["\'](?P<id>[0-9a-fA-F-]{36})["\'][^>]*>.*?</(?:div|span)>', re.I | re.S)
     return pattern.sub(replacement, content or '')
