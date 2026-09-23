@@ -138,7 +138,7 @@ def test_novo_artigo_sinaliza_limpeza_autosave_apenas_apos_sucesso(client, monke
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert 'const SHOULD_CLEAR_AUTOSAVE = true;' in html
+    assert '"clearAutosave": true' in html
     with client.session_transaction() as sess:
         assert 'artigo_novo_autosave_sucesso' not in sess
 
@@ -158,23 +158,20 @@ def test_novo_artigo_erro_validacao_nao_sinaliza_limpeza_autosave(client):
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert 'const SHOULD_CLEAR_AUTOSAVE = false;' in html
+    assert '"clearAutosave": false' in html
     with client.session_transaction() as sess:
         assert 'artigo_novo_autosave_sucesso' not in sess
 
 
 def test_novo_artigo_remove_autosave_ao_submeter():
     source = (
-        Path(__file__).resolve().parents[1] / "templates" / "artigos" / "novo_artigo.html"
+        Path(__file__).resolve().parents[1] / "frontend" / "article-editor" / "index.js"
     ).read_text(encoding="utf-8")
-    submit_listener = source[source.index("form.addEventListener('submit'"):]
+    create_submission = source[source.index("if (config.mode === 'create')"):]
 
-    assert "localStorage.removeItem(STORAGE_KEY);" in submit_listener
-    assert submit_listener.index("document.getElementById('hidden-texto').value") < submit_listener.index(
-        "localStorage.removeItem(STORAGE_KEY);"
-    )
-    assert submit_listener.index("localStorage.removeItem(STORAGE_KEY);") < submit_listener.index(
-        "const progressId ="
+    assert "localStorage.removeItem(STORAGE_KEY);" in create_submission
+    assert create_submission.index("localStorage.removeItem(STORAGE_KEY);") < create_submission.index(
+        "form.submit();"
     )
 
 
