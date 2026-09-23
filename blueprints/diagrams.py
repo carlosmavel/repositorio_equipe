@@ -5,9 +5,10 @@ serviços em :mod:`core.services.diagrams`.
 """
 
 from functools import wraps
+import hashlib
 import json
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, session, url_for
 
 try:
     from ..core.database import db
@@ -100,10 +101,12 @@ def api_save_diagram(user, diagram_id):
         if request.mimetype == 'multipart/form-data':
             data = json.loads(request.form.get('payload', ''))
             uploads = request.files.to_dict()
+            preview = uploads.pop('preview', None)
         else:
             data = request.get_json(silent=False)
             uploads = {}
-        payload = validate_save_payload(data, uploads)
+            preview = None
+        payload = validate_save_payload(data, uploads, preview=preview)
         diagram = save_diagram_payload(user, diagram, payload, title=data.get('title'))
     except (DiagramSchemaError, json.JSONDecodeError) as error:
         return jsonify(error=str(error)), 400
@@ -134,10 +137,29 @@ def api_archive_diagram(user, diagram_id):
     return jsonify(_serialize(archive_diagram(user, db.get_or_404(Diagram, diagram_id))))
 
 
+def _preview_response(diagram, user, version=None):
+    content, content_type = get_preview(diagram, user, version=version)
+    if content is None:
+        abort(404)
+    response = make_response(content)
+    response.headers['Content-Type'] = content_type or 'image/png'
+    response.headers['Cache-Control'] = 'private, max-age=300'
+    response.set_etag(hashlib.sha256(content).hexdigest())
+    return response.make_conditional(request)
+
+
+@diagrams_bp.get('/diagramas/<uuid:diagram_id>/preview')
 @diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/preview')
 @authenticated
 def api_diagram_preview(user, diagram_id):
-    content, content_type = get_preview(db.get_or_404(Diagram, diagram_id), user)
-    if content is None:
-        abort(404)
-    return content, 200, {'Content-Type': content_type or 'image/svg+xml', 'Cache-Control': 'private, max-age=300'}
+    return _preview_response(db.get_or_404(Diagram, diagram_id), user)
+
+
+@diagrams_bp.get('/diagramas/<uuid:diagram_id>/versoes/<int:version_number>/preview')
+@authenticated
+def diagram_version_preview(user, diagram_id, version_number):
+    diagram = db.get_or_404(Diagram, diagram_id)
+    version = DiagramVersion.query.filter_by(
+        diagram_id=diagram.id, version_number=version_number
+    ).first_or_404()
+    return _preview_response(diagram, user, version)
