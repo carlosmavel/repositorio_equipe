@@ -12,6 +12,7 @@ import { Placeholder } from 'https://esm.sh/@tiptap/extensions@3';
 import { TextAlign } from 'https://esm.sh/@tiptap/extension-text-align@3';
 import { Highlight } from 'https://esm.sh/@tiptap/extension-highlight@3';
 import { FileHandler } from 'https://esm.sh/@tiptap/extension-file-handler@3';
+import ArticleDiagram from './extensions/article-diagram.js';
 
 const configElement = document.getElementById('article-editor-config');
 const config = configElement ? JSON.parse(configElement.textContent) : {};
@@ -21,7 +22,7 @@ export const ARTICLE_EDITOR_NODE_NAMES = [
   'starterKit', 'image', 'articleVideo', 'link', 'subscript', 'superscript',
   'textStyle', 'color', 'underline', 'table', 'tableRow', 'tableCell',
   'tableHeader', 'taskList', 'taskItem', 'placeholder', 'textAlign',
-  'highlight', 'fileHandler'
+  'highlight', 'fileHandler', 'articleDiagram'
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -193,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         StarterKit,
         Image.configure({ allowBase64: false }),
         VideoNode,
+        ArticleDiagram,
         Link.configure({ openOnClick: false, defaultProtocol: 'https' }),
         Subscript,
         Superscript,
@@ -290,6 +292,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cols === null) return;
     editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
   };
+  const chooseDiagram = async (items, message) => {
+    if (!items.length) {
+      alert('Nenhum diagrama disponível.');
+      return null;
+    }
+    const choices = items.map((item, index) => `${index + 1}. ${item.title}`).join('\n');
+    const selected = prompt(`${message}\n\n${choices}`);
+    if (selected === null) return null;
+    const index = Number.parseInt(selected, 10) - 1;
+    return items[index] || null;
+  };
+
+  const insertArticleDiagram = async () => {
+    const option = prompt('Inserir diagrama:\n1. Criar novo\n2. Vincular existente\n3. Criar a partir de modelo', '1');
+    if (option === null) return;
+    let diagram = null;
+    if (option === '1') {
+      const title = prompt('Título do novo diagrama:');
+      if (!title?.trim()) return;
+      const response = await fetch('/api/diagramas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ title: title.trim() })
+      });
+      diagram = await response.json();
+      if (!response.ok) throw new Error(diagram.error || 'Não foi possível criar o diagrama.');
+    } else {
+      const metadataResponse = await fetch(`/api/diagramas/metadados${option === '3' ? '?tipo=modelo' : ''}`, { headers: { Accept: 'application/json' } });
+      const items = await metadataResponse.json();
+      if (!metadataResponse.ok) throw new Error(items.error || 'Não foi possível listar os diagramas.');
+      const selected = await chooseDiagram(items, option === '3' ? 'Escolha um modelo:' : 'Escolha um diagrama:');
+      if (!selected) return;
+      if (option === '2') {
+        diagram = selected;
+      } else if (option === '3') {
+        const title = prompt('Título da cópia:', selected.title);
+        if (!title?.trim()) return;
+        const copyResponse = await fetch(`/api/diagramas/${selected.id}/copiar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ title: title.trim() })
+        });
+        diagram = await copyResponse.json();
+        if (!copyResponse.ok) throw new Error(diagram.error || 'Não foi possível copiar o modelo.');
+      } else {
+        alert('Escolha uma opção entre 1 e 3.');
+        return;
+      }
+    }
+    editor.chain().focus().insertArticleDiagram({ diagramId: diagram.id, position: editor.state.selection.anchor }).run();
+  };
+
   const runEditorCommand = (command) => {
     const chain = editor.chain().focus();
     const commands = {
@@ -323,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearFormat: () => chain.unsetAllMarks().clearNodes().run(),
       insertTable: () => insertConfiguredTable(),
       insertVideo: () => selectAndUploadVideo(),
+      insertArticleDiagram: () => insertArticleDiagram().catch(error => alert(error.message || 'Não foi possível inserir o diagrama.')),
       addColumnBefore: () => chain.addColumnBefore().run(),
       addColumnAfter: () => chain.addColumnAfter().run(),
       deleteColumn: () => chain.deleteColumn().run(),
@@ -343,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateToolbarState(editorInstance = editor) {
     const passiveCommands = [
       'paragraph', 'textColor', 'unsetColor', 'horizontalRule', 'hardBreak', 'setLink', 'unsetLink',
-      'clearFormat', 'insertTable', 'insertVideo', 'addColumnBefore', 'addColumnAfter', 'deleteColumn', 'addRowBefore',
+      'clearFormat', 'insertTable', 'insertVideo', 'insertArticleDiagram', 'addColumnBefore', 'addColumnAfter', 'deleteColumn', 'addRowBefore',
       'addRowAfter', 'deleteRow', 'mergeCells', 'splitCell', 'toggleHeaderRow', 'toggleHeaderColumn',
       'deleteTable', 'undo', 'redo'
     ];

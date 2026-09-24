@@ -83,6 +83,32 @@ def api_diagrams(user):
     return jsonify([_serialize(item) for item in scoped_diagrams(Diagram.query, user).all()])
 
 
+@diagrams_bp.get('/api/diagramas/metadados')
+@authenticated
+def api_diagram_metadata_list(user):
+    query = scoped_diagrams(Diagram.query, user)
+    requested_type = request.args.get('tipo')
+    if requested_type == 'modelo':
+        query = query.filter(Diagram.diagram_type == 'template')
+    return jsonify([{
+        'id': str(item.id),
+        'title': item.title,
+        'diagram_type': item.diagram_type.value,
+        'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=item.id),
+    } for item in query.order_by(Diagram.updated_at.desc()).all()])
+
+
+@diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/metadados')
+@authenticated
+def api_diagram_metadata(user, diagram_id):
+    diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
+    return jsonify({
+        'id': str(diagram.id),
+        'title': diagram.title,
+        'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
+    })
+
+
 @diagrams_bp.post('/api/diagramas')
 @authenticated
 def api_create_diagram(user):
