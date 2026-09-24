@@ -16,6 +16,7 @@ from odf.text import P
 import logging
 import time
 import warnings
+from uuid import UUID
 from cryptography.utils import CryptographyDeprecationWarning
 
 # Suprime avisos depreciação do ARC4 vindos do pypdf/cryptography durante o
@@ -409,6 +410,7 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
         "th": {"colspan", "rowspan", "colwidth"},
         "td": {"colspan", "rowspan", "colwidth"},
         "col": {"width"},
+        "figure": {"data-article-diagram", "data-diagram-id"},
     }
 
     if name == "class":
@@ -416,6 +418,15 @@ def _sanitize_html_attribute(tag: str, name: str, value: str) -> bool:
 
     if name not in allowed_attrs_by_tag.get(tag, set()):
         return False
+
+    if tag == "figure" and name == "data-article-diagram":
+        return value in {"", "true", "data-article-diagram"}
+
+    if tag == "figure" and name == "data-diagram-id":
+        try:
+            return str(UUID(value or "")) == (value or "").lower()
+        except (ValueError, AttributeError):
+            return False
 
     if name == "style":
         return _has_only_safe_editor_styles(tag, value)
@@ -482,13 +493,42 @@ def sanitize_html(text: str) -> str:
         "th", "td", "colgroup", "col", "label", "input", "span", "sub", "sup", "hr", "video",
     ]
 
-    return bleach.clean(
+    cleaned = bleach.clean(
         text,
         tags=allowed_tags,
         attributes=_sanitize_html_attribute,
         strip=True,
         protocols=["http", "https", "mailto", "data"],
         css_sanitizer=_EDITOR_CSS_SANITIZER,
+    )
+
+    # Os atributos de referência são reservados ao nó atômico articleDiagram.
+    # Além de validá-los individualmente acima, esta etapa exige o par completo
+    # e evita placeholders incompletos sem afetar figuras comuns do editor.
+    def normalize_article_diagram(match: re.Match[str]) -> str:
+        opening, body = match.group("opening"), match.group("body")
+        attrs = dict(re.findall(r'([\w-]+)="([^"]*)"', opening))
+        if not ({"data-article-diagram", "data-diagram-id"} & set(attrs)):
+            return match.group(0)
+        diagram_id = attrs.get("data-diagram-id", "")
+        try:
+            valid_uuid = str(UUID(diagram_id)) == diagram_id.lower()
+        except (ValueError, AttributeError):
+            valid_uuid = False
+        if (
+            set(attrs) == {"data-article-diagram", "data-diagram-id"}
+            and attrs["data-article-diagram"] in {"", "true", "data-article-diagram"}
+            and valid_uuid
+            and not body.strip()
+        ):
+            return f'<figure data-article-diagram="true" data-diagram-id="{diagram_id.lower()}"></figure>'
+        return ""
+
+    return re.sub(
+        r'<figure(?P<opening>[^>]*)>(?P<body>.*?)</figure>',
+        normalize_article_diagram,
+        cleaned,
+        flags=re.IGNORECASE | re.DOTALL,
     )
 
 """

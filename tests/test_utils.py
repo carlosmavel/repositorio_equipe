@@ -243,3 +243,17 @@ def test_extract_text_integration(tmp_path):
         rotated = img.rotate(90, expand=True)
         text_rot = extract_text_from_image(rotated)
         assert text_rot.strip()
+
+
+def test_sanitize_html_keeps_only_valid_article_diagram_placeholder():
+    diagram_id = "123e4567-e89b-42d3-a456-426614174000"
+
+    cleaned = sanitize_html(
+        f'<figure data-article-diagram="true" data-diagram-id="{diagram_id}"></figure>'
+        '<figure data-article-diagram="true" data-diagram-id="not-a-uuid"></figure>'
+        f'<span data-article-diagram="true" data-diagram-id="{diagram_id}"></span>'
+    )
+
+    assert cleaned.count('data-article-diagram') == 1
+    assert f'<figure data-article-diagram="true" data-diagram-id="{diagram_id}"></figure>' in cleaned
+    assert "not-a-uuid" not in cleaned

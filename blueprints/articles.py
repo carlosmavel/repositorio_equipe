@@ -83,6 +83,12 @@ except ImportError:  # pragma: no cover
 
 
 try:
+    from ..core.services.diagrams.rendering import resolve_article_diagrams
+except ImportError:  # pragma: no cover
+    from core.services.diagrams.rendering import resolve_article_diagrams
+
+
+try:
     from ..core.progress import (
         clear_progress,
         get_progress,
@@ -855,6 +861,7 @@ def artigo(artigo_id):
     return render_template(
         'artigos/artigo.html',
         artigo=artigo,
+        artigo_texto_renderizado=resolve_article_diagrams(artigo.texto, user),
         arquivos=arquivos,
         can_edit_article=user_can_edit_article(user, artigo),
         can_request_revision=bool(
@@ -968,6 +975,7 @@ def comparar_versoes_artigo(artigo_id):
         artigo=artigo,
         from_version=from_version,
         to_version=to_version,
+        textos_renderizados=resolve_article_diagrams([from_version.texto, to_version.texto], user),
         comparacao=comparacao,
         ArticleStatus=ArticleStatus,
     )
@@ -994,6 +1002,7 @@ def visualizar_versao_artigo(artigo_id, version_id):
         'artigos/visualizar_versao.html',
         artigo=artigo,
         versao=versao,
+        versao_texto_renderizado=resolve_article_diagrams(versao.texto, user),
         can_restore_versions=user_can_restore_article_version(user),
         ArticleStatus=ArticleStatus,
     )
@@ -1737,6 +1746,7 @@ def aprovacao_detail(artigo_id):
     return render_template(
         'artigos/aprovacao_detail.html',
         artigo   = artigo,
+        artigo_texto_renderizado=resolve_article_diagrams(artigo.texto, user),
         arquivos = arquivos,
         comments_history=comments_history,
         revision_history=revision_history
