@@ -26,7 +26,7 @@ FRIENDLY_NAMES: dict[str, str] = {
     Permissao.BOLETIM_GERENCIAR.value: "Boletim gerenciar",
     Permissao.DIAGRAMA_VISUALIZAR.value: "Visualizar diagramas",
     Permissao.DIAGRAMA_CRIAR.value: "Criar diagramas",
-    Permissao.DIAGRAMA_GERENCIAR_MODELOS.value: "Gerenciar modelos de diagramas",
+    Permissao.DIAGRAMA_MODELO_GERENCIAR.value: "Gerenciar modelos de diagramas",
 }
 
 
@@ -47,7 +47,9 @@ CATALOG: tuple[PermissionCatalogItem, ...] = (
 CATALOG_BY_CODE: dict[str, PermissionCatalogItem] = {item.codigo: item for item in CATALOG}
 
 # Migrações lógicas de código (de -> para) permitidas no sincronizador.
-CODE_ALIASES: dict[str, str] = {}
+CODE_ALIASES: dict[str, str] = {
+    "diagrama_gerenciar_modelos": Permissao.DIAGRAMA_MODELO_GERENCIAR.value,
+}
 
 # Códigos descontinuados do catálogo nativo que podem permanecer no banco
 # sem atualização automática até remoção por migração explícita.

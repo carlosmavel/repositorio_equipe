@@ -1,15 +1,71 @@
 """Comandos transacionais do domínio de diagramas."""
 
 from datetime import datetime, timezone
+from copy import deepcopy
 import hashlib
 import json
 
 from ...database import db
 from ...models import Diagram, DiagramAsset, DiagramVersion
-from ...enums import DiagramStatus
-from .access import require_edit, require_view
+from ...enums import DiagramScope, DiagramStatus, DiagramType
+from .access import _organizational_ids, require_edit, require_view
 from .schema import ORQUETASK_DIAGRAM_SCHEMA_VERSION, DiagramSavePayload
 from .storage import get_storage, sanitize_preview
+
+
+def _has_permission(actor, code):
+    return bool(actor and (actor.has_permissao('admin') or actor.has_permissao(code)))
+
+
+def _require_permission(actor, code):
+    if not _has_permission(actor, code):
+        from .access import DiagramAccessDenied
+        raise DiagramAccessDenied(f'Permissão {code} necessária.')
+
+
+def _require_template_management(actor, diagram=None):
+    if diagram is None or diagram.diagram_type == DiagramType.TEMPLATE:
+        _require_permission(actor, 'diagrama_modelo_gerenciar')
+
+
+def _scope_values(actor, target_scope):
+    """Normaliza o escopo solicitado e impede IDs organizacionais ambíguos."""
+    if isinstance(target_scope, dict):
+        raw_scope = target_scope.get('scope', target_scope.get('type'))
+        target_id = target_scope.get('id')
+    else:
+        raw_scope, target_id = target_scope, None
+    scope = raw_scope if isinstance(raw_scope, DiagramScope) else DiagramScope(raw_scope)
+    fields = {name: None for name in (
+        'instituicao_id', 'estabelecimento_id', 'setor_id', 'celula_id'
+    )}
+    if scope == DiagramScope.PRIVATE:
+        return scope, fields
+    attributes = {
+        DiagramScope.INSTITUTION: 'instituicao_id',
+        DiagramScope.ESTABLISHMENT: 'estabelecimento_id',
+        DiagramScope.SECTOR: 'setor_id',
+        DiagramScope.CELL: 'celula_id',
+    }
+    field = attributes[scope]
+    if target_id is None:
+        target_id = getattr(actor, field, None)
+        if target_id is None and field == 'instituicao_id' and actor.estabelecimento:
+            target_id = actor.estabelecimento.instituicao_id
+    if target_id is None:
+        raise ValueError('O ator não pertence ao escopo de destino informado.')
+    membership_keys = {
+        DiagramScope.INSTITUTION: 'institutions',
+        DiagramScope.ESTABLISHMENT: 'establishments',
+        DiagramScope.SECTOR: 'sectors',
+        DiagramScope.CELL: 'cells',
+    }
+    if not _has_permission(actor, 'admin'):
+        allowed_ids = _organizational_ids(actor)[membership_keys[scope]]
+        if target_id not in allowed_ids:
+            raise ValueError('O ator não pertence ao escopo de destino informado.')
+    fields[field] = target_id
+    return scope, fields
 
 
 def _snapshot(diagram, author_id, session):
@@ -40,12 +96,20 @@ def _atomic(operation, session):
 
 
 def create_diagram(user, title, document=None, *, celula_id=None,
-                   source_diagram_id=None, assets=(), session=None):
+                   source_diagram_id=None, assets=(), session=None,
+                   diagram_type=DiagramType.DIAGRAM):
     session = session or db.session
+    diagram_type = (diagram_type if isinstance(diagram_type, DiagramType)
+                    else DiagramType(diagram_type))
+    if diagram_type == DiagramType.TEMPLATE:
+        _require_template_management(user)
+    else:
+        _require_permission(user, 'diagrama_criar')
     def operation():
         diagram = Diagram(title=title.strip(), document=document or {}, owner_id=user.id,
                           celula_id=celula_id or user.celula_id,
-                          source_diagram_id=source_diagram_id)
+                          source_template_id=source_diagram_id,
+                          diagram_type=diagram_type)
         session.add(diagram)
         session.flush()
         _snapshot(diagram, user.id, session)
@@ -57,6 +121,7 @@ def create_diagram(user, title, document=None, *, celula_id=None,
 
 def save_diagram(user, diagram, *, title=None, document=None, assets=(), session=None):
     session = session or db.session
+    _require_template_management(user, diagram)
     require_edit(user, diagram)
     def operation():
         if title is not None:
@@ -81,6 +146,7 @@ def save_diagram_payload(user, diagram, payload: DiagramSavePayload, *, title=No
     """
     session = session or db.session
     storage = storage or get_storage()
+    _require_template_management(user, diagram)
     require_edit(user, diagram)
     normalized_title = str(title).strip() if title is not None else None
 
@@ -131,11 +197,47 @@ def save_diagram_payload(user, diagram, payload: DiagramSavePayload, *, title=No
 
 
 def copy_template(user, template, *, title=None, session=None):
-    require_view(user, template)
-    return create_diagram(
-        user, title or f'Cópia de {template.title}', template.document,
-        celula_id=user.celula_id, source_diagram_id=template.id, session=session,
+    session = session or db.session
+    diagram_id = create_diagram_from_template(
+        template.id, user,
+        ({'scope': DiagramScope.CELL, 'id': user.celula_id}
+         if user.celula_id else DiagramScope.PRIVATE),
+        title=title, session=session,
     )
+    return session.get(Diagram, diagram_id)
+
+
+def create_diagram_from_template(template_id, actor, target_scope, *, title=None,
+                                 session=None):
+    """Cria uma cópia independente da versão corrente de um modelo."""
+    session = session or db.session
+    _require_permission(actor, 'diagrama_visualizar')
+    _require_permission(actor, 'diagrama_criar')
+
+    def operation():
+        template = session.query(Diagram).filter_by(id=template_id).with_for_update().one()
+        if template.diagram_type != DiagramType.TEMPLATE:
+            raise ValueError('O diagrama de origem não é um modelo.')
+        require_view(actor, template)
+        source_version = session.query(DiagramVersion).filter_by(
+            id=template.current_version_id,
+        ).with_for_update().one()
+        scope, scope_fields = _scope_values(actor, target_scope)
+        document = deepcopy(source_version.document)
+        diagram = Diagram(
+            title=(title or f'Cópia de {template.title}').strip(),
+            document=deepcopy(document), owner_id=actor.id, diagram_type=DiagramType.DIAGRAM,
+            scope=scope, source_template_id=template.id, **scope_fields,
+        )
+        session.add(diagram)
+        session.flush()
+        version = _snapshot(diagram, actor.id, session)
+        version.document = document
+        version.source_version_id = source_version.id
+        version.assets.extend(source_version.assets)
+        return diagram.id
+
+    return _atomic(operation, session)
 
 
 def restore_diagram(user, diagram, version, *, session=None):
@@ -148,6 +250,7 @@ def restore_diagram(user, diagram, version, *, session=None):
 
 def archive_diagram(user, diagram, *, session=None):
     session = session or db.session
+    _require_template_management(user, diagram)
     require_edit(user, diagram)
     def operation():
         diagram.archived_at = datetime.now(timezone.utc)
