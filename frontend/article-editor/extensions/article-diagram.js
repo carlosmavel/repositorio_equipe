@@ -10,7 +10,10 @@ export const ArticleDiagram = Node.create({
   selectable: true,
 
   addOptions() {
-    return { metadataUrl: diagramId => `/api/diagramas/${diagramId}/metadados` };
+    return {
+      metadataUrl: diagramId => `/api/diagramas/${diagramId}/metadados`,
+      onOpenDiagram: null
+    };
   },
 
   addAttributes() {
@@ -68,16 +71,17 @@ export const ArticleDiagram = Node.create({
           image.alt = metadata.title || 'Diagrama';
           image.loading = 'lazy';
           const actionUrl = metadata.can_edit ? metadata.editor_url : metadata.view_url;
-          if (actionUrl) {
-            const action = document.createElement('a');
+          if (actionUrl && this.options.onOpenDiagram) {
+            const action = document.createElement('button');
+            action.type = 'button';
             action.className = 'btn btn-sm btn-primary article-diagram__action';
-            action.href = actionUrl;
-            action.target = '_blank';
-            action.rel = 'noopener';
             action.textContent = metadata.can_edit ? 'Editar diagrama' : 'Visualizar diagrama';
             action.setAttribute('aria-label', `${action.textContent}: ${metadata.title || 'Diagrama'}`);
             action.addEventListener('pointerdown', stopEditorEvent);
-            action.addEventListener('click', stopEditorEvent);
+            action.addEventListener('click', event => {
+              stopEditorEvent(event);
+              this.options.onOpenDiagram(metadata, action);
+            });
             dom.replaceChildren(image, action);
           } else {
             dom.replaceChildren(image);

@@ -4,6 +4,7 @@ import {
   exportToBlob,
 } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
+import diagramTransport from './transport.js';
 
 const STATUS = {
   clean: '✓ Salvo',
@@ -33,7 +34,7 @@ export function DiagramWorkspace({
   excalidrawVersion,
   loadScene,
   saveScene,
-  transport = globalThis.OrquetaskDiagramSave,
+  transport = diagramTransport,
   onSaved,
   onDirtyChange,
   onStatusChange,

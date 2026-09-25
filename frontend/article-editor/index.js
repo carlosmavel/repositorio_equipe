@@ -13,6 +13,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { Highlight } from '@tiptap/extension-highlight';
 import { FileHandler } from '@tiptap/extension-file-handler';
 import ArticleDiagram from './extensions/article-diagram.js';
+import { openDiagramOverlay } from '../diagram-ui/overlay.jsx';
 
 const configElement = document.getElementById('article-editor-config');
 const config = configElement ? JSON.parse(configElement.textContent) : {};
@@ -196,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         StarterKit.configure({ link: false, underline: false }),
         Image.configure({ allowBase64: false }),
         VideoNode,
-        ArticleDiagram,
+        ArticleDiagram.configure({ onOpenDiagram: openDiagramOverlay }),
         Link.configure({ openOnClick: false, defaultProtocol: 'https' }),
         Subscript,
         Superscript,
