@@ -3,7 +3,7 @@
 import pytest
 
 from core.database import db
-from core.models import Diagram, DiagramAsset, DiagramVersion, User
+from core.models import Diagram, DiagramAsset, DiagramVersion, Funcao, User
 from core.services.diagrams.commands import (
     DiagramVersionConflict, get_diagram_version_history,
     restore_diagram_version, save_diagram_version,
@@ -20,6 +20,10 @@ def _scene(element_id):
 
 def _diagram():
     actor = User(username='version-owner', email='versions@example.test', password_hash='x')
+    actor.permissoes_personalizadas.extend([
+        Funcao(codigo='diagrama_visualizar', nome='Visualizar diagramas'),
+        Funcao(codigo='diagrama_editar', nome='Editar diagramas'),
+    ])
     first_scene = _scene('one')
     diagram = Diagram(title='Fluxo', document=first_scene.document, owner=actor)
     first = DiagramVersion(diagram=diagram, number=1, title=diagram.title,

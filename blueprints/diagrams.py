@@ -14,19 +14,27 @@ from sqlalchemy import asc, desc
 try:
     from ..core.database import db
     from ..core.enums import DiagramScope, DiagramType
-    from ..core.models import Diagram, DiagramVersion, User
-    from ..core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
+    from ..core.models import Article, Diagram, DiagramVersion, User
+    from ..core.services.diagrams.access import (
+        DiagramAccessDenied, can_render_diagram_in_article, require_view,
+        scoped_diagrams,
+    )
     from ..core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
     from ..core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from ..core.services.diagrams.rendering import get_preview
+    from ..core.services.diagrams.storage import get_storage
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
     from core.enums import DiagramScope, DiagramType
-    from core.models import Diagram, DiagramVersion, User
-    from core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
+    from core.models import Article, Diagram, DiagramVersion, User
+    from core.services.diagrams.access import (
+        DiagramAccessDenied, can_render_diagram_in_article, require_view,
+        scoped_diagrams,
+    )
     from core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
     from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from core.services.diagrams.rendering import get_preview
+    from core.services.diagrams.storage import get_storage
 
 
 diagrams_bp = Blueprint('diagrams_bp', __name__)
@@ -244,6 +252,28 @@ def _preview_response(diagram, user, version=None):
 @authenticated
 def api_diagram_preview(user, diagram_id):
     return _preview_response(db.get_or_404(Diagram, diagram_id), user)
+
+
+@diagrams_bp.get('/artigos/<int:article_id>/diagramas/<uuid:diagram_id>/preview')
+@authenticated
+def embedded_diagram_preview(user, article_id, diagram_id):
+    """Entrega somente a imagem vinculada ao artigo, nunca a cena editável."""
+    article = db.get_or_404(Article, article_id)
+    diagram = db.get_or_404(Diagram, diagram_id)
+    if not can_render_diagram_in_article(user, diagram, article):
+        raise DiagramAccessDenied('Incorporação indisponível para este usuário.')
+    version = diagram.current_version_record
+    if not version:
+        abort(404)
+    preview = next((asset for asset in version.assets if asset.kind == 'preview'), None)
+    if not preview:
+        abort(404)
+    content = get_storage().read(preview.storage_key)
+    response = make_response(content)
+    response.headers['Content-Type'] = preview.content_type or 'image/png'
+    response.headers['Cache-Control'] = 'private, max-age=300'
+    response.set_etag(hashlib.sha256(content).hexdigest())
+    return response.make_conditional(request)
 
 
 @diagrams_bp.get('/diagramas/<uuid:diagram_id>/versoes/<int:version_number>/preview')

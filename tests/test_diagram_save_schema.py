@@ -7,7 +7,7 @@ import pytest
 from werkzeug.datastructures import FileStorage
 
 from core.database import db
-from core.models import Diagram, DiagramAsset, DiagramVersion, User
+from core.models import Diagram, DiagramAsset, DiagramVersion, Funcao, User
 from core.services.diagrams.commands import save_diagram_payload
 from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
 
@@ -52,6 +52,9 @@ def test_save_creates_version_and_content_addressed_asset(app_ctx, tmp_path):
             return f'assets/sha256/{digest}'
 
     user = User(username='diagram-save', email='diagram-save@example.test', password_hash='x')
+    user.permissoes_personalizadas.append(
+        Funcao(codigo='diagrama_editar', nome='Editar diagramas')
+    )
     diagram = Diagram(title='Fluxo', document={}, owner=user)
     db.session.add_all([user, diagram])
     db.session.commit()
@@ -73,6 +76,9 @@ def test_save_creates_version_and_content_addressed_asset(app_ctx, tmp_path):
 
 def test_save_rejects_stale_lock(app_ctx):
     user = User(username='diagram-lock', email='diagram-lock@example.test', password_hash='x')
+    user.permissoes_personalizadas.append(
+        Funcao(codigo='diagrama_editar', nome='Editar diagramas')
+    )
     diagram = Diagram(title='Fluxo', document={}, owner=user, lock_version=2)
     db.session.add_all([user, diagram])
     db.session.commit()

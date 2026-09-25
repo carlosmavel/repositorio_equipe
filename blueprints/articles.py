@@ -120,6 +120,20 @@ import tempfile
 articles_bp = Blueprint('articles_bp', __name__)
 
 
+def _render_article_diagrams(article, contents, user):
+    """Resolve incorporações para a URL restrita ao contexto do artigo."""
+    return resolve_article_diagrams(
+        contents,
+        user,
+        article=article,
+        url_builder=lambda diagram: url_for(
+            'diagrams_bp.embedded_diagram_preview',
+            article_id=article.id,
+            diagram_id=diagram.id,
+        ),
+    )
+
+
 def _request_correlation_id():
     return (
         request.headers.get('X-Request-ID')
@@ -865,7 +879,7 @@ def artigo(artigo_id):
     return render_template(
         'artigos/artigo.html',
         artigo=artigo,
-        artigo_texto_renderizado=resolve_article_diagrams(artigo.texto, user),
+        artigo_texto_renderizado=_render_article_diagrams(artigo, artigo.texto, user),
         arquivos=arquivos,
         can_edit_article=user_can_edit_article(user, artigo),
         can_request_revision=bool(
@@ -979,7 +993,9 @@ def comparar_versoes_artigo(artigo_id):
         artigo=artigo,
         from_version=from_version,
         to_version=to_version,
-        textos_renderizados=resolve_article_diagrams([from_version.texto, to_version.texto], user),
+        textos_renderizados=_render_article_diagrams(
+            artigo, [from_version.texto, to_version.texto], user
+        ),
         comparacao=comparacao,
         ArticleStatus=ArticleStatus,
     )
@@ -1006,7 +1022,7 @@ def visualizar_versao_artigo(artigo_id, version_id):
         'artigos/visualizar_versao.html',
         artigo=artigo,
         versao=versao,
-        versao_texto_renderizado=resolve_article_diagrams(versao.texto, user),
+        versao_texto_renderizado=_render_article_diagrams(artigo, versao.texto, user),
         can_restore_versions=user_can_restore_article_version(user),
         ArticleStatus=ArticleStatus,
     )
@@ -1755,7 +1771,7 @@ def aprovacao_detail(artigo_id):
     return render_template(
         'artigos/aprovacao_detail.html',
         artigo   = artigo,
-        artigo_texto_renderizado=resolve_article_diagrams(artigo.texto, user),
+        artigo_texto_renderizado=_render_article_diagrams(artigo, artigo.texto, user),
         arquivos = arquivos,
         comments_history=comments_history,
         revision_history=revision_history

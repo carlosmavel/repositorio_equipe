@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from core.database import db
-from core.models import Article, ArticleDiagram, Diagram, User
+from core.models import Article, ArticleDiagram, Diagram, Funcao, User
 from core.services.diagrams.commands import save_diagram
 from core.services.diagrams.references import (
     DiagramReferenceError,
@@ -53,6 +53,10 @@ def test_sync_batch_validates_access_before_changing_links(app_ctx):
 
 def test_new_diagram_version_is_shared_by_all_linked_articles_without_article_changes(app_ctx):
     owner = User(username='diagram-shared', email='shared@example.test', password_hash='x')
+    owner.permissoes_personalizadas.extend([
+        Funcao(codigo='diagrama_visualizar', nome='Visualizar diagramas'),
+        Funcao(codigo='diagrama_editar', nome='Editar diagramas'),
+    ])
     diagram = Diagram(title='Fluxo', document={'step': 1}, owner=owner)
     first = Article(titulo='Primeiro', texto='<p>temporário</p>', author=owner)
     second = Article(titulo='Segundo', texto='<p>temporário</p>', author=owner)
