@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from core.database import db
 from core.enums import DiagramScope, DiagramStatus, DiagramType
 from core.models import (
-    ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User,
+    Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User,
     diagram_share_celula, diagram_share_estabelecimento,
     diagram_share_instituicao, diagram_share_setor, diagram_share_user,
 )
@@ -30,6 +30,7 @@ def test_diagram_domain_constraints_and_fk_policies(app_ctx):
     assert _ondelete(DiagramAsset, 'diagram_id') == 'CASCADE'
     assert _ondelete(ArticleDiagram, 'article_id') == 'CASCADE'
     assert _ondelete(ArticleDiagram, 'diagram_id') == 'RESTRICT'
+    assert Article.diagram_links.property.passive_deletes == 'all'
 
     unique_columns = {
         tuple(column.name for column in constraint.columns)

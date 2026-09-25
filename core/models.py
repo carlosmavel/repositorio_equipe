@@ -408,8 +408,12 @@ class Article(db.Model):
     attachments = db.relationship('Attachment', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='artigo', lazy='dynamic', cascade='all, delete-orphan')
     versions = db.relationship('ArticleVersion', back_populates='article', lazy='dynamic', cascade='all, delete-orphan')
-    diagram_links = db.relationship('ArticleDiagram', back_populates='article',
-                                    cascade='all, delete-orphan', passive_deletes=True)
+    # O banco é a única fonte de exclusão desses vínculos. Em particular,
+    # excluir um artigo em definitivo emite apenas o DELETE do artigo e deixa o
+    # ON DELETE CASCADE cuidar da tabela associativa (nunca do diagrama).
+    diagram_links = db.relationship(
+        'ArticleDiagram', back_populates='article', passive_deletes='all'
+    )
     tipo = db.relationship('ArtigoTipo')
     area = db.relationship('ArtigoArea')
     sistema = db.relationship('ArtigoSistema')

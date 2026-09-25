@@ -1,34 +1,46 @@
-"""Extração e sincronização de nós ``articleDiagram``."""
+"""Extração, validação e materialização de ``articleDiagram``."""
 
 import json
-import re
 from uuid import UUID
 
 from ...database import db
-from ...models import ArticleDiagram
+from ...models import ArticleDiagram, Diagram
+from .access import scoped_diagrams
+from .rendering import ARTICLE_DIAGRAM_PATTERN
 
-_HTML_REFERENCE = re.compile(
-    r'(?:data-diagram-id|diagram-id)=["\'](?P<id>[0-9a-fA-F-]{36})["\']', re.I
-)
+
+class DiagramReferenceError(ValueError):
+    """Uma ou mais referências não podem ser vinculadas ao artigo."""
+
+
+def _uuid(value):
+    try:
+        return UUID(str(value))
+    except (AttributeError, TypeError, ValueError):
+        return None
 
 
 def extract_diagram_ids(content):
-    """Aceita HTML, JSON serializado ou a árvore JSON do editor Tiptap."""
+    """Extrai IDs somente de placeholders ``articleDiagram`` válidos.
+
+    Aceita o HTML persistido pelo editor, JSON serializado ou a árvore JSON do
+    Tiptap. IDs repetidos são naturalmente eliminados.
+    """
     found = set()
     if isinstance(content, str):
-        found.update(UUID(match.group('id')) for match in _HTML_REFERENCE.finditer(content))
+        for match in ARTICLE_DIAGRAM_PATTERN.finditer(content):
+            diagram_id = _uuid(match.group('id'))
+            if diagram_id is not None:
+                found.add(diagram_id)
         try:
             content = json.loads(content)
         except (TypeError, ValueError):
             return found
     if isinstance(content, dict):
         if content.get('type') == 'articleDiagram':
-            value = (content.get('attrs') or {}).get('diagramId')
-            if value is not None and value:
-                try:
-                    found.add(UUID(str(value)))
-                except (TypeError, ValueError):
-                    pass
+            diagram_id = _uuid((content.get('attrs') or {}).get('diagramId'))
+            if diagram_id is not None:
+                found.add(diagram_id)
         for value in content.values():
             found.update(extract_diagram_ids(value))
     elif isinstance(content, list):
@@ -37,10 +49,31 @@ def extract_diagram_ids(content):
     return found
 
 
-def sync_article_diagrams(article, content=None, *, session=None):
-    """Sincroniza vínculos sem fazer commit; o chamador controla a transação."""
+def validate_diagram_references(diagram_ids, user, *, session=None):
+    """Valida existência e autorização de todos os IDs em uma só consulta.
+
+    A mensagem é deliberadamente indistinguível para IDs inexistentes e fora
+    do escopo, evitando revelar a existência de diagramas privados.
+    """
+    session = session or db.session
+    wanted = set(diagram_ids)
+    if not wanted:
+        return {}
+    query = scoped_diagrams(session.query(Diagram), user)
+    diagrams = query.filter(Diagram.id.in_(wanted)).all()
+    allowed = {diagram.id: diagram for diagram in diagrams}
+    if set(allowed) != wanted:
+        raise DiagramReferenceError(
+            'Um ou mais diagramas estão indisponíveis ou fora do seu escopo.'
+        )
+    return allowed
+
+
+def sync_article_diagrams(article, content=None, *, user, session=None):
+    """Valida e sincroniza vínculos sem commit; o chamador controla a transação."""
     session = session or db.session
     wanted = extract_diagram_ids(article.texto if content is None else content)
+    validate_diagram_references(wanted, user, session=session)
     current = {link.diagram_id: link for link in article_diagram_links(article.id, session)}
     for removed in set(current) - wanted:
         session.delete(current[removed])
