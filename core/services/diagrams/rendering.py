@@ -74,14 +74,31 @@ def resolve_article_diagrams(contents, user, *, article=None, url_builder=None,
                  if article is not None else f'/api/diagramas/{diagram.id}/metadados')
             )
             title = escape(metadata['title'])
-            return str(Markup(
-                '<figure class="article-diagram" data-diagram-metadata-url="{}">'
+            preview = Markup((
                 '<button type="button" class="article-diagram__preview" '
                 'aria-label="Visualizar diagrama: {}">'
-                '<img src="{}" alt="{}" loading="lazy"></button>'
-                '<button type="button" class="btn btn-sm btn-primary article-diagram__action">'
-                'Visualizar diagrama</button></figure>'
-            ).format(escape(metadata_url), title, escape(metadata['preview_url']), title))
+                '<img src="{}" alt="Preview do diagrama {}" loading="lazy"></button>'
+            ).format(title, escape(metadata['preview_url']), title) if (
+                metadata['preview_state'] == 'ready' and metadata['preview_url']
+            ) else (
+                '<span class="article-diagram__state" role="status">'
+                'Preview ainda não disponível</span>'
+            ))
+            edit_action = Markup((
+                '<button type="button" class="btn btn-sm btn-primary '
+                'article-diagram__action" data-diagram-mode="edit">Editar</button>'
+                if metadata['can_edit'] else ''
+            ))
+            return str(Markup(
+                '<figure class="article-diagram" data-diagram-id="{}" '
+                'data-diagram-metadata-url="{}">'
+                '<figcaption class="article-diagram__title">{}</figcaption>'
+                '<div class="article-diagram__viewport">{}</div>'
+                '<div class="article-diagram__actions">'
+                '<button type="button" class="btn btn-sm btn-outline-primary '
+                'article-diagram__action" data-diagram-mode="view">'
+                'Visualizar diagrama</button>{}</div></figure>'
+            ).format(diagram.id, escape(metadata_url), title, preview, edit_action))
 
         return ARTICLE_DIAGRAM_PATTERN.sub(replacement, content)
 

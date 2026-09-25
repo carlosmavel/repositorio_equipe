@@ -26,7 +26,9 @@ def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
                                view_url=None, editor_url=None, scene_url=None,
                                save_url=None):
     """Serializa o contrato sem promover acesso contextual a acesso direto."""
-    direct_view = can_view_diagram(user, diagram) if article is None else False
+    # O contexto do artigo pode conceder somente o raster. Uma permissão direta
+    # que o usuário já possua, porém, não deve ser descartada nesse contexto.
+    direct_view = can_view_diagram(user, diagram)
     contextual_view = (
         can_render_diagram_in_article(user, diagram, article)
         if article is not None else False

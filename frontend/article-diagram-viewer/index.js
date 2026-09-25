@@ -13,6 +13,12 @@ async function metadataFor(figure) {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-diagram-metadata-url]').forEach((figure) => {
+    figure.querySelector('img')?.addEventListener('error', () => {
+      const viewport = figure.querySelector('.article-diagram__viewport');
+      if (!viewport) return;
+      viewport.classList.add('article-diagram__viewport--error');
+      viewport.innerHTML = '<span class="article-diagram__state" role="alert">Falha ao carregar o preview</span>';
+    }, { once: true });
     const open = async (trigger) => {
       trigger.disabled = true;
       try {
@@ -20,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openDiagramOverlay(metadata.id, trigger, {
           metadataUrl: figure.dataset.diagramMetadataUrl,
           initialMetadata: metadata,
+          mode: trigger.dataset.diagramMode || 'view',
         });
       } catch (error) {
         const image = figure.querySelector('img');

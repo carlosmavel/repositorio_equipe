@@ -90,7 +90,7 @@ export function RasterDiagramViewer({ src, title, onStatusChange }) {
   </div>;
 }
 
-function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, onClosed }) {
+function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, requestedMode = 'edit', onClosed }) {
   const dialogRef = useRef(null);
   const [metadata, setMetadata] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -125,7 +125,7 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, onClosed }) {
       })
       .then((payload) => {
         if (!active) return;
-        setMetadata(payload);
+        setMetadata(requestedMode === 'view' ? { ...payload, can_edit: false } : payload);
         setUseRaster(!payload.can_open_scene || !payload.scene_url);
         setStatus(payload.can_edit ? 'Carregando...' : 'Somente leitura');
       })
@@ -134,7 +134,7 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, onClosed }) {
         // O fallback é usado apenas pelo visualizador contextual de artigos.
         // O editor nunca promove metadados antigos a uma capacidade de edição.
         if (initialMetadata?.can_edit === false && initialMetadata?.preview_url) {
-          setMetadata(initialMetadata);
+          setMetadata(requestedMode === 'view' ? { ...initialMetadata, can_edit: false } : initialMetadata);
           setUseRaster(true);
           setStatus('Somente leitura');
           return;
@@ -143,7 +143,7 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, onClosed }) {
         setStatus('Acesso negado');
       });
     return () => { active = false; };
-  }, [diagramId, initialMetadata, metadataUrl]);
+  }, [diagramId, initialMetadata, metadataUrl, requestedMode]);
 
   useEffect(() => {
     const warnBeforeUnload = (event) => {
@@ -277,6 +277,6 @@ export function openDiagramOverlay(diagramId, trigger = document.activeElement, 
   };
   activeOverlay = { close };
   root.render(<DiagramOverlay diagramId={diagramId} metadataUrl={options.metadataUrl}
-    initialMetadata={options.initialMetadata} onClosed={close} />);
+    initialMetadata={options.initialMetadata} requestedMode={options.mode} onClosed={close} />);
   return close;
 }

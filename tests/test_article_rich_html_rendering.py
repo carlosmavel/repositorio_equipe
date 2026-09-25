@@ -174,3 +174,49 @@ def test_rendered_article_content_has_spacing_in_both_themes():
     article_rule = stylesheet.split("\n.article-content {", 1)[1].split("}", 1)[0]
     assert "border-radius: 0.375rem;" in article_rule
     assert "padding: 1rem;" in article_rule
+
+
+def test_article_diagram_card_has_shared_accessible_structure():
+    rendering = Path("core/services/diagrams/rendering.py").read_text()
+    node_view = Path("frontend/article-editor/extensions/article-diagram.js").read_text()
+
+    for class_name in (
+        "article-diagram__title",
+        "article-diagram__viewport",
+        "article-diagram__preview",
+        "article-diagram__actions",
+    ):
+        assert class_name in rendering
+        assert class_name in node_view
+    assert "Visualizar diagrama" in rendering and "Visualizar diagrama" in node_view
+    assert "if metadata['can_edit']" in rendering
+    assert "if (metadata.can_edit)" in node_view
+    assert "data-diagram-id" in rendering
+
+
+def test_article_diagram_preview_states_and_layout_cover_edge_cases():
+    stylesheet = Path("static/css/diagram-preview.css").read_text()
+    node_view = Path("frontend/article-editor/extensions/article-diagram.js").read_text()
+
+    assert "overflow-wrap: anywhere" in stylesheet
+    assert "object-fit: contain" in stylesheet
+    assert "max-height: min(45vh, 28rem)" in stylesheet
+    assert '[data-bs-theme="dark"] .article-diagram' in stylesheet
+    for state in (
+        "Carregando preview",
+        "Preview ainda não disponível",
+        "Falha ao carregar o preview",
+        "Diagrama indisponível",
+    ):
+        assert state in node_view
+
+
+def test_article_diagram_actions_do_not_capture_node_drag_or_persistence():
+    node_view = Path("frontend/article-editor/extensions/article-diagram.js").read_text()
+
+    assert "draggable: true" in node_view and "selectable: true" in node_view
+    assert "stopEvent:" in node_view
+    assert ".article-diagram__actions, .article-diagram__preview" in node_view
+    assert "return ['figure', mergeAttributes(HTMLAttributes" in node_view
+    persisted_renderer = node_view.split("renderHTML", 1)[1].split("addCommands", 1)[0]
+    assert "metadata.title" not in persisted_renderer
