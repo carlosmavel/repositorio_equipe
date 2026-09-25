@@ -8,8 +8,10 @@ em uma listagem também não pode ser obtido alterando manualmente a URL.
 from sqlalchemy import false, or_
 
 from ...database import db
-from ...enums import DiagramScope
-from ...models import Celula, Diagram, Estabelecimento, Instituicao, Setor, User
+from ...enums import DiagramScope, DiagramStatus, DiagramType, Permissao
+from ...models import (
+    ArticleDiagram, Celula, Diagram, Estabelecimento, Instituicao, Setor, User,
+)
 
 
 class DiagramAccessDenied(PermissionError):
@@ -18,6 +20,11 @@ class DiagramAccessDenied(PermissionError):
 
 def _is_admin(user):
     return bool(user and user.has_permissao('admin'))
+
+
+def _has_permission(user, permission):
+    code = permission.value if isinstance(permission, Permissao) else permission
+    return bool(user and (_is_admin(user) or user.has_permissao(code)))
 
 
 def _organizational_ids(user):
@@ -87,31 +94,87 @@ def true_predicate():
 
 def scoped_diagrams(query, user, *, include_archived=False):
     """Aplica exatamente o predicado usado por consultas individuais."""
+    if not _has_permission(user, Permissao.DIAGRAMA_VISUALIZAR):
+        return query.filter(false())
     query = query.filter(visibility_predicate(user))
     if not include_archived:
         query = query.filter(Diagram.archived_at.is_(None))
     return query
 
 
-def can_view(user, diagram):
+def can_view_diagram(user, diagram):
     if not user or not diagram or diagram.id is None:
+        return False
+    if not _has_permission(user, Permissao.DIAGRAMA_VISUALIZAR):
+        return False
+    if diagram.status == DiagramStatus.ARCHIVED or diagram.archived_at is not None:
         return False
     return db.session.query(Diagram.id).filter(
         Diagram.id == diagram.id, visibility_predicate(user)
     ).first() is not None
 
 
-def can_edit(user, diagram):
-    return bool(user and diagram and (_is_admin(user) or diagram.owner_id == user.id))
+def can_create_diagram(user):
+    return _has_permission(user, Permissao.DIAGRAMA_CRIAR)
+
+
+def can_edit_diagram(user, diagram):
+    permission = (
+        Permissao.DIAGRAMA_MODELO_GERENCIAR
+        if diagram and diagram.diagram_type == DiagramType.TEMPLATE
+        else Permissao.DIAGRAMA_EDITAR
+    )
+    return bool(
+        diagram and _has_permission(user, permission)
+        and (_is_admin(user) or diagram.owner_id == user.id)
+    )
+
+
+def can_archive_diagram(user, diagram):
+    return bool(
+        diagram and _has_permission(user, Permissao.DIAGRAMA_ARQUIVAR)
+        and (_is_admin(user) or diagram.owner_id == user.id)
+    )
+
+
+def can_manage_template(user, diagram=None):
+    return bool(
+        _has_permission(user, Permissao.DIAGRAMA_MODELO_GERENCIAR)
+        and (diagram is None or diagram.diagram_type == DiagramType.TEMPLATE)
+    )
+
+
+def can_render_diagram_in_article(user, diagram, article):
+    """Autoriza somente o preview de uma incorporação materializada.
+
+    Esta política é deliberadamente independente de ``can_view_diagram``:
+    visualizar um artigo pode liberar sua imagem incorporada, mas nunca a cena,
+    os metadados, o histórico ou o editor do diagrama.
+    """
+    if not (user and diagram and article):
+        return False
+    if not _has_permission(user, Permissao.DIAGRAMA_RENDERIZAR_ARTIGO):
+        return False
+    from ...utils import user_can_view_article
+    if not user_can_view_article(user, article):
+        return False
+    return db.session.query(ArticleDiagram.article_id).filter_by(
+        article_id=article.id, diagram_id=diagram.id,
+    ).first() is not None
+
+
+# Compatibilidade interna; novos chamadores devem usar os nomes explícitos.
+can_view = can_view_diagram
+can_edit = can_edit_diagram
 
 
 def require_view(user, diagram):
-    if not can_view(user, diagram):
+    if not can_view_diagram(user, diagram):
         raise DiagramAccessDenied('Diagrama fora do escopo do usuário.')
     return diagram
 
 
 def require_edit(user, diagram):
-    if not can_edit(user, diagram):
+    if not can_edit_diagram(user, diagram):
         raise DiagramAccessDenied('Usuário sem permissão para alterar o diagrama.')
     return diagram

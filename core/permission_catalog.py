@@ -26,7 +26,10 @@ FRIENDLY_NAMES: dict[str, str] = {
     Permissao.BOLETIM_GERENCIAR.value: "Boletim gerenciar",
     Permissao.DIAGRAMA_VISUALIZAR.value: "Visualizar diagramas",
     Permissao.DIAGRAMA_CRIAR.value: "Criar diagramas",
+    Permissao.DIAGRAMA_EDITAR.value: "Editar diagramas",
+    Permissao.DIAGRAMA_ARQUIVAR.value: "Arquivar diagramas",
     Permissao.DIAGRAMA_MODELO_GERENCIAR.value: "Gerenciar modelos de diagramas",
+    Permissao.DIAGRAMA_RENDERIZAR_ARTIGO.value: "Exibir diagramas incorporados em artigos",
 }
 
 

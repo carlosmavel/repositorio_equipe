@@ -168,3 +168,22 @@ def test_sync_permission_catalog_contains_boletim_permissions(app_ctx):
         assert perm is not None
         assert perm.nome == nome
         assert perm.managed_by_system is True
+
+
+def test_catalog_contains_all_diagram_permissions_in_own_category():
+    expected = {
+        "diagrama_visualizar": "Visualizar diagramas",
+        "diagrama_criar": "Criar diagramas",
+        "diagrama_editar": "Editar diagramas",
+        "diagrama_arquivar": "Arquivar diagramas",
+        "diagrama_modelo_gerenciar": "Gerenciar modelos de diagramas",
+        "diagrama_renderizar_artigo": "Exibir diagramas incorporados em artigos",
+    }
+
+    assert {
+        item.codigo: item.nome for item in CATALOG if item.codigo.startswith('diagrama_')
+    } == expected
+    assert all(
+        permission_catalog.PERMISSION_CATEGORY_BY_CODE[code] == 'Permissões de Diagramas'
+        for code in expected
+    )

@@ -38,7 +38,7 @@ def _actor(*permissions):
 
 
 def test_create_from_template_is_deep_independent_and_keeps_source_preview(app_ctx):
-    actor = _actor('diagrama_visualizar', 'diagrama_criar')
+    actor = _actor('diagrama_visualizar', 'diagrama_criar', 'diagrama_editar')
     original = {'schemaVersion': 1, 'elements': [{'id': 'original'}], 'appState': {},
                 'metadata': {}, 'files': {}}
     template = Diagram(title='Modelo', document=deepcopy(original), owner=actor,

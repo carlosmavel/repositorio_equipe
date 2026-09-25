@@ -8,7 +8,10 @@ import json
 from ...database import db
 from ...models import Diagram, DiagramAsset, DiagramVersion
 from ...enums import DiagramScope, DiagramStatus, DiagramType
-from .access import _organizational_ids, require_edit, require_view
+from .access import (
+    DiagramAccessDenied, _organizational_ids, can_archive_diagram,
+    can_create_diagram, can_manage_template, require_edit, require_view,
+)
 from .schema import ORQUETASK_DIAGRAM_SCHEMA_VERSION, DiagramSavePayload
 from .storage import get_storage, sanitize_preview
 
@@ -39,8 +42,8 @@ def _require_permission(actor, code):
 
 
 def _require_template_management(actor, diagram=None):
-    if diagram is None or diagram.diagram_type == DiagramType.TEMPLATE:
-        _require_permission(actor, 'diagrama_modelo_gerenciar')
+    if (diagram is None or diagram.diagram_type == DiagramType.TEMPLATE) and not can_manage_template(actor, diagram):
+        raise DiagramAccessDenied('Permissão diagrama_modelo_gerenciar necessária.')
 
 
 def _scope_values(actor, target_scope):
@@ -118,8 +121,8 @@ def create_diagram(user, title, document=None, *, celula_id=None,
                     else DiagramType(diagram_type))
     if diagram_type == DiagramType.TEMPLATE:
         _require_template_management(user)
-    else:
-        _require_permission(user, 'diagrama_criar')
+    elif not can_create_diagram(user):
+        raise DiagramAccessDenied('Permissão para criar diagramas necessária.')
     def operation():
         diagram = Diagram(title=title.strip(), document=document or {}, owner_id=user.id,
                           celula_id=celula_id or user.celula_id,
@@ -372,7 +375,8 @@ def restore_diagram(user, diagram, version, *, session=None):
 def archive_diagram(user, diagram, *, session=None):
     session = session or db.session
     _require_template_management(user, diagram)
-    require_edit(user, diagram)
+    if not can_archive_diagram(user, diagram):
+        raise DiagramAccessDenied('Usuário sem permissão para arquivar o diagrama.')
     def operation():
         diagram.archived_at = datetime.now(timezone.utc)
         diagram.status = DiagramStatus.ARCHIVED
