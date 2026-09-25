@@ -222,6 +222,7 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, requestedMode
         </header>
         <main className="diagram-overlay__body">
           {loadError ? <div className="alert alert-danger" role="alert">{loadError}</div> : !metadata ? <div className="d-flex h-100 align-items-center justify-content-center" role="status">Verificando acesso ao diagrama...</div> : useRaster ? <RasterDiagramViewer src={metadata.preview_url} title={metadata.title} onStatusChange={setStatus} /> : <SceneErrorBoundary onError={() => setUseRaster(true)}><DiagramWorkspace
+            diagramId={diagramId}
             mode={metadata.can_edit ? 'edit' : 'view'} canEdit={metadata.can_edit}
             title={metadata.title} lockVersion={metadata.lock_version}
             sceneUrl={metadata.scene_url} saveUrl={metadata.save_url}

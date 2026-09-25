@@ -1,5 +1,8 @@
 <article class="card h-100 shadow-sm diagram-card">
+  {% set current_preview = diagram.current_version_record.assets | selectattr('kind', 'equalto', 'preview') | list if diagram.current_version_record else [] %}
+  {% set preview_state = 'ready' if current_preview else (diagram.current_version_record.preview_state if diagram.current_version_record else 'pending') %}
   <div class="ratio ratio-16x9 bg-body-tertiary overflow-hidden">
+    {% if preview_state == 'ready' %}
     <img src="{{ url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id) }}"
          class="card-img-top object-fit-cover" alt="Preview de {{ diagram.name }}" loading="lazy"
          onerror="this.hidden=true;this.nextElementSibling.hidden=false">
@@ -7,6 +10,12 @@
       <i class="bi bi-diagram-3 fs-1" aria-hidden="true"></i>
       <span class="visually-hidden">Preview indisponível</span>
     </div>
+    {% else %}
+    <div class="d-flex align-items-center justify-content-center text-body-secondary" role="status" data-preview-state="{{ preview_state }}">
+      <i class="bi bi-diagram-3 fs-1" aria-hidden="true"></i>
+      <span class="ms-2">{{ 'Preview indisponível' if preview_state == 'failed' else 'Gerando preview...' }}</span>
+    </div>
+    {% endif %}
   </div>
   <div class="card-body d-flex flex-column">
     <div class="d-flex align-items-start justify-content-between gap-2">

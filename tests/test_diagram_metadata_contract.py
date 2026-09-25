@@ -5,7 +5,8 @@ import uuid
 
 from core.database import db
 from core.enums import DiagramType
-from core.models import Article, ArticleDiagram, Diagram, Funcao, User
+from core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, Funcao, User
+from core.services.diagrams.metadata import preview_state
 
 
 def _user(name, *permissions):
@@ -21,6 +22,27 @@ def _login(client, user):
         session['user_id'] = user.id
 
 
+def test_preview_state_requires_a_confirmed_asset_and_supports_legacy_failure():
+    diagram = Diagram(title='Estados', document={})
+    assert preview_state(diagram) == 'pending'
+
+    version = DiagramVersion(
+        diagram=diagram, number=1, title='Estados', document={}, author_id=1,
+        preview_state='failed',
+    )
+    diagram.current_version_record = version
+    assert preview_state(diagram) == 'failed'
+
+    version.preview_state = 'ready'
+    assert preview_state(diagram) == 'failed'  # ready sem asset nunca é promovido
+
+    version.assets.append(DiagramAsset(
+        diagram=diagram, storage_key='sha256/test', sha256='0' * 64,
+        byte_size=3, kind='preview', content_type='image/png',
+    ))
+    assert preview_state(diagram) == 'ready'
+
+
 def test_owner_and_shared_reader_receive_only_their_capabilities(client):
     owner = _user('metadata-owner', 'diagrama_visualizar', 'diagrama_editar')
     reader = _user('metadata-shared')
@@ -34,7 +56,8 @@ def test_owner_and_shared_reader_receive_only_their_capabilities(client):
     _login(client, owner)
     owner_data = client.get(f'/api/diagramas/{diagram.id}/metadados').get_json()
     assert owner_data['current_version'] == 7
-    assert owner_data['preview_state'] == 'missing'
+    assert owner_data['preview_state'] == 'pending'
+    assert owner_data['preview_message'] is None
     assert owner_data['can_edit'] and owner_data['can_open_scene']
     assert 'editor_url' in owner_data and 'scene_url' in owner_data
     assert 'mode=edit' in owner_data['scene_url']

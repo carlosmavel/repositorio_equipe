@@ -1,4 +1,12 @@
 export const DIAGRAM_SAVED_EVENT = 'orquetask:diagram-saved';
+export const DIAGRAM_PREVIEW_STATE_EVENT = 'orquetask:diagram-preview-state';
+
+export function announceDiagramPreviewState(uuid, preview_state, preview_message = null) {
+  if (!uuid) return;
+  window.dispatchEvent(new CustomEvent(DIAGRAM_PREVIEW_STATE_EVENT, {
+    detail: { uuid, preview_state, preview_message },
+  }));
+}
 
 /** Add or replace the deterministic preview cache key without changing its route. */
 export function versionDiagramPreviewUrl(url, version) {

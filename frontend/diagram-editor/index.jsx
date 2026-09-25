@@ -5,7 +5,7 @@ import {
 } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import diagramTransport from './transport.js';
-import { versionDiagramPreviewUrl } from '../diagram-ui/events.js';
+import { announceDiagramPreviewState, versionDiagramPreviewUrl } from '../diagram-ui/events.js';
 
 const SAVE_STATE = {
   clean: { label: 'Sem alterações', icon: 'bi-check-circle', buttonClass: 'btn-outline-secondary', disabled: true },
@@ -27,6 +27,7 @@ export function DiagramWorkspace({
   mode = 'edit',
   canEdit = true,
   title = '',
+  diagramId,
   lockVersion: initialLockVersion,
   sceneUrl,
   saveUrl,
@@ -155,6 +156,7 @@ export function DiagramWorkspace({
     savingRef.current = true;
     callbacksRef.current.onSavingChange?.(true);
     setSaveState('saving');
+    announceDiagramPreviewState(diagramId, 'generating');
     try {
       const elements = api.getSceneElements();
       const appState = api.getAppState();
@@ -201,14 +203,16 @@ export function DiagramWorkspace({
         preview_url: result.preview_url || versionDiagramPreviewUrl(previewUrl, result.current_version),
       };
       callbacksRef.current.onSaved?.(saved);
+      announceDiagramPreviewState(saved.uuid || diagramId, saved.preview_state || 'ready');
     } catch (error) {
       setSaveState('error');
       reportDirty(true);
+      announceDiagramPreviewState(diagramId, 'failed', 'Não foi possível gerar o preview. Tente novamente.');
     } finally {
       savingRef.current = false;
       callbacksRef.current.onSavingChange?.(false);
     }
-  }, [editable, excalidrawVersion, lockVersion, previewUrl, reportDirty, saveScene,
+  }, [diagramId, editable, excalidrawVersion, lockVersion, previewUrl, reportDirty, saveScene,
     saveUrl, setSaveState, title, transport]);
 
   const savePresentation = SAVE_STATE[saveState];

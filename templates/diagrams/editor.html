@@ -16,6 +16,7 @@
   </div>
   <div id="diagram-editor" data-version="{{ diagram.current_version }}"></div>
   <script id="diagram-editor-config" type="application/json">{{ {
+    'diagramId': diagram.id,
     'title': diagram.title,
     'lockVersion': diagram.lock_version,
     'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id, mode='edit' if can_edit_diagram else None),

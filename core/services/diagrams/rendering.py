@@ -82,7 +82,8 @@ def resolve_article_diagrams(contents, user, *, article=None, url_builder=None,
                 metadata['preview_state'] == 'ready' and metadata['preview_url']
             ) else (
                 '<span class="article-diagram__state" role="status">'
-                'Preview ainda não disponível</span>'
+                f'{"Preview indisponível" if metadata["preview_state"] == "failed" else "Gerando preview..."}'
+                '</span>'
             ))
             edit_action = Markup((
                 '<button type="button" class="btn btn-sm btn-primary '

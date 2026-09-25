@@ -1099,6 +1099,11 @@ class DiagramVersion(db.Model):
     source_version_id = db.Column(db.Uuid(as_uuid=True),
                                   db.ForeignKey('diagram_version.id', ondelete='SET NULL'))
     reason = db.Column(db.Text, nullable=True)
+    # ``generating`` é normalmente um estado efêmero publicado pelo cliente;
+    # estes campos preservam os estados confirmados da versão.
+    preview_state = db.Column(db.String(20), nullable=False, default='pending',
+                              server_default='pending')
+    preview_error = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     diagram = db.relationship('Diagram', foreign_keys=[diagram_id], back_populates='versions')

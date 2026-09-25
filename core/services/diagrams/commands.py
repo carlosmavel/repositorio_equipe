@@ -95,6 +95,7 @@ def _snapshot(diagram, author_id, session):
         schema_version=(diagram.document.get('schemaVersion', ORQUETASK_DIAGRAM_SCHEMA_VERSION)
                         if isinstance(diagram.document, dict) else ORQUETASK_DIAGRAM_SCHEMA_VERSION),
         content_hash=hashlib.sha256(canonical.encode('utf-8')).hexdigest(),
+        preview_state='pending',
     )
     session.add(version)
     session.flush()
@@ -209,6 +210,7 @@ def save_diagram_payload(user, diagram, payload: DiagramSavePayload, *, title=No
             )
             session.add(preview)
             version.assets.append(preview)
+            version.preview_state = 'ready'
         return diagram
 
     return _atomic(operation, session)
@@ -276,6 +278,7 @@ def save_diagram_version(diagram_id, base_version_id, scene, preview, actor, rea
                 )
                 session.add(asset)
             version.assets.append(asset)
+            version.preview_state = 'ready'
         if _source_version is not None:
             version.assets.extend(asset for asset in _source_version.assets
                                   if asset not in version.assets)

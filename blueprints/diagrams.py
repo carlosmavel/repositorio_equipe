@@ -25,7 +25,7 @@ try:
     from ..core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from ..core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from ..core.services.diagrams.rendering import get_preview
-    from ..core.services.diagrams.metadata import serialize_diagram_metadata
+    from ..core.services.diagrams.metadata import preview_state, serialize_diagram_metadata
     from ..core.services.diagrams.storage import get_storage
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover - execução direta
     from core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from core.services.diagrams.rendering import get_preview
-    from core.services.diagrams.metadata import serialize_diagram_metadata
+    from core.services.diagrams.metadata import preview_state, serialize_diagram_metadata
     from core.services.diagrams.storage import get_storage
 
 
@@ -493,11 +493,14 @@ def _preview_response(diagram, user, version=None):
     content, content_type = get_preview(diagram, user, version=version)
     preview_available = content is not None
     if not preview_available:
+        state = (getattr(version, 'preview_state', 'failed') if version is not None
+                 else preview_state(diagram))
+        label = 'Preview indisponivel' if state == 'failed' else 'Gerando preview...'
         content = (
             b'<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" '
             b'viewBox="0 0 640 360"><rect width="640" height="360" fill="#f1f3f5"/>'
             b'<text x="320" y="180" text-anchor="middle" fill="#6c757d" '
-            b'font-family="sans-serif" font-size="20">Preview indisponivel</text></svg>'
+            b'font-family="sans-serif" font-size="20">' + label.encode('ascii') + b'</text></svg>'
         )
         content_type = 'image/svg+xml; charset=utf-8'
     response = make_response(content)
