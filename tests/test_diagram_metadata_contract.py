@@ -135,3 +135,26 @@ def test_missing_and_out_of_scope_metadata_are_indistinguishable(client):
     assert hidden_response.status_code == missing_response.status_code == 404
     assert hidden_response.get_data() == missing_response.get_data()
     assert b'ultrassecreto' not in hidden_response.get_data().lower()
+
+
+def test_picker_capabilities_reflect_permission_and_accessible_types(client):
+    user = _user('picker-user', 'diagrama_visualizar', 'diagrama_criar')
+    template = Diagram(title='Modelo acessível', document={}, owner=user,
+                       diagram_type=DiagramType.TEMPLATE)
+    common = Diagram(title='Diagrama acessível', document={}, owner=user)
+    db.session.add_all([user, template, common])
+    db.session.commit()
+    _login(client, user)
+
+    capabilities = client.get('/api/diagramas/capabilities').get_json()
+    assert capabilities['can_create'] is True
+    assert capabilities['can_link'] is True
+    assert capabilities['can_copy_template'] is True
+
+    for permission in user.permissoes_personalizadas.all():
+        user.permissoes_personalizadas.remove(permission)
+    db.session.commit()
+    capabilities = client.get('/api/diagramas/capabilities').get_json()
+    assert capabilities['can_create'] is False
+    assert capabilities['can_copy_template'] is False
+    assert 'permissão' in capabilities['create_reason']
