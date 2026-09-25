@@ -9,8 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_article_diagram_node_view_distinguishes_editing_from_viewing():
     source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
 
-    assert "metadata.can_edit ? metadata.editor_url : metadata.view_url" in source
-    assert "metadata.can_edit ? 'Editar diagrama' : 'Visualizar diagrama'" in source
+    assert "makeAction('Visualizar diagrama', 'btn-outline-primary', 'view')" in source
+    assert "if (metadata.can_edit)" in source
+    assert "makeAction('Editar', 'btn-primary', 'edit')" in source
     assert "stopEvent:" in source
     assert 'scene' not in source.lower()
 
@@ -151,7 +152,7 @@ def test_article_diagram_opens_accessible_in_page_overlay():
     assert "window.scrollTo(scrollX, scrollY)" in overlay
     assert 'root.unmount()' in overlay
     assert 'Descartar alterações?' in overlay
-    assert 'onOpenDiagram(node.attrs.diagramId, action)' in extension
+    assert 'onOpenDiagram?.(node.attrs.diagramId, trigger, { mode })' in extension
     assert "action.target = '_blank'" not in extension
     assert 'editor.commands.setNodeSelection(position)' in extension
     assert "cache: 'no-store'" in overlay

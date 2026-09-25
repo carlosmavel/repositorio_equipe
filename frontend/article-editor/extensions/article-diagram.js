@@ -52,78 +52,101 @@ export const ArticleDiagram = Node.create({
       dom.dataset.articleDiagram = 'true';
       dom.dataset.diagramId = node.attrs.diagramId;
       dom.className = 'article-diagram article-diagram--loading';
-      dom.setAttribute('aria-label', 'Carregando diagrama');
+      dom.setAttribute('aria-busy', 'true');
 
-      const stopEditorEvent = event => {
-        event.stopPropagation();
+      const title = document.createElement('figcaption');
+      title.className = 'article-diagram__title placeholder-glow';
+      title.innerHTML = '<span class="placeholder col-6">Carregando diagrama</span>';
+      const viewport = document.createElement('div');
+      viewport.className = 'article-diagram__viewport';
+      viewport.innerHTML = '<span class="article-diagram__state" role="status">Carregando preview…</span>';
+      const actions = document.createElement('div');
+      actions.className = 'article-diagram__actions';
+      dom.replaceChildren(title, viewport, actions);
+
+      const stopEditorEvent = event => event.stopPropagation();
+      const selectAndOpen = (trigger, mode = 'view') => {
+        const position = getPos();
+        if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
+        trigger.focus({ preventScroll: true });
+        this.options.onOpenDiagram?.(node.attrs.diagramId, trigger, { mode });
+      };
+      const makeAction = (label, style, mode) => {
+        const action = document.createElement('button');
+        action.type = 'button';
+        action.className = `btn btn-sm ${style} article-diagram__action`;
+        action.textContent = label;
+        action.addEventListener('pointerdown', stopEditorEvent);
+        action.addEventListener('click', event => {
+          stopEditorEvent(event);
+          selectAndOpen(action, mode);
+        });
+        return action;
       };
 
-      // O NodeView nunca busca o documento editável: apenas este recurso de
-      // metadados, que também entrega a URL autorizada do preview.
-      fetch(this.options.metadataUrl(node.attrs.diagramId), { headers: { Accept: 'application/json' } })
-        .then(response => {
-          if (!response.ok) throw new Error('Diagrama indisponível');
-          return response.json();
-        })
-        .then(metadata => {
+      // O NodeView busca apenas metadados e a URL autorizada do preview.
+      fetch(this.options.metadataUrl(node.attrs.diagramId), {
+        credentials: 'same-origin', headers: { Accept: 'application/json' }
+      }).then(response => {
+        if (!response.ok) throw new Error('Diagrama indisponível');
+        return response.json();
+      }).then(metadata => {
+        const diagramTitle = metadata.title || 'Diagrama sem título';
+        title.className = 'article-diagram__title';
+        title.textContent = diagramTitle;
+        actions.replaceChildren();
+
+        if (metadata.can_view && this.options.onOpenDiagram) {
+          const view = makeAction('Visualizar diagrama', 'btn-outline-primary', 'view');
+          view.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
+          actions.append(view);
+          if (metadata.can_edit) {
+            const edit = makeAction('Editar', 'btn-primary', 'edit');
+            edit.setAttribute('aria-label', `Editar diagrama: ${diagramTitle}`);
+            actions.append(edit);
+          }
+        }
+
+        if (metadata.preview_state === 'missing' || !metadata.preview_url) {
+          viewport.innerHTML = '<span class="article-diagram__state" role="status">Preview ainda não disponível</span>';
+        } else {
+          const preview = document.createElement('button');
+          preview.type = 'button';
+          preview.className = 'article-diagram__preview';
+          preview.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
           const image = document.createElement('img');
           image.src = metadata.preview_url;
-          image.alt = metadata.title || 'Diagrama';
+          image.alt = `Preview do diagrama ${diagramTitle}`;
           image.loading = 'lazy';
-          const actionUrl = metadata.can_edit ? metadata.editor_url : metadata.view_url;
-          if ((actionUrl || metadata.can_view) && this.options.onOpenDiagram) {
-            const action = document.createElement('button');
-            action.type = 'button';
-            action.className = 'btn btn-sm btn-primary article-diagram__action';
-            action.textContent = metadata.can_edit ? 'Editar diagrama' : 'Visualizar diagrama';
-            action.setAttribute('aria-label', `${action.textContent}: ${metadata.title || 'Diagrama'}`);
-            action.addEventListener('pointerdown', stopEditorEvent);
-            action.addEventListener('click', event => {
-              stopEditorEvent(event);
-              // Mantém uma âncora visual no documento sem reescrever o nó.
-              // Assim o retorno do overlay acontece no mesmo bloco.
-              const position = getPos();
-              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
-              action.focus({ preventScroll: true });
-              this.options.onOpenDiagram(node.attrs.diagramId, action);
-            });
-            image.tabIndex = 0;
-            image.setAttribute('role', 'button');
-            image.setAttribute('aria-label', `Visualizar diagrama: ${metadata.title || 'Diagrama'}`);
-            image.addEventListener('pointerdown', stopEditorEvent);
-            image.addEventListener('click', event => {
-              stopEditorEvent(event);
-              const position = getPos();
-              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
-              image.focus({ preventScroll: true });
-              this.options.onOpenDiagram(node.attrs.diagramId, image);
-            });
-            image.addEventListener('keydown', event => {
-              if (event.key !== 'Enter' && event.key !== ' ') return;
-              event.preventDefault();
-              stopEditorEvent(event);
-              const position = getPos();
-              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
-              this.options.onOpenDiagram(node.attrs.diagramId, image);
-            });
-            dom.replaceChildren(image, action);
-          } else {
-            dom.replaceChildren(image);
-          }
-          dom.classList.remove('article-diagram--loading');
-          dom.setAttribute('aria-label', metadata.title || 'Diagrama');
-        })
-        .catch(() => {
-          dom.classList.remove('article-diagram--loading');
-          dom.classList.add('article-diagram--unavailable');
-          dom.textContent = 'Diagrama indisponível';
-        });
+          image.addEventListener('error', () => {
+            viewport.classList.add('article-diagram__viewport--error');
+            viewport.innerHTML = '<span class="article-diagram__state" role="alert">Falha ao carregar o preview</span>';
+          }, { once: true });
+          preview.append(image);
+          preview.addEventListener('pointerdown', stopEditorEvent);
+          preview.addEventListener('click', event => {
+            stopEditorEvent(event);
+            selectAndOpen(preview, 'view');
+          });
+          viewport.replaceChildren(preview);
+        }
+        dom.classList.remove('article-diagram--loading');
+        dom.removeAttribute('aria-busy');
+      }).catch(() => {
+        dom.classList.remove('article-diagram--loading');
+        dom.classList.add('article-diagram--unavailable');
+        dom.removeAttribute('aria-busy');
+        title.className = 'article-diagram__title';
+        title.textContent = 'Diagrama';
+        viewport.innerHTML = '<span class="article-diagram__state" role="alert">Diagrama indisponível</span>';
+        actions.replaceChildren();
+      });
 
       return {
         dom,
-        // Interagir com a ação não deve mover a seleção nem iniciar o drag do
-        // nó; eventos no restante do figure continuam pertencendo ao Tiptap.
-        stopEvent: event => Boolean(event.target.closest?.('.article-diagram__action, [role="button"]')),
+        // Ações não movem a seleção nem iniciam o drag; o restante do card
+        // continua selecionável e arrastável pelo Tiptap.
+        stopEvent: event => Boolean(event.target.closest?.('.article-diagram__actions, .article-diagram__preview')),
       };
     };
   }
