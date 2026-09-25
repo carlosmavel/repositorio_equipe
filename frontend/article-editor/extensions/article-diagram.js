@@ -51,6 +51,10 @@ export const ArticleDiagram = Node.create({
       dom.className = 'article-diagram article-diagram--loading';
       dom.setAttribute('aria-label', 'Carregando diagrama');
 
+      const stopEditorEvent = event => {
+        event.stopPropagation();
+      };
+
       // O NodeView nunca busca o documento editável: apenas este recurso de
       // metadados, que também entrega a URL autorizada do preview.
       fetch(this.options.metadataUrl(node.attrs.diagramId), { headers: { Accept: 'application/json' } })
@@ -63,7 +67,16 @@ export const ArticleDiagram = Node.create({
           image.src = metadata.preview_url;
           image.alt = metadata.title || 'Diagrama';
           image.loading = 'lazy';
-          dom.replaceChildren(image);
+          const action = document.createElement('a');
+          action.className = 'btn btn-sm btn-primary article-diagram__action';
+          action.href = metadata.editor_url;
+          action.target = '_blank';
+          action.rel = 'noopener';
+          action.textContent = metadata.can_edit ? 'Editar diagrama' : 'Abrir diagrama';
+          action.setAttribute('aria-label', `${action.textContent}: ${metadata.title || 'Diagrama'}`);
+          action.addEventListener('pointerdown', stopEditorEvent);
+          action.addEventListener('click', stopEditorEvent);
+          dom.replaceChildren(image, action);
           dom.classList.remove('article-diagram--loading');
           dom.setAttribute('aria-label', metadata.title || 'Diagrama');
         })
@@ -73,7 +86,12 @@ export const ArticleDiagram = Node.create({
           dom.textContent = 'Diagrama indisponível';
         });
 
-      return { dom };
+      return {
+        dom,
+        // Interagir com a ação não deve mover a seleção nem iniciar o drag do
+        // nó; eventos no restante do figure continuam pertencendo ao Tiptap.
+        stopEvent: event => Boolean(event.target.closest?.('.article-diagram__action')),
+      };
     };
   }
 });

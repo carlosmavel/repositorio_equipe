@@ -191,7 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editor = new Editor({
       element: editorElement,
       extensions: [
-        StarterKit,
+        // Tiptap 3 includes both marks in StarterKit. Keep the explicit
+        // instances below because Link has application-specific options.
+        StarterKit.configure({ link: false, underline: false }),
         Image.configure({ allowBase64: false }),
         VideoNode,
         ArticleDiagram,

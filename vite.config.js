@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Flask exposes the build directory below /static/dist.  Without an explicit
+  // base, URLs emitted from Excalidraw's CSS point at /assets and bypass it.
+  base: '/static/dist/',
   plugins: [react()],
   build: {
     manifest: true,

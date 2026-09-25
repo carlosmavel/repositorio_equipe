@@ -72,14 +72,15 @@ function DiagramEditor() {
   return (
     <div className="diagram-workspace">
       <div className="d-flex align-items-center gap-3 mb-2">
-        <button className="btn btn-primary" type="button" onClick={save}>Salvar diagrama</button>
+        {config.canEdit && <button className="btn btn-primary" type="button" onClick={save}>Salvar diagrama</button>}
         <span role="status" aria-live="polite">{status}</span>
       </div>
       <div className="diagram-canvas">
         <Excalidraw
           excalidrawAPI={(api) => { apiRef.current = api; }}
           initialData={initialDataRef.current}
-          onChange={onChange}
+          onChange={config.canEdit ? onChange : undefined}
+          viewModeEnabled={!config.canEdit}
         />
       </div>
     </div>
