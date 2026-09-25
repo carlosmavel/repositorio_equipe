@@ -125,7 +125,55 @@ def test_diagram_workspace_reports_load_conflicts_and_preview_identity():
     assert 'uuid: result.uuid || result.id' in source
     assert 'current_version: result.current_version' in source
     assert 'lock_version: result.lock_version' in source
-    assert 'preview_url: result.preview_url || versionedPreviewUrl' in source
+    assert 'preview_url: result.preview_url || versionDiagramPreviewUrl' in source
+
+
+def test_successful_save_announces_versioned_domain_event():
+    workspace = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+    overlay = (ROOT / 'frontend/diagram-ui/overlay.jsx').read_text()
+    events = (ROOT / 'frontend/diagram-ui/events.js').read_text()
+
+    assert "DIAGRAM_SAVED_EVENT = 'orquetask:diagram-saved'" in events
+    assert 'window.dispatchEvent(new CustomEvent(DIAGRAM_SAVED_EVENT' in events
+    assert 'uuid,' in events
+    for field in ('current_version', 'lock_version', 'preview_state',
+                  'preview_url', 'preview_token', 'title'):
+        assert f'{field}:' in events
+    assert 'announceDiagramSaved(saved)' in overlay
+    assert 'onSaved={handleSaved}' in overlay
+    assert 'callbacksRef.current.onSaved?.(saved)' in workspace
+
+
+def test_node_views_filter_saved_events_and_only_refresh_their_image():
+    source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
+
+    assert 'if (saved.uuid !== node.attrs.diagramId) return' in source
+    assert 'previewImage.src = versionDiagramPreviewUrl(' in source
+    assert "window.addEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved)" in source
+    # Every occurrence creates and registers its own NodeView closure. Thus two
+    # occurrences of one UUID both update, while a second UUID is filtered out.
+    assert 'const onDiagramSaved = event =>' in source
+    assert 'window.location.reload' not in source
+
+
+def test_node_view_preserves_contextual_url_and_cleans_up_listener():
+    source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
+    events = (ROOT / 'frontend/diagram-ui/events.js').read_text()
+
+    assert 'metadata?.preview_url || previewImage.src' in source
+    assert "parsed.searchParams.set('v', String(version))" in events
+    assert 'Date.now' not in events and 'Math.random' not in events
+    assert "saved.preview_state !== 'ready' || !previewImage" in source
+    assert 'destroy: () => window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved)' in source
+    assert 'if (saved.title) updateTitle(saved.title)' in source
+
+
+def test_save_response_includes_complete_preview_contract():
+    source = (ROOT / 'blueprints/diagrams.py').read_text()
+
+    assert "'preview_state': metadata['preview_state']" in source
+    assert "'preview_url': metadata['preview_url']" in source
+    assert "'preview_token': metadata['cache_token']" in source
 
 
 def test_standalone_bootstrap_is_separate_from_workspace_bundle():

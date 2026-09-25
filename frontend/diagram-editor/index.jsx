@@ -5,6 +5,7 @@ import {
 } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import diagramTransport from './transport.js';
+import { versionDiagramPreviewUrl } from '../diagram-ui/events.js';
 
 const SAVE_STATE = {
   clean: { label: 'Sem alterações', icon: 'bi-check-circle', buttonClass: 'btn-outline-secondary', disabled: true },
@@ -16,12 +17,6 @@ const SAVE_STATE = {
 
 function currentDocumentTheme() {
   return document.documentElement.dataset.bsTheme === 'dark' ? 'dark' : 'light';
-}
-
-function versionedPreviewUrl(url, version) {
-  if (!url || version === undefined || version === null) return url || null;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${encodeURIComponent(version)}`;
 }
 
 /**
@@ -203,7 +198,7 @@ export function DiagramWorkspace({
         current_version: result.current_version,
         lock_version: result.lock_version,
         preview_token: result.preview_token || result.previewToken || null,
-        preview_url: result.preview_url || versionedPreviewUrl(previewUrl, result.current_version),
+        preview_url: result.preview_url || versionDiagramPreviewUrl(previewUrl, result.current_version),
       };
       callbacksRef.current.onSaved?.(saved);
     } catch (error) {
