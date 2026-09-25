@@ -71,7 +71,7 @@ export const ArticleDiagram = Node.create({
           image.alt = metadata.title || 'Diagrama';
           image.loading = 'lazy';
           const actionUrl = metadata.can_edit ? metadata.editor_url : metadata.view_url;
-          if (actionUrl && this.options.onOpenDiagram) {
+          if ((actionUrl || metadata.can_view) && this.options.onOpenDiagram) {
             const action = document.createElement('button');
             action.type = 'button';
             action.className = 'btn btn-sm btn-primary article-diagram__action';
@@ -81,6 +81,20 @@ export const ArticleDiagram = Node.create({
             action.addEventListener('click', event => {
               stopEditorEvent(event);
               this.options.onOpenDiagram(metadata, action);
+            });
+            image.tabIndex = 0;
+            image.setAttribute('role', 'button');
+            image.setAttribute('aria-label', `Visualizar diagrama: ${metadata.title || 'Diagrama'}`);
+            image.addEventListener('pointerdown', stopEditorEvent);
+            image.addEventListener('click', event => {
+              stopEditorEvent(event);
+              this.options.onOpenDiagram(metadata, image);
+            });
+            image.addEventListener('keydown', event => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              stopEditorEvent(event);
+              this.options.onOpenDiagram(metadata, image);
             });
             dom.replaceChildren(image, action);
           } else {
@@ -99,7 +113,7 @@ export const ArticleDiagram = Node.create({
         dom,
         // Interagir com a ação não deve mover a seleção nem iniciar o drag do
         // nó; eventos no restante do figure continuam pertencendo ao Tiptap.
-        stopEvent: event => Boolean(event.target.closest?.('.article-diagram__action')),
+        stopEvent: event => Boolean(event.target.closest?.('.article-diagram__action, [role="button"]')),
       };
     };
   }

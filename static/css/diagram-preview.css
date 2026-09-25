@@ -23,6 +23,11 @@
   object-fit: contain;
 }
 
+.article-diagram { display: grid; justify-items: start; gap: .5rem; max-width: 100%; margin: 1rem 0; }
+.article-diagram__preview { max-width: 100%; padding: 0; overflow: hidden; border: 0; border-radius: var(--bs-border-radius); background: transparent; cursor: zoom-in; }
+.article-diagram__preview:focus-visible { outline: .2rem solid var(--bs-primary); outline-offset: .2rem; }
+.article-diagram__preview img, .article-diagram > img { display: block; max-width: 100%; max-height: min(60vh, 42rem); object-fit: contain; }
+
 .diagram-preview-modal .modal-body {
   display: grid;
   place-items: center;
@@ -76,6 +81,13 @@ body.diagram-overlay-open { overflow: hidden; }
 .diagram-overlay__body .diagram-workspace { display: flex; height: 100%; min-height: 0; flex-direction: column; }
 .diagram-overlay__body .diagram-workspace > .d-flex { flex: 0 0 auto; }
 .diagram-overlay__body .diagram-canvas { flex: 1 1 auto; min-height: 0; }
+.diagram-raster { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.diagram-raster__controls { z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; padding: 0 0 .5rem; }
+.diagram-raster__controls output { min-width: 4rem; text-align: center; font-variant-numeric: tabular-nums; }
+.diagram-raster__viewport { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); background-color: var(--bs-tertiary-bg); background-image: radial-gradient(var(--bs-border-color) 1px, transparent 1px); background-size: 20px 20px; cursor: grab; touch-action: none; }
+.diagram-raster__viewport:active { cursor: grabbing; }
+.diagram-raster__viewport:focus-visible { outline: .2rem solid var(--bs-primary); outline-offset: -.2rem; }
+.diagram-raster__viewport img { position: absolute; top: 50%; left: 50%; width: auto; height: auto; max-width: none; max-height: none; transform-origin: center; user-select: none; translate: -50% -50%; }
 .diagram-overlay__confirm { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgb(0 0 0 / 58%); }
 .diagram-overlay__confirm-card { width: min(100%, 30rem); padding: clamp(1rem, 3vw, 1.5rem); border-radius: var(--bs-border-radius-lg); background: var(--bs-body-bg); }
 

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Versão v{{ versao.version_number }}.r{{ versao.revision_number }} - {{ versao.titulo }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/diagram-preview.css') }}">{% endblock %}
 
 {% block content %}
 {% set status_labels = {
@@ -117,3 +118,4 @@
 </div>
 {% endif %}
 {% endblock %}
+{% block extra_js %}<script type="module" src="{{ vite_asset('frontend/article-diagram-viewer/index.js') }}"></script>{% endblock %}

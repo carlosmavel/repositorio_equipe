@@ -126,3 +126,30 @@ def test_article_diagram_opens_accessible_in_page_overlay():
     assert 'onOpenDiagram(metadata, action)' in extension
     assert "action.target = '_blank'" not in extension
     assert 'z-index: 2147483647' in css
+
+
+def test_progressive_viewer_supports_zoom_pan_fit_and_raster_fallback():
+    overlay = (ROOT / 'frontend/diagram-ui/overlay.jsx').read_text()
+    bootstrap = (ROOT / 'frontend/article-diagram-viewer/index.js').read_text()
+
+    assert 'viewModeEnabled={!editable}' in (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+    assert 'metadata.can_open_scene' in overlay
+    assert 'RasterDiagramViewer' in overlay
+    assert 'onWheel=' in overlay
+    assert 'onPointerMove=' in overlay
+    assert "event.key === '+'" in overlay
+    assert 'Ajustar à tela' in overlay
+    assert 'naturalWidth' in overlay and 'naturalHeight' in overlay
+    assert 'SceneErrorBoundary' in overlay
+    assert 'can_open_scene: false' in bootstrap
+
+
+def test_readonly_article_phases_load_contextual_viewer_bundle():
+    for template_name in ('aprovacao_detail.html', 'artigo.html', 'visualizar_versao.html'):
+        template = (ROOT / 'templates/artigos' / template_name).read_text()
+        assert "vite_asset('frontend/article-diagram-viewer/index.js')" in template
+        assert "filename='css/diagram-preview.css'" in template
+
+    rendering = (ROOT / 'core/services/diagrams/rendering.py').read_text()
+    assert 'data-diagram-metadata-url' in rendering
+    assert 'Visualizar diagrama' in rendering

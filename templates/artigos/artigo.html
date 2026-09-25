@@ -1,6 +1,7 @@
 {# templates/artigo.html #}
 {% extends 'base.html' %}
 {% block title %}{{ artigo.titulo }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/diagram-preview.css') }}">{% endblock %}
 
 {% block content %}
 <div class="container-fluid page-root">
@@ -296,6 +297,7 @@
 {% endif %}
 {% endblock %}
 {% block extra_js %}
+<script type="module" src="{{ vite_asset('frontend/article-diagram-viewer/index.js') }}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // A URL desta página de artigo específica
