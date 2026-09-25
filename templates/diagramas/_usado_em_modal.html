@@ -1,0 +1,44 @@
+<div class="modal fade" id="usedInModal" tabindex="-1" aria-labelledby="usedInTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="usedInTitle">Usado em</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body app-scrollbar">
+        <p class="text-body-secondary" data-used-in-status>Consultando artigos consumidores…</p>
+        <ul class="list-group" data-used-in-list></ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('usedInModal').addEventListener('show.bs.modal', async (event) => {
+  const modal = event.currentTarget;
+  const status = modal.querySelector('[data-used-in-status]');
+  const list = modal.querySelector('[data-used-in-list]');
+  status.textContent = 'Consultando artigos consumidores…';
+  list.replaceChildren();
+  try {
+    const response = await fetch(event.relatedTarget.dataset.usedInUrl, {
+      headers: {'Accept': 'application/json'}, credentials: 'same-origin'
+    });
+    if (!response.ok) throw new Error('Não foi possível consultar os vínculos.');
+    const result = await response.json();
+    status.textContent = result.total
+      ? `${result.total} artigo(s) consumidor(es).${result.hidden_count ? ` ${result.hidden_count} não visível(is).` : ''}`
+      : 'Este diagrama não é usado em nenhum artigo.';
+    result.articles.forEach((article) => {
+      const item = document.createElement('li');
+      item.className = 'list-group-item';
+      const link = document.createElement('a');
+      link.href = article.url;
+      link.textContent = article.title;
+      item.append(link);
+      list.append(item);
+    });
+  } catch (error) {
+    status.textContent = error.message;
+  }
+});
+</script>

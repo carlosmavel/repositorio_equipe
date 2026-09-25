@@ -1044,6 +1044,10 @@ class Diagram(db.Model):
     source_diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
     source_template_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    archived_by_user_id = db.Column(
+        db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=True,
+        index=True,
+    )
     current_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     current_version_id = db.Column(db.Uuid(as_uuid=True),
                                    db.ForeignKey('diagram_version.id', ondelete='SET NULL', use_alter=True),
@@ -1056,14 +1060,17 @@ class Diagram(db.Model):
 
     owner = db.relationship('User', foreign_keys=[owner_id], back_populates='owned_diagrams')
     updated_by_user = db.relationship('User', foreign_keys=[updated_by_user_id])
+    archived_by_user = db.relationship('User', foreign_keys=[archived_by_user_id])
     celula = db.relationship('Celula', foreign_keys=[celula_id])
     source_diagram = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_diagram_id])
     source_template = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_template_id])
+    # Histórico e blobs possuem ciclo de retenção próprio. Um hard delete do
+    # diagrama nunca deve removê-los implicitamente.
     versions = db.relationship('DiagramVersion', foreign_keys='DiagramVersion.diagram_id',
-                               back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
+                               back_populates='diagram', passive_deletes='all')
     current_version_record = db.relationship('DiagramVersion', foreign_keys=[current_version_id], post_update=True)
-    assets = db.relationship('DiagramAsset', back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
-    article_links = db.relationship('ArticleDiagram', back_populates='diagram', passive_deletes=True)
+    assets = db.relationship('DiagramAsset', back_populates='diagram', passive_deletes='all')
+    article_links = db.relationship('ArticleDiagram', back_populates='diagram', passive_deletes='all')
     shared_users = db.relationship('User', secondary=diagram_share_user)
     shared_instituicoes = db.relationship('Instituicao', secondary=diagram_share_instituicao)
     shared_estabelecimentos = db.relationship('Estabelecimento', secondary=diagram_share_estabelecimento)
@@ -1082,7 +1089,7 @@ class DiagramVersion(db.Model):
     __table_args__ = (db.UniqueConstraint('diagram_id', 'version_number', name='uq_diagram_version_number'),)
 
     id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='RESTRICT'), nullable=False)
     version_number = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(200), nullable=False)
     scene_data = db.Column(JSONB().with_variant(db.JSON(), 'sqlite'), nullable=False)
@@ -1109,7 +1116,7 @@ class DiagramAsset(db.Model):
     __tablename__ = 'diagram_asset'
 
     id = db.Column(db.Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='CASCADE'), nullable=False)
+    diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='RESTRICT'), nullable=False)
     storage_key = db.Column(db.String(500), nullable=False)
     sha256 = db.Column(db.String(64), nullable=False, default='')
     byte_size = db.Column(db.Integer, nullable=False, default=0, server_default='0')

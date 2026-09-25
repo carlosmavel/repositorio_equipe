@@ -379,6 +379,7 @@ def archive_diagram(user, diagram, *, session=None):
         raise DiagramAccessDenied('Usuário sem permissão para arquivar o diagrama.')
     def operation():
         diagram.archived_at = datetime.now(timezone.utc)
+        diagram.archived_by_user_id = user.id
         diagram.status = DiagramStatus.ARCHIVED
         diagram.current_version += 1
         _snapshot(diagram, user.id, session)
