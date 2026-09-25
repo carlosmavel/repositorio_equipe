@@ -90,22 +90,70 @@ export function RasterDiagramViewer({ src, title, onStatusChange }) {
   </div>;
 }
 
-function DiagramOverlay({ metadata, onClosed }) {
+function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, onClosed }) {
   const dialogRef = useRef(null);
+  const [metadata, setMetadata] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState(metadata.can_edit ? 'Carregando...' : '');
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState('Verificando permissão...');
   const [confirmClose, setConfirmClose] = useState(false);
-  const [useRaster, setUseRaster] = useState(!metadata.can_open_scene || !metadata.scene_url);
+  const [useRaster, setUseRaster] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
 
   const requestClose = useCallback(() => {
+    if (saving) {
+      setConfirmClose(true);
+      return;
+    }
     if (dirty) {
       setConfirmClose(true);
       return;
     }
     onClosed();
-  }, [dirty, onClosed]);
+  }, [dirty, onClosed, saving]);
+
+  useEffect(() => {
+    let active = true;
+    const url = metadataUrl || `/api/diagramas/${encodeURIComponent(diagramId)}/metadados`;
+    fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Você não tem permissão para abrir este diagrama.');
+        return payload;
+      })
+      .then((payload) => {
+        if (!active) return;
+        setMetadata(payload);
+        setUseRaster(!payload.can_open_scene || !payload.scene_url);
+        setStatus(payload.can_edit ? 'Carregando...' : 'Somente leitura');
+      })
+      .catch((error) => {
+        if (!active) return;
+        // O fallback é usado apenas pelo visualizador contextual de artigos.
+        // O editor nunca promove metadados antigos a uma capacidade de edição.
+        if (initialMetadata?.can_edit === false && initialMetadata?.preview_url) {
+          setMetadata(initialMetadata);
+          setUseRaster(true);
+          setStatus('Somente leitura');
+          return;
+        }
+        setLoadError(error.message || 'Não foi possível abrir o diagrama.');
+        setStatus('Acesso negado');
+      });
+    return () => { active = false; };
+  }, [diagramId, initialMetadata, metadataUrl]);
+
+  useEffect(() => {
+    const warnBeforeUnload = (event) => {
+      if (!dirty && !saving) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [dirty, saving]);
 
   useEffect(() => {
     dialogRef.current?.querySelector('[data-diagram-overlay-close]')?.focus();
@@ -144,27 +192,27 @@ function DiagramOverlay({ metadata, onClosed }) {
         aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex="-1">
         <header className="diagram-overlay__header">
           <div className="diagram-overlay__heading">
-            <h1 id={titleId} className="diagram-overlay__title">{metadata.title || 'Diagrama'}</h1>
+            <h1 id={titleId} className="diagram-overlay__title">{metadata?.title || 'Diagrama'}</h1>
             <p id={descriptionId} className="visually-hidden">
-              {metadata.can_edit ? 'Editor de diagrama em tela cheia.' : 'Visualizador de diagrama em tela cheia.'}
+              {metadata?.can_edit ? 'Editor de diagrama em tela cheia.' : 'Visualizador de diagrama em tela cheia.'}
             </p>
             <span className="diagram-overlay__state" role="status" aria-live="polite">{status}</span>
           </div>
           <div className="diagram-overlay__actions">
-            <span className="badge text-bg-secondary">{metadata.can_edit ? 'Edição' : 'Somente leitura'}</span>
+            {metadata && <span className="badge text-bg-secondary">{metadata.can_edit ? 'Edição' : 'Somente leitura'}</span>}
             <button type="button" className="btn btn-outline-secondary" data-diagram-overlay-close onClick={requestClose}
-              aria-label={`Fechar ${metadata.title || 'diagrama'}`}>
+              aria-label={`Fechar ${metadata?.title || 'diagrama'}`} disabled={saving}>
               <i className="bi bi-x-lg" aria-hidden="true" /> <span className="d-none d-sm-inline">Fechar</span>
             </button>
           </div>
         </header>
         <main className="diagram-overlay__body">
-          {useRaster ? <RasterDiagramViewer src={metadata.preview_url} title={metadata.title} onStatusChange={setStatus} /> : <SceneErrorBoundary onError={() => setUseRaster(true)}><DiagramWorkspace
+          {loadError ? <div className="alert alert-danger" role="alert">{loadError}</div> : !metadata ? <div className="d-flex h-100 align-items-center justify-content-center" role="status">Verificando acesso ao diagrama...</div> : useRaster ? <RasterDiagramViewer src={metadata.preview_url} title={metadata.title} onStatusChange={setStatus} /> : <SceneErrorBoundary onError={() => setUseRaster(true)}><DiagramWorkspace
             mode={metadata.can_edit ? 'edit' : 'view'} canEdit={metadata.can_edit}
             title={metadata.title} lockVersion={metadata.lock_version}
             sceneUrl={metadata.scene_url} saveUrl={metadata.save_url}
             previewUrl={metadata.preview_url} excalidrawVersion="0.18.0"
-            onDirtyChange={setDirty} onStatusChange={setStatus}
+            onDirtyChange={setDirty} onSavingChange={setSaving} onStatusChange={setStatus}
             onLoadError={() => setUseRaster(true)}
           /></SceneErrorBoundary>}
         </main>
@@ -172,11 +220,11 @@ function DiagramOverlay({ metadata, onClosed }) {
           <div className="diagram-overlay__confirm" role="alertdialog" aria-modal="true"
             aria-labelledby={`${titleId}-confirm`} aria-describedby={`${descriptionId}-confirm`}>
             <div className="diagram-overlay__confirm-card shadow-lg">
-              <h2 id={`${titleId}-confirm`} className="h5">Descartar alterações?</h2>
-              <p id={`${descriptionId}-confirm`}>O diagrama possui alterações que ainda não foram salvas.</p>
+              <h2 id={`${titleId}-confirm`} className="h5">{saving ? 'Salvamento em andamento' : 'Descartar alterações?'}</h2>
+              <p id={`${descriptionId}-confirm`}>{saving ? 'Aguarde o salvamento terminar antes de fechar o editor.' : 'O diagrama possui alterações que ainda não foram salvas.'}</p>
               <div className="d-flex flex-wrap justify-content-end gap-2">
-                <button type="button" className="btn btn-secondary" autoFocus onClick={() => setConfirmClose(false)}>Continuar editando</button>
-                <button type="button" className="btn btn-danger" onClick={onClosed}>Descartar e fechar</button>
+                <button type="button" className="btn btn-secondary" autoFocus onClick={() => setConfirmClose(false)}>{saving ? 'Aguardar salvamento' : 'Continuar editando'}</button>
+                {!saving && <button type="button" className="btn btn-danger" onClick={onClosed}>Descartar e fechar</button>}
               </div>
             </div>
           </div>
@@ -187,8 +235,8 @@ function DiagramOverlay({ metadata, onClosed }) {
 }
 
 /** Monta uma única instância efêmera sem desmontar ou alterar o editor do artigo. */
-export function openDiagramOverlay(metadata, trigger = document.activeElement) {
-  activeOverlay?.close();
+export function openDiagramOverlay(diagramId, trigger = document.activeElement, options = {}) {
+  if (activeOverlay) return activeOverlay.close;
   const host = document.createElement('div');
   host.dataset.diagramOverlayRoot = '';
   document.body.appendChild(host);
@@ -228,6 +276,7 @@ export function openDiagramOverlay(metadata, trigger = document.activeElement) {
     if (activeOverlay?.close === close) activeOverlay = null;
   };
   activeOverlay = { close };
-  root.render(<DiagramOverlay metadata={metadata} onClosed={close} />);
+  root.render(<DiagramOverlay diagramId={diagramId} metadataUrl={options.metadataUrl}
+    initialMetadata={options.initialMetadata} onClosed={close} />);
   return close;
 }

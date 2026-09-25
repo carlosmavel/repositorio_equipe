@@ -283,6 +283,7 @@ def api_diagram_metadata_list(user):
 
 
 def _metadata_payload(diagram, user, *, article=None):
+    editable_scene = article is None and can_edit_diagram(user, diagram)
     return serialize_diagram_metadata(
         diagram, user, article=article,
         preview_url=(url_for('diagrams_bp.embedded_diagram_preview',
@@ -291,7 +292,8 @@ def _metadata_payload(diagram, user, *, article=None):
                      url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id)),
         view_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
         editor_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
-        scene_url=url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
+        scene_url=url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id,
+                          mode='edit' if editable_scene else None),
         save_url=url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
     )
 
@@ -324,6 +326,10 @@ def api_embedded_diagram_metadata(user, article_id, diagram_id):
 def api_diagram_scene(user, diagram_id):
     """Entrega a cena editável e os BinaryFiles somente a usuários autorizados."""
     diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
+    # A capacidade é reavaliada no instante do carregamento. Isso fecha a
+    # janela entre a consulta de metadados e a montagem de um editor editável.
+    if request.args.get('mode') == 'edit' and not can_edit_diagram(user, diagram):
+        raise DiagramAccessDenied('Usuário sem permissão para editar o diagrama.')
     document = diagram.document if isinstance(diagram.document, dict) else {}
     descriptors = document.get('files', {})
     assets = {

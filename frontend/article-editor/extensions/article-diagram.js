@@ -47,7 +47,7 @@ export const ArticleDiagram = Node.create({
   },
 
   addNodeView() {
-    return ({ node }) => {
+    return ({ node, editor, getPos }) => {
       const dom = document.createElement('figure');
       dom.dataset.articleDiagram = 'true';
       dom.dataset.diagramId = node.attrs.diagramId;
@@ -80,7 +80,12 @@ export const ArticleDiagram = Node.create({
             action.addEventListener('pointerdown', stopEditorEvent);
             action.addEventListener('click', event => {
               stopEditorEvent(event);
-              this.options.onOpenDiagram(metadata, action);
+              // Mantém uma âncora visual no documento sem reescrever o nó.
+              // Assim o retorno do overlay acontece no mesmo bloco.
+              const position = getPos();
+              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
+              action.focus({ preventScroll: true });
+              this.options.onOpenDiagram(node.attrs.diagramId, action);
             });
             image.tabIndex = 0;
             image.setAttribute('role', 'button');
@@ -88,13 +93,18 @@ export const ArticleDiagram = Node.create({
             image.addEventListener('pointerdown', stopEditorEvent);
             image.addEventListener('click', event => {
               stopEditorEvent(event);
-              this.options.onOpenDiagram(metadata, image);
+              const position = getPos();
+              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
+              image.focus({ preventScroll: true });
+              this.options.onOpenDiagram(node.attrs.diagramId, image);
             });
             image.addEventListener('keydown', event => {
               if (event.key !== 'Enter' && event.key !== ' ') return;
               event.preventDefault();
               stopEditorEvent(event);
-              this.options.onOpenDiagram(metadata, image);
+              const position = getPos();
+              if (Number.isInteger(position)) editor.commands.setNodeSelection(position);
+              this.options.onOpenDiagram(node.attrs.diagramId, image);
             });
             dom.replaceChildren(image, action);
           } else {

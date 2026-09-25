@@ -37,6 +37,7 @@ export function DiagramWorkspace({
   transport = diagramTransport,
   onSaved,
   onDirtyChange,
+  onSavingChange,
   onStatusChange,
   onReady,
   onRequestClose,
@@ -48,8 +49,8 @@ export function DiagramWorkspace({
   const savedFingerprintRef = useRef(null);
   const latestFingerprintRef = useRef(null);
   const savingRef = useRef(false);
-  const callbacksRef = useRef({ onSaved, onDirtyChange, onStatusChange, onReady, onLoadError });
-  callbacksRef.current = { onSaved, onDirtyChange, onStatusChange, onReady, onLoadError };
+  const callbacksRef = useRef({ onSaved, onDirtyChange, onSavingChange, onStatusChange, onReady, onLoadError });
+  callbacksRef.current = { onSaved, onDirtyChange, onSavingChange, onStatusChange, onReady, onLoadError };
 
   const [initialData, setInitialData] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -124,6 +125,7 @@ export function DiagramWorkspace({
     if (!editable || !api || savingRef.current) return;
     savingRef.current = true;
     setIsSaving(true);
+    callbacksRef.current.onSavingChange?.(true);
     setStatus('Salvando...');
     try {
       const elements = api.getSceneElements();
@@ -177,6 +179,7 @@ export function DiagramWorkspace({
     } finally {
       savingRef.current = false;
       setIsSaving(false);
+      callbacksRef.current.onSavingChange?.(false);
     }
   }, [editable, excalidrawVersion, lockVersion, previewUrl, reportDirty, saveScene,
     saveUrl, setStatus, title, transport]);

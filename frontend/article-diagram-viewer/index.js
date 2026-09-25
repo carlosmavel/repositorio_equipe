@@ -16,15 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const open = async (trigger) => {
       trigger.disabled = true;
       try {
-        openDiagramOverlay(await metadataFor(figure), trigger);
+        const metadata = await metadataFor(figure);
+        openDiagramOverlay(metadata.id, trigger, {
+          metadataUrl: figure.dataset.diagramMetadataUrl,
+          initialMetadata: metadata,
+        });
       } catch (error) {
         const image = figure.querySelector('img');
         // O preview já autorizado continua útil mesmo se o contrato/scene falhar.
         if (image?.src) {
-          openDiagramOverlay({
+          openDiagramOverlay(figure.dataset.diagramId, trigger, { initialMetadata: {
             title: image.alt || 'Diagrama', preview_url: image.src,
             can_view: true, can_edit: false, can_open_scene: false,
-          }, trigger);
+          }});
         }
       } finally {
         trigger.disabled = false;

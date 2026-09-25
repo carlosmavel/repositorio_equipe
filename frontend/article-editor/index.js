@@ -197,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         StarterKit.configure({ link: false, underline: false }),
         Image.configure({ allowBase64: false }),
         VideoNode,
-        ArticleDiagram.configure({ onOpenDiagram: openDiagramOverlay }),
+        ArticleDiagram.configure({
+          onOpenDiagram: (diagramId, trigger) => openDiagramOverlay(diagramId, trigger)
+        }),
         Link.configure({ openOnClick: false, defaultProtocol: 'https' }),
         Subscript,
         Superscript,

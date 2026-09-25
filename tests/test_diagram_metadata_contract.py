@@ -37,12 +37,20 @@ def test_owner_and_shared_reader_receive_only_their_capabilities(client):
     assert owner_data['preview_state'] == 'missing'
     assert owner_data['can_edit'] and owner_data['can_open_scene']
     assert 'editor_url' in owner_data and 'scene_url' in owner_data
+    assert 'mode=edit' in owner_data['scene_url']
     assert '?v=7' in owner_data['preview_url']
+
+    editable_scene_url = owner_data['scene_url']
+    for permission in owner.permissoes_personalizadas.all():
+        owner.permissoes_personalizadas.remove(permission)
+    db.session.commit()
+    assert client.get(editable_scene_url).status_code == 403
 
     _login(client, reader)
     reader_data = client.get(f'/api/diagramas/{diagram.id}/metadados').get_json()
     assert reader_data['can_view'] and reader_data['can_open_scene']
     assert not reader_data['can_edit']
+    assert 'mode=edit' not in reader_data['scene_url']
     assert 'editor_url' not in reader_data
     assert 'view_url' in reader_data
 
