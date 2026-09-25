@@ -5,6 +5,7 @@ serviços em :mod:`core.services.diagrams`.
 """
 
 from functools import wraps
+import base64
 import hashlib
 import json
 
@@ -206,6 +207,40 @@ def api_diagram_metadata(user, diagram_id):
         'title': diagram.title,
         'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
     })
+
+
+@diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/cena')
+@authenticated
+def api_diagram_scene(user, diagram_id):
+    """Entrega a cena editável e os BinaryFiles somente a usuários autorizados."""
+    diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
+    document = diagram.document if isinstance(diagram.document, dict) else {}
+    descriptors = document.get('files', {})
+    assets = {
+        asset.sha256: asset for asset in (
+            diagram.current_version_record.assets if diagram.current_version_record else []
+        ) if asset.kind == 'asset'
+    }
+    files = {}
+    for file_id, descriptor in descriptors.items():
+        asset = assets.get(descriptor.get('sha256'))
+        if not asset:
+            continue
+        content_type = descriptor.get('mimeType') or asset.content_type or 'application/octet-stream'
+        encoded = base64.b64encode(get_storage().read(asset.storage_key)).decode('ascii')
+        files[file_id] = {
+            'id': file_id,
+            'mimeType': content_type,
+            'dataURL': f'data:{content_type};base64,{encoded}',
+            'created': int(asset.created_at.timestamp() * 1000) if asset.created_at else 0,
+        }
+    response = jsonify(
+        elements=document.get('elements', []),
+        appState=document.get('appState', {}),
+        files=files,
+    )
+    response.headers['Cache-Control'] = 'private, no-store'
+    return response
 
 
 @diagrams_bp.post('/api/diagramas')
