@@ -3,7 +3,7 @@
 {% block extra_css %}
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/diagram-preview.css') }}">
-{% for stylesheet in vite_css('frontend/diagram-editor/index.jsx') %}
+{% for stylesheet in vite_css('frontend/diagram-editor/standalone.jsx') %}
 <link rel="stylesheet" href="{{ stylesheet }}">
 {% endfor %}
 <style>.diagram-canvas { height: min(72vh, 800px); min-height: 520px; }</style>
@@ -20,6 +20,8 @@
     'lockVersion': diagram.lock_version,
     'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
     'saveUrl': url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
+    'previewUrl': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
+    'mode': 'edit' if can_edit_diagram else 'view',
     'canEdit': can_edit_diagram,
     'excalidrawVersion': '0.18.0'
   } | tojson }}</script>
@@ -50,5 +52,5 @@
 {% block extra_js %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/diagrams/editor.js') }}"></script>
-<script type="module" src="{{ vite_asset('frontend/diagram-editor/index.jsx') }}"></script>
+<script type="module" src="{{ vite_asset('frontend/diagram-editor/standalone.jsx') }}"></script>
 {% endblock %}
