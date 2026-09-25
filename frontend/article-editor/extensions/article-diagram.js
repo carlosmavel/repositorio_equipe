@@ -67,16 +67,21 @@ export const ArticleDiagram = Node.create({
           image.src = metadata.preview_url;
           image.alt = metadata.title || 'Diagrama';
           image.loading = 'lazy';
-          const action = document.createElement('a');
-          action.className = 'btn btn-sm btn-primary article-diagram__action';
-          action.href = metadata.editor_url;
-          action.target = '_blank';
-          action.rel = 'noopener';
-          action.textContent = metadata.can_edit ? 'Editar diagrama' : 'Abrir diagrama';
-          action.setAttribute('aria-label', `${action.textContent}: ${metadata.title || 'Diagrama'}`);
-          action.addEventListener('pointerdown', stopEditorEvent);
-          action.addEventListener('click', stopEditorEvent);
-          dom.replaceChildren(image, action);
+          const actionUrl = metadata.can_edit ? metadata.editor_url : metadata.view_url;
+          if (actionUrl) {
+            const action = document.createElement('a');
+            action.className = 'btn btn-sm btn-primary article-diagram__action';
+            action.href = actionUrl;
+            action.target = '_blank';
+            action.rel = 'noopener';
+            action.textContent = metadata.can_edit ? 'Editar diagrama' : 'Visualizar diagrama';
+            action.setAttribute('aria-label', `${action.textContent}: ${metadata.title || 'Diagrama'}`);
+            action.addEventListener('pointerdown', stopEditorEvent);
+            action.addEventListener('click', stopEditorEvent);
+            dom.replaceChildren(image, action);
+          } else {
+            dom.replaceChildren(image);
+          }
           dom.classList.remove('article-diagram--loading');
           dom.setAttribute('aria-label', metadata.title || 'Diagrama');
         })
