@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { DIAGRAM_SAVED_EVENT, versionDiagramPreviewUrl } from '../../diagram-ui/events.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -63,6 +64,8 @@ export const ArticleDiagram = Node.create({
       const actions = document.createElement('div');
       actions.className = 'article-diagram__actions';
       dom.replaceChildren(title, viewport, actions);
+      let metadata = null;
+      let previewImage = null;
 
       const stopEditorEvent = event => event.stopPropagation();
       const selectAndOpen = (trigger, mode = 'view') => {
@@ -85,12 +88,35 @@ export const ArticleDiagram = Node.create({
       };
 
       // O NodeView busca apenas metadados e a URL autorizada do preview.
+      const updateTitle = diagramTitle => {
+        title.className = 'article-diagram__title';
+        title.textContent = diagramTitle;
+        if (previewImage) {
+          previewImage.alt = `Preview do diagrama ${diagramTitle}`;
+          previewImage.closest('button')?.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
+        }
+      };
+      const onDiagramSaved = event => {
+        const saved = event.detail || {};
+        if (saved.uuid !== node.attrs.diagramId) return;
+        if (saved.title) updateTitle(saved.title);
+        if (saved.preview_state !== 'ready' || !previewImage) return;
+        // Preserve the contextual article endpoint; only its deterministic
+        // version key changes, so its narrower authorization remains intact.
+        previewImage.src = versionDiagramPreviewUrl(
+          metadata?.preview_url || previewImage.src,
+          saved.preview_token ?? saved.current_version,
+        );
+      };
+      window.addEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved);
+
       fetch(this.options.metadataUrl(node.attrs.diagramId), {
         credentials: 'same-origin', headers: { Accept: 'application/json' }
       }).then(response => {
         if (!response.ok) throw new Error('Diagrama indisponível');
         return response.json();
-      }).then(metadata => {
+      }).then(responseMetadata => {
+        metadata = responseMetadata;
         const diagramTitle = metadata.title || 'Diagrama sem título';
         title.className = 'article-diagram__title';
         title.textContent = diagramTitle;
@@ -115,6 +141,7 @@ export const ArticleDiagram = Node.create({
           preview.className = 'article-diagram__preview';
           preview.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
           const image = document.createElement('img');
+          previewImage = image;
           image.src = metadata.preview_url;
           image.alt = `Preview do diagrama ${diagramTitle}`;
           image.loading = 'lazy';
@@ -147,6 +174,7 @@ export const ArticleDiagram = Node.create({
         // Ações não movem a seleção nem iniciam o drag; o restante do card
         // continua selecionável e arrastável pelo Tiptap.
         stopEvent: event => Boolean(event.target.closest?.('.article-diagram__actions, .article-diagram__preview')),
+        destroy: () => window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved),
       };
     };
   }

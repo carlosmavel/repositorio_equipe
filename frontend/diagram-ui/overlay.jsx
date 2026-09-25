@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DiagramWorkspace } from '../diagram-editor/index.jsx';
+import { announceDiagramSaved } from './events.js';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 let activeOverlay = null;
@@ -101,6 +102,19 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, requestedMode
   const [useRaster, setUseRaster] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
+
+  const handleSaved = useCallback((saved) => {
+    setMetadata(current => current ? {
+      ...current,
+      ...saved,
+      id: current.id,
+      can_edit: current.can_edit,
+      can_open_scene: current.can_open_scene,
+      scene_url: current.scene_url,
+      save_url: current.save_url,
+    } : current);
+    announceDiagramSaved(saved);
+  }, []);
 
   const requestClose = useCallback(() => {
     if (saving) {
@@ -213,6 +227,7 @@ function DiagramOverlay({ diagramId, metadataUrl, initialMetadata, requestedMode
             sceneUrl={metadata.scene_url} saveUrl={metadata.save_url}
             previewUrl={metadata.preview_url} excalidrawVersion="0.18.0"
             onDirtyChange={setDirty} onSavingChange={setSaving} onStatusChange={setStatus}
+            onSaved={handleSaved}
             onLoadError={() => setUseRaster(true)}
           /></SceneErrorBoundary>}
         </main>

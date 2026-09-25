@@ -412,7 +412,13 @@ def api_save_diagram(user, diagram_id):
     except ValueError as error:
         status = 409 if 'outra sessão' in str(error) else 400
         return jsonify(error=str(error)), status
-    return jsonify(_serialize(diagram))
+    metadata = _metadata_payload(diagram, user)
+    return jsonify({
+        **_serialize(diagram),
+        'preview_state': metadata['preview_state'],
+        'preview_url': metadata['preview_url'],
+        'preview_token': metadata['cache_token'],
+    })
 
 
 @diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/copiar')
