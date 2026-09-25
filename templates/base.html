@@ -220,6 +220,7 @@
                     {% set current_endpoint = request.endpoint.split('.')[-1] %}
                     {% set overview_active = current_endpoint == 'pagina_inicial' %}
                     {% set boletins_active = current_endpoint in ['boletins_listar', 'boletins_novo', 'boletins_buscar', 'boletins_visualizar', 'boletins_editar'] %}
+                    {% set diagramas_active = current_endpoint in ['biblioteca', 'meus_diagramas', 'modelos', 'diagram_editor'] %}
                     {% set biblioteca_active = current_endpoint in ['meus_artigos', 'novo_artigo', 'pesquisar', 'aprovacao', 'aprovacao_detail', 'artigo', 'editar_artigo', 'solicitar_revisao', 'historico_versoes_artigo', 'visualizar_versao_artigo', 'comparar_versoes_artigo', 'restaurar_versao_artigo'] %}
                     {% set admin_menu_active = 'admin_' in current_endpoint %}
                     {% set cadastros_artigos_active = current_endpoint in ['admin_artigo_tipos', 'admin_artigo_areas', 'admin_artigo_sistemas'] %}
@@ -315,6 +316,28 @@
                                 {% if current_user.has_permissao('boletim_buscar') or current_user.has_permissao('admin') %}
                                 <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'boletins_buscar' }}" href="{{ url_for('boletins_buscar') }}" title="Pesquisar boletins"{% if current_endpoint == 'boletins_buscar' %} aria-current="page"{% endif %}><i class="bi bi-search me-2" aria-hidden="true"></i><span class="sidebar-link-label">Pesquisar boletins</span></a></li>
                                 {% endif %}
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    {# Bloco DIAGRAMAS: aparece somente para usuários habilitados. #}
+                    {% set pode_acessar_diagramas = current_user.is_authenticated and (current_user.has_permissao('diagrama_visualizar') or current_user.has_permissao('diagrama_criar') or current_user.has_permissao('diagrama_gerenciar_modelos') or current_user.has_permissao('admin')) %}
+                    {% if pode_acessar_diagramas %}
+                    <li class="nav-item sidebar-section {{ 'is-current-group' if diagramas_active }}">
+                        <span class="sidebar-section-label">Diagramas</span>
+                        <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not diagramas_active }}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#collapseDiagramas"
+                                aria-expanded="{{ 'true' if diagramas_active else 'false' }}" aria-controls="collapseDiagramas"
+                                title="Diagramas" aria-label="Diagramas">
+                            <span><i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Diagramas</span></span>
+                            <i class="bi bi-chevron-down small sidebar-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {{ 'show' if diagramas_active }}" id="collapseDiagramas" data-bs-parent="#sidebarNavigation">
+                            <ul class="nav flex-column sidebar-group-links">
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'biblioteca' }}" href="{{ url_for('diagrams_bp.biblioteca') }}" title="Biblioteca"{% if current_endpoint == 'biblioteca' %} aria-current="page"{% endif %}><i class="bi bi-collection-fill me-2" aria-hidden="true"></i><span class="sidebar-link-label">Biblioteca</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint in ['meus_diagramas', 'diagram_editor'] }}" href="{{ url_for('diagrams_bp.meus_diagramas') }}" title="Meus Diagramas"{% if current_endpoint in ['meus_diagramas', 'diagram_editor'] %} aria-current="page"{% endif %}><i class="bi bi-person-workspace me-2" aria-hidden="true"></i><span class="sidebar-link-label">Meus Diagramas</span></a></li>
+                                <li class="nav-item"><a class="nav-link {{ 'active' if current_endpoint == 'modelos' }}" href="{{ url_for('diagrams_bp.modelos') }}" title="Modelos"{% if current_endpoint == 'modelos' %} aria-current="page"{% endif %}><i class="bi bi-layout-text-window-reverse me-2" aria-hidden="true"></i><span class="sidebar-link-label">Modelos</span></a></li>
                             </ul>
                         </div>
                     </li>
