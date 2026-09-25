@@ -292,6 +292,7 @@ def _metadata_payload(diagram, user, *, article=None):
         view_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
         editor_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
         scene_url=url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
+        save_url=url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
     )
 
 

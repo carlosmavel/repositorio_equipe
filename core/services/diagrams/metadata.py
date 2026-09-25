@@ -23,7 +23,8 @@ def preview_state(diagram):
 
 
 def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
-                               view_url=None, editor_url=None, scene_url=None):
+                               view_url=None, editor_url=None, scene_url=None,
+                               save_url=None):
     """Serializa o contrato sem promover acesso contextual a acesso direto."""
     direct_view = can_view_diagram(user, diagram) if article is None else False
     contextual_view = (
@@ -38,6 +39,7 @@ def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
         'id': str(diagram.id), 'title': diagram.title,
         'diagram_type': diagram.diagram_type.value,
         'current_version': diagram.current_version,
+        'lock_version': diagram.lock_version,
         'current_version_id': str(diagram.current_version_id) if diagram.current_version_id else None,
         'cache_token': token,
         'preview_state': preview_state(diagram),
@@ -54,4 +56,6 @@ def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
         payload['editor_url'] = editor_url
     if can_open_scene and scene_url:
         payload['scene_url'] = _versioned_url(scene_url, token)
+    if can_edit and save_url:
+        payload['save_url'] = save_url
     return payload

@@ -69,6 +69,8 @@ def test_diagram_editor_tracks_confirmed_save_without_onchange_race():
     assert "latestFingerprintRef.current === savedFingerprint" in source
     assert "disabled={isSaving}" in source
     assert "savingRef.current" in source
+    assert "import diagramTransport from './transport.js'" in source
+    assert 'transport = diagramTransport' in source
 
 
 def test_diagram_workspace_is_reusable_and_has_explicit_modes_and_callbacks():
@@ -109,3 +111,18 @@ def test_standalone_bootstrap_is_separate_from_workspace_bundle():
     assert "'mode': 'edit' if can_edit_diagram else 'view'" in template
     assert "'previewUrl': url_for('diagrams_bp.api_diagram_preview'" in template
     assert "'diagram-editor': 'frontend/diagram-editor/standalone.jsx'" in vite
+
+
+def test_article_diagram_opens_accessible_in_page_overlay():
+    overlay = (ROOT / 'frontend/diagram-ui/overlay.jsx').read_text()
+    extension = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
+    css = (ROOT / 'static/css/diagram-preview.css').read_text()
+
+    assert 'role="dialog" aria-modal="true"' in overlay
+    assert "document.addEventListener('keydown', onKeyDown, true)" in overlay
+    assert "window.scrollTo(scrollX, scrollY)" in overlay
+    assert 'root.unmount()' in overlay
+    assert 'Descartar alterações?' in overlay
+    assert 'onOpenDiagram(metadata, action)' in extension
+    assert "action.target = '_blank'" not in extension
+    assert 'z-index: 2147483647' in css
