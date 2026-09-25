@@ -2,9 +2,16 @@
 {% block title %}Meus diagramas{% endblock %}
 {% block content %}
 <section class="container-fluid py-2">
-  <header class="mb-4">
-    <h1 class="h2 mb-1">Meus diagramas</h1>
-    <p class="text-body-secondary mb-0">Diagramas criados por você.</p>
+  <header class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h2 mb-1">Meus diagramas</h1>
+      <p class="text-body-secondary mb-0">Diagramas criados por você.</p>
+    </div>
+    {% if can_create_diagram %}
+    <button class="btn btn-primary align-self-start align-self-sm-center" type="button" data-create-diagram>
+      <i class="bi bi-plus-lg" aria-hidden="true"></i> Novo diagrama
+    </button>
+    {% endif %}
   </header>
   {% include "diagramas/_filtros_paginacao.html" %}
   <p class="small text-body-secondary" aria-live="polite">{{ pagination.total }} {{ 'resultado' if pagination.total == 1 else 'resultados' }}</p>
@@ -15,10 +22,25 @@
   {% else %}
   <div class="text-center border rounded-3 py-5 text-body-secondary">
     <i class="bi bi-diagram-3 fs-1" aria-hidden="true"></i>
-    <p class="mb-0 mt-2">Nenhum diagrama encontrado com estes filtros.</p>
+    <p class="mb-3 mt-2">Nenhum diagrama encontrado com estes filtros.</p>
+    {% if can_create_diagram %}<button class="btn btn-primary" type="button" data-create-diagram>Novo diagrama</button>{% endif %}
   </div>
   {% endif %}
   {% with somente_paginacao=true %}{% include "diagramas/_filtros_paginacao.html" %}{% endwith %}
 </section>
 {% include "diagramas/_usado_em_modal.html" %}
+{% if can_create_diagram %}
+<dialog id="create-diagram-dialog" class="border-0 rounded-3 shadow p-0" aria-labelledby="create-diagram-title">
+  <div class="p-4" style="width: min(32rem, calc(100vw - 2rem));">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div><h2 id="create-diagram-title" class="h5 mb-1">Novo diagrama</h2><p class="text-body-secondary small mb-0">Comece em branco no editor.</p></div>
+      <button type="button" class="btn-close" aria-label="Fechar" onclick="this.closest('dialog').close()"></button>
+    </div>
+    <div data-title-form></div>
+  </div>
+</dialog>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if can_create_diagram %}<script type="module" src="{{ vite_asset('frontend/diagram-library/create.js') }}"></script>{% endif %}
 {% endblock %}
