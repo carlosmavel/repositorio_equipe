@@ -1,0 +1,30 @@
+<article class="card h-100 shadow-sm diagram-card">
+  <div class="ratio ratio-16x9 bg-body-tertiary overflow-hidden">
+    <img src="{{ url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id) }}"
+         class="card-img-top object-fit-cover" alt="Preview de {{ diagram.name }}" loading="lazy"
+         onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+    <div class="d-flex align-items-center justify-content-center text-body-secondary" hidden>
+      <i class="bi bi-diagram-3 fs-1" aria-hidden="true"></i>
+      <span class="visually-hidden">Preview indisponível</span>
+    </div>
+  </div>
+  <div class="card-body d-flex flex-column">
+    <div class="d-flex align-items-start justify-content-between gap-2">
+      <h2 class="card-title h5 mb-2">{{ diagram.name }}</h2>
+      {% if diagram.diagram_type.value == 'template' %}<span class="badge text-bg-info">Modelo</span>{% endif %}
+    </div>
+    {% if diagram.description %}<p class="card-text text-body-secondary small">{{ diagram.description | truncate(140) }}</p>{% endif %}
+    <dl class="row small text-body-secondary mb-3 mt-auto">
+      <dt class="col-4">Autor</dt><dd class="col-8 text-truncate">{{ diagram.owner.nome_completo or diagram.owner.username }}</dd>
+      <dt class="col-4">Escopo</dt><dd class="col-8 mb-0">{{ {'private': 'Privado', 'institution': 'Instituição', 'establishment': 'Estabelecimento', 'sector': 'Setor', 'cell': 'Célula'}[diagram.scope.value] }}</dd>
+    </dl>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary flex-grow-1" href="{{ url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id) }}">Abrir</a>
+      {% if diagram.diagram_type.value == 'template' %}
+      <form method="post" action="{{ url_for('diagrams_bp.api_copy_diagram', diagram_id=diagram.id) }}">
+        <button class="btn btn-outline-primary" type="submit">Usar modelo</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</article>

@@ -98,6 +98,11 @@ class Permissao(Enum):
     BOLETIM_BUSCAR = "boletim_buscar"
     BOLETIM_GERENCIAR = "boletim_gerenciar"
 
+    # --- diagramas ---
+    DIAGRAMA_VISUALIZAR = "diagrama_visualizar"
+    DIAGRAMA_CRIAR = "diagrama_criar"
+    DIAGRAMA_GERENCIAR_MODELOS = "diagrama_gerenciar_modelos"
+
 
 class OSStatus(Enum):
     """Status possíveis de uma Ordem de Serviço."""

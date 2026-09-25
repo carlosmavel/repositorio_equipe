@@ -24,6 +24,9 @@ FRIENDLY_NAMES: dict[str, str] = {
     Permissao.BOLETIM_VISUALIZAR.value: "Boletim visualizar",
     Permissao.BOLETIM_BUSCAR.value: "Boletim buscar",
     Permissao.BOLETIM_GERENCIAR.value: "Boletim gerenciar",
+    Permissao.DIAGRAMA_VISUALIZAR.value: "Visualizar diagramas",
+    Permissao.DIAGRAMA_CRIAR.value: "Criar diagramas",
+    Permissao.DIAGRAMA_GERENCIAR_MODELOS.value: "Gerenciar modelos de diagramas",
 }
 
 
@@ -54,6 +57,7 @@ DEPRECATED_CODES: set[str] = set()
 PERMISSION_CATEGORIES_ORDER: tuple[str, ...] = (
     "Permissões de Artigos",
     "Permissões de Boletins",
+    "Permissões de Diagramas",
     "Permissões Administrativas",
     "Outras Permissões",
 )
@@ -62,6 +66,7 @@ PERMISSION_CATEGORY_BY_CODE: dict[str, str] = {
     item.codigo: (
         "Permissões de Artigos" if item.codigo.startswith("artigo_")
         else "Permissões de Boletins" if item.codigo.startswith("boletim_")
+        else "Permissões de Diagramas" if item.codigo.startswith("diagrama_")
         else "Permissões Administrativas" if item.codigo.startswith("admin")
         else "Outras Permissões"
     )

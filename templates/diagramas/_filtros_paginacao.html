@@ -1,0 +1,44 @@
+{% if not somente_paginacao %}<form class="card card-body mb-4" method="get" role="search">
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-lg-5">
+      <label class="form-label" for="diagram-search">Buscar</label>
+      <input class="form-control" id="diagram-search" name="q" value="{{ filters.q }}" placeholder="Nome do diagrama">
+    </div>
+    <div class="col-12 col-sm-5 col-lg-3">
+      <label class="form-label" for="diagram-scope">Escopo</label>
+      <select class="form-select" id="diagram-scope" name="escopo">
+        <option value="">Todos os escopos</option>
+        {% for value, label in [('private', 'Privado'), ('institution', 'Instituição'), ('establishment', 'Estabelecimento'), ('sector', 'Setor'), ('cell', 'Célula')] %}
+        <option value="{{ value }}"{{ ' selected' if filters.escopo == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-4 col-lg-2">
+      <label class="form-label" for="diagram-order">Ordenar</label>
+      <select class="form-select" id="diagram-order" name="ordem">
+        <option value="recentes"{{ ' selected' if filters.ordem == 'recentes' }}>Mais recentes</option>
+        <option value="antigos"{{ ' selected' if filters.ordem == 'antigos' }}>Mais antigos</option>
+        <option value="nome"{{ ' selected' if filters.ordem == 'nome' }}>Nome</option>
+      </select>
+    </div>
+    <div class="col-12 col-sm-3 col-lg-2 d-grid"><button class="btn btn-outline-primary" type="submit">Filtrar</button></div>
+  </div>
+</form>{% endif %}
+
+{% if pagination.pages > 1 %}
+<nav aria-label="Paginação de diagramas">
+  <ul class="pagination justify-content-center mt-4">
+    <li class="page-item{{ ' disabled' if not pagination.has_prev }}">
+      <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.prev_num, q=filters.q, escopo=filters.escopo, ordem=filters.ordem, per_page=filters.per_page) if pagination.has_prev else '#' }}">Anterior</a>
+    </li>
+    {% for number in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if number %}
+      <li class="page-item{{ ' active' if number == pagination.page }}"><a class="page-link" href="{{ url_for(request.endpoint, page=number, q=filters.q, escopo=filters.escopo, ordem=filters.ordem, per_page=filters.per_page) }}"{% if number == pagination.page %} aria-current="page"{% endif %}>{{ number }}</a></li>
+      {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+    {% endfor %}
+    <li class="page-item{{ ' disabled' if not pagination.has_next }}">
+      <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.next_num, q=filters.q, escopo=filters.escopo, ordem=filters.ordem, per_page=filters.per_page) if pagination.has_next else '#' }}">Próxima</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}

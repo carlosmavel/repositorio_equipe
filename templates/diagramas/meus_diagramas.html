@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Meus diagramas{% endblock %}
+{% block content %}
+<section class="container-fluid py-2">
+  <header class="mb-4">
+    <h1 class="h2 mb-1">Meus diagramas</h1>
+    <p class="text-body-secondary mb-0">Diagramas criados por você.</p>
+  </header>
+  {% include "diagramas/_filtros_paginacao.html" %}
+  <p class="small text-body-secondary" aria-live="polite">{{ pagination.total }} {{ 'resultado' if pagination.total == 1 else 'resultados' }}</p>
+  {% if diagrams %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 row-cols-xxl-4 g-4">
+    {% for diagram in diagrams %}<div class="col">{% include "diagramas/_card.html" %}</div>{% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center border rounded-3 py-5 text-body-secondary">
+    <i class="bi bi-diagram-3 fs-1" aria-hidden="true"></i>
+    <p class="mb-0 mt-2">Nenhum diagrama encontrado com estes filtros.</p>
+  </div>
+  {% endif %}
+  {% with somente_paginacao=true %}{% include "diagramas/_filtros_paginacao.html" %}{% endwith %}
+</section>
+{% endblock %}

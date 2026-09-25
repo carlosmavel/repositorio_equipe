@@ -9,9 +9,11 @@ import hashlib
 import json
 
 from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, session, url_for
+from sqlalchemy import asc, desc
 
 try:
     from ..core.database import db
+    from ..core.enums import DiagramScope, DiagramType
     from ..core.models import Diagram, DiagramVersion, User
     from ..core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
     from ..core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
@@ -19,6 +21,7 @@ try:
     from ..core.services.diagrams.rendering import get_preview
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
+    from core.enums import DiagramScope, DiagramType
     from core.models import Diagram, DiagramVersion, User
     from core.services.diagrams.access import DiagramAccessDenied, require_view, scoped_diagrams
     from core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
@@ -66,8 +69,70 @@ def access_denied(error):
 @diagrams_bp.get('/diagramas')
 @authenticated
 def diagrams_index(user):
-    diagrams = scoped_diagrams(Diagram.query, user).order_by(Diagram.updated_at.desc()).all()
-    return render_template('diagrams/index.html', diagrams=diagrams)
+    return redirect(url_for('diagrams_bp.biblioteca'))
+
+
+def _diagram_listing(user, *, diagram_type, mine=False):
+    """Filtra, ordena e pagina no banco uma coleção de diagramas."""
+    query = scoped_diagrams(Diagram.query, user).filter(Diagram.diagram_type == diagram_type)
+    if mine:
+        query = query.filter(Diagram.owner_id == user.id)
+
+    search = request.args.get('q', '').strip()
+    selected_scope = request.args.get('escopo', '').strip()
+    selected_order = request.args.get('ordem', 'recentes').strip()
+    if search:
+        query = query.filter(Diagram.name.ilike(f'%{search}%'))
+    valid_scopes = {scope.value for scope in DiagramScope}
+    if selected_scope in valid_scopes:
+        query = query.filter(Diagram.scope == DiagramScope(selected_scope))
+    else:
+        selected_scope = ''
+
+    ordering = {
+        'nome': (asc(Diagram.name), asc(Diagram.id)),
+        'antigos': (asc(Diagram.updated_at), asc(Diagram.id)),
+        'recentes': (desc(Diagram.updated_at), desc(Diagram.id)),
+    }
+    if selected_order not in ordering:
+        selected_order = 'recentes'
+    page = max(request.args.get('page', 1, type=int), 1)
+    per_page = min(max(request.args.get('per_page', 12, type=int), 1), 48)
+    pagination = query.order_by(*ordering[selected_order]).paginate(
+        page=page, per_page=per_page, error_out=False,
+    )
+    return pagination, {
+        'q': search,
+        'escopo': selected_scope,
+        'ordem': selected_order,
+        'per_page': per_page,
+    }
+
+
+@diagrams_bp.get('/diagramas/biblioteca')
+@authenticated
+def biblioteca(user):
+    pagination, filters = _diagram_listing(user, diagram_type=DiagramType.DIAGRAM)
+    return render_template('diagramas/biblioteca.html', pagination=pagination,
+                           diagrams=pagination.items, filters=filters)
+
+
+@diagrams_bp.get('/diagramas/meus-diagramas')
+@authenticated
+def meus_diagramas(user):
+    pagination, filters = _diagram_listing(
+        user, diagram_type=DiagramType.DIAGRAM, mine=True,
+    )
+    return render_template('diagramas/meus_diagramas.html', pagination=pagination,
+                           diagrams=pagination.items, filters=filters)
+
+
+@diagrams_bp.get('/diagramas/modelos')
+@authenticated
+def modelos(user):
+    pagination, filters = _diagram_listing(user, diagram_type=DiagramType.TEMPLATE)
+    return render_template('diagramas/modelos.html', pagination=pagination,
+                           diagrams=pagination.items, filters=filters)
 
 
 @diagrams_bp.get('/diagramas/<uuid:diagram_id>')
