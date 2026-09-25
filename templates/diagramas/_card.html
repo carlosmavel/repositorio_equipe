@@ -25,6 +25,9 @@
         <button class="btn btn-outline-primary" type="submit">Usar modelo</button>
       </form>
       {% endif %}
+      <button class="btn btn-outline-secondary" type="button"
+              data-used-in-url="{{ url_for('diagrams_bp.api_diagram_used_in', diagram_id=diagram.id) }}"
+              data-bs-toggle="modal" data-bs-target="#usedInModal">Usado em</button>
     </div>
   </div>
 </article>

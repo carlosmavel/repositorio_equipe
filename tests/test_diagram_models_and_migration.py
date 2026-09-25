@@ -26,11 +26,14 @@ def test_diagram_domain_constraints_and_fk_policies(app_ctx):
     assert not Diagram.__table__.c.owner_id.nullable
     assert _ondelete(Diagram, 'owner_id') == 'RESTRICT'
     assert _ondelete(Diagram, 'source_diagram_id') == 'SET NULL'
-    assert _ondelete(DiagramVersion, 'diagram_id') == 'CASCADE'
-    assert _ondelete(DiagramAsset, 'diagram_id') == 'CASCADE'
+    assert _ondelete(DiagramVersion, 'diagram_id') == 'RESTRICT'
+    assert _ondelete(DiagramAsset, 'diagram_id') == 'RESTRICT'
     assert _ondelete(ArticleDiagram, 'article_id') == 'CASCADE'
     assert _ondelete(ArticleDiagram, 'diagram_id') == 'RESTRICT'
     assert Article.diagram_links.property.passive_deletes == 'all'
+    assert Diagram.versions.property.passive_deletes == 'all'
+    assert Diagram.assets.property.passive_deletes == 'all'
+    assert _ondelete(Diagram, 'archived_by_user_id') == 'RESTRICT'
 
     unique_columns = {
         tuple(column.name for column in constraint.columns)

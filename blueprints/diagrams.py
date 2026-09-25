@@ -14,7 +14,8 @@ from sqlalchemy import asc, desc
 try:
     from ..core.database import db
     from ..core.enums import DiagramScope, DiagramType
-    from ..core.models import Article, Diagram, DiagramVersion, User
+    from ..core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
+    from ..core.utils import user_can_view_article
     from ..core.services.diagrams.access import (
         DiagramAccessDenied, can_render_diagram_in_article, require_view,
         scoped_diagrams,
@@ -26,7 +27,8 @@ try:
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
     from core.enums import DiagramScope, DiagramType
-    from core.models import Article, Diagram, DiagramVersion, User
+    from core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
+    from core.utils import user_can_view_article
     from core.services.diagrams.access import (
         DiagramAccessDenied, can_render_diagram_in_article, require_view,
         scoped_diagrams,
@@ -64,6 +66,30 @@ def _serialize(diagram):
         'current_version_id': str(diagram.current_version_id) if diagram.current_version_id else None,
         'lock_version': diagram.lock_version,
         'archived': diagram.archived_at is not None,
+        'archived_by_user_id': diagram.archived_by_user_id,
+    }
+
+
+def _visible_consumers(diagram, user):
+    """Consulta a tabela materializada e não vaza artigos sem acesso."""
+    articles = (Article.query.join(ArticleDiagram)
+                .filter(ArticleDiagram.diagram_id == diagram.id)
+                .order_by(Article.titulo, Article.id).all())
+    return [article for article in articles if user_can_view_article(user, article)]
+
+
+def _consumer_payload(diagram, user):
+    visible = _visible_consumers(diagram, user)
+    total = ArticleDiagram.query.filter_by(diagram_id=diagram.id).count()
+    return {
+        'diagram_id': str(diagram.id),
+        'total': total,
+        'hidden_count': total - len(visible),
+        'articles': [{
+            'id': article.id,
+            'title': article.titulo,
+            'url': url_for('articles_bp.artigo', artigo_id=article.id),
+        } for article in visible],
     }
 
 
@@ -231,9 +257,52 @@ def api_restore_diagram(user, diagram_id, version_number):
 
 
 @diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/arquivar')
+@diagrams_bp.delete('/api/diagramas/<uuid:diagram_id>')
 @authenticated
 def api_archive_diagram(user, diagram_id):
-    return jsonify(_serialize(archive_diagram(user, db.get_or_404(Diagram, diagram_id))))
+    diagram = db.get_or_404(Diagram, diagram_id)
+    consumers = _consumer_payload(diagram, user)
+    # Obriga clientes a exibirem o impacto antes da operação destrutiva.
+    confirmation = request.values.get('confirm_consumers')
+    if request.is_json:
+        confirmation = str((request.get_json(silent=True) or {}).get('confirm_consumers')).lower()
+    if consumers['total'] and confirmation != 'true':
+        return jsonify(error='Confirme os artigos consumidores antes de arquivar.',
+                       used_in=consumers), 409
+    return jsonify(_serialize(archive_diagram(user, diagram)))
+
+
+@diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/usado-em')
+@authenticated
+def api_diagram_used_in(user, diagram_id):
+    diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
+    return jsonify(_consumer_payload(diagram, user))
+
+
+@diagrams_bp.delete('/api/diagramas/<uuid:diagram_id>/excluir-definitivo')
+@authenticated
+def api_delete_diagram(user, diagram_id):
+    """Hard delete excepcional; referências e retenção sempre prevalecem."""
+    if not user.has_permissao('admin'):
+        raise DiagramAccessDenied('A exclusão definitiva exige administração.')
+    diagram = db.get_or_404(Diagram, diagram_id)
+    consumers = _consumer_payload(diagram, user)
+    if consumers['total']:
+        return jsonify(
+            error='O diagrama é referenciado por artigos e não pode ser excluído.',
+            used_in=consumers,
+        ), 409
+    retained_versions = DiagramVersion.query.filter_by(diagram_id=diagram.id).count()
+    retained_assets = DiagramAsset.query.filter_by(diagram_id=diagram.id).count()
+    if retained_versions or retained_assets:
+        return jsonify(
+            error='Versões ou assets ainda estão sujeitos à política de retenção.',
+            retained_versions=retained_versions,
+            retained_assets=retained_assets,
+        ), 409
+    db.session.delete(diagram)
+    db.session.commit()
+    return '', 204
 
 
 def _preview_response(diagram, user, version=None):
