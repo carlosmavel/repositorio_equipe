@@ -20,6 +20,7 @@
     'lockVersion': diagram.lock_version,
     'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
     'saveUrl': url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
+    'canEdit': can_edit_diagram,
     'excalidrawVersion': '0.18.0'
   } | tojson }}</script>
   {% if diagram.current_version_record and diagram.current_version_record.assets | selectattr('kind', 'equalto', 'preview') | list %}

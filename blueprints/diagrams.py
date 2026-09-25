@@ -19,7 +19,7 @@ try:
     from ..core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
     from ..core.utils import user_can_view_article
     from ..core.services.diagrams.access import (
-        DiagramAccessDenied, can_render_diagram_in_article, require_view,
+        DiagramAccessDenied, can_edit_diagram, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
     from ..core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover - execução direta
     from core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
     from core.utils import user_can_view_article
     from core.services.diagrams.access import (
-        DiagramAccessDenied, can_render_diagram_in_article, require_view,
+        DiagramAccessDenied, can_edit_diagram, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
     from core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
@@ -191,7 +191,10 @@ def modelos(user):
 @authenticated
 def diagram_editor(user, diagram_id):
     diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
-    return render_template('diagrams/editor.html', diagram=diagram)
+    return render_template(
+        'diagrams/editor.html', diagram=diagram,
+        can_edit_diagram=can_edit_diagram(user, diagram),
+    )
 
 
 @diagrams_bp.get('/diagramas/<uuid:diagram_id>/historico')
@@ -272,6 +275,8 @@ def api_diagram_metadata(user, diagram_id):
         'id': str(diagram.id),
         'title': diagram.title,
         'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
+        'editor_url': url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
+        'can_edit': can_edit_diagram(user, diagram),
     })
 
 
@@ -408,7 +413,8 @@ def api_delete_diagram(user, diagram_id):
 
 def _preview_response(diagram, user, version=None):
     content, content_type = get_preview(diagram, user, version=version)
-    if content is None:
+    preview_available = content is not None
+    if not preview_available:
         content = (
             b'<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" '
             b'viewBox="0 0 640 360"><rect width="640" height="360" fill="#f1f3f5"/>'
@@ -418,7 +424,11 @@ def _preview_response(diagram, user, version=None):
         content_type = 'image/svg+xml; charset=utf-8'
     response = make_response(content)
     response.headers['Content-Type'] = content_type or 'image/png'
-    response.headers['Cache-Control'] = 'private, max-age=300'
+    # A ausência do preview é transitória (por exemplo, antes do primeiro
+    # salvamento no editor) e não pode ficar presa no cache do navegador.
+    response.headers['Cache-Control'] = (
+        'private, max-age=300' if preview_available else 'private, no-store'
+    )
     response.set_etag(hashlib.sha256(content).hexdigest())
     return response.make_conditional(request)
 
