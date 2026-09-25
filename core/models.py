@@ -1038,6 +1038,7 @@ class Diagram(db.Model):
     setor_id = db.Column(db.Integer, db.ForeignKey('setor.id', ondelete='RESTRICT'), index=True)
     celula_id = db.Column(db.Integer, db.ForeignKey('celula.id', ondelete='RESTRICT'), index=True)
     source_diagram_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
+    source_template_id = db.Column(db.Uuid(as_uuid=True), db.ForeignKey('diagram.id', ondelete='SET NULL'))
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
     current_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     current_version_id = db.Column(db.Uuid(as_uuid=True),
@@ -1050,6 +1051,7 @@ class Diagram(db.Model):
     owner = db.relationship('User', foreign_keys=[owner_id], back_populates='owned_diagrams')
     celula = db.relationship('Celula', foreign_keys=[celula_id])
     source_diagram = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_diagram_id])
+    source_template = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_template_id])
     versions = db.relationship('DiagramVersion', foreign_keys='DiagramVersion.diagram_id',
                                back_populates='diagram', cascade='all, delete-orphan', passive_deletes=True)
     current_version_record = db.relationship('DiagramVersion', foreign_keys=[current_version_id], post_update=True)
@@ -1080,10 +1082,14 @@ class DiagramVersion(db.Model):
     schema_version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
     content_hash = db.Column(db.String(64), nullable=False, default='')
     author_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=False)
+    source_version_id = db.Column(db.Uuid(as_uuid=True),
+                                  db.ForeignKey('diagram_version.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     diagram = db.relationship('Diagram', foreign_keys=[diagram_id], back_populates='versions')
     author = db.relationship('User', foreign_keys=[author_id])
+    source_version = db.relationship('DiagramVersion', remote_side=[id],
+                                     foreign_keys=[source_version_id])
     assets = db.relationship('DiagramAsset', secondary='diagram_version_asset',
                              back_populates='versions')
     number = synonym('version_number')

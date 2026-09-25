@@ -101,7 +101,7 @@ class Permissao(Enum):
     # --- diagramas ---
     DIAGRAMA_VISUALIZAR = "diagrama_visualizar"
     DIAGRAMA_CRIAR = "diagrama_criar"
-    DIAGRAMA_GERENCIAR_MODELOS = "diagrama_gerenciar_modelos"
+    DIAGRAMA_MODELO_GERENCIAR = "diagrama_modelo_gerenciar"
 
 
 class OSStatus(Enum):
