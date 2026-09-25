@@ -323,7 +323,7 @@
 
                     {# Bloco DIAGRAMAS: aparece somente para usuários habilitados. #}
                     {% set pode_acessar_diagramas = current_user.is_authenticated and (current_user.has_permissao('diagrama_visualizar') or current_user.has_permissao('diagrama_criar') or current_user.has_permissao('diagrama_modelo_gerenciar') or current_user.has_permissao('admin')) %}
-                    {% if pode_acessar_diagramas %}
+                    {% if feature_flags.diagram_library and pode_acessar_diagramas %}
                     <li class="nav-item sidebar-section {{ 'is-current-group' if diagramas_active }}">
                         <span class="sidebar-section-label">Diagramas</span>
                         <button class="nav-link sidebar-group-toggle {{ 'collapsed' if not diagramas_active }}" type="button"

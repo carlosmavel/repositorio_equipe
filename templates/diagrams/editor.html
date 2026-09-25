@@ -10,7 +10,10 @@
 {% endblock %}
 {% block content %}
 <main class="container py-4" data-diagram-id="{{ diagram.id }}">
-  <h1>{{ diagram.title }}</h1>
+  <div class="d-flex justify-content-between align-items-center gap-3">
+    <h1>{{ diagram.title }}</h1>
+    <a class="btn btn-outline-secondary" href="{{ url_for('diagrams_bp.diagram_history', diagram_id=diagram.id) }}">Histórico</a>
+  </div>
   <div id="diagram-editor" data-version="{{ diagram.current_version }}"></div>
   <script id="diagram-editor-config" type="application/json">{{ {
     'title': diagram.title,

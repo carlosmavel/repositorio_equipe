@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Histórico — {{ diagram.title }}{% endblock %}
+{% block content %}
+<main class="container py-4">
+  <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+    <div><h1 class="h3 mb-1">Histórico</h1><p class="text-muted mb-0">{{ diagram.title }}</p></div>
+    <a class="btn btn-outline-primary" href="{{ url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id) }}">Voltar ao editor</a>
+  </div>
+  <div class="row g-3">
+    {% for version in pagination.items %}
+    <article class="col-12 col-md-6 col-xl-4">
+      <div class="card h-100">
+        <img class="card-img-top diagram-preview-image" loading="lazy"
+             src="{{ url_for('diagrams_bp.diagram_version_preview', diagram_id=diagram.id, version_number=version.number) }}"
+             alt="Preview da versão {{ version.number }}">
+        <div class="card-body">
+          <h2 class="h5">Versão {{ version.number }}</h2>
+          <p class="small text-muted mb-2">{{ version.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+          <p class="mb-0">{{ version.reason or 'Salvamento' }}</p>
+        </div>
+      </div>
+    </article>
+    {% else %}<p class="text-muted">Nenhuma versão encontrada.</p>{% endfor %}
+  </div>
+</main>
+{% endblock %}

@@ -8,8 +8,9 @@ from functools import wraps
 import base64
 import hashlib
 import json
+from uuid import UUID
 
-from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, jsonify, make_response, redirect, render_template, request, session, url_for
 from sqlalchemy import asc, desc
 
 try:
@@ -21,7 +22,7 @@ try:
         DiagramAccessDenied, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
-    from ..core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
+    from ..core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from ..core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from ..core.services.diagrams.rendering import get_preview
     from ..core.services.diagrams.storage import get_storage
@@ -34,13 +35,25 @@ except ImportError:  # pragma: no cover - execução direta
         DiagramAccessDenied, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
-    from core.services.diagrams.commands import archive_diagram, copy_template, create_diagram, restore_diagram, save_diagram, save_diagram_payload
+    from core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from core.services.diagrams.rendering import get_preview
     from core.services.diagrams.storage import get_storage
 
 
 diagrams_bp = Blueprint('diagrams_bp', __name__)
+
+
+def feature_enabled(name):
+    """Falha fechada para flags desconhecidas e devolve 404 sem revelar rotas."""
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if not current_app.config.get(name, False):
+                abort(404)
+            return view(*args, **kwargs)
+        return wrapped
+    return decorator
 
 
 def authenticated(view):
@@ -145,6 +158,7 @@ def _diagram_listing(user, *, diagram_type, mine=False):
 
 
 @diagrams_bp.get('/diagramas/biblioteca')
+@feature_enabled('FEATURE_DIAGRAM_LIBRARY')
 @authenticated
 def biblioteca(user):
     pagination, filters = _diagram_listing(user, diagram_type=DiagramType.DIAGRAM)
@@ -153,6 +167,7 @@ def biblioteca(user):
 
 
 @diagrams_bp.get('/diagramas/meus-diagramas')
+@feature_enabled('FEATURE_DIAGRAM_LIBRARY')
 @authenticated
 def meus_diagramas(user):
     pagination, filters = _diagram_listing(
@@ -163,6 +178,7 @@ def meus_diagramas(user):
 
 
 @diagrams_bp.get('/diagramas/modelos')
+@feature_enabled('FEATURE_DIAGRAM_LIBRARY')
 @authenticated
 def modelos(user):
     pagination, filters = _diagram_listing(user, diagram_type=DiagramType.TEMPLATE)
@@ -171,10 +187,60 @@ def modelos(user):
 
 
 @diagrams_bp.get('/diagramas/<uuid:diagram_id>')
+@feature_enabled('FEATURE_DIAGRAM_EDITOR')
 @authenticated
 def diagram_editor(user, diagram_id):
     diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
     return render_template('diagrams/editor.html', diagram=diagram)
+
+
+@diagrams_bp.get('/diagramas/<uuid:diagram_id>/historico')
+@feature_enabled('FEATURE_DIAGRAM_EDITOR')
+@authenticated
+def diagram_history(user, diagram_id):
+    diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
+    pagination = get_diagram_version_history(
+        diagram.id, user, page=max(request.args.get('page', 1, type=int), 1), per_page=20,
+    )
+    return render_template('diagrams/history.html', diagram=diagram, pagination=pagination)
+
+
+@diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/versoes')
+@authenticated
+def api_diagram_versions(user, diagram_id):
+    pagination = get_diagram_version_history(
+        diagram_id, user, page=max(request.args.get('page', 1, type=int), 1),
+        per_page=min(max(request.args.get('per_page', 20, type=int), 1), 100),
+    )
+    return jsonify({
+        'items': [{
+            'id': str(version.id), 'number': version.number,
+            'reason': version.reason, 'author_id': version.author_id,
+            'created_at': version.created_at.isoformat(),
+            'preview_url': url_for('diagrams_bp.diagram_version_preview',
+                                   diagram_id=diagram_id, version_number=version.number),
+        } for version in pagination.items],
+        'page': pagination.page, 'pages': pagination.pages, 'total': pagination.total,
+    })
+
+
+@diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/versoes/<uuid:version_id>/restaurar')
+@authenticated
+def api_restore_diagram_version(user, diagram_id, version_id):
+    data = _payload()
+    try:
+        base_version_id = data.get('base_version_id')
+        if not base_version_id:
+            raise ValueError('base_version_id é obrigatório.')
+        restored = restore_diagram_version(
+            diagram_id, version_id, UUID(str(base_version_id)), user,
+            data.get('reason') or 'Restauração de versão histórica',
+        )
+    except DiagramVersionConflict as error:
+        return jsonify(error=str(error)), 409
+    except (ValueError, TypeError) as error:
+        return jsonify(error=str(error)), 400
+    return jsonify(version_id=str(restored.id), version_number=restored.number), 201
 
 
 @diagrams_bp.get('/api/diagramas')
@@ -343,7 +409,13 @@ def api_delete_diagram(user, diagram_id):
 def _preview_response(diagram, user, version=None):
     content, content_type = get_preview(diagram, user, version=version)
     if content is None:
-        abort(404)
+        content = (
+            b'<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" '
+            b'viewBox="0 0 640 360"><rect width="640" height="360" fill="#f1f3f5"/>'
+            b'<text x="320" y="180" text-anchor="middle" fill="#6c757d" '
+            b'font-family="sans-serif" font-size="20">Preview indisponivel</text></svg>'
+        )
+        content_type = 'image/svg+xml; charset=utf-8'
     response = make_response(content)
     response.headers['Content-Type'] = content_type or 'image/png'
     response.headers['Cache-Control'] = 'private, max-age=300'

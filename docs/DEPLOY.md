@@ -88,6 +88,38 @@ pg_dump -U usuario -h localhost repositorio_equipe_db > /caminho/para/backup.sql
 ```
 Agende a execução diária desse comando e garanta cópias externas em local seguro.
 
+### Diagramas: backup, restauração e retenção
+
+O backup de diagramas exige um **snapshot consistente do banco e da pasta de
+assets** (`instance/diagrams`, ou `DIAGRAM_STORAGE_FOLDER`). Pause escritas,
+execute `pg_dump` e copie a pasta antes de retomá-las. Na restauração, restaure
+primeiro o banco, depois os blobs, execute `flask db upgrade` e valide previews
+e cenas de uma amostra de versões atuais e históricas.
+
+A coleta de órfãos é conservadora e simula por padrão:
+
+```bash
+flask diagram-gc --older-than-days 30
+flask diagram-gc --older-than-days 30 --execute
+```
+
+Nunca remova diretamente linhas de `diagram_asset`: assets de versões antigas
+são parte da trilha de auditoria. Guarde banco e blobs pelo mesmo prazo e rode a
+simulação antes da execução.
+
+Para migrar futuramente a object storage, implemente a mesma porta usada por
+`DIAGRAM_STORAGE_FACTORY` (`put_sha256`, `read` e `delete`), faça backfill
+idempotente por SHA-256, valide contagem/hash e somente então altere a factory.
+Mantenha o armazenamento anterior em modo leitura durante a janela de rollback.
+
+### Liberação gradual
+
+As flags `FEATURE_DIAGRAM_LIBRARY`, `FEATURE_DIAGRAM_EDITOR` e
+`FEATURE_ARTICLE_DIAGRAM_INSERTION` são independentes. Libere nesta ordem:
+biblioteca, editor e, por último, inserção. A inserção vem desativada por padrão
+e só deve ser habilitada depois de ACLs, sincronização de referências e resolvedor
+terem sido validados no ambiente.
+
 ## 9. FAQ – Dúvidas Frequentes
 **Q1: A aplicação não inicia e exibe erro sobre SECRET_KEY ou DATABASE_URI.**
 - Certifique-se de que o arquivo `.env` está correto e que as variáveis foram exportadas, conforme descrito na seção de configuração.

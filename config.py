@@ -37,6 +37,14 @@ class Config:
     DATABASE_URI = os.getenv("DATABASE_URI")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Rollout independente. A inserção é deliberadamente opt-in: ela só deve
+    # chegar a produção depois de biblioteca, ACLs, integridade e resolvedor.
+    FEATURE_DIAGRAM_LIBRARY = os.getenv("FEATURE_DIAGRAM_LIBRARY", "true").lower() == "true"
+    FEATURE_DIAGRAM_EDITOR = os.getenv("FEATURE_DIAGRAM_EDITOR", "true").lower() == "true"
+    FEATURE_ARTICLE_DIAGRAM_INSERTION = (
+        os.getenv("FEATURE_ARTICLE_DIAGRAM_INSERTION", "false").lower() == "true"
+    )
+
     # Cookies de sessão endurecidos para evitar vazamentos em produção.
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
     SESSION_COOKIE_HTTPONLY = True
