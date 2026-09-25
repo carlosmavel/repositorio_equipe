@@ -18,7 +18,7 @@
   <script id="diagram-editor-config" type="application/json">{{ {
     'title': diagram.title,
     'lockVersion': diagram.lock_version,
-    'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
+    'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id, mode='edit' if can_edit_diagram else None),
     'saveUrl': url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
     'previewUrl': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
     'mode': 'edit' if can_edit_diagram else 'view',

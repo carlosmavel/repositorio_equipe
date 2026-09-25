@@ -123,8 +123,13 @@ def test_article_diagram_opens_accessible_in_page_overlay():
     assert "window.scrollTo(scrollX, scrollY)" in overlay
     assert 'root.unmount()' in overlay
     assert 'Descartar alterações?' in overlay
-    assert 'onOpenDiagram(metadata, action)' in extension
+    assert 'onOpenDiagram(node.attrs.diagramId, action)' in extension
     assert "action.target = '_blank'" not in extension
+    assert 'editor.commands.setNodeSelection(position)' in extension
+    assert "cache: 'no-store'" in overlay
+    assert 'onSavingChange={setSaving}' in overlay
+    assert 'Salvamento em andamento' in overlay
+    assert "window.addEventListener('beforeunload', warnBeforeUnload)" in overlay
     assert 'z-index: 2147483647' in css
 
 
@@ -133,7 +138,7 @@ def test_progressive_viewer_supports_zoom_pan_fit_and_raster_fallback():
     bootstrap = (ROOT / 'frontend/article-diagram-viewer/index.js').read_text()
 
     assert 'viewModeEnabled={!editable}' in (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
-    assert 'metadata.can_open_scene' in overlay
+    assert 'payload.can_open_scene' in overlay
     assert 'RasterDiagramViewer' in overlay
     assert 'onWheel=' in overlay
     assert 'onPointerMove=' in overlay
