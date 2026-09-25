@@ -81,6 +81,12 @@ body.diagram-overlay-open { overflow: hidden; }
 .diagram-overlay__body .diagram-workspace { display: flex; height: 100%; min-height: 0; flex-direction: column; }
 .diagram-overlay__body .diagram-workspace > .d-flex { flex: 0 0 auto; }
 .diagram-overlay__body .diagram-canvas { flex: 1 1 auto; min-height: 0; }
+.diagram-save-status { font-weight: 600; }
+.diagram-save-area[data-save-state="clean"] .diagram-save-status { color: var(--bs-secondary-color); }
+.diagram-save-area[data-save-state="dirty"] .diagram-save-status,
+.diagram-save-area[data-save-state="saving"] .diagram-save-status { color: var(--bs-warning-text-emphasis); }
+.diagram-save-area[data-save-state="saved"] .diagram-save-status { color: var(--bs-success-text-emphasis); }
+.diagram-save-area[data-save-state="error"] .diagram-save-status { color: var(--bs-danger-text-emphasis); }
 .diagram-raster { display: flex; height: 100%; min-height: 0; flex-direction: column; }
 .diagram-raster__controls { z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem; padding: 0 0 .5rem; }
 .diagram-raster__controls output { min-width: 4rem; text-align: center; font-variant-numeric: tabular-nums; }

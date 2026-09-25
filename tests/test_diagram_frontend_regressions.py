@@ -64,10 +64,11 @@ def test_versioned_preview_can_be_cached(app_ctx, monkeypatch):
 def test_diagram_editor_tracks_confirmed_save_without_onchange_race():
     source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
 
-    assert "setStatus('Salvando...')" in source
+    assert "setSaveState('saving')" in source
     assert "savedFingerprintRef.current = savedFingerprint" in source
     assert "latestFingerprintRef.current === savedFingerprint" in source
-    assert "disabled={isSaving}" in source
+    assert "setSaveState(dirty ? 'dirty' : 'saved')" in source
+    assert 'disabled={savePresentation.disabled}' in source
     assert "savingRef.current" in source
     assert "import diagramTransport from './transport.js'" in source
     assert 'transport = diagramTransport' in source
@@ -84,8 +85,35 @@ def test_diagram_workspace_is_reusable_and_has_explicit_modes_and_callbacks():
     assert 'callbacksRef.current.onSaved?.(saved)' in source
     assert 'callbacksRef.current.onDirtyChange?.(dirty)' in source
     assert 'callbacksRef.current.onStatusChange?.(value)' in source
+    assert 'callbacksRef.current.onSaveStateChange?.(value)' in source
     assert 'callbacksRef.current.onReady?.(api)' in source
     assert 'onClick={onRequestClose}' in source
+
+
+def test_diagram_workspace_follows_global_theme_without_new_storage_key():
+    source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+
+    assert "document.documentElement.dataset.bsTheme === 'dark'" in source
+    assert "window.addEventListener('themeChange', syncTheme)" in source
+    assert "window.removeEventListener('themeChange', syncTheme)" in source
+    assert 'theme={theme}' in source
+    assert 'localStorage' not in source
+
+
+def test_diagram_save_state_is_explicit_accessible_and_retryable():
+    source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+    css = (ROOT / 'static/css/diagram-preview.css').read_text()
+
+    for state in ('clean', 'dirty', 'saving', 'saved', 'error'):
+        assert f'{state}:' in source
+        assert f'data-save-state="{state}"' in css
+    for label in ('Salvar alterações', 'Salvando...', 'Salvo',
+                  'Falha ao salvar — tentar novamente'):
+        assert label in source
+    assert 'aria-live="polite"' in source
+    assert 'aria-atomic="true"' in source
+    assert "saveState === 'clean' || saveState === 'saved'" in source
+    assert "setSaveState('error')" in source
 
 
 def test_diagram_workspace_reports_load_conflicts_and_preview_identity():

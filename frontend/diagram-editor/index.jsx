@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   Excalidraw,
   exportToBlob,
@@ -6,12 +6,17 @@ import {
 import '@excalidraw/excalidraw/index.css';
 import diagramTransport from './transport.js';
 
-const STATUS = {
-  clean: '✓ Salvo',
-  dirty: 'Alterações não salvas',
-  loading: 'Carregando...',
-  saving: 'Salvando...',
+const SAVE_STATE = {
+  clean: { label: 'Sem alterações', icon: 'bi-check-circle', buttonClass: 'btn-outline-secondary', disabled: true },
+  dirty: { label: 'Salvar alterações', icon: 'bi-save', buttonClass: 'btn-primary', disabled: false },
+  saving: { label: 'Salvando...', icon: 'bi-cloud-arrow-up', buttonClass: 'btn-primary', disabled: true },
+  saved: { label: 'Salvo', icon: 'bi-check-circle-fill', buttonClass: 'btn-success', disabled: true },
+  error: { label: 'Falha ao salvar — tentar novamente', icon: 'bi-exclamation-triangle-fill', buttonClass: 'btn-danger', disabled: false },
 };
+
+function currentDocumentTheme() {
+  return document.documentElement.dataset.bsTheme === 'dark' ? 'dark' : 'light';
+}
 
 function versionedPreviewUrl(url, version) {
   if (!url || version === undefined || version === null) return url || null;
@@ -39,6 +44,7 @@ export function DiagramWorkspace({
   onDirtyChange,
   onSavingChange,
   onStatusChange,
+  onSaveStateChange,
   onReady,
   onRequestClose,
   onLoadError,
@@ -49,24 +55,52 @@ export function DiagramWorkspace({
   const savedFingerprintRef = useRef(null);
   const latestFingerprintRef = useRef(null);
   const savingRef = useRef(false);
-  const callbacksRef = useRef({ onSaved, onDirtyChange, onSavingChange, onStatusChange, onReady, onLoadError });
-  callbacksRef.current = { onSaved, onDirtyChange, onSavingChange, onStatusChange, onReady, onLoadError };
+  const callbacksRef = useRef({ onSaved, onDirtyChange, onSavingChange, onStatusChange, onSaveStateChange, onReady, onLoadError });
+  callbacksRef.current = { onSaved, onDirtyChange, onSavingChange, onStatusChange, onSaveStateChange, onReady, onLoadError };
 
   const [initialData, setInitialData] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [status, setStatusValue] = useState(STATUS.loading);
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveStateValue] = useState('clean');
+  const [announcement, setAnnouncement] = useState('Carregando...');
+  const [theme, setTheme] = useState(currentDocumentTheme);
   const [lockVersion, setLockVersion] = useState(initialLockVersion);
+  const saveStatusId = useId();
   const editable = mode === 'edit' && canEdit;
 
   const setStatus = useCallback((value) => {
-    setStatusValue(value);
+    setAnnouncement(value);
     callbacksRef.current.onStatusChange?.(value);
   }, []);
+
+  const setSaveState = useCallback((value) => {
+    setSaveStateValue(value);
+    const label = SAVE_STATE[value].label;
+    setStatus(label);
+    callbacksRef.current.onSaveStateChange?.(value);
+  }, [setStatus]);
 
   const reportDirty = useCallback((dirty) => {
     callbacksRef.current.onDirtyChange?.(dirty);
   }, []);
+
+  useEffect(() => {
+    const syncTheme = () => setTheme(currentDocumentTheme());
+    // main.js applies the persisted global theme before this bundle is mounted.
+    syncTheme();
+    window.addEventListener('themeChange', syncTheme);
+    return () => window.removeEventListener('themeChange', syncTheme);
+  }, []);
+
+  useEffect(() => {
+    if (!editable) return undefined;
+    const warnBeforeUnload = (event) => {
+      if (saveState === 'clean' || saveState === 'saved') return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [editable, saveState]);
 
   useEffect(() => {
     let active = true;
@@ -80,7 +114,7 @@ export function DiagramWorkspace({
     });
 
     setLoadError('');
-    setStatus(STATUS.loading);
+    setStatus('Carregando...');
     Promise.resolve().then(requestScene).then((scene) => {
       if (!active) return;
       const data = {
@@ -92,7 +126,7 @@ export function DiagramWorkspace({
       filesRef.current = data.files;
       initializedRef.current = false;
       setInitialData(data);
-      if (!editable) setStatus('');
+      if (!editable) setStatus('Diagrama carregado');
     }).catch((error) => {
       if (!active) return;
       const message = error.message || 'Não foi possível carregar o diagrama.';
@@ -112,21 +146,20 @@ export function DiagramWorkspace({
       initializedRef.current = true;
       savedFingerprintRef.current = fingerprint;
       reportDirty(false);
-      setStatus(STATUS.clean);
+      setSaveState('clean');
       return;
     }
     const dirty = fingerprint !== savedFingerprintRef.current;
     reportDirty(dirty);
-    if (!savingRef.current) setStatus(dirty ? STATUS.dirty : STATUS.clean);
-  }, [reportDirty, setStatus, transport]);
+    if (!savingRef.current) setSaveState(dirty ? 'dirty' : 'clean');
+  }, [reportDirty, setSaveState, transport]);
 
   const save = useCallback(async () => {
     const api = apiRef.current;
     if (!editable || !api || savingRef.current) return;
     savingRef.current = true;
-    setIsSaving(true);
     callbacksRef.current.onSavingChange?.(true);
-    setStatus('Salvando...');
+    setSaveState('saving');
     try {
       const elements = api.getSceneElements();
       const appState = api.getAppState();
@@ -163,7 +196,7 @@ export function DiagramWorkspace({
       const clean = latestFingerprintRef.current === savedFingerprint;
       const dirty = !clean;
       reportDirty(dirty);
-      setStatus(dirty ? STATUS.dirty : STATUS.clean);
+      setSaveState(dirty ? 'dirty' : 'saved');
       const saved = {
         ...result,
         uuid: result.uuid || result.id,
@@ -174,22 +207,26 @@ export function DiagramWorkspace({
       };
       callbacksRef.current.onSaved?.(saved);
     } catch (error) {
-      setStatus(`Falha ao salvar: ${error.message || 'Não foi possível salvar o diagrama.'} Alterações não salvas.`);
+      setSaveState('error');
       reportDirty(true);
     } finally {
       savingRef.current = false;
-      setIsSaving(false);
       callbacksRef.current.onSavingChange?.(false);
     }
   }, [editable, excalidrawVersion, lockVersion, previewUrl, reportDirty, saveScene,
-    saveUrl, setStatus, title, transport]);
+    saveUrl, setSaveState, title, transport]);
+
+  const savePresentation = SAVE_STATE[saveState];
 
   return (
     <div className="diagram-workspace" data-mode={editable ? 'edit' : 'view'}>
-      <div className="d-flex align-items-center gap-3 mb-2">
-        {editable && <button className="btn btn-primary" type="button" onClick={save} disabled={isSaving}>Salvar diagrama</button>}
+      <div className="diagram-save-area d-flex align-items-center gap-3 mb-2" data-save-state={saveState}>
+        {editable && <button className={`btn ${savePresentation.buttonClass}`} type="button" onClick={save}
+          disabled={savePresentation.disabled} aria-describedby={saveStatusId}>
+          <i className={`bi ${savePresentation.icon}`} aria-hidden="true" />{' '}{savePresentation.label}
+        </button>}
         {onRequestClose && <button className="btn btn-outline-secondary" type="button" onClick={onRequestClose}>Fechar</button>}
-        <span role="status" aria-live="polite">{status}</span>
+        <span id={saveStatusId} className="diagram-save-status" role="status" aria-live="polite" aria-atomic="true">{announcement}</span>
       </div>
       {loadError ? (
         <div className="alert alert-danger" role="alert">{loadError}</div>
@@ -201,6 +238,7 @@ export function DiagramWorkspace({
               callbacksRef.current.onReady?.(api);
             }}
             initialData={initialData}
+            theme={theme}
             onChange={editable ? onChange : undefined}
             viewModeEnabled={!editable}
           />
