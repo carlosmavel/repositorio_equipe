@@ -38,6 +38,15 @@ class DiagramStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class DiagramPreviewState(str, Enum):
+    """Ciclo de vida formal do raster de uma versão de diagrama."""
+
+    PENDING = "pending"
+    GENERATING = "generating"
+    READY = "ready"
+    FAILED = "failed"
+
+
 class DiagramType(str, Enum):
     """Distingue documentos comuns de modelos reutilizáveis."""
 

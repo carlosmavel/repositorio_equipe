@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { DIAGRAM_SAVED_EVENT, versionDiagramPreviewUrl } from '../../diagram-ui/events.js';
+import { DIAGRAM_PREVIEW_STATE_EVENT, DIAGRAM_SAVED_EVENT, versionDiagramPreviewUrl } from '../../diagram-ui/events.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -96,19 +96,56 @@ export const ArticleDiagram = Node.create({
           previewImage.closest('button')?.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
         }
       };
+      const showPreviewState = (state, message) => {
+        previewImage = null;
+        const failed = state === 'failed';
+        viewport.classList.toggle('article-diagram__viewport--error', failed);
+        viewport.innerHTML = `<span class="article-diagram__state" role="${failed ? 'alert' : 'status'}">${
+          failed ? (message || 'Preview indisponível') : 'Gerando preview...'
+        }</span>`;
+      };
+      const showPreview = (url, diagramTitle) => {
+        if (!url) return showPreviewState('pending');
+        const preview = document.createElement('button');
+        preview.type = 'button';
+        preview.className = 'article-diagram__preview';
+        preview.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
+        const image = document.createElement('img');
+        previewImage = image;
+        image.src = url;
+        image.alt = `Preview do diagrama ${diagramTitle}`;
+        image.loading = 'lazy';
+        image.addEventListener('error', () => showPreviewState('failed'), { once: true });
+        preview.append(image);
+        preview.addEventListener('pointerdown', stopEditorEvent);
+        preview.addEventListener('click', event => {
+          stopEditorEvent(event);
+          selectAndOpen(preview, 'view');
+        });
+        viewport.classList.remove('article-diagram__viewport--error');
+        viewport.replaceChildren(preview);
+      };
       const onDiagramSaved = event => {
         const saved = event.detail || {};
         if (saved.uuid !== node.attrs.diagramId) return;
         if (saved.title) updateTitle(saved.title);
-        if (saved.preview_state !== 'ready' || !previewImage) return;
+        if (saved.preview_state !== 'ready') return showPreviewState(saved.preview_state, saved.preview_message);
         // Preserve the contextual article endpoint; only its deterministic
         // version key changes, so its narrower authorization remains intact.
-        previewImage.src = versionDiagramPreviewUrl(
-          metadata?.preview_url || previewImage.src,
+        const url = versionDiagramPreviewUrl(
+          metadata?.preview_url || saved.preview_url || previewImage?.src,
           saved.preview_token ?? saved.current_version,
         );
+        showPreview(url, saved.title || metadata?.title || 'Diagrama sem título');
+      };
+      const onPreviewState = event => {
+        const detail = event.detail || {};
+        if (detail.uuid === node.attrs.diagramId && detail.preview_state !== 'ready') {
+          showPreviewState(detail.preview_state, detail.preview_message);
+        }
       };
       window.addEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved);
+      window.addEventListener(DIAGRAM_PREVIEW_STATE_EVENT, onPreviewState);
 
       fetch(this.options.metadataUrl(node.attrs.diagramId), {
         credentials: 'same-origin', headers: { Accept: 'application/json' }
@@ -133,29 +170,10 @@ export const ArticleDiagram = Node.create({
           }
         }
 
-        if (metadata.preview_state === 'missing' || !metadata.preview_url) {
-          viewport.innerHTML = '<span class="article-diagram__state" role="status">Preview ainda não disponível</span>';
+        if (metadata.preview_state !== 'ready' || !metadata.preview_url) {
+          showPreviewState(metadata.preview_state, metadata.preview_message);
         } else {
-          const preview = document.createElement('button');
-          preview.type = 'button';
-          preview.className = 'article-diagram__preview';
-          preview.setAttribute('aria-label', `Visualizar diagrama: ${diagramTitle}`);
-          const image = document.createElement('img');
-          previewImage = image;
-          image.src = metadata.preview_url;
-          image.alt = `Preview do diagrama ${diagramTitle}`;
-          image.loading = 'lazy';
-          image.addEventListener('error', () => {
-            viewport.classList.add('article-diagram__viewport--error');
-            viewport.innerHTML = '<span class="article-diagram__state" role="alert">Falha ao carregar o preview</span>';
-          }, { once: true });
-          preview.append(image);
-          preview.addEventListener('pointerdown', stopEditorEvent);
-          preview.addEventListener('click', event => {
-            stopEditorEvent(event);
-            selectAndOpen(preview, 'view');
-          });
-          viewport.replaceChildren(preview);
+          showPreview(metadata.preview_url, diagramTitle);
         }
         dom.classList.remove('article-diagram--loading');
         dom.removeAttribute('aria-busy');
@@ -174,7 +192,10 @@ export const ArticleDiagram = Node.create({
         // Ações não movem a seleção nem iniciam o drag; o restante do card
         // continua selecionável e arrastável pelo Tiptap.
         stopEvent: event => Boolean(event.target.closest?.('.article-diagram__actions, .article-diagram__preview')),
-        destroy: () => window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved),
+        destroy: () => {
+          window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved);
+          window.removeEventListener(DIAGRAM_PREVIEW_STATE_EVENT, onPreviewState);
+        },
       };
     };
   }

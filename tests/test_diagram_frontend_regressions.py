@@ -39,6 +39,7 @@ def test_transient_missing_preview_is_not_cached(app_ctx, monkeypatch):
     assert response.content_type == 'image/svg+xml; charset=utf-8'
     assert response.cache_control.no_store is True
     assert response.cache_control.max_age is None
+    assert b'Gerando preview' in response.get_data()
 
 
 def test_current_preview_is_revalidated_after_save(app_ctx, monkeypatch):
@@ -148,7 +149,8 @@ def test_node_views_filter_saved_events_and_only_refresh_their_image():
     source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
 
     assert 'if (saved.uuid !== node.attrs.diagramId) return' in source
-    assert 'previewImage.src = versionDiagramPreviewUrl(' in source
+    assert 'const url = versionDiagramPreviewUrl(' in source
+    assert 'showPreview(url,' in source
     assert "window.addEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved)" in source
     # Every occurrence creates and registers its own NodeView closure. Thus two
     # occurrences of one UUID both update, while a second UUID is filtered out.
@@ -160,12 +162,26 @@ def test_node_view_preserves_contextual_url_and_cleans_up_listener():
     source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
     events = (ROOT / 'frontend/diagram-ui/events.js').read_text()
 
-    assert 'metadata?.preview_url || previewImage.src' in source
+    assert 'metadata?.preview_url || saved.preview_url || previewImage?.src' in source
     assert "parsed.searchParams.set('v', String(version))" in events
     assert 'Date.now' not in events and 'Math.random' not in events
-    assert "saved.preview_state !== 'ready' || !previewImage" in source
-    assert 'destroy: () => window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved)' in source
+    assert "saved.preview_state !== 'ready'" in source
+    assert 'window.removeEventListener(DIAGRAM_SAVED_EVENT, onDiagramSaved)' in source
     assert 'if (saved.title) updateTitle(saved.title)' in source
+
+
+def test_preview_lifecycle_is_published_and_rendered_without_polling():
+    workspace = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+    node_view = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
+    events = (ROOT / 'frontend/diagram-ui/events.js').read_text()
+
+    assert "announceDiagramPreviewState(diagramId, 'generating')" in workspace
+    assert "announceDiagramPreviewState(diagramId, 'failed'" in workspace
+    assert "DIAGRAM_PREVIEW_STATE_EVENT = 'orquetask:diagram-preview-state'" in events
+    assert "detail.preview_state !== 'ready'" in node_view
+    assert 'Gerando preview...' in node_view
+    assert 'Preview indisponível' in node_view
+    assert 'setInterval' not in node_view and 'setTimeout' not in node_view
 
 
 def test_save_response_includes_complete_preview_contract():

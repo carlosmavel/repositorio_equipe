@@ -204,8 +204,8 @@ def test_article_diagram_preview_states_and_layout_cover_edge_cases():
     assert '[data-bs-theme="dark"] .article-diagram' in stylesheet
     for state in (
         "Carregando preview",
-        "Preview ainda não disponível",
-        "Falha ao carregar o preview",
+        "Gerando preview...",
+        "Preview indisponível",
         "Diagrama indisponível",
     ):
         assert state in node_view

@@ -16,10 +16,14 @@ def _versioned_url(url, token):
 
 def preview_state(diagram):
     """Descreve o preview corrente sem consultar ou entregar seu conteúdo."""
-    version = diagram.current_version_record
+    version = getattr(diagram, 'current_version_record', None)
     if not version:
-        return 'missing'
-    return 'ready' if any(asset.kind == 'preview' for asset in version.assets) else 'missing'
+        return 'pending'
+    # Um registro nunca pode declarar ``ready`` sem o asset confirmado.
+    if any(asset.kind == 'preview' for asset in version.assets):
+        return 'ready'
+    state = getattr(version, 'preview_state', None)
+    return state if state in {'pending', 'generating', 'failed'} else 'failed'
 
 
 def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
@@ -45,6 +49,9 @@ def serialize_diagram_metadata(diagram, user, *, article=None, preview_url=None,
         'current_version_id': str(diagram.current_version_id) if diagram.current_version_id else None,
         'cache_token': token,
         'preview_state': preview_state(diagram),
+        'preview_message': (
+            'Preview indisponível.' if preview_state(diagram) == 'failed' else None
+        ),
         'preview_url': _versioned_url(preview_url, token) if can_view else None,
         'can_view': can_view, 'can_edit': can_edit, 'can_open_scene': can_open_scene,
         'capabilities': {
