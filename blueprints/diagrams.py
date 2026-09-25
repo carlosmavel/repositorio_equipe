@@ -426,8 +426,12 @@ def _preview_response(diagram, user, version=None):
     response.headers['Content-Type'] = content_type or 'image/png'
     # A ausência do preview é transitória (por exemplo, antes do primeiro
     # salvamento no editor) e não pode ficar presa no cache do navegador.
+    # A URL da versão corrente é estável, embora seu conteúdo mude a cada
+    # salvamento. Exija revalidação para não exibir por até cinco minutos o
+    # preview anterior; versões históricas, por outro lado, são imutáveis.
     response.headers['Cache-Control'] = (
-        'private, max-age=300' if preview_available else 'private, no-store'
+        ('private, max-age=300' if version is not None else 'private, no-cache')
+        if preview_available else 'private, no-store'
     )
     response.set_etag(hashlib.sha256(content).hexdigest())
     return response.make_conditional(request)
@@ -457,7 +461,8 @@ def embedded_diagram_preview(user, article_id, diagram_id):
     content = get_storage().read(preview.storage_key)
     response = make_response(content)
     response.headers['Content-Type'] = preview.content_type or 'image/png'
-    response.headers['Cache-Control'] = 'private, max-age=300'
+    # Este endpoint representa sempre a versão corrente do diagrama.
+    response.headers['Cache-Control'] = 'private, no-cache'
     response.set_etag(hashlib.sha256(content).hexdigest())
     return response.make_conditional(request)
 

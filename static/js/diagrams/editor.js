@@ -17,6 +17,20 @@
       .filter(([key]) => !EPHEMERAL_APP_STATE.has(key)));
   }
 
+  function sceneFingerprint({ elements, appState, files } = {}) {
+    const fileData = Object.fromEntries(Object.entries(files || {})
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([id, file]) => [id, {
+        dataURL: file.dataURL || null,
+        mimeType: file.mimeType || null,
+      }]));
+    return JSON.stringify({
+      elements: elements || [],
+      appState: durableAppState(appState),
+      files: fileData,
+    });
+  }
+
   async function dataUrlToBlob(dataURL) {
     const response = await fetch(dataURL);
     return response.blob();
@@ -60,6 +74,6 @@
   }
 
   window.OrquetaskDiagramSave = {
-    SCHEMA_VERSION, durableAppState, buildRequest, save,
+    SCHEMA_VERSION, durableAppState, sceneFingerprint, buildRequest, save,
   };
 })();

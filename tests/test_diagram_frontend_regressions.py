@@ -38,3 +38,34 @@ def test_transient_missing_preview_is_not_cached(app_ctx, monkeypatch):
     assert response.content_type == 'image/svg+xml; charset=utf-8'
     assert response.cache_control.no_store is True
     assert response.cache_control.max_age is None
+
+
+def test_current_preview_is_revalidated_after_save(app_ctx, monkeypatch):
+    monkeypatch.setattr(diagrams_blueprint, 'get_preview', lambda *_args, **_kwargs: (b'png', 'image/png'))
+
+    with app_ctx.test_request_context('/api/diagramas/example/preview'):
+        response = diagrams_blueprint._preview_response(object(), object())
+
+    assert response.cache_control.private is True
+    assert response.cache_control.no_cache is True
+    assert response.cache_control.max_age is None
+
+
+def test_versioned_preview_can_be_cached(app_ctx, monkeypatch):
+    monkeypatch.setattr(diagrams_blueprint, 'get_preview', lambda *_args, **_kwargs: (b'png', 'image/png'))
+
+    with app_ctx.test_request_context('/diagramas/example/versoes/1/preview'):
+        response = diagrams_blueprint._preview_response(object(), object(), version=object())
+
+    assert response.cache_control.private is True
+    assert response.cache_control.max_age == 300
+
+
+def test_diagram_editor_tracks_confirmed_save_without_onchange_race():
+    source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+
+    assert "setStatus('Salvando...')" in source
+    assert "savedFingerprintRef.current = savedFingerprint" in source
+    assert "latestFingerprintRef.current === savedFingerprint" in source
+    assert "disabled={isSaving}" in source
+    assert "savingRef.current" in source
