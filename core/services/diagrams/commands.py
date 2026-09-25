@@ -13,6 +13,21 @@ from .schema import ORQUETASK_DIAGRAM_SCHEMA_VERSION, DiagramSavePayload
 from .storage import get_storage, sanitize_preview
 
 
+class DiagramVersionConflict(ValueError):
+    """A versão usada como base deixou de ser a versão corrente."""
+
+
+def _validated_scene(scene):
+    """Aceita o resultado do validador ou uma cena já normalizada."""
+    if isinstance(scene, DiagramSavePayload):
+        return scene.document, scene.content_hash, scene.files
+    if not isinstance(scene, dict):
+        raise TypeError('scene deve ser uma cena validada ou DiagramSavePayload.')
+    canonical = json.dumps(scene, ensure_ascii=False, sort_keys=True,
+                           separators=(',', ':'), allow_nan=False)
+    return scene, hashlib.sha256(canonical.encode('utf-8')).hexdigest(), ()
+
+
 def _has_permission(actor, code):
     return bool(actor and (actor.has_permissao('admin') or actor.has_permissao(code)))
 
@@ -194,6 +209,112 @@ def save_diagram_payload(user, diagram, payload: DiagramSavePayload, *, title=No
         return diagram
 
     return _atomic(operation, session)
+
+
+def save_diagram_version(diagram_id, base_version_id, scene, preview, actor, reason,
+                         *, session=None, storage=None, _source_version=None,
+                         _force=False):
+    """Cria atomicamente um snapshot imutável a partir da versão corrente.
+
+    O bloqueio pessimista serializa a numeração. A comparação do identificador
+    da base, feita depois do bloqueio, fornece o conflito otimista esperado pelo
+    editor. Cenas com o mesmo hash são um no-op completo.
+    """
+    session = session or db.session
+    storage = storage or get_storage()
+    document, content_hash, files = _validated_scene(scene)
+
+    def operation():
+        diagram = (session.query(Diagram).filter_by(id=diagram_id)
+                   .with_for_update().one())
+        _require_template_management(actor, diagram)
+        require_edit(actor, diagram)
+        if diagram.current_version_id != base_version_id:
+            raise DiagramVersionConflict(
+                'A versão base não é mais a versão corrente do diagrama.'
+            )
+        current = session.get(DiagramVersion, diagram.current_version_id)
+        if not _force and current is not None and current.content_hash == content_hash:
+            return current
+
+        version = DiagramVersion(
+            diagram=diagram, number=diagram.current_version + 1,
+            title=diagram.title, document=deepcopy(document), author_id=actor.id,
+            schema_version=document.get('schemaVersion', ORQUETASK_DIAGRAM_SCHEMA_VERSION),
+            content_hash=content_hash, reason=(str(reason).strip() or None)
+            if reason is not None else None,
+            source_version_id=(_source_version.id if _source_version is not None else None),
+        )
+        session.add(version)
+        session.flush()
+        for uploaded in files:
+            asset = session.query(DiagramAsset).filter_by(
+                diagram_id=diagram.id, sha256=uploaded.sha256,
+            ).first()
+            if asset is None:
+                asset = DiagramAsset(
+                    diagram=diagram, storage_key=storage.put_sha256(uploaded.content),
+                    sha256=uploaded.sha256, byte_size=len(uploaded.content),
+                    content_type=uploaded.content_type,
+                )
+                session.add(asset)
+            version.assets.append(asset)
+        if preview is not None:
+            content, content_type, _, _ = sanitize_preview(preview)
+            digest = hashlib.sha256(content).hexdigest()
+            asset = session.query(DiagramAsset).filter_by(
+                diagram_id=diagram.id, sha256=digest, kind='preview',
+            ).first()
+            if asset is None:
+                asset = DiagramAsset(
+                    diagram=diagram, storage_key=storage.put_sha256(content),
+                    sha256=digest, byte_size=len(content), kind='preview',
+                    content_type=content_type,
+                )
+                session.add(asset)
+            version.assets.append(asset)
+        if _source_version is not None:
+            version.assets.extend(asset for asset in _source_version.assets
+                                  if asset not in version.assets)
+        now = datetime.now(timezone.utc)
+        diagram.document = deepcopy(document)
+        diagram.current_version = version.number
+        diagram.current_version_id = version.id
+        diagram.updated_by_user_id = actor.id
+        diagram.updated_at = now
+        diagram.lock_version += 1
+        return version
+
+    return _atomic(operation, session)
+
+
+def restore_diagram_version(diagram_id, version_id, base_version_id, actor, reason,
+                            *, session=None):
+    """Restaura copiando uma versão histórica para um novo snapshot."""
+    session = session or db.session
+    source = session.get(DiagramVersion, version_id)
+    if source is None or source.diagram_id != diagram_id:
+        raise ValueError('A versão não pertence ao diagrama.')
+    restored = save_diagram_version(
+        diagram_id, base_version_id, deepcopy(source.document), None, actor, reason,
+        session=session, _source_version=source, _force=True,
+    )
+    return restored
+
+
+def get_diagram_version_history(diagram_id, actor, *, page=1, per_page=20,
+                                session=None):
+    """Retorna o histórico mais recente primeiro, com paginação limitada."""
+    session = session or db.session
+    diagram = session.get(Diagram, diagram_id)
+    if diagram is None:
+        raise ValueError('Diagrama não encontrado.')
+    require_view(actor, diagram)
+    if page < 1 or per_page < 1 or per_page > 100:
+        raise ValueError('Paginação inválida.')
+    return (session.query(DiagramVersion).filter_by(diagram_id=diagram_id)
+            .order_by(DiagramVersion.number.desc())
+            .paginate(page=page, per_page=per_page, error_out=False))
 
 
 def copy_template(user, template, *, title=None, session=None):

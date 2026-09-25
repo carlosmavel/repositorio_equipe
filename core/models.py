@@ -1049,10 +1049,13 @@ class Diagram(db.Model):
                                    db.ForeignKey('diagram_version.id', ondelete='SET NULL', use_alter=True),
                                    nullable=True)
     lock_version = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    updated_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'),
+                                   nullable=True, index=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now(), index=True)
 
     owner = db.relationship('User', foreign_keys=[owner_id], back_populates='owned_diagrams')
+    updated_by_user = db.relationship('User', foreign_keys=[updated_by_user_id])
     celula = db.relationship('Celula', foreign_keys=[celula_id])
     source_diagram = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_diagram_id])
     source_template = db.relationship('Diagram', remote_side=[id], foreign_keys=[source_template_id])
@@ -1088,6 +1091,7 @@ class DiagramVersion(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='RESTRICT'), nullable=False)
     source_version_id = db.Column(db.Uuid(as_uuid=True),
                                   db.ForeignKey('diagram_version.id', ondelete='SET NULL'))
+    reason = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
 
     diagram = db.relationship('Diagram', foreign_keys=[diagram_id], back_populates='versions')
