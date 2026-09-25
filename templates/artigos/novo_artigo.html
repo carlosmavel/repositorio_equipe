@@ -191,5 +191,6 @@
     'file': url_for('static', filename='icons/file-icon.png')
   }
 } | tojson }}</script>
-<script type="module" src="{{ url_for('static', filename='js/article-editor.js') }}"></script>
+{# Substitui o legado url_for(... filename='js/article-editor.js') pelo manifest. #}
+<script type="module" src="{{ vite_asset('frontend/article-editor/index.js') }}"></script>
 {% endblock %}

@@ -22,23 +22,8 @@
     return response.blob();
   }
 
-  async function generatePreview({ elements, appState, files }) {
-    const exportToBlob = window.ExcalidrawLib && window.ExcalidrawLib.exportToBlob;
-    if (typeof exportToBlob !== "function") return null;
-    return exportToBlob({
-      elements: elements || [],
-      appState: { ...(appState || {}), exportBackground: true },
-      files: files || {},
-      mimeType: "image/png",
-      getDimensions: (width, height) => {
-        const scale = Math.min(1, 1600 / Math.max(width, height));
-        return { width: width * scale, height: height * scale, scale };
-      },
-    });
-  }
-
   async function buildRequest({ elements, appState, files }, { title, lockVersion,
-    excalidrawVersion } = {}) {
+    excalidrawVersion } = {}, preview = null) {
     const form = new FormData();
     const manifest = {};
     for (const [id, file] of Object.entries(files || {})) {
@@ -48,7 +33,6 @@
       // The file id is the multipart field name, making manifest matching strict.
       form.append(id, blob, `${id}`);
     }
-    const preview = await generatePreview({ elements, appState, files });
     if (preview) form.append("preview", preview, "preview.png");
     const payload = {
       schemaVersion: SCHEMA_VERSION,
@@ -76,6 +60,6 @@
   }
 
   window.OrquetaskDiagramSave = {
-    SCHEMA_VERSION, durableAppState, generatePreview, buildRequest, save,
+    SCHEMA_VERSION, durableAppState, buildRequest, save,
   };
 })();

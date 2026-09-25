@@ -3,11 +3,22 @@
 {% block extra_css %}
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/diagram-preview.css') }}">
+{% for stylesheet in vite_css('frontend/diagram-editor/index.jsx') %}
+<link rel="stylesheet" href="{{ stylesheet }}">
+{% endfor %}
+<style>.diagram-canvas { height: min(72vh, 800px); min-height: 520px; }</style>
 {% endblock %}
 {% block content %}
 <main class="container py-4" data-diagram-id="{{ diagram.id }}">
   <h1>{{ diagram.title }}</h1>
   <div id="diagram-editor" data-version="{{ diagram.current_version }}"></div>
+  <script id="diagram-editor-config" type="application/json">{{ {
+    'title': diagram.title,
+    'lockVersion': diagram.lock_version,
+    'sceneUrl': url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
+    'saveUrl': url_for('diagrams_bp.api_save_diagram', diagram_id=diagram.id),
+    'excalidrawVersion': '0.18.0'
+  } | tojson }}</script>
   {% if diagram.current_version_record and diagram.current_version_record.assets | selectattr('kind', 'equalto', 'preview') | list %}
   <button class="diagram-preview-frame mt-4" type="button" data-bs-toggle="modal"
           data-bs-target="#diagramPreviewModal" aria-label="Ampliar preview do diagrama">
@@ -35,4 +46,5 @@
 {% block extra_js %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/diagrams/editor.js') }}"></script>
+<script type="module" src="{{ vite_asset('frontend/diagram-editor/index.jsx') }}"></script>
 {% endblock %}

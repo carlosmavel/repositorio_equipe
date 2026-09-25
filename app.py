@@ -150,6 +150,13 @@ NOME_NIVEL_CARGO = {valor: nome for valor, nome in NIVEIS_HIERARQUICOS}
 app = Flask(__name__)
 app.config.from_object(Config)
 
+try:
+    from .core.vite import vite_asset, vite_css
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from core.vite import vite_asset, vite_css
+
+app.jinja_env.globals.update(vite_asset=vite_asset, vite_css=vite_css)
+
 
 def _is_homologacao_environment() -> bool:
     env_name = (
