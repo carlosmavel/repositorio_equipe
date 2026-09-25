@@ -247,6 +247,23 @@ app.register_blueprint(articles_bp)
 app.register_blueprint(boletins_bp)
 app.register_blueprint(diagrams_bp)
 
+
+@app.cli.command('diagram-gc')
+@click.option('--older-than-days', default=30, show_default=True, type=click.IntRange(min=1))
+@click.option('--execute', is_flag=True, help='Remove os candidatos; sem esta opção apenas simula.')
+def diagram_gc(older_than_days, execute):
+    """Lista ou remove blobs de diagramas sem referência no banco."""
+    try:
+        from .core.services.diagrams.operations import collect_orphan_blobs
+    except ImportError:  # pragma: no cover
+        from core.services.diagrams.operations import collect_orphan_blobs
+    report = collect_orphan_blobs(older_than_days=older_than_days, execute=execute)
+    app.logger.info(
+        'diagram_gc scanned=%d candidates=%d deleted=%d reclaimed_bytes=%d execute=%s',
+        report.scanned, report.candidates, report.deleted, report.reclaimed_bytes, execute,
+    )
+    click.echo(json.dumps(report.__dict__, sort_keys=True))
+
 for rule in list(app.url_map.iter_rules()):
     if rule.endpoint.startswith(('admin_bp.', 'auth_bp.', 'articles_bp.', 'boletins_bp.', 'diagrams_bp.')):
         app.add_url_rule(
@@ -676,6 +693,16 @@ def inject_notificacoes():
 @app.context_processor
 def inject_enums():
     return dict(ArticleStatus=ArticleStatus, Permissao=Permissao)
+
+
+@app.context_processor
+def inject_feature_flags():
+    """Expõe somente as flags booleanas necessárias à apresentação."""
+    return {'feature_flags': {
+        'diagram_library': app.config['FEATURE_DIAGRAM_LIBRARY'],
+        'diagram_editor': app.config['FEATURE_DIAGRAM_EDITOR'],
+        'article_diagram_insertion': app.config['FEATURE_ARTICLE_DIAGRAM_INSERTION'],
+    }}
 
 @app.context_processor
 def inject_current_user():
