@@ -13,7 +13,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         'article-editor': 'frontend/article-editor/index.js',
-        'diagram-editor': 'frontend/diagram-editor/index.jsx',
+        'diagram-editor': 'frontend/diagram-editor/standalone.jsx',
       },
     },
   },

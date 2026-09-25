@@ -69,3 +69,43 @@ def test_diagram_editor_tracks_confirmed_save_without_onchange_race():
     assert "latestFingerprintRef.current === savedFingerprint" in source
     assert "disabled={isSaving}" in source
     assert "savingRef.current" in source
+
+
+def test_diagram_workspace_is_reusable_and_has_explicit_modes_and_callbacks():
+    source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+
+    assert 'export function DiagramWorkspace({' in source
+    assert "mode = 'edit'" in source
+    assert "const editable = mode === 'edit' && canEdit" in source
+    assert 'onChange={editable ? onChange : undefined}' in source
+    assert 'viewModeEnabled={!editable}' in source
+    assert 'callbacksRef.current.onSaved?.(saved)' in source
+    assert 'callbacksRef.current.onDirtyChange?.(dirty)' in source
+    assert 'callbacksRef.current.onStatusChange?.(value)' in source
+    assert 'callbacksRef.current.onReady?.(api)' in source
+    assert 'onClick={onRequestClose}' in source
+
+
+def test_diagram_workspace_reports_load_conflicts_and_preview_identity():
+    source = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+
+    assert 'Falha ao carregar:' in source
+    assert "result.error || 'Não foi possível salvar o diagrama.'" in source
+    assert 'uuid: result.uuid || result.id' in source
+    assert 'current_version: result.current_version' in source
+    assert 'lock_version: result.lock_version' in source
+    assert 'preview_url: result.preview_url || versionedPreviewUrl' in source
+
+
+def test_standalone_bootstrap_is_separate_from_workspace_bundle():
+    component = (ROOT / 'frontend/diagram-editor/index.jsx').read_text()
+    bootstrap = (ROOT / 'frontend/diagram-editor/standalone.jsx').read_text()
+    template = (ROOT / 'templates/diagrams/editor.html').read_text()
+    vite = (ROOT / 'vite.config.js').read_text()
+
+    assert "getElementById('diagram-editor')" not in component
+    assert "getElementById('diagram-editor')" in bootstrap
+    assert '<DiagramWorkspace {...config} />' in bootstrap
+    assert "'mode': 'edit' if can_edit_diagram else 'view'" in template
+    assert "'previewUrl': url_for('diagrams_bp.api_diagram_preview'" in template
+    assert "'diagram-editor': 'frontend/diagram-editor/standalone.jsx'" in vite
