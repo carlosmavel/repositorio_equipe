@@ -19,7 +19,7 @@ try:
     from ..core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
     from ..core.utils import user_can_view_article
     from ..core.services.diagrams.access import (
-        DiagramAccessDenied, can_edit_diagram, can_render_diagram_in_article, require_view,
+        DiagramAccessDenied, can_create_diagram, can_edit_diagram, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
     from ..core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
@@ -33,7 +33,7 @@ except ImportError:  # pragma: no cover - execução direta
     from core.models import Article, ArticleDiagram, Diagram, DiagramAsset, DiagramVersion, User
     from core.utils import user_can_view_article
     from core.services.diagrams.access import (
-        DiagramAccessDenied, can_edit_diagram, can_render_diagram_in_article, require_view,
+        DiagramAccessDenied, can_create_diagram, can_edit_diagram, can_render_diagram_in_article, require_view,
         scoped_diagrams,
     )
     from core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
@@ -254,6 +254,29 @@ def api_diagrams(user):
     return jsonify([_serialize(item) for item in scoped_diagrams(Diagram.query, user).all()])
 
 
+@diagrams_bp.get('/api/diagramas/capabilities')
+@authenticated
+def api_diagram_capabilities(user):
+    """Capacidades globais do seletor; ações ainda revalidam acesso no serviço."""
+    can_create = can_create_diagram(user)
+    can_link = scoped_diagrams(Diagram.query, user).filter(
+        Diagram.diagram_type == DiagramType.DIAGRAM
+    ).first() is not None
+    can_copy = can_create and scoped_diagrams(Diagram.query, user).filter(
+        Diagram.diagram_type == DiagramType.TEMPLATE
+    ).first() is not None
+    return jsonify(
+        can_create=can_create,
+        can_link=can_link,
+        can_copy_template=can_copy,
+        create_reason=None if can_create else 'Você não tem permissão para criar diagramas.',
+        link_reason=None if can_link else 'Nenhum diagrama comum acessível para vincular.',
+        copy_reason=(None if can_copy else
+                     ('Você não tem permissão para criar diagramas.' if not can_create
+                      else 'Nenhum modelo acessível para copiar.')),
+    )
+
+
 @diagrams_bp.get('/api/diagramas/metadados')
 @authenticated
 def api_diagram_metadata_list(user):
@@ -366,7 +389,7 @@ def api_create_diagram(user):
     if not str(data.get('title', '')).strip():
         return jsonify(error='title é obrigatório.'), 400
     diagram = create_diagram(user, data['title'], data.get('document'), celula_id=data.get('celula_id'))
-    return jsonify(_serialize(diagram)), 201
+    return jsonify({**_serialize(diagram), **_metadata_payload(diagram, user)}), 201
 
 
 @diagrams_bp.put('/api/diagramas/<uuid:diagram_id>')
@@ -396,7 +419,7 @@ def api_save_diagram(user, diagram_id):
 @authenticated
 def api_copy_diagram(user, diagram_id):
     diagram = copy_template(user, db.get_or_404(Diagram, diagram_id), title=_payload().get('title'))
-    return jsonify(_serialize(diagram)), 201
+    return jsonify({**_serialize(diagram), **_metadata_payload(diagram, user)}), 201
 
 
 @diagrams_bp.post('/api/diagramas/<uuid:diagram_id>/restaurar/<int:version_number>')

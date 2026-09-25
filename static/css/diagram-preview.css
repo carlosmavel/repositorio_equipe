@@ -122,6 +122,31 @@
   .diagram-preview-modal .modal-dialog { margin: .5rem; }
 }
 
+.diagram-picker { width: min(94vw, 62rem); max-height: 88dvh; padding: 0; border: 0; border-radius: var(--bs-border-radius-lg); color: var(--bs-body-color); background: var(--bs-body-bg); box-shadow: 0 1rem 3rem rgb(0 0 0 / 35%); }
+.diagram-picker::backdrop { background: rgb(0 0 0 / 58%); }
+.diagram-picker__shell { display: flex; max-height: 88dvh; flex-direction: column; }
+.diagram-picker__header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--bs-border-color); }
+.diagram-picker__body { min-height: 20rem; padding: 1.25rem; overflow: auto; }
+.diagram-picker__options { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.diagram-picker__option { display: flex; min-height: 6rem; padding: 1rem; flex-direction: column; gap: .35rem; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); color: inherit; background: var(--bs-body-bg); text-align: left; }
+.diagram-picker__option:not(:disabled):hover, .diagram-picker__option:not(:disabled):focus-visible { border-color: var(--bs-primary); outline: .15rem solid rgba(var(--bs-primary-rgb), .25); }
+.diagram-picker__option:disabled { opacity: .65; cursor: not-allowed; }
+.diagram-picker__option span { color: var(--bs-secondary-color); font-size: .9rem; }
+.diagram-picker__panel { margin-top: 1rem; }
+.diagram-picker__form { max-width: 34rem; margin-inline: auto; }
+.diagram-picker__feedback { min-height: 1.5rem; margin-top: .5rem; }
+.diagram-picker__search { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.diagram-picker__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.diagram-picker__card { min-width: 0; padding: .5rem; overflow: hidden; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); color: inherit; background: var(--bs-body-bg); text-align: left; }
+.diagram-picker__card:hover, .diagram-picker__card:focus-visible { border-color: var(--bs-primary); outline: .15rem solid rgba(var(--bs-primary-rgb), .25); }
+.diagram-picker__thumb { display: grid; height: 8rem; margin-bottom: .5rem; place-items: center; overflow: hidden; border-radius: calc(var(--bs-border-radius) - .15rem); color: var(--bs-secondary-color); background: var(--bs-tertiary-bg); }
+.diagram-picker__thumb img { width: 100%; height: 100%; object-fit: contain; }
+.diagram-picker__card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diagram-picker__pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; }
+.diagram-picker__status, .diagram-picker__empty { padding: 2rem; color: var(--bs-secondary-color); text-align: center; }
+@media (max-width: 767.98px) { .diagram-picker__options, .diagram-picker__grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 479.98px) { .diagram-picker__options, .diagram-picker__grid { grid-template-columns: 1fr; } }
+
 body.diagram-overlay-open { overflow: hidden; }
 
 .diagram-overlay {
