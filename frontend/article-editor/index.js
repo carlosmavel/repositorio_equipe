@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const metadataResponse = await fetch(`/api/diagramas/metadados${option === '3' ? '?tipo=modelo' : ''}`, { headers: { Accept: 'application/json' } });
       const items = await metadataResponse.json();
       if (!metadataResponse.ok) throw new Error(items.error || 'Não foi possível listar os diagramas.');
-      const selected = await chooseDiagram(items, option === '3' ? 'Escolha um modelo:' : 'Escolha um diagrama:');
+      const selected = await chooseDiagram(items.items, option === '3' ? 'Escolha um modelo:' : 'Escolha um diagrama:');
       if (!selected) return;
       if (option === '2') {
         diagram = selected;

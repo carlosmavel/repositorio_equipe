@@ -25,6 +25,7 @@ try:
     from ..core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from ..core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from ..core.services.diagrams.rendering import get_preview
+    from ..core.services.diagrams.metadata import serialize_diagram_metadata
     from ..core.services.diagrams.storage import get_storage
 except ImportError:  # pragma: no cover - execução direta
     from core.database import db
@@ -38,6 +39,7 @@ except ImportError:  # pragma: no cover - execução direta
     from core.services.diagrams.commands import DiagramVersionConflict, archive_diagram, copy_template, create_diagram, get_diagram_version_history, restore_diagram, restore_diagram_version, save_diagram, save_diagram_payload
     from core.services.diagrams.schema import DiagramSchemaError, validate_save_payload
     from core.services.diagrams.rendering import get_preview
+    from core.services.diagrams.metadata import serialize_diagram_metadata
     from core.services.diagrams.storage import get_storage
 
 
@@ -256,28 +258,64 @@ def api_diagrams(user):
 @authenticated
 def api_diagram_metadata_list(user):
     query = scoped_diagrams(Diagram.query, user)
-    requested_type = request.args.get('tipo')
-    if requested_type == 'modelo':
-        query = query.filter(Diagram.diagram_type == 'template')
-    return jsonify([{
-        'id': str(item.id),
-        'title': item.title,
-        'diagram_type': item.diagram_type.value,
-        'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=item.id),
-    } for item in query.order_by(Diagram.updated_at.desc()).all()])
+    requested_type = request.args.get('tipo', '').strip().lower()
+    type_map = {
+        'diagrama': DiagramType.DIAGRAM, 'diagram': DiagramType.DIAGRAM,
+        'modelo': DiagramType.TEMPLATE, 'template': DiagramType.TEMPLATE,
+    }
+    if requested_type:
+        if requested_type not in type_map:
+            return jsonify(error='tipo deve ser diagrama ou modelo.'), 400
+        query = query.filter(Diagram.diagram_type == type_map[requested_type])
+    search = request.args.get('q', '').strip()
+    if search:
+        query = query.filter(Diagram.name.ilike(f'%{search}%'))
+    page = max(request.args.get('page', 1, type=int), 1)
+    per_page = min(max(request.args.get('per_page', 20, type=int), 1), 100)
+    pagination = query.order_by(Diagram.updated_at.desc(), Diagram.id).paginate(
+        page=page, per_page=per_page, error_out=False,
+    )
+    return jsonify(
+        items=[_metadata_payload(item, user) for item in pagination.items],
+        page=pagination.page, pages=pagination.pages,
+        per_page=per_page, total=pagination.total,
+    )
+
+
+def _metadata_payload(diagram, user, *, article=None):
+    return serialize_diagram_metadata(
+        diagram, user, article=article,
+        preview_url=(url_for('diagrams_bp.embedded_diagram_preview',
+                             article_id=article.id, diagram_id=diagram.id)
+                     if article else
+                     url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id)),
+        view_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
+        editor_url=url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
+        scene_url=url_for('diagrams_bp.api_diagram_scene', diagram_id=diagram.id),
+    )
 
 
 @diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/metadados')
 @authenticated
 def api_diagram_metadata(user, diagram_id):
-    diagram = require_view(user, db.get_or_404(Diagram, diagram_id))
-    return jsonify({
-        'id': str(diagram.id),
-        'title': diagram.title,
-        'preview_url': url_for('diagrams_bp.api_diagram_preview', diagram_id=diagram.id),
-        'editor_url': url_for('diagrams_bp.diagram_editor', diagram_id=diagram.id),
-        'can_edit': can_edit_diagram(user, diagram),
-    })
+    # A mesma resposta cobre UUID inexistente, arquivado e fora do escopo.
+    diagram = scoped_diagrams(Diagram.query, user).filter(Diagram.id == diagram_id).first_or_404()
+    response = jsonify(_metadata_payload(diagram, user))
+    response.set_etag(str(diagram.current_version_id or diagram.current_version))
+    return response.make_conditional(request)
+
+
+@diagrams_bp.get('/api/artigos/<int:article_id>/diagramas/<uuid:diagram_id>/metadados')
+@authenticated
+def api_embedded_diagram_metadata(user, article_id, diagram_id):
+    """Entrega somente capacidades e preview raster do contexto do artigo."""
+    article = db.session.get(Article, article_id)
+    diagram = db.session.get(Diagram, diagram_id)
+    if not can_render_diagram_in_article(user, diagram, article):
+        abort(404)
+    response = jsonify(_metadata_payload(diagram, user, article=article))
+    response.set_etag(str(diagram.current_version_id or diagram.current_version))
+    return response.make_conditional(request)
 
 
 @diagrams_bp.get('/api/diagramas/<uuid:diagram_id>/cena')

@@ -6,11 +6,11 @@ from blueprints import diagrams as diagrams_blueprint
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_article_diagram_node_view_opens_authorized_editor_without_embedding_scene():
+def test_article_diagram_node_view_distinguishes_editing_from_viewing():
     source = (ROOT / 'frontend/article-editor/extensions/article-diagram.js').read_text()
 
-    assert "action.href = metadata.editor_url" in source
-    assert "metadata.can_edit ? 'Editar diagrama' : 'Abrir diagrama'" in source
+    assert "metadata.can_edit ? metadata.editor_url : metadata.view_url" in source
+    assert "metadata.can_edit ? 'Editar diagrama' : 'Visualizar diagrama'" in source
     assert "stopEvent:" in source
     assert 'scene' not in source.lower()
 

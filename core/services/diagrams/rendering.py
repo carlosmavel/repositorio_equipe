@@ -7,6 +7,7 @@ from markupsafe import Markup, escape
 
 from ...models import Diagram
 from .access import can_render_diagram_in_article, can_view_diagram, require_view
+from .metadata import serialize_diagram_metadata
 from .storage import get_storage
 
 
@@ -63,9 +64,12 @@ def resolve_article_diagrams(contents, user, *, article=None, url_builder=None):
             if not diagram:
                 return '<p class="article-diagram-unavailable">Diagrama indisponível</p>'
             url = url_builder(diagram) if url_builder else f'/api/diagramas/{diagram.id}/preview'
+            metadata = serialize_diagram_metadata(
+                diagram, user, article=article, preview_url=url,
+            )
             return str(Markup(
                 '<figure class="article-diagram"><img src="{}" alt="{}" loading="lazy"></figure>'
-            ).format(escape(url), escape(diagram.title)))
+            ).format(escape(metadata['preview_url']), escape(metadata['title'])))
 
         return ARTICLE_DIAGRAM_PATTERN.sub(replacement, content)
 

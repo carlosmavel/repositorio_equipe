@@ -153,6 +153,8 @@ def can_render_diagram_in_article(user, diagram, article):
     """
     if not (user and diagram and article):
         return False
+    if diagram.status == DiagramStatus.ARCHIVED or diagram.archived_at is not None:
+        return False
     if not _has_permission(user, Permissao.DIAGRAMA_RENDERIZAR_ARTIGO):
         return False
     from ...utils import user_can_view_article
