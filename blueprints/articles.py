@@ -84,8 +84,10 @@ except ImportError:  # pragma: no cover
 
 try:
     from ..core.services.diagrams.rendering import resolve_article_diagrams
+    from ..core.services.diagrams.references import sync_article_diagrams
 except ImportError:  # pragma: no cover
     from core.services.diagrams.rendering import resolve_article_diagrams
+    from core.services.diagrams.references import sync_article_diagrams
 
 
 try:
@@ -579,6 +581,7 @@ def novo_artigo():
             )
             db.session.add(artigo)
             db.session.flush()
+            sync_article_diagrams(artigo, texto_limpo, user=user)
             create_article_version_snapshot(
                 artigo,
                 user,
@@ -798,6 +801,7 @@ def artigo(artigo_id):
         artigo.texto  = novo_texto
         artigo.status = status_after
         artigo.updated_at = datetime.now(timezone.utc)
+        sync_article_diagrams(artigo, novo_texto, user=user)
 
         # 2) arquivos existentes
         existing = json.loads(artigo.arquivos or '[]')
@@ -1046,6 +1050,10 @@ def restaurar_versao_artigo(artigo_id, version_id):
     if versao.user_id_original_author:
         artigo.user_id = versao.user_id_original_author
     artigo.updated_at = datetime.now(timezone.utc)
+
+    # A versão guarda apenas HTML: os vínculos materializados devem refletir
+    # os placeholders daquele snapshot, não os vínculos atuais do artigo.
+    sync_article_diagrams(artigo, versao.texto, user=user)
 
     create_article_version_snapshot(
         artigo,
@@ -1361,6 +1369,7 @@ def editar_artigo(artigo_id):
             artigo.estabelecimento_id = est_id
             artigo.setor_id = setor_vis_id
             artigo.vis_celula_id = vis_cel_id
+            sync_article_diagrams(artigo, texto, user=user)
 
             # anexos ─ exclusões + novos
             existing = json.loads(artigo.arquivos or "[]")
