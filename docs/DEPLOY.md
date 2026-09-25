@@ -5,7 +5,8 @@ Este documento descreve os passos para implantar a aplicação **OrqueTask** em 
 Os modelos e seeds do módulo **Processos** já estão versionados, mas o blueprint não é registrado em `app.py`, portanto as rotas administrativas ficam desativadas por padrão. Certifique-se de aplicar as migrações mais recentes antes de executar o sistema.
 
 ## 1. Pré-requisitos
- - Python 3.11 (ou 3.10) instalado
+- Python 3.11 (ou 3.10) instalado
+- Node.js 20.19 ou superior na linha 20, ou Node.js 22.12 ou superior
 - Git
 - PostgreSQL 12 ou superior (recomenda-se o uso do pgAdmin para administração)
 - Poppler para conversão de PDFs
@@ -26,7 +27,16 @@ Estes itens são os mesmos listados na seção de pré-requisitos do projeto【F
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-3. **Aplique as migrações do banco** e execute o bootstrap do admin:
+3. **Instale as dependências do frontend e gere os assets de produção:**
+   ```bash
+   npm ci
+   npm run build
+   ```
+   Execute os comandos a partir da raiz do repositório. O `npm ci` usa as
+   versões fixadas em `package-lock.json`, incluindo o Vite local; não instale
+   o Vite globalmente. O build deve criar os bundles em `static/dist` e o
+   manifesto consumido pelo Flask em `static/dist/.vite/manifest.json`.
+4. **Aplique as migrações do banco** e execute o bootstrap do admin:
    ```bash
    flask db upgrade
    flask bootstrap-admin
