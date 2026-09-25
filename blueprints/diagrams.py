@@ -176,7 +176,8 @@ def meus_diagramas(user):
         user, diagram_type=DiagramType.DIAGRAM, mine=True,
     )
     return render_template('diagramas/meus_diagramas.html', pagination=pagination,
-                           diagrams=pagination.items, filters=filters)
+                           diagrams=pagination.items, filters=filters,
+                           can_create_diagram=can_create_diagram(user))
 
 
 @diagrams_bp.get('/diagramas/modelos')
@@ -386,9 +387,12 @@ def api_diagram_scene(user, diagram_id):
 @authenticated
 def api_create_diagram(user):
     data = _payload()
-    if not str(data.get('title', '')).strip():
+    title = str(data.get('title', '')).strip()
+    if not title:
         return jsonify(error='title é obrigatório.'), 400
-    diagram = create_diagram(user, data['title'], data.get('document'), celula_id=data.get('celula_id'))
+    if len(title) > 200:
+        return jsonify(error='title deve ter no máximo 200 caracteres.'), 400
+    diagram = create_diagram(user, title, data.get('document'), celula_id=data.get('celula_id'))
     return jsonify({**_serialize(diagram), **_metadata_payload(diagram, user)}), 201
 
 

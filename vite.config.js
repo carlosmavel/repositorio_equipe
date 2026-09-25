@@ -15,6 +15,7 @@ export default defineConfig({
         'article-editor': 'frontend/article-editor/index.js',
         'diagram-editor': 'frontend/diagram-editor/standalone.jsx',
         'article-diagram-viewer': 'frontend/article-diagram-viewer/index.js',
+        'diagram-library': 'frontend/diagram-library/create.js',
       },
     },
   },

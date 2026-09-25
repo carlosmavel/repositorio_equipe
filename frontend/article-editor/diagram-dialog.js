@@ -1,3 +1,5 @@
+import { diagramTitleForm, titleFromForm } from '../diagram-ui/title-form.js';
+
 const jsonHeaders = { Accept: 'application/json', 'Content-Type': 'application/json' };
 
 async function requestJson(url, options = {}) {
@@ -99,11 +101,11 @@ export class DiagramInsertionDialog {
 
   renderTitleForm(label, submitLabel, submit, initial = '') {
     const panel = this.dialog.querySelector('.diagram-picker__panel');
-    panel.innerHTML = `<form class="diagram-picker__form"><label class="form-label" for="diagram-picker-name">${label}</label><input id="diagram-picker-name" class="form-control" name="title" maxlength="200" required value="${this.escape(initial)}"><div class="diagram-picker__feedback" aria-live="assertive"></div><div class="d-flex gap-2 justify-content-end mt-3"><button type="button" class="btn btn-outline-secondary" data-action="back">Voltar</button><button class="btn btn-primary" type="submit">${submitLabel}</button></div></form>`;
-    panel.querySelector('[data-action="back"]').onclick = () => { this.selected = null; this.renderOptions(); panel.innerHTML = ''; };
+    panel.innerHTML = diagramTitleForm({ inputId: 'diagram-picker-name', label, submitLabel, initial, cancelLabel: 'Voltar' });
+    panel.querySelector('[data-action="cancel-title"]').onclick = () => { this.selected = null; this.renderOptions(); panel.innerHTML = ''; };
     panel.querySelector('form').onsubmit = async (event) => {
       event.preventDefault();
-      const title = new FormData(event.currentTarget).get('title').trim();
+      const title = titleFromForm(event.currentTarget);
       if (!title) return;
       await this.withSubmission(event.currentTarget, () => submit(title));
     };
