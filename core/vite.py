@@ -19,6 +19,7 @@ def _manifest() -> dict:
             return {
                 "frontend/article-editor/index.js": {"file": "test/article-editor.js"},
                 "frontend/diagram-editor/index.jsx": {"file": "test/diagram-editor.js"},
+                "frontend/article-diagram-viewer/index.js": {"file": "test/article-diagram-viewer.js"},
             }
         raise RuntimeError(
             "Manifest do frontend não encontrado; execute `npm run build`."

@@ -40,6 +40,7 @@ export function DiagramWorkspace({
   onStatusChange,
   onReady,
   onRequestClose,
+  onLoadError,
 }) {
   const apiRef = useRef(null);
   const filesRef = useRef({});
@@ -47,8 +48,8 @@ export function DiagramWorkspace({
   const savedFingerprintRef = useRef(null);
   const latestFingerprintRef = useRef(null);
   const savingRef = useRef(false);
-  const callbacksRef = useRef({ onSaved, onDirtyChange, onStatusChange, onReady });
-  callbacksRef.current = { onSaved, onDirtyChange, onStatusChange, onReady };
+  const callbacksRef = useRef({ onSaved, onDirtyChange, onStatusChange, onReady, onLoadError });
+  callbacksRef.current = { onSaved, onDirtyChange, onStatusChange, onReady, onLoadError };
 
   const [initialData, setInitialData] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -96,6 +97,7 @@ export function DiagramWorkspace({
       const message = error.message || 'Não foi possível carregar o diagrama.';
       setLoadError(message);
       setStatus(`Falha ao carregar: ${message}`);
+      callbacksRef.current.onLoadError?.(error);
     });
     return () => { active = false; };
   }, [editable, loadScene, sceneUrl, setStatus]);

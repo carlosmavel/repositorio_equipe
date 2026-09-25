@@ -131,6 +131,11 @@ def _render_article_diagrams(article, contents, user):
             article_id=article.id,
             diagram_id=diagram.id,
         ),
+        metadata_url_builder=lambda diagram: url_for(
+            'diagrams_bp.api_embedded_diagram_metadata',
+            article_id=article.id,
+            diagram_id=diagram.id,
+        ),
     )
 
 

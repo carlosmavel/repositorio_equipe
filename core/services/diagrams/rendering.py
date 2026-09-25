@@ -30,7 +30,8 @@ def get_preview(diagram, user, *, version=None, storage=None):
     return (storage or get_storage()).read(preview.storage_key), preview.content_type
 
 
-def resolve_article_diagrams(contents, user, *, article=None, url_builder=None):
+def resolve_article_diagrams(contents, user, *, article=None, url_builder=None,
+                             metadata_url_builder=None):
     """Resolve vários HTMLs com uma única busca, sem alterar o texto persistido.
 
     Referências inexistentes ou fora do escopo viram uma mensagem neutra, sem
@@ -67,9 +68,20 @@ def resolve_article_diagrams(contents, user, *, article=None, url_builder=None):
             metadata = serialize_diagram_metadata(
                 diagram, user, article=article, preview_url=url,
             )
+            metadata_url = (
+                metadata_url_builder(diagram) if metadata_url_builder else
+                (f'/api/artigos/{article.id}/diagramas/{diagram.id}/metadados'
+                 if article is not None else f'/api/diagramas/{diagram.id}/metadados')
+            )
+            title = escape(metadata['title'])
             return str(Markup(
-                '<figure class="article-diagram"><img src="{}" alt="{}" loading="lazy"></figure>'
-            ).format(escape(metadata['preview_url']), escape(metadata['title'])))
+                '<figure class="article-diagram" data-diagram-metadata-url="{}">'
+                '<button type="button" class="article-diagram__preview" '
+                'aria-label="Visualizar diagrama: {}">'
+                '<img src="{}" alt="{}" loading="lazy"></button>'
+                '<button type="button" class="btn btn-sm btn-primary article-diagram__action">'
+                'Visualizar diagrama</button></figure>'
+            ).format(escape(metadata_url), title, escape(metadata['preview_url']), title))
 
         return ARTICLE_DIAGRAM_PATTERN.sub(replacement, content)
 
